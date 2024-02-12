@@ -22,7 +22,7 @@ See https://xgboost.readthedocs.io/en/stable/python/python_api.html#module-xgboo
 
 ```python
 __init__(
-    n_bits: int = 6,
+    n_bits: Union[int, Dict[str, int]] = 6,
     max_depth: Optional[int] = 3,
     learning_rate: Optional[float] = None,
     n_estimators: Optional[int] = 20,
@@ -136,7 +136,7 @@ dump_dict() → Dict[str, Any]
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/xgb.py#L163"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/xgb.py#L164"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -146,7 +146,7 @@ load_dict(metadata: Dict)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/xgb.py#L222"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/xgb.py#L225"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `XGBRegressor`
 
@@ -154,13 +154,13 @@ Implements the XGBoost regressor.
 
 See https://xgboost.readthedocs.io/en/stable/python/python_api.html#module-xgboost.sklearn for more information about the parameters used.
 
-<a href="../../../src/concrete/ml/sklearn/xgb.py#L234"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/xgb.py#L237"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
 ```python
 __init__(
-    n_bits: int = 6,
+    n_bits: Union[int, Dict[str, int]] = 6,
     max_depth: Optional[int] = 3,
     learning_rate: Optional[float] = None,
     n_estimators: Optional[int] = 20,
@@ -240,7 +240,7 @@ Is None if the model is not fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/xgb.py#L344"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/xgb.py#L347"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -250,7 +250,7 @@ dump_dict() → Dict[str, Any]
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/xgb.py#L321"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/xgb.py#L324"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -260,7 +260,7 @@ fit(X, y, *args, **kwargs) → Any
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/xgb.py#L392"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/xgb.py#L396"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -270,7 +270,7 @@ load_dict(metadata: Dict)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/xgb.py#L336"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/xgb.py#L339"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 

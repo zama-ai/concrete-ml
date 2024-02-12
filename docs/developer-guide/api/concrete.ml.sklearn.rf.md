@@ -20,7 +20,7 @@ Implements the RandomForest classifier.
 
 ```python
 __init__(
-    n_bits: int = 6,
+    n_bits: Union[int, Dict[str, int]] = 6,
     n_estimators=20,
     criterion='gini',
     max_depth=4,
@@ -126,7 +126,7 @@ dump_dict() → Dict[str, Any]
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/rf.py#L110"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/rf.py#L111"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -146,19 +146,19 @@ post_processing(y_preds: ndarray) → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/rf.py#L155"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/rf.py#L158"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `RandomForestRegressor`
 
 Implements the RandomForest regressor.
 
-<a href="../../../src/concrete/ml/sklearn/rf.py#L163"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/rf.py#L166"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
 ```python
 __init__(
-    n_bits: int = 6,
+    n_bits: Union[int, Dict[str, int]] = 6,
     n_estimators=20,
     criterion='squared_error',
     max_depth=4,
@@ -229,7 +229,7 @@ Is None if the model is not fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/rf.py#L209"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/rf.py#L212"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -239,7 +239,7 @@ dump_dict() → Dict[str, Any]
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/rf.py#L244"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/rf.py#L248"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 

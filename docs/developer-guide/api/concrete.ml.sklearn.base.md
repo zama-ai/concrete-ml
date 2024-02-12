@@ -14,7 +14,7 @@ Base classes for all estimators.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L104"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L110"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `BaseEstimator`
 
@@ -26,7 +26,7 @@ This class does not inherit from sklearn.base.BaseEstimator as it creates some c
 
 - <b>`_is_a_public_cml_model`</b> (bool):  Private attribute indicating if the class is a public model  (as opposed to base or mixin classes).
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L121"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L127"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -84,7 +84,7 @@ Is None if the model is not fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L316"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L322"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_compiled`
 
@@ -100,7 +100,7 @@ Check if the model is compiled.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L292"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L298"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_fitted`
 
@@ -116,7 +116,7 @@ Check if the model is fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L491"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L497"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -150,7 +150,7 @@ Compile the model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L470"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L476"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
@@ -172,7 +172,7 @@ This step ensures that the fit method has been called.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L236"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L242"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
@@ -188,7 +188,7 @@ Dump itself to a file.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L208"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -204,7 +204,7 @@ Dump the object as a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L228"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L234"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -220,7 +220,7 @@ Dump itself to a string.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L383"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L389"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -243,7 +243,7 @@ The fitted estimator.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L404"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L410"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit_benchmark`
 
@@ -270,7 +270,7 @@ The Concrete ML and float equivalent fitted estimators.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L325"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L331"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_sklearn_params`
 
@@ -292,7 +292,7 @@ This method is used to instantiate a scikit-learn model using the Concrete ML mo
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L216"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L222"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -312,7 +312,7 @@ Load itself from a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L673"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L679"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -336,7 +336,7 @@ For some simple models such a linear regression, there is no post-processing ste
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L589"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L595"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -360,7 +360,7 @@ Predict values for X, in FHE or in the clear.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L457"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L463"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 
@@ -382,7 +382,7 @@ This step ensures that the fit method has been called.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L697"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L703"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `BaseClassifier`
 
@@ -390,7 +390,7 @@ Base class for linear and tree-based classifiers in Concrete ML.
 
 This class inherits from BaseEstimator and modifies some of its methods in order to align them with classifier behaviors. This notably include applying a sigmoid/softmax post-processing to the predicted values as well as handling a mapping of classes in case they are not ordered.
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L121"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L127"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -472,7 +472,7 @@ Using this attribute is deprecated.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L316"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L322"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_compiled`
 
@@ -488,7 +488,7 @@ Check if the model is compiled.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L292"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L298"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_fitted`
 
@@ -504,7 +504,7 @@ Check if the model is fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L491"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L497"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -538,7 +538,7 @@ Compile the model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L470"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L476"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
@@ -560,7 +560,7 @@ This step ensures that the fit method has been called.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L236"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L242"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
@@ -576,7 +576,7 @@ Dump itself to a file.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L208"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -592,7 +592,7 @@ Dump the object as a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L228"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L234"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -608,7 +608,7 @@ Dump itself to a string.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L750"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L756"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -618,7 +618,7 @@ fit(X: 'Data', y: 'Target', **fit_parameters)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L404"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L410"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit_benchmark`
 
@@ -645,7 +645,7 @@ The Concrete ML and float equivalent fitted estimators.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L325"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L331"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_sklearn_params`
 
@@ -667,7 +667,7 @@ This method is used to instantiate a scikit-learn model using the Concrete ML mo
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L216"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L222"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -687,7 +687,7 @@ Load itself from a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L789"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L795"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -697,7 +697,7 @@ post_processing(y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L780"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L786"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -710,7 +710,7 @@ predict(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L763"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L769"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict_proba`
 
@@ -734,7 +734,7 @@ Predict class probabilities.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L457"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L463"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 
@@ -756,13 +756,13 @@ This step ensures that the fit method has been called.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L817"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L823"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedTorchEstimatorMixin`
 
 Mixin that provides quantization for a torch module and follows the Estimator API.
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L827"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L833"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -838,7 +838,7 @@ Get the output quantizers.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L316"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L322"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_compiled`
 
@@ -854,7 +854,7 @@ Check if the model is compiled.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L292"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L298"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_fitted`
 
@@ -870,7 +870,7 @@ Check if the model is fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1136"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1142"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -888,7 +888,7 @@ compile(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1127"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1133"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
@@ -898,7 +898,7 @@ dequantize_output(*q_y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L236"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L242"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
@@ -914,7 +914,7 @@ Dump itself to a file.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L208"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -930,7 +930,7 @@ Dump the object as a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L228"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L234"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -946,7 +946,7 @@ Dump itself to a string.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L932"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L938"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -971,7 +971,7 @@ The fitted estimator.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1078"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1084"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit_benchmark`
 
@@ -1002,7 +1002,7 @@ The Concrete ML and equivalent skorch fitted estimators.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L881"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L887"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_params`
 
@@ -1024,7 +1024,7 @@ This method is overloaded in order to make sure that auto-computed parameters ar
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L912"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L918"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_sklearn_params`
 
@@ -1034,7 +1034,7 @@ get_sklearn_params(deep: 'bool' = True) → Dict
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L216"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L222"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -1054,7 +1054,7 @@ Load itself from a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1188"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1194"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -1064,7 +1064,7 @@ post_processing(y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L589"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L595"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -1088,7 +1088,7 @@ Predict values for X, in FHE or in the clear.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1192"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1198"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `prune`
 
@@ -1116,7 +1116,7 @@ A new pruned copy of the Neural Network model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1119"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1125"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 
@@ -1126,7 +1126,7 @@ quantize_input(X: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1267"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1273"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `BaseTreeEstimatorMixin`
 
@@ -1134,19 +1134,21 @@ Mixin class for tree-based estimators.
 
 This class inherits from sklearn.base.BaseEstimator in order to have access to scikit-learn's `get_params` and `set_params` methods.
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1284"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1290"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
 ```python
-__init__(n_bits: 'int')
+__init__(n_bits: 'Union[int, Dict[str, int]]')
 ```
 
 Initialize the TreeBasedEstimatorMixin.
 
 **Args:**
 
-- <b>`n_bits`</b> (int):  The number of bits used for quantization.
+- <b>`n_bits`</b> (int, Dict\[str, int\]):  Number of bits to quantize the model. If an int is passed  for n_bits, the value will be used for quantizing inputs and leaves. If a dict is  passed, then it should contain "op_inputs" and "op_leaves" as keys with  corresponding number of quantization bits so that:
+  \- op_inputs (mandatory): number of bits to quantize the input values
+  \- op_leaves (optional): number of bits to quantize the leaves  Default to 6.
 
 ______________________________________________________________________
 
@@ -1194,7 +1196,7 @@ Is None if the model is not fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L316"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L322"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_compiled`
 
@@ -1210,7 +1212,7 @@ Check if the model is compiled.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L292"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L298"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_fitted`
 
@@ -1226,7 +1228,7 @@ Check if the model is fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1381"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1409"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -1236,7 +1238,7 @@ compile(*args, **kwargs) → Circuit
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1359"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1387"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
@@ -1246,7 +1248,7 @@ dequantize_output(q_y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L236"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L242"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
@@ -1262,7 +1264,7 @@ Dump itself to a file.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L208"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -1278,7 +1280,7 @@ Dump the object as a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L228"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L234"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -1294,7 +1296,7 @@ Dump itself to a string.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1297"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1318"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -1304,7 +1306,7 @@ fit(X: 'Data', y: 'Target', **fit_parameters)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L404"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L410"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit_benchmark`
 
@@ -1331,7 +1333,7 @@ The Concrete ML and float equivalent fitted estimators.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L325"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L331"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_sklearn_params`
 
@@ -1353,7 +1355,7 @@ This method is used to instantiate a scikit-learn model using the Concrete ML mo
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L216"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L222"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -1373,7 +1375,7 @@ Load itself from a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1411"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1439"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -1383,7 +1385,7 @@ post_processing(y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1406"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1434"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -1396,7 +1398,7 @@ predict(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1347"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1375"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 
@@ -1406,7 +1408,7 @@ quantize_input(X: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1421"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1452"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `BaseTreeRegressorMixin`
 
@@ -1414,19 +1416,21 @@ Mixin class for tree-based regressors.
 
 This class is used to create a tree-based regressor class that inherits from sklearn.base.RegressorMixin, which essentially gives access to scikit-learn's `score` method for regressors.
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1284"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1290"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
 ```python
-__init__(n_bits: 'int')
+__init__(n_bits: 'Union[int, Dict[str, int]]')
 ```
 
 Initialize the TreeBasedEstimatorMixin.
 
 **Args:**
 
-- <b>`n_bits`</b> (int):  The number of bits used for quantization.
+- <b>`n_bits`</b> (int, Dict\[str, int\]):  Number of bits to quantize the model. If an int is passed  for n_bits, the value will be used for quantizing inputs and leaves. If a dict is  passed, then it should contain "op_inputs" and "op_leaves" as keys with  corresponding number of quantization bits so that:
+  \- op_inputs (mandatory): number of bits to quantize the input values
+  \- op_leaves (optional): number of bits to quantize the leaves  Default to 6.
 
 ______________________________________________________________________
 
@@ -1474,7 +1478,7 @@ Is None if the model is not fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L316"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L322"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_compiled`
 
@@ -1490,7 +1494,7 @@ Check if the model is compiled.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L292"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L298"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_fitted`
 
@@ -1506,7 +1510,7 @@ Check if the model is fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1381"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1409"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -1516,7 +1520,7 @@ compile(*args, **kwargs) → Circuit
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1359"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1387"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
@@ -1526,7 +1530,7 @@ dequantize_output(q_y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L236"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L242"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
@@ -1542,7 +1546,7 @@ Dump itself to a file.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L208"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -1558,7 +1562,7 @@ Dump the object as a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L228"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L234"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -1574,7 +1578,7 @@ Dump itself to a string.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1297"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1318"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -1584,7 +1588,7 @@ fit(X: 'Data', y: 'Target', **fit_parameters)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L404"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L410"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit_benchmark`
 
@@ -1611,7 +1615,7 @@ The Concrete ML and float equivalent fitted estimators.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L325"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L331"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_sklearn_params`
 
@@ -1633,7 +1637,7 @@ This method is used to instantiate a scikit-learn model using the Concrete ML mo
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L216"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L222"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -1653,7 +1657,7 @@ Load itself from a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1411"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1439"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -1663,7 +1667,7 @@ post_processing(y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1406"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1434"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -1676,7 +1680,7 @@ predict(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1347"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1375"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 
@@ -1686,7 +1690,7 @@ quantize_input(X: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1430"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1461"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `BaseTreeClassifierMixin`
 
@@ -1696,19 +1700,21 @@ This class is used to create a tree-based classifier class that inherits from sk
 
 Additionally, this class adjusts some of the tree-based base class's methods in order to make them compliant with classification workflows.
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1284"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1290"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
 ```python
-__init__(n_bits: 'int')
+__init__(n_bits: 'Union[int, Dict[str, int]]')
 ```
 
 Initialize the TreeBasedEstimatorMixin.
 
 **Args:**
 
-- <b>`n_bits`</b> (int):  The number of bits used for quantization.
+- <b>`n_bits`</b> (int, Dict\[str, int\]):  Number of bits to quantize the model. If an int is passed  for n_bits, the value will be used for quantizing inputs and leaves. If a dict is  passed, then it should contain "op_inputs" and "op_leaves" as keys with  corresponding number of quantization bits so that:
+  \- op_inputs (mandatory): number of bits to quantize the input values
+  \- op_leaves (optional): number of bits to quantize the leaves  Default to 6.
 
 ______________________________________________________________________
 
@@ -1780,7 +1786,7 @@ Using this attribute is deprecated.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L316"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L322"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_compiled`
 
@@ -1796,7 +1802,7 @@ Check if the model is compiled.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L292"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L298"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_fitted`
 
@@ -1812,7 +1818,7 @@ Check if the model is fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1381"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1409"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -1822,7 +1828,7 @@ compile(*args, **kwargs) → Circuit
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1359"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1387"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
@@ -1832,7 +1838,7 @@ dequantize_output(q_y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L236"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L242"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
@@ -1848,7 +1854,7 @@ Dump itself to a file.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L208"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -1864,7 +1870,7 @@ Dump the object as a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L228"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L234"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -1880,7 +1886,7 @@ Dump itself to a string.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L750"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L756"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -1890,7 +1896,7 @@ fit(X: 'Data', y: 'Target', **fit_parameters)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L404"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L410"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit_benchmark`
 
@@ -1917,7 +1923,7 @@ The Concrete ML and float equivalent fitted estimators.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L325"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L331"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_sklearn_params`
 
@@ -1939,7 +1945,7 @@ This method is used to instantiate a scikit-learn model using the Concrete ML mo
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L216"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L222"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -1959,7 +1965,7 @@ Load itself from a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L789"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L795"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -1969,7 +1975,7 @@ post_processing(y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L780"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L786"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -1982,7 +1988,7 @@ predict(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L763"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L769"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict_proba`
 
@@ -2006,7 +2012,7 @@ Predict class probabilities.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1347"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1375"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 
@@ -2016,7 +2022,7 @@ quantize_input(X: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1445"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1476"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `SklearnLinearModelMixin`
 
@@ -2024,7 +2030,7 @@ A Mixin class for sklearn linear models with FHE.
 
 This class inherits from sklearn.base.BaseEstimator in order to have access to scikit-learn's `get_params` and `set_params` methods.
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1459"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1490"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -2086,7 +2092,7 @@ Is None if the model is not fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L316"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L322"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_compiled`
 
@@ -2102,7 +2108,7 @@ Check if the model is compiled.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L292"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L298"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_fitted`
 
@@ -2118,7 +2124,7 @@ Check if the model is fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L491"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L497"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -2152,7 +2158,7 @@ Compile the model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1660"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1691"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
@@ -2162,7 +2168,7 @@ dequantize_output(q_y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L236"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L242"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
@@ -2178,7 +2184,7 @@ Dump itself to a file.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L208"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -2194,7 +2200,7 @@ Dump the object as a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L228"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L234"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -2210,7 +2216,7 @@ Dump itself to a string.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1557"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1588"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -2220,7 +2226,7 @@ fit(X: 'Data', y: 'Target', **fit_parameters)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L404"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L410"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit_benchmark`
 
@@ -2247,7 +2253,7 @@ The Concrete ML and float equivalent fitted estimators.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1484"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1515"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_sklearn_model`
 
@@ -2274,7 +2280,7 @@ The FHE-compliant fitted model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L325"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L331"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_sklearn_params`
 
@@ -2296,7 +2302,7 @@ This method is used to instantiate a scikit-learn model using the Concrete ML mo
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L216"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L222"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -2316,7 +2322,7 @@ Load itself from a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L673"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L679"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -2340,7 +2346,7 @@ For some simple models such a linear regression, there is no post-processing ste
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L589"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L595"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -2364,7 +2370,7 @@ Predict values for X, in FHE or in the clear.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1653"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1684"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 
@@ -2374,7 +2380,7 @@ quantize_input(X: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1699"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1730"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `SklearnLinearRegressorMixin`
 
@@ -2382,7 +2388,7 @@ A Mixin class for sklearn linear regressors with FHE.
 
 This class is used to create a linear regressor class that inherits from sklearn.base.RegressorMixin, which essentially gives access to scikit-learn's `score` method for regressors.
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1459"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1490"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -2444,7 +2450,7 @@ Is None if the model is not fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L316"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L322"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_compiled`
 
@@ -2460,7 +2466,7 @@ Check if the model is compiled.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L292"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L298"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_fitted`
 
@@ -2476,7 +2482,7 @@ Check if the model is fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L491"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L497"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -2510,7 +2516,7 @@ Compile the model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1660"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1691"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
@@ -2520,7 +2526,7 @@ dequantize_output(q_y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L236"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L242"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
@@ -2536,7 +2542,7 @@ Dump itself to a file.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L208"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -2552,7 +2558,7 @@ Dump the object as a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L228"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L234"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -2568,7 +2574,7 @@ Dump itself to a string.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1557"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1588"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -2578,7 +2584,7 @@ fit(X: 'Data', y: 'Target', **fit_parameters)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L404"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L410"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit_benchmark`
 
@@ -2605,7 +2611,7 @@ The Concrete ML and float equivalent fitted estimators.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1484"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1515"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_sklearn_model`
 
@@ -2632,7 +2638,7 @@ The FHE-compliant fitted model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L325"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L331"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_sklearn_params`
 
@@ -2654,7 +2660,7 @@ This method is used to instantiate a scikit-learn model using the Concrete ML mo
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L216"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L222"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -2674,7 +2680,7 @@ Load itself from a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L673"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L679"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -2698,7 +2704,7 @@ For some simple models such a linear regression, there is no post-processing ste
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L589"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L595"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -2722,7 +2728,7 @@ Predict values for X, in FHE or in the clear.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1653"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1684"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 
@@ -2732,7 +2738,7 @@ quantize_input(X: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1708"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1739"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `SklearnSGDRegressorMixin`
 
@@ -2740,7 +2746,7 @@ A Mixin class for sklearn SGD regressors with FHE.
 
 This class is used to create a SGD regressor class what can be exported to ONNX using Hummingbird.
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1459"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1490"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -2802,7 +2808,7 @@ Is None if the model is not fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L316"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L322"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_compiled`
 
@@ -2818,7 +2824,7 @@ Check if the model is compiled.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L292"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L298"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_fitted`
 
@@ -2834,7 +2840,7 @@ Check if the model is fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L491"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L497"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -2868,7 +2874,7 @@ Compile the model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1660"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1691"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
@@ -2878,7 +2884,7 @@ dequantize_output(q_y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L236"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L242"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
@@ -2894,7 +2900,7 @@ Dump itself to a file.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L208"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -2910,7 +2916,7 @@ Dump the object as a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L228"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L234"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -2926,7 +2932,7 @@ Dump itself to a string.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1557"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1588"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -2936,7 +2942,7 @@ fit(X: 'Data', y: 'Target', **fit_parameters)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L404"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L410"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit_benchmark`
 
@@ -2963,7 +2969,7 @@ The Concrete ML and float equivalent fitted estimators.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1484"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1515"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_sklearn_model`
 
@@ -2990,7 +2996,7 @@ The FHE-compliant fitted model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L325"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L331"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_sklearn_params`
 
@@ -3012,7 +3018,7 @@ This method is used to instantiate a scikit-learn model using the Concrete ML mo
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L216"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L222"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -3032,7 +3038,7 @@ Load itself from a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L673"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L679"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -3056,7 +3062,7 @@ For some simple models such a linear regression, there is no post-processing ste
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L589"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L595"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -3080,7 +3086,7 @@ Predict values for X, in FHE or in the clear.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1653"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1684"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 
@@ -3090,7 +3096,7 @@ quantize_input(X: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1740"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1771"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `SklearnLinearClassifierMixin`
 
@@ -3100,7 +3106,7 @@ This class is used to create a linear classifier class that inherits from sklear
 
 Additionally, this class adjusts some of the tree-based base class's methods in order to make them compliant with classification workflows.
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1459"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1490"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -3186,7 +3192,7 @@ Using this attribute is deprecated.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L316"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L322"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_compiled`
 
@@ -3202,7 +3208,7 @@ Check if the model is compiled.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L292"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L298"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_fitted`
 
@@ -3218,7 +3224,7 @@ Check if the model is fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L491"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L497"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -3252,7 +3258,7 @@ Compile the model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1761"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1792"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `decision_function`
 
@@ -3276,7 +3282,7 @@ Predict confidence scores.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1660"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1691"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
@@ -3286,7 +3292,7 @@ dequantize_output(q_y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L236"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L242"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
@@ -3302,7 +3308,7 @@ Dump itself to a file.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L208"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -3318,7 +3324,7 @@ Dump the object as a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L228"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L234"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -3334,7 +3340,7 @@ Dump itself to a string.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L750"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L756"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -3344,7 +3350,7 @@ fit(X: 'Data', y: 'Target', **fit_parameters)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L404"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L410"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit_benchmark`
 
@@ -3371,7 +3377,7 @@ The Concrete ML and float equivalent fitted estimators.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1484"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1515"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_sklearn_model`
 
@@ -3398,7 +3404,7 @@ The FHE-compliant fitted model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L325"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L331"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_sklearn_params`
 
@@ -3420,7 +3426,7 @@ This method is used to instantiate a scikit-learn model using the Concrete ML mo
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L216"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L222"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -3440,7 +3446,7 @@ Load itself from a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L789"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L795"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -3450,7 +3456,7 @@ post_processing(y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L780"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L786"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -3463,7 +3469,7 @@ predict(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1783"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1814"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict_proba`
 
@@ -3476,7 +3482,7 @@ predict_proba(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1653"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1684"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 
@@ -3486,7 +3492,7 @@ quantize_input(X: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1789"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1820"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `SklearnSGDClassifierMixin`
 
@@ -3494,7 +3500,7 @@ A Mixin class for sklearn SGD classifiers with FHE.
 
 This class is used to create a SGD classifier class what can be exported to ONNX using Hummingbird.
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1459"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1490"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -3580,7 +3586,7 @@ Using this attribute is deprecated.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L316"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L322"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_compiled`
 
@@ -3596,7 +3602,7 @@ Check if the model is compiled.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L292"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L298"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_fitted`
 
@@ -3612,7 +3618,7 @@ Check if the model is fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L491"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L497"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -3646,7 +3652,7 @@ Compile the model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1761"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1792"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `decision_function`
 
@@ -3670,7 +3676,7 @@ Predict confidence scores.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1660"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1691"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
@@ -3680,7 +3686,7 @@ dequantize_output(q_y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L236"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L242"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
@@ -3696,7 +3702,7 @@ Dump itself to a file.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L208"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -3712,7 +3718,7 @@ Dump the object as a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L228"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L234"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -3728,7 +3734,7 @@ Dump itself to a string.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L750"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L756"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -3738,7 +3744,7 @@ fit(X: 'Data', y: 'Target', **fit_parameters)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L404"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L410"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit_benchmark`
 
@@ -3765,7 +3771,7 @@ The Concrete ML and float equivalent fitted estimators.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1484"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1515"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_sklearn_model`
 
@@ -3792,7 +3798,7 @@ The FHE-compliant fitted model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L325"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L331"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_sklearn_params`
 
@@ -3814,7 +3820,7 @@ This method is used to instantiate a scikit-learn model using the Concrete ML mo
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L216"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L222"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -3834,7 +3840,7 @@ Load itself from a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L789"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L795"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -3844,7 +3850,7 @@ post_processing(y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L780"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L786"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -3857,7 +3863,7 @@ predict(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1783"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1814"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict_proba`
 
@@ -3870,7 +3876,7 @@ predict_proba(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1653"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1684"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 
@@ -3880,7 +3886,7 @@ quantize_input(X: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1822"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1853"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `SklearnKNeighborsMixin`
 
@@ -3888,7 +3894,7 @@ A Mixin class for sklearn KNeighbors models with FHE.
 
 This class inherits from sklearn.base.BaseEstimator in order to have access to scikit-learn's `get_params` and `set_params` methods.
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1836"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1867"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -3948,7 +3954,7 @@ Is None if the model is not fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L316"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L322"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_compiled`
 
@@ -3964,7 +3970,7 @@ Check if the model is compiled.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L292"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L298"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_fitted`
 
@@ -3980,7 +3986,7 @@ Check if the model is fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L491"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L497"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -4014,7 +4020,7 @@ Compile the model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1954"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1988"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
@@ -4024,7 +4030,7 @@ dequantize_output(q_y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L236"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L242"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
@@ -4040,7 +4046,7 @@ Dump itself to a file.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L208"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -4056,7 +4062,7 @@ Dump the object as a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L228"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L234"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -4072,7 +4078,7 @@ Dump itself to a string.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1884"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1918"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -4082,7 +4088,7 @@ fit(X: 'Data', y: 'Target', **fit_parameters)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L404"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L410"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit_benchmark`
 
@@ -4109,7 +4115,7 @@ The Concrete ML and float equivalent fitted estimators.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L325"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L331"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_sklearn_params`
 
@@ -4131,7 +4137,7 @@ This method is used to instantiate a scikit-learn model using the Concrete ML mo
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L2159"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L2193"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_topk_labels`
 
@@ -4155,7 +4161,7 @@ Return the K-nearest labels of each point.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L216"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L222"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -4175,7 +4181,7 @@ Load itself from a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1980"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L2014"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `majority_vote`
 
@@ -4195,7 +4201,7 @@ Determine the most common class among nearest neighborsfor each query.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L2145"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L2179"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -4217,7 +4223,7 @@ For KNN, the de-quantization step is not required. Because \_inference returns t
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L2184"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L2218"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -4230,7 +4236,7 @@ predict(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1947"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1981"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 
@@ -4240,7 +4246,7 @@ quantize_input(X: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L2195"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L2229"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `SklearnKNeighborsClassifierMixin`
 
@@ -4248,7 +4254,7 @@ A Mixin class for sklearn KNeighbors classifiers with FHE.
 
 This class is used to create a KNeighbors classifier class that inherits from SklearnKNeighborsMixin and sklearn.base.ClassifierMixin. By inheriting from sklearn.base.ClassifierMixin, it allows this class to be recognized as a classifier."
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1836"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1867"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -4308,7 +4314,7 @@ Is None if the model is not fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L316"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L322"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_compiled`
 
@@ -4324,7 +4330,7 @@ Check if the model is compiled.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L292"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L298"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_fitted`
 
@@ -4340,7 +4346,7 @@ Check if the model is fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L491"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L497"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -4374,7 +4380,7 @@ Compile the model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1954"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1988"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
@@ -4384,7 +4390,7 @@ dequantize_output(q_y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L236"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L242"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
@@ -4400,7 +4406,7 @@ Dump itself to a file.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L208"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -4416,7 +4422,7 @@ Dump the object as a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L228"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L234"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -4432,7 +4438,7 @@ Dump itself to a string.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1884"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1918"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -4442,7 +4448,7 @@ fit(X: 'Data', y: 'Target', **fit_parameters)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L404"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L410"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit_benchmark`
 
@@ -4469,7 +4475,7 @@ The Concrete ML and float equivalent fitted estimators.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L325"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L331"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_sklearn_params`
 
@@ -4491,7 +4497,7 @@ This method is used to instantiate a scikit-learn model using the Concrete ML mo
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L2159"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L2193"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_topk_labels`
 
@@ -4515,7 +4521,7 @@ Return the K-nearest labels of each point.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L216"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L222"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -4535,7 +4541,7 @@ Load itself from a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1980"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L2014"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `majority_vote`
 
@@ -4555,7 +4561,7 @@ Determine the most common class among nearest neighborsfor each query.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L2145"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L2179"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -4577,7 +4583,7 @@ For KNN, the de-quantization step is not required. Because \_inference returns t
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L2184"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L2218"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -4590,7 +4596,7 @@ predict(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1947"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1981"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 

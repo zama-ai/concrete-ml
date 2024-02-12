@@ -15,7 +15,7 @@ Implements the conversion of a tree model to a numpy function.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L42"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L46"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_onnx_model`
 
@@ -38,7 +38,7 @@ Create ONNX model with Hummingbird convert method.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L74"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L78"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `workaround_squeeze_node_xgboost`
 
@@ -56,7 +56,7 @@ FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2778 The squeeze o
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L99"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L103"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `assert_add_node_and_constant_in_xgboost_regressor_graph`
 
@@ -72,12 +72,15 @@ Assert if an Add node with a specific constant exists in the ONNX graph.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L135"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L139"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `add_transpose_after_last_node`
 
 ```python
-add_transpose_after_last_node(onnx_model: ModelProto)
+add_transpose_after_last_node(
+    onnx_model: ModelProto,
+    fhe_ensembling: bool = False
+)
 ```
 
 Add transpose after last node.
@@ -85,10 +88,11 @@ Add transpose after last node.
 **Args:**
 
 - <b>`onnx_model`</b> (onnx.ModelProto):  The ONNX model.
+- <b>`fhe_ensembling`</b> (bool):  Determines whether the sum of the trees' outputs is computed in FHE.  Default to False.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L156"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L170"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `preprocess_tree_predictions`
 
@@ -112,7 +116,7 @@ Apply post-processing from the graph.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L206"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L220"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `tree_onnx_graph_preprocessing`
 
@@ -120,7 +124,8 @@ ______________________________________________________________________
 tree_onnx_graph_preprocessing(
     onnx_model: ModelProto,
     framework: str,
-    expected_number_of_outputs: int
+    expected_number_of_outputs: int,
+    fhe_ensembling: bool = False
 )
 ```
 
@@ -132,10 +137,11 @@ Apply pre-processing onto the ONNX graph.
 - <b>`framework`</b> (str):  The framework from which the ONNX model is generated.
 - <b>`(options`</b>:  'xgboost', 'sklearn')
 - <b>`expected_number_of_outputs`</b> (int):  The expected number of outputs in the ONNX model.
+- <b>`fhe_ensembling`</b> (bool):  Determines whether the sum of the trees' outputs is computed in FHE.  Default to False.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L261"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L283"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `tree_values_preprocessing`
 
@@ -162,7 +168,7 @@ Pre-process tree values.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L305"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L329"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `tree_to_numpy`
 
@@ -172,6 +178,7 @@ tree_to_numpy(
     x: ndarray,
     framework: str,
     use_rounding: bool = True,
+    fhe_ensembling: bool = False,
     output_n_bits: int = 8
 ) → Tuple[Callable, List[UniformQuantizer], ModelProto]
 ```
@@ -182,7 +189,8 @@ Convert the tree inference to a numpy functions using Hummingbird.
 
 - <b>`model`</b> (Callable):  The tree model to convert.
 - <b>`x`</b> (numpy.ndarray):  The input data.
-- <b>`use_rounding`</b> (bool):  This parameter is exclusively used to tree-based models.  It determines whether the rounding feature is enabled or disabled.
+- <b>`use_rounding`</b> (bool):  Determines whether the rounding feature is enabled or disabled.  Default to True.
+- <b>`fhe_ensembling`</b> (bool):  Determines whether the sum of the trees' outputs is computed in FHE.  Default to False.
 - <b>`framework`</b> (str):  The framework from which the ONNX model is generated.
 - <b>`(options`</b>:  'xgboost', 'sklearn')
 - <b>`output_n_bits`</b> (int):  The number of bits of the output. Default to 8.
