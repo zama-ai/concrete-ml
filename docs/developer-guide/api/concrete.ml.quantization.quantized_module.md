@@ -216,7 +216,7 @@ forward(
     *x: ndarray,
     fhe: Union[FheMode, str] = <FheMode.DISABLE: 'disable'>,
     debug: bool = False
-) → Union[ndarray, Tuple[ndarray, ], Tuple[Union[Tuple[ndarray, ], ndarray], Dict[str, Dict[Union[int, str], Union[ndarray, QuantizedArray, NoneType]]]]]
+) → Union[ndarray, Tuple[ndarray, ], Tuple[Union[Tuple[ndarray, ], ndarray], Dict[str, Dict[Union[int, str], Union[ndarray, QuantizedArray, NoneType, bool, int, float]]]]]
 ```
 
 Forward pass with numpy function only on floating points.
