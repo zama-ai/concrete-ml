@@ -21,9 +21,9 @@
 
 **Concrete ML** is a Privacy-Preserving Machine Learning (PPML) open-source set of tools built on top of [Concrete](https://github.com/zama-ai/concrete) by [Zama](https://github.com/zama-ai).
 
-It simplifies the use of fully homomorphic encryption (FHE) for data scientists so that they can automatically turn machine learning models into their homomorphic equivalent, and use it without knowledge of cryptography.
+It simplifies the use of fully homomorphic encryption (FHE) for data scientists so that they can automatically turn machine learning models into their homomorphic equivalents, and use them without knowledge of cryptography.
 
-Concrete ML is designed with ease of use in mind. Data scientists can use models with APIs that are close to the frameworks they use, while additional options to those models allow them to run inference or training on encrypted data with FHE. Notably, the Concrete ML model classes are similar to those in scikit-learn and it is also possible to convert PyTorch models to FHE.
+Concrete ML is designed with ease of use in mind. Data scientists can use models with APIs that are close to the frameworks they already know well, while additional options to those models allow them to run inference or training on encrypted data with FHE. The Concrete ML model classes are similar to those in scikit-learn and it is also possible to convert PyTorch models to FHE.
 <br></br>
 
 ### Main features
@@ -40,6 +40,10 @@ By leveraging FHE, Concrete ML can unlock a myriad of new use cases for machine 
 
 - **Healthcare data analysis**: Improve patient care while maintaining privacy by allowing secure, confidential data sharing between healthcare providers.
 - **Financial services**: Facilitate secure financial data analysis for risk management and fraud detection, keeping client information encrypted and safe.
+- **Ad campaign tracking**: Create targeted advertising and campaign insights in a post-cookie era, ensuring user privacy through encrypted data analysis.
+- **Industries:** Enable predictive maintenance in the cloud while keeping sensitive data confidential, enhancing efficiency and data security.
+- **Biometrics:** Give the ability to create user authentication applications without having to reveal their identities.
+- **Government:** Enable governments to create digitized versions of their services without having to trust cloud providers.
 
 *See more use cases in the list of [demos](#demos).*
 <br></br>
