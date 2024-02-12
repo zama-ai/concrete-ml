@@ -239,7 +239,7 @@ __init__(input_output, activation_function)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L201"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L202"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -258,13 +258,13 @@ the output of the NN
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L220"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L222"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `CNNInvalid`
 
 Torch CNN model for the tests.
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L223"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L225"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -274,7 +274,7 @@ __init__(activation_function, groups)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L239"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L241"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -293,13 +293,13 @@ the output of the NN
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L261"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L263"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `CNNGrouped`
 
 Torch CNN model with grouped convolution for compile torch tests.
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L264"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L266"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -309,7 +309,7 @@ __init__(input_output, activation_function, groups)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L275"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L277"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -328,7 +328,7 @@ the output of the NN
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L293"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L295"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `NetWithLoops`
 
@@ -336,7 +336,7 @@ Torch model, where we reuse some elements in a loop.
 
 Torch model, where we reuse some elements in a loop in the forward and don't expect the user to define these elements in a particular order.
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L300"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L302"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -346,7 +346,7 @@ __init__(activation_function, input_output, n_fc_layers)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L309"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L311"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -365,13 +365,13 @@ the output of the NN
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L326"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L328"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `MultiInputNN`
 
 Torch model to test multiple inputs forward.
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L329"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L331"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -381,7 +381,7 @@ __init__(input_output, activation_function)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L333"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L335"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -401,13 +401,13 @@ the output of the NN
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L346"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L348"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `MultiInputNNConfigurable`
 
 Torch model to test multiple inputs forward.
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L352"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L354"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -417,7 +417,7 @@ __init__(use_conv, use_qat, input_output, n_bits)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L362"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L364"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -437,13 +437,13 @@ the output of the NN
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L377"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L379"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `MultiInputNNDifferentSize`
 
 Torch model to test multiple inputs with different shape in the forward pass.
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L380"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L382"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -458,7 +458,7 @@ __init__(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L412"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L414"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -478,13 +478,13 @@ The output of the NN.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L432"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L434"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `BranchingModule`
 
 Torch model with some branching and skip connections.
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L436"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L438"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -494,7 +494,7 @@ __init__(input_output, activation_function)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L441"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L443"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -513,13 +513,13 @@ the output of the NN
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L453"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L455"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `BranchingGemmModule`
 
 Torch model with some branching and skip connections.
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L456"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L458"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -529,7 +529,7 @@ __init__(input_output, activation_function)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L462"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L464"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -548,13 +548,13 @@ the output of the NN
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L474"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L476"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `UnivariateModule`
 
 Torch model that calls univariate and shape functions of torch.
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L478"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L480"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -564,7 +564,7 @@ __init__(input_output, activation_function)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L483"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L485"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -583,13 +583,13 @@ the output of the NN
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L499"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L501"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `StepActivationModule`
 
 Torch model implements a step function that needs Greater, Cast and Where.
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L503"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L505"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -599,7 +599,7 @@ __init__(input_output, activation_function)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L508"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L510"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -618,13 +618,13 @@ the output of the NN
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L539"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L541"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `NetWithConcatUnsqueeze`
 
 Torch model to test the concat and unsqueeze operators.
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L542"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L544"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -634,7 +634,7 @@ __init__(activation_function, input_output, n_fc_layers)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L551"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L553"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -653,13 +653,13 @@ the output of the NN
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L570"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L572"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `MultiOpOnSingleInputConvNN`
 
 Network that applies two quantized operations on a single input.
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L573"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L575"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -669,7 +669,7 @@ __init__(can_remove_input_tlu: bool)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L579"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L581"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -688,7 +688,7 @@ the output of the NN
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L599"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L601"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `FCSeq`
 
@@ -696,7 +696,7 @@ Torch model that should generate MatMul->Add ONNX patterns.
 
 This network generates additions with a constant scalar
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L605"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L607"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -706,7 +706,7 @@ __init__(input_output, act)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L623"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L625"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -725,7 +725,7 @@ the output of the NN
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L637"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L639"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `FCSeqAddBiasVec`
 
@@ -733,7 +733,7 @@ Torch model that should generate MatMul->Add ONNX patterns.
 
 This network tests the addition with a constant vector
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L643"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L645"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -743,7 +743,7 @@ __init__(input_output, act)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L661"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L663"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -762,13 +762,13 @@ the output of the NN
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L675"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L677"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `TinyCNN`
 
 A very small CNN.
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L678"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L680"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -785,7 +785,7 @@ Create the tiny CNN with two conv layers.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L693"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L695"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -804,7 +804,7 @@ the output of the NN
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L707"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L709"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `TinyQATCNN`
 
@@ -812,7 +812,7 @@ A very small QAT CNN to classify the sklearn digits data-set.
 
 This class also allows pruning to a maximum of 10 active neurons, which should help keep the accumulator bit-width low.
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L714"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L716"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -840,7 +840,7 @@ Construct the CNN with a configurable number of classes.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L825"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L827"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -859,7 +859,7 @@ the output of the NN
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L793"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L795"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `toggle_pruning`
 
@@ -875,13 +875,13 @@ Enable or remove pruning.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L851"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L853"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `SimpleQAT`
 
 Torch model implements a step function that needs Greater, Cast and Where.
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L854"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L856"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -891,7 +891,7 @@ __init__(input_output, activation_function, n_bits=2, disable_bit_check=False)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L890"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L892"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -910,13 +910,13 @@ the output of the NN
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L934"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L936"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QATTestModule`
 
 Torch model that implements a simple non-uniform quantizer.
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L937"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L939"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -926,7 +926,7 @@ __init__(activation_function)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L942"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L944"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -945,13 +945,13 @@ the output of the NN
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L972"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L974"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `SingleMixNet`
 
 Torch model that with a single conv layer that produces the output, e.g., a blur filter.
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L977"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L979"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -961,7 +961,7 @@ __init__(use_conv, use_qat, inp_size, n_bits)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1009"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1011"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -980,7 +980,7 @@ the output of the NN
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1022"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1024"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `DoubleQuantQATMixNet`
 
@@ -988,7 +988,7 @@ Torch model that with two different quantizers on the input.
 
 Used to test that it keeps the input TLU.
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1028"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1030"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -998,7 +998,7 @@ __init__(use_conv, use_qat, inp_size, n_bits)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1046"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1048"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -1017,13 +1017,13 @@ the output of the NN
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1061"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1063"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `TorchSum`
 
 Torch model to test the ReduceSum ONNX operator in a leveled circuit.
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1064"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1066"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -1041,7 +1041,7 @@ Initialize the module.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1082"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1084"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -1061,13 +1061,13 @@ Forward pass.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1103"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1105"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `NetWithConstantsFoldedBeforeOps`
 
 Torch QAT model that does not quantize the inputs.
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1106"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1108"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -1082,7 +1082,7 @@ __init__(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1133"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1135"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -1102,13 +1102,13 @@ Forward pass.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1152"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1154"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `ShapeOperationsNet`
 
 Torch QAT model that reshapes the input.
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1155"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1157"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -1118,7 +1118,7 @@ __init__(is_qat)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1161"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1163"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -1138,13 +1138,13 @@ Forward pass.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1201"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1203"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `PaddingNet`
 
 Torch QAT model that applies various padding patterns.
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1204"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1206"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -1154,7 +1154,7 @@ __init__()
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1210"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1212"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -1174,13 +1174,13 @@ Forward pass.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1237"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1239"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantCustomModel`
 
 A small quantized network with Brevitas, trained on make_classification.
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1240"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1242"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -1210,7 +1210,7 @@ Quantized Torch Model with Brevitas.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1299"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1301"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -1230,13 +1230,13 @@ Forward pass.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1317"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1319"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `TorchCustomModel`
 
 A small network with Brevitas, trained on make_classification.
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1320"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1322"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -1254,7 +1254,7 @@ Torch Model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1333"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1335"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -1274,13 +1274,13 @@ Forward pass.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1348"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1350"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `ConcatFancyIndexing`
 
 Concat with fancy indexing.
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1351"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1353"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -1306,7 +1306,7 @@ Torch Model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1379"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1381"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -1326,13 +1326,13 @@ Forward pass.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1405"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1407"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `PartialQATModel`
 
 A model with a QAT Module.
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1408"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1410"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -1342,7 +1342,7 @@ __init__(input_shape: int, output_shape: int, n_bits: int)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1414"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1416"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -1362,13 +1362,13 @@ Forward pass.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1427"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1429"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `EncryptedMatrixMultiplicationModel`
 
 PyTorch module for performing matrix multiplication between two encrypted values.
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1431"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1433"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -1378,7 +1378,7 @@ __init__(input_output, activation_function)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1435"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1437"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -1398,13 +1398,13 @@ Forward function for matrix multiplication.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1454"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1456"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `ManualLogisticRegressionTraining`
 
 PyTorch module for performing SGD training.
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1457"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1459"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -1414,7 +1414,7 @@ __init__(learning_rate=0.1)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1461"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1463"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -1437,7 +1437,7 @@ Forward function for matrix multiplication.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1483"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1485"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -1459,13 +1459,13 @@ Predicts based on weights and bias as inputs.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1506"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1508"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `AddNet`
 
 Torch model that performs a simple addition between two inputs.
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1509"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1511"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -1475,7 +1475,7 @@ __init__(use_conv, use_qat, input_output, n_bits)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1513"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1515"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -1495,13 +1495,13 @@ Result of adding x and y.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1527"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1529"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `ExpandModel`
 
 Minimalist network that expands the input tensor to a larger size.
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1530"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1532"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -1511,7 +1511,7 @@ __init__(is_qat)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/torch_models.py#L1536"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1538"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -1528,3 +1528,39 @@ Expand the input tensor to the target size.
 **Returns:**
 
 - <b>`torch.Tensor`</b>:  Expanded tensor.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1553"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>class</kbd> `Conv1dModel`
+
+Small model that uses a 1D convolution operator.
+
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1556"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `__init__`
+
+```python
+__init__(input_output, activation_function) → None
+```
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1564"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `forward`
+
+```python
+forward(x)
+```
+
+Forward pass.
+
+**Args:**
+
+- <b>`x`</b> (torch.Tensor):  The model's input.
+
+**Returns:**
+
+- <b>`torch.Tensor`</b>:  The model's output.

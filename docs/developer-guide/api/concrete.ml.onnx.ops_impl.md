@@ -1326,17 +1326,19 @@ See: https://github.com/onnx/onnx/blob/main/docs/Operators.md#Conv
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1309"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1337"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_avgpool`
 
 ```python
 numpy_avgpool(
     x: ndarray,
-    ceil_mode: int,
     kernel_shape: Tuple[int, ],
-    pads: Tuple[int, ] = None,
-    strides: Tuple[int, ] = None
+    auto_pad: str = 'NOTSET',
+    ceil_mode: int = 0,
+    count_include_pad: int = 1,
+    pads: Optional[Tuple[int, ]] = None,
+    strides: Optional[Tuple[int, ]] = None
 ) → Tuple[ndarray]
 ```
 
@@ -1348,24 +1350,22 @@ See: https://github.com/onnx/onnx/blob/main/docs/Operators.md#AveragePool
 
 **Args:**
 
-- <b>`x`</b> (numpy.ndarray):  input data (many dtypes are supported). Shape is N x C x H x W for 2d
-- <b>`ceil_mode`</b> (int):  ONNX rounding parameter, expected 0 (torch style dimension computation)
-- <b>`kernel_shape`</b> (Tuple\[int, ...\]):  shape of the kernel. Should have 2 elements for 2d conv
-- <b>`pads`</b> (Tuple\[int, ...\]):  padding in ONNX format (begin, end) on each axis
-- <b>`strides`</b> (Tuple\[int, ...\]):  stride of the convolution on each axis
+- <b>`x`</b> (numpy.ndarray):  Input data of shape (N, C, H, W), as only 2D inputs are currently  supported.
+- <b>`kernel_shape`</b> (Tuple\[int, ...\]):  The size of the kernel along each axis. Currently, only 2D  kernels are supported.
+- <b>`auto_pad`</b> (str):  Only the default "NOTSET" value is currently supported, which means  explicit padding is used.
+- <b>`ceil_mode`</b> (int):  Whether to use ONNX's ceil (1) or floor (0, the default) to compute the  output shape.
+- <b>`count_include_pad`</b> (int):  Whether include pad pixels when calculating values for the edges.  Currently, setting this parameter to 0 is not supported in Concrete ML.
+- <b>`pads`</b> (Tuple\[int, ...\]):  Padding for the beginning and ending along each spatial axis.  Expected format is \[x1_begin, x2_begin...x1_end, x2_end, ...\] where xi_begin (resp.  xi_end) is the number of pixels added at the beginning (resp. end) of axis `i`.
+- <b>`strides`</b> (Tuple\[int, ...\]):  Stride along each spatial axis. If not present, the stride  defaults to 1 along each spatial axis.
 
 **Returns:**
 
 - <b>`res`</b> (numpy.ndarray):  a tensor of size (N x InChannels x OutHeight x OutWidth).
 - <b>`See https`</b>: //pytorch.org/docs/stable/generated/torch.nn.AvgPool2d.html
 
-**Raises:**
-
-- <b>`AssertionError`</b>:  if the pooling arguments are wrong
-
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1376"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1432"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_maxpool`
 
@@ -1406,7 +1406,7 @@ See: https://github.com/onnx/onnx/blob/main/docs/Operators.md#MaxPool
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1479"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1535"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_cast`
 
@@ -1416,9 +1416,7 @@ numpy_cast(data: ndarray, to: int) → Tuple[ndarray]
 
 Execute ONNX cast in Numpy.
 
-For traced values during compilation, it supports only booleans, which are converted to float. For raw values (used in constant folding or shape computations), any cast is allowed.
-
-See: https://github.com/onnx/onnx/blob/main/docs/Operators.md#Cast
+This function supports casting to booleans, floats, and double for traced values, converting them accordingly. For raw values (used in constant folding or shape computations), any cast is allowed. See: https://github.com/onnx/onnx/blob/main/docs/Operators.md#Cast
 
 **Args:**
 
@@ -1431,7 +1429,7 @@ See: https://github.com/onnx/onnx/blob/main/docs/Operators.md#Cast
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1504"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1565"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_batchnorm`
 
@@ -1473,7 +1471,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#BatchNormalization-
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1575"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1636"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_flatten`
 
@@ -1496,7 +1494,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Flatten-13.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1593"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1654"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_or`
 
@@ -1519,7 +1517,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Or-7
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1611"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1672"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_or_float`
 
@@ -1542,7 +1540,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Or-7
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1629"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1690"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_round`
 
@@ -1564,7 +1562,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Round-11 Remark tha
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1646"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1707"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_pow`
 
@@ -1587,7 +1585,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Pow-13
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1772"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1833"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_floor`
 
@@ -1609,7 +1607,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Floor-1
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1786"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1847"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_max`
 
@@ -1634,7 +1632,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Max-1
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1803"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1864"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_min`
 
@@ -1659,7 +1657,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Max-1
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1820"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1881"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_sign`
 
@@ -1681,7 +1679,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Sign-9
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1834"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1895"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_neg`
 
@@ -1703,7 +1701,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Sign-9
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1848"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1909"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_concatenate`
 
@@ -1723,6 +1721,43 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#concat-13
 **Returns:**
 
 - <b>`Tuple[numpy.ndarray]`</b>:  Output tensor.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L2133"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `numpy_unfold`
+
+```python
+numpy_unfold(
+    x: ndarray,
+    kernel_shape: Tuple[int, ],
+    pads: Tuple[int, ] = None,
+    strides: Tuple[int, ] = None
+) → Tuple[ndarray]
+```
+
+Compute Unfold using Torch.
+
+Currently supports 2d Unfold with torch semantics. This function is ONNX compatible.
+
+See: https://github.com/onnx/onnx/blob/main/docs/Operators.md
+
+**Args:**
+
+- <b>`x`</b> (numpy.ndarray):  input data (many dtypes are supported). Shape is N x C x H x W for 2d
+- <b>`kernel_shape`</b> (Tuple\[int, ...\]):  shape of the kernel. Should have 2 elements for 2d conv
+- <b>`pads`</b> (Tuple\[int, ...\]):  padding in ONNX format (begin, end) on each axis
+- <b>`strides`</b> (Tuple\[int, ...\]):  stride of the convolution on each axis
+
+**Returns:**
+
+- <b>`res`</b> (numpy.ndarray):  a tensor of size (N x InChannels x OutHeight * OutWidth).
+- <b>`See https`</b>: //pytorch.org/docs/stable/generated/torch.nn.Unfold.html
+
+**Raises:**
+
+- <b>`AssertionError`</b>:  if the unfold arguments are wrong
 
 ______________________________________________________________________
 
