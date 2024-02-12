@@ -26,7 +26,7 @@ on:
 # the continuous-integration.yaml workflow currently cancels all workflows from the same group that
 # are not triggered by a push targeting main, which is the case in the release process
 concurrency:
-  group: "Release"
+  group: "Release ${{ github.ref }}"
   cancel-in-progress: true
 
 env:

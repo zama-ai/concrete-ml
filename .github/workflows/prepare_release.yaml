@@ -7,7 +7,7 @@ on:
         required: true
 
 concurrency:
-  group: "Prepare release"
+  group: "Prepare Release ${{ github.event.inputs.version }}"
   cancel-in-progress: true
 
 env:
