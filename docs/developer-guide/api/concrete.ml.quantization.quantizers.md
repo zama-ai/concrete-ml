@@ -789,7 +789,7 @@ See https://arxiv.org/abs/1712.05877.
 ```python
 __init__(
     n_bits,
-    values: 'Optional[ndarray]',
+    values: 'Union[None, float, int, ndarray]',
     value_is_float: 'bool' = True,
     options: 'Optional[QuantizationOptions]' = None,
     stats: 'Optional[MinMaxQuantizationStats]' = None,
@@ -800,23 +800,23 @@ __init__(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L1024"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L1044"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequant`
 
 ```python
-dequant() → ndarray
+dequant() → Union[ndarray, Tracer]
 ```
 
 De-quantize self.qvalues.
 
 **Returns:**
 
-- <b>`numpy.ndarray`</b>:  De-quantized values.
+- <b>`Union[numpy.ndarray, Tracer]`</b>:  De-quantized values.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L980"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L990"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
@@ -832,7 +832,7 @@ Dump itself to a file.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L940"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L950"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -848,7 +848,7 @@ Dump itself to a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L972"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L982"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -864,7 +864,7 @@ Dump itself to a string.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L954"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L964"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `load_dict`
 
@@ -884,56 +884,58 @@ Load itself from a string.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L1014"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L1034"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quant`
 
 ```python
-quant() → Optional[ndarray]
+quant() → Union[ndarray, Tracer]
 ```
 
 Quantize self.values.
 
 **Returns:**
 
-- <b>`numpy.ndarray`</b>:  Quantized values.
+- <b>`Union[numpy.ndarray, Tracer]`</b>:  Quantized values.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L1001"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L1015"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `update_quantized_values`
 
 ```python
-update_quantized_values(qvalues: 'ndarray') → ndarray
+update_quantized_values(
+    qvalues: 'Union[ndarray, Tracer]'
+) → Union[ndarray, Tracer]
 ```
 
 Update qvalues to get their corresponding values using the related quantized parameters.
 
 **Args:**
 
-- <b>`qvalues`</b> (numpy.ndarray):  Values to replace self.qvalues
+- <b>`qvalues`</b> (Union\[numpy.ndarray, Tracer\]):  Values to replace self.qvalues
 
 **Returns:**
 
-- <b>`values`</b> (numpy.ndarray):  Corresponding values
+- <b>`values`</b> (Union\[numpy.ndarray, Tracer\]):  Corresponding values
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L988"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L998"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `update_values`
 
 ```python
-update_values(values: 'ndarray') → ndarray
+update_values(values: 'Union[ndarray, Tracer]') → Union[ndarray, Tracer]
 ```
 
 Update values to get their corresponding qvalues using the related quantized parameters.
 
 **Args:**
 
-- <b>`values`</b> (numpy.ndarray):  Values to replace self.values
+- <b>`values`</b> (Union\[numpy.ndarray, Tracer\]):  Values to replace self.values
 
 **Returns:**
 
-- <b>`qvalues`</b> (numpy.ndarray):  Corresponding qvalues
+- <b>`qvalues`</b> (Union\[numpy.ndarray, Tracer\]):  Corresponding qvalues
