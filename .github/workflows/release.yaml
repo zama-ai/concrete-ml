@@ -139,13 +139,19 @@ jobs:
           ref: ${{ github.ref }}
           token: ${{ secrets.BOT_TOKEN }}
 
+      - name: Set up Python
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c
+        id: setup-python
+        with:
+          python-version: 3.8
+
       - name: Install dependencies
         run: |
           # We need to freeze docker.io because its update requires user input
           sudo apt update
           sudo apt-mark hold docker.io
 
-          ./script/make_utils/setup_os_deps.sh  --linux-install-python
+          ./script/make_utils/setup_os_deps.sh
           make setup_env
 
       - name: Check version coherence and apidocs
