@@ -66,7 +66,9 @@ def check_content_for_dead_links(content: str, file_path: Path) -> List[str]:
             continue
 
         if not link_path.exists():
-            errors.append(f"{file_path} contains a link to {link_path} " "that can't be found")
+            errors.append(
+                f"{file_path} contains a link to file '{link_path.resolve()}' that can't be found"
+            )
     return errors
 
 
