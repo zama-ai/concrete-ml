@@ -511,6 +511,8 @@ jobs:
               - tests/seeding/test_seeding.py
             docs:
               - docs/**
+              - '*.md'
+              - LICENSE
             use_cases:
               - use_case_examples/**
             codeblocks:
