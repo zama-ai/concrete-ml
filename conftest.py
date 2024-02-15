@@ -1,4 +1,5 @@
 """PyTest configuration file."""
+import hashlib
 import json
 import random
 import re
@@ -47,15 +48,6 @@ def pytest_addoption(parser):
         default=None,
         type=str,
         help="To dump pytest-cov term report to a text file.",
-    )
-
-    parser.addoption(
-        "--forcing_random_seed",
-        action="store",
-        default=None,
-        type=int,
-        help="To force the seed of each and every unit test, to be able to "
-        "reproduce a particular issue.",
     )
 
     parser.addoption(
@@ -176,28 +168,51 @@ def function_to_seed_torch(seed):
 
 
 @pytest.fixture(autouse=True)
-def autoseeding_of_everything(record_property, request):
+def autoseeding_of_everything(request):
     """Seed everything we can, for determinism."""
-    main_seed = request.config.getoption("--forcing_random_seed", default=None)
+    randomly_seed = request.config.getoption("--randomly-seed", default=None)
 
-    if main_seed is None:
-        main_seed = random.randint(0, 2**64 - 1)
+    if randomly_seed is None:
+        raise ValueError("why isn't --randomly-seed set?")
 
-    seed = main_seed
-    record_property("main seed", main_seed)
+    # We need to find the relative file path of the test file. It does not look native with request,
+    # so we recompute it.
+    absolute_path = str(request.fspath)
 
-    # Python
-    random.seed(seed)
-    print("\nForcing seed to random.seed to ", seed)
+    assert (
+        absolute_path.count("concrete-ml/test") == 1
+    ), f"the absolute path is not as expected {absolute_path=}"
+
+    relative_file_path = absolute_path[
+        absolute_path.find("concrete-ml/test") + len("concrete-ml/") :
+    ]
+
+    # Derive the sub_seed from the randomly_seed and the test name
+    derivation_string = f"{relative_file_path} # {str(request.node.name)} # {randomly_seed}"
+
+    hash_object = hashlib.sha256()
+    hash_object.update(b"{derivation_string}")
+    hash_object.digest()
+    hash_value = hash_object.hexdigest()
+
+    sub_seed = int(hash_value, 16) % 2**64
+
+    print(f"\nUsing {randomly_seed=}\nUsing {derivation_string=}\nUsing {sub_seed=}")
+
+    # And then, do everything per this sub_seed
+    seed = sub_seed
+
     print(
-        f"\nRelaunch the tests with --forcing_random_seed {seed} "
-        + "--randomly-dont-reset-seed to reproduce. Remark that adding --randomly-seed=... "
-        + "is needed when the testcase uses randoms in pytest parameters"
+        f"\nRelaunch the tests with --randomly_seed {randomly_seed} "
+        + "--randomly-dont-reset-seed to reproduce."
     )
     print(
         "Remark that potentially, any option used in the pytest call may have an impact so in "
         + "case of problem to reproduce, you may want to have a look to `make pytest` options"
     )
+
+    # Python
+    random.seed(seed)
 
     # Numpy
     seed += 1
@@ -206,7 +221,8 @@ def autoseeding_of_everything(record_property, request):
     # Seed torch
     seed += 1
     function_to_seed_torch(seed)
-    return {"main seed": main_seed}
+
+    return {"randomly seed": randomly_seed}
 
 
 @pytest.fixture

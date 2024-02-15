@@ -40,32 +40,25 @@ set -e
 diff "${OUTPUT_DIRECTORY}/one.txt" "${OUTPUT_DIRECTORY}/two.txt" -I "passed in"
 echo "Successful determinism check"
 
-# Now, check --forcing_random_seed, i.e., check that one can reproduce conditions of a bug in a single file
-# and test without having to relaunch the full pytest, by just picking the right --forcing_random_seed
+# Now, check that one can reproduce conditions of a bug in a single file
+# and test without having to relaunch the full pytest
 
 # All lines that start with "tests/seeding/test_seeding.py::" represent a test that passed
 LIST_FILES=$(grep "tests/seeding/test_seeding.py::" "${OUTPUT_DIRECTORY}/one.txt")
-LIST_SEED=()
-while IFS='' read -r line; do LIST_SEED+=("$line"); done < <(grep "forcing_random_seed" "${OUTPUT_DIRECTORY}/one.txt" | sed -e "s@Relaunch the tests with --forcing_random_seed @@" | sed -e "s@ --randomly-dont-reset-seed to reproduce. Remark that adding --randomly-seed=... is needed when the testcase uses randoms in pytest parameters@@" )
 
 WHICH=0
 echo "" > "${OUTPUT_DIRECTORY}/three.txt"
 for x in $LIST_FILES
 do
-    # For several tests, we need to add $RANDOMLY_SEED
-    EXTRA_OPTION=""
-    if grep -q "tests/seeding/test_seeding.py::test_seed_needing_randomly_seed_arg" <<< "$x"
-    then
-        EXTRA_OPTION=" --randomly-seed=$RANDOMLY_SEED"
-    fi
+    EXTRA_OPTION=" --randomly-seed=$RANDOMLY_SEED"
 
-    echo "poetry run pytest $x -xsvv $EXTRA_OPTION --randomly-dont-reset-seed --forcing_random_seed " "${LIST_SEED[WHICH]}"
+    echo "poetry run pytest $x -xsvv $EXTRA_OPTION --randomly-dont-reset-seed"
 
     # Only take lines after the header, i.e., after line with 'collecting'
     # SC2086 is about double quote to prevent globbing and word splitting, but here, it makes that we have
     # an empty arg in pytest, which is considered as "do pytest for all files"
     # shellcheck disable=SC2086
-    poetry run pytest "$x" -xsvv $EXTRA_OPTION --randomly-dont-reset-seed --forcing_random_seed "${LIST_SEED[WHICH]}" | sed -n -e '/collecting/,$p' | grep -v collecting | grep -v "collected" | grep -v "passed in" | grep -v "PASSED" >> "${OUTPUT_DIRECTORY}/three.txt"
+    poetry run pytest "$x" -xsvv $EXTRA_OPTION --randomly-dont-reset-seed | sed -n -e '/collecting/,$p' | grep -v collecting | grep -v "collected" | grep -v "passed in" | grep -v "PASSED" >> "${OUTPUT_DIRECTORY}/three.txt"
 
     ((WHICH+=1))
 done
@@ -77,4 +70,4 @@ echo ""
 echo "diff:"
 echo ""
 diff -u "${OUTPUT_DIRECTORY}/one.modified.txt" "${OUTPUT_DIRECTORY}/three.txt" --ignore-all-space --ignore-blank-lines --ignore-space-change
-echo "Successful --forcing_random_seed check"
+echo "Successful final check"
