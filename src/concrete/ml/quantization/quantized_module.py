@@ -47,7 +47,7 @@ def _raise_qat_import_error(bad_qat_ops: List[Tuple[str, str]]):
         "found during calibration do not appear to be quantized. \n\n"
         + "\n".join(
             map(
-                lambda info: f"* Tensor {info[0]}, input of an {info[1]} operation",
+                lambda info: f"* Tensor {info[0]}, input of a {info[1]} operation",
                 bad_qat_ops,
             )
         )
