@@ -170,6 +170,20 @@ def function_to_seed_torch(seed):
 @pytest.fixture(autouse=True)
 def autoseeding_of_everything(request):
     """Seed everything we can, for determinism."""
+
+    # Explanations on the seeding system:
+    #
+    # The used seed (called sub_seed below) for a test of a function f_i (eg,
+    # test_compute_bits_precision) on a configuration c_j (eg, x0-8) of a test file t_k (eg,
+    # tests/common/test_utils.py) is computed as some hash(f_i, c_j, t_k, randomly-seed)
+    #
+    # It allows to reproduce bugs we would have had on a full pytest execution on a configuration
+    # (f_i, c_j, t_k) by calling pytest on this single configuration with the --randomly-seed
+    # parameter and no other arguments.
+    #
+    # In particular, it's resistant to crashes which would prevent the few prints below in this
+    # function, which details some seeding information
+
     randomly_seed = request.config.getoption("--randomly-seed", default=None)
 
     if randomly_seed is None:
@@ -179,9 +193,11 @@ def autoseeding_of_everything(request):
     # so we recompute it.
     absolute_path = str(request.fspath)
 
+    # This avoids unexpected test paths with several "concrete-ml/tests" occurrences, which may
+    # happen only if the developer cloned with a very strange path
     assert (
         absolute_path.count("concrete-ml/test") == 1
-    ), f"the absolute path is not as expected {absolute_path=}"
+    ), f"{absolute_path=} has several 'concrete-ml/tests' occurences, which is unexpected"
 
     relative_file_path = absolute_path[
         absolute_path.find("concrete-ml/test") + len("concrete-ml/") :
@@ -195,6 +211,8 @@ def autoseeding_of_everything(request):
     hash_object.digest()
     hash_value = hash_object.hexdigest()
 
+    # The hash is a SHA256, so 256b. And random.seed wants a 64b seed and numpy.random.seed wants a
+    # 32b seed. So we reduce a bit
     sub_seed = int(hash_value, 16) % 2**64
 
     print(f"\nUsing {randomly_seed=}\nUsing {derivation_string=}\nUsing {sub_seed=}")
