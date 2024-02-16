@@ -46,6 +46,7 @@ INPUT_OUTPUT_FEATURE = [1, 2, 3]
 @pytest.mark.parametrize("n_bits", [2])
 @pytest.mark.parametrize("simulate", [True, False])
 @pytest.mark.parametrize("verbose", [True, False])
+@pytest.mark.parametrize("compress_evaluation_keys", [True, False])
 def test_quantized_module_compilation(
     input_output_feature,
     model,
@@ -55,6 +56,7 @@ def test_quantized_module_compilation(
     simulate,
     check_graph_input_has_no_tlu,
     verbose,
+    compress_evaluation_keys,
     check_is_good_execution_for_cml_vs_circuit,
 ):
     """Test a neural network compilation for FHE inference."""
@@ -82,6 +84,7 @@ def test_quantized_module_compilation(
         numpy_input,
         default_configuration,
         verbose=verbose,
+        compress_evaluation_keys=compress_evaluation_keys,
     )
 
     check_is_good_execution_for_cml_vs_circuit(numpy_input, quantized_model, simulate=simulate)
@@ -104,6 +107,7 @@ def test_quantized_module_compilation(
 )
 @pytest.mark.parametrize("simulate", [True, False])
 @pytest.mark.parametrize("verbose", [True, False])
+@pytest.mark.parametrize("compress_evaluation_keys", [True, False])
 def test_quantized_cnn_compilation(
     input_output_feature,
     model,
@@ -112,6 +116,7 @@ def test_quantized_cnn_compilation(
     check_graph_input_has_no_tlu,
     simulate,
     verbose,
+    compress_evaluation_keys,
     check_is_good_execution_for_cml_vs_circuit,
 ):
     """Test a convolutional neural network compilation for FHE inference."""
@@ -142,6 +147,7 @@ def test_quantized_cnn_compilation(
         numpy_input,
         default_configuration,
         verbose=verbose,
+        compress_evaluation_keys=compress_evaluation_keys,
     )
     check_is_good_execution_for_cml_vs_circuit(numpy_input, quantized_model, simulate=simulate)
     check_graph_input_has_no_tlu(quantized_model.fhe_circuit.graph)
@@ -317,10 +323,7 @@ def test_compile_multi_input_nn_with_input_tlus(
     quantized_model = post_training_quant.quantize_module(numpy_input)
 
     # Compile
-    quantized_model.compile(
-        numpy_input,
-        default_configuration,
-    )
+    quantized_model.compile(numpy_input, default_configuration)
     check_is_good_execution_for_cml_vs_circuit(numpy_input, quantized_model, simulate=True)
 
     if can_remove_tlu:
