@@ -141,6 +141,7 @@ def _compile_torch_or_onnx_model(
     verbose: bool = False,
     inputs_encryption_status: Optional[Sequence[str]] = None,
     reduce_sum_copy=False,
+    compress_evaluation_keys: bool = True,
 ) -> QuantizedModule:
     """Compile a torch module or ONNX into an FHE equivalent.
 
@@ -174,6 +175,7 @@ def _compile_torch_or_onnx_model(
             for each input. By default all arguments will be encrypted.
         reduce_sum_copy (bool): if the inputs of QuantizedReduceSum should be copied to avoid
             bit-width propagation
+        compress_evaluation_keys (bool): Indicate if we compress keys. Default to True
 
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
@@ -220,6 +222,7 @@ def _compile_torch_or_onnx_model(
         global_p_error=global_p_error,
         verbose=verbose,
         inputs_encryption_status=inputs_encryption_status,
+        compress_evaluation_keys=compress_evaluation_keys,
     )
 
     return quantized_module
@@ -240,6 +243,7 @@ def compile_torch_model(
     verbose: bool = False,
     inputs_encryption_status: Optional[Sequence[str]] = None,
     reduce_sum_copy: bool = False,
+    compress_evaluation_keys: bool = True,
 ) -> QuantizedModule:
     """Compile a torch module into an FHE equivalent.
 
@@ -274,6 +278,7 @@ def compile_torch_model(
             for each input. By default all arguments will be encrypted.
         reduce_sum_copy (bool): if the inputs of QuantizedReduceSum should be copied to avoid
             bit-width propagation
+        compress_evaluation_keys (bool): Indicate if we compress keys. Default to True
 
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
@@ -304,6 +309,7 @@ def compile_torch_model(
         verbose=verbose,
         inputs_encryption_status=inputs_encryption_status,
         reduce_sum_copy=reduce_sum_copy,
+        compress_evaluation_keys=compress_evaluation_keys,
     )
 
 
@@ -322,6 +328,7 @@ def compile_onnx_model(
     verbose: bool = False,
     inputs_encryption_status: Optional[Sequence[str]] = None,
     reduce_sum_copy: bool = False,
+    compress_evaluation_keys: bool = True,
 ) -> QuantizedModule:
     """Compile a torch module into an FHE equivalent.
 
@@ -356,6 +363,7 @@ def compile_onnx_model(
             for each input. By default all arguments will be encrypted.
         reduce_sum_copy (bool): if the inputs of QuantizedReduceSum should be copied to avoid
             bit-width propagation
+        compress_evaluation_keys (bool): Indicate if we compress keys. Default to True
 
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
@@ -382,6 +390,7 @@ def compile_onnx_model(
         verbose=verbose,
         inputs_encryption_status=inputs_encryption_status,
         reduce_sum_copy=reduce_sum_copy,
+        compress_evaluation_keys=compress_evaluation_keys,
     )
 
 
@@ -400,6 +409,7 @@ def compile_brevitas_qat_model(
     verbose: bool = False,
     inputs_encryption_status: Optional[Sequence[str]] = None,
     reduce_sum_copy: bool = False,
+    compress_evaluation_keys: bool = True,
 ) -> QuantizedModule:
     """Compile a Brevitas Quantization Aware Training model.
 
@@ -436,6 +446,7 @@ def compile_brevitas_qat_model(
             for each input. By default all arguments will be encrypted.
         reduce_sum_copy (bool): if the inputs of QuantizedReduceSum should be copied to avoid
             bit-width propagation
+        compress_evaluation_keys (bool): Indicate if we compress keys. Default to True
 
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
@@ -531,6 +542,7 @@ def compile_brevitas_qat_model(
         verbose=verbose,
         inputs_encryption_status=inputs_encryption_status,
         reduce_sum_copy=reduce_sum_copy,
+        compress_evaluation_keys=compress_evaluation_keys,
     )
 
     # Remove the tempfile if we used one
