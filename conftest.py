@@ -173,21 +173,21 @@ def autoseeding_of_everything(request):
 
     # Explanations on the seeding system:
     #
-    # The used seed (called sub_seed below) for a test of a function f_i (eg,
-    # test_compute_bits_precision) on a configuration c_j (eg, x0-8) of a test file t_k (eg,
+    # The used seed (called sub_seed below) for a test of a function f_i (e.g.,
+    # test_compute_bits_precision) on a configuration c_j (e.g., x0-8) of a test file t_k (e.g.,
     # tests/common/test_utils.py) is computed as some hash(f_i, c_j, t_k, randomly-seed)
     #
     # It allows to reproduce bugs we would have had on a full pytest execution on a configuration
     # (f_i, c_j, t_k) by calling pytest on this single configuration with the --randomly-seed
     # parameter and no other arguments.
     #
-    # In particular, it's resistant to crashes which would prevent the few prints below in this
+    # In particular, it is resistant to crashes which would prevent the few prints below in this
     # function, which details some seeding information
 
     randomly_seed = request.config.getoption("--randomly-seed", default=None)
 
     if randomly_seed is None:
-        raise ValueError("why isn't --randomly-seed set?")
+        raise ValueError("--randomly-seed has not been properly configured internally")
 
     # We need to find the relative file path of the test file. It does not look native with request,
     # so we recompute it.
