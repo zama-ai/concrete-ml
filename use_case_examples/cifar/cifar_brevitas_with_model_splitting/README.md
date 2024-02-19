@@ -73,6 +73,4 @@ This is something we plan on measuring once FHE runtimes become more acceptable.
 
 <!-- Add more metrics and training script -->
 
-<!-- FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2377 -->
-
 <!-- FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2383 -->

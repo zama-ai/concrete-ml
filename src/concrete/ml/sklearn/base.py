@@ -1438,8 +1438,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
         # Sum all tree outputs
-        # Remove the sum once we handle multi-precision circuits
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/451
+        # Only apply the sum in the clear if it has not already been done in FHE
         if not self._fhe_ensembling:
             y_preds = numpy.sum(y_preds, axis=-1)
 
