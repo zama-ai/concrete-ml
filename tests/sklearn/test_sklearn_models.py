@@ -1602,8 +1602,6 @@ def test_predict_correctness(
 
 
 @pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
-# Test separated inference steps with new simulation once Concrete Python provides the feature
-# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4025
 @pytest.mark.parametrize(
     "simulate",
     [
