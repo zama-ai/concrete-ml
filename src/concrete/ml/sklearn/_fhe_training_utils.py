@@ -20,7 +20,6 @@ def binary_cross_entropy(y_true: numpy.ndarray, logits: numpy.ndarray):
     return binary_cross_entropy_with_logits(torch.Tensor(logits), torch.Tensor(y_true)).item()
 
 
-# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4144
 class LogisticRegressionTraining(torch.nn.Module):
     """Logistic Regression training module.
 

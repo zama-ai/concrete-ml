@@ -7,7 +7,7 @@ on:
         required: true
 
 concurrency:
-  group: "Prepare release"
+  group: "Prepare Release ${{ github.event.inputs.version }}"
   cancel-in-progress: true
 
 env:
@@ -59,7 +59,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install poetry==1.2.2
+          python -m pip install poetry==1.7.1
           make setup_env
 
       # Make sure that the workflow has been triggered from a release branch if this is a patch 
@@ -107,7 +107,7 @@ jobs:
 
       # Open a PR with the new version and updated apidocs
       - name: Open PR
-        uses: peter-evans/create-pull-request@284f54f989303d2699d373481a0cfa13ad5a6666
+        uses: peter-evans/create-pull-request@b1ddad2c994a25fbc81a28b3ec0e368bb2021c50
         with:
           token: ${{ secrets.BOT_TOKEN }}
           commit-message: "chore: prepare release ${{ env.VERSION }}"

@@ -78,6 +78,7 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedSub,
     QuantizedTanh,
     QuantizedTranspose,
+    QuantizedUnfold,
     QuantizedUnsqueeze,
     QuantizedWhere,
 )
@@ -697,9 +698,13 @@ def test_identity_op(x, n_bits):
         ),
     ],
 )
-@pytest.mark.parametrize("produces_output", [True, False])
+@pytest.mark.parametrize("produces_output", [True, False], ids=["produces_output", ""])
+@pytest.mark.parametrize("is_conv1d", [True, False], ids=["is_conv1d", "is_conv2d"])
+# @pytest.mark.parametrize("is_conv1d", [True], ids=["is_conv1d"])
 # pylint: disable-next=too-many-locals
-def test_quantized_conv(params, n_bits, produces_output, check_r2_score, check_float_array_equal):
+def test_quantized_conv(
+    params, n_bits, produces_output, is_conv1d, check_r2_score, check_float_array_equal
+):
     """Test the quantized convolution operator."""
 
     # Retrieve arguments
@@ -715,6 +720,19 @@ def test_quantized_conv(params, n_bits, produces_output, check_r2_score, check_f
         pads,
         group,
     ) = params
+
+    # If testing the conv1d operator, make the parameters represent 1D inputs
+    if is_conv1d:
+        size_input = size_input[:3]
+        size_weights = size_weights[:3]
+        strides = strides[:1]
+        pads = pads[:2]
+        dilations = (1,)
+        conv_torch_op = torch.conv1d
+
+    else:
+        dilations = (1, 1)  # type: ignore[assignment]
+        conv_torch_op = torch.conv2d
 
     net_input = numpy.random.uniform(size=size_input) * scale_input
     weights = numpy.random.randn(*size_weights) * scale_weights
@@ -733,8 +751,8 @@ def test_quantized_conv(params, n_bits, produces_output, check_r2_score, check_f
         constant_inputs={1: q_weights, 2: q_bias},
         strides=strides,
         pads=pads,
-        kernel_shape=(weights.shape[2], weights.shape[3]),
-        dilations=(1, 1),
+        kernel_shape=weights.shape[2:],
+        dilations=dilations,
         group=group,
     )
     q_op.produces_graph_output = produces_output
@@ -742,24 +760,26 @@ def test_quantized_conv(params, n_bits, produces_output, check_r2_score, check_f
     # Compute the result in floating point
     expected_result = q_op.calibrate(net_input)
 
-    # Compute the reference result
+    # For Conv1d, torch and ONNX both follow the same padding convention
+    if is_conv1d:
+        input_padded = torch.nn.functional.pad(torch.Tensor(net_input.copy()), pads)
 
-    # Pad the input if needed
-
-    # Torch uses padding  (padding_left,padding_right, padding_top,padding_bottom)
+    # For Conv2d, torch uses padding  (padding_left, padding_right, padding_top, padding_bottom)
     # While ONNX and Concrete ML use (padding_top, padding_left, padding_bottom, padding_right)
-    tx_pad = torch.nn.functional.pad(
-        torch.Tensor(net_input.copy()), (pads[1], pads[3], pads[0], pads[2])
-    )
+    else:
+        input_padded = torch.nn.functional.pad(
+            torch.Tensor(net_input.copy()), (pads[1], pads[3], pads[0], pads[2])
+        )
 
-    # Compute the torch convolution
-    torch_res = torch.conv2d(
-        tx_pad,
-        torch.Tensor(weights.copy()),
-        torch.Tensor(biases.squeeze().copy()) if biases is not None else None,
-        strides,
+    # Compute the reference result using the torch convolution operator
+    torch_res = conv_torch_op(
+        input=input_padded,
+        weight=torch.Tensor(weights.copy()),
+        bias=torch.Tensor(biases.squeeze().copy()) if biases is not None else None,
+        stride=strides,
         groups=group,
     ).numpy()
+
     check_float_array_equal(torch_res, expected_result)
 
     # Compute the quantized result
@@ -883,6 +903,65 @@ def test_quantized_avg_pool(params, n_bits, is_signed, check_r2_score, check_flo
         QuantizedAvgPool,
         equal_method=partial(quantized_op_results_are_equal, q_input=q_input),
     )
+
+
+def test_quantized_avg_pool_args():
+    """Check that unsupported parameters for AvgPool properly raise errors."""
+    n_bits = 2
+
+    with pytest.raises(AssertionError, match=r"Setting parameter 'kernel_shape' is required."):
+        QuantizedAvgPool(
+            n_bits,
+            OP_DEBUG_NAME + "QuantizedAvgPool",
+        )
+
+    with pytest.raises(AssertionError, match=r"The 'auto_pad' parameter is not supported.*"):
+        QuantizedAvgPool(
+            n_bits,
+            OP_DEBUG_NAME + "QuantizedAvgPool",
+            kernel_shape=(1, 1),
+            auto_pad="SAME_UPPER",
+        )
+
+    with pytest.raises(
+        AssertionError, match=r"The Average Pool operator currently supports only 2d kernels."
+    ):
+        QuantizedAvgPool(
+            n_bits,
+            OP_DEBUG_NAME + "QuantizedAvgPool",
+            kernel_shape=(1,),
+        )
+
+    with pytest.raises(
+        AssertionError, match=r"Pad pixels must be included when calculating values on the edges.*"
+    ):
+        QuantizedAvgPool(
+            n_bits,
+            OP_DEBUG_NAME + "QuantizedAvgPool",
+            kernel_shape=(1, 1),
+            count_include_pad=0,
+        )
+
+    with pytest.raises(
+        AssertionError,
+        match=r"The Average Pool operator requires the number of strides to be the same.*",
+    ):
+        QuantizedAvgPool(
+            n_bits,
+            OP_DEBUG_NAME + "QuantizedAvgPool",
+            kernel_shape=(1, 1),
+            strides=(1,),
+        )
+
+    with pytest.raises(
+        AssertionError, match=r"The Average Pool operator in Concrete ML requires padding.*"
+    ):
+        QuantizedAvgPool(
+            n_bits,
+            OP_DEBUG_NAME + "QuantizedAvgPool",
+            kernel_shape=(1, 1),
+            pads=(0, 0),
+        )
 
 
 @pytest.mark.parametrize("n_bits", [16])
@@ -1018,7 +1097,7 @@ def test_quantized_max_pool(params, n_bits, is_signed, check_r2_score, check_flo
 
 
 def test_quantized_conv_args():
-    """Check that conv arguments are validated"""
+    """Check that conv arguments are validated."""
     n_bits = 2
 
     weights = numpy.random.uniform(size=(10, 1, 16, 16)) * 0.2
@@ -1492,6 +1571,7 @@ def test_all_ops_were_tested():
         QuantizedSqueeze: test_quantized_squeeze,
         QuantizedExpand: test_quantized_expand,
         QuantizedEqual: test_quantized_comparators_and_where,
+        QuantizedUnfold: test_quantized_unfold,
         ONNXSlice: test_quantized_slice,
         ONNXGather: test_quantized_gather,
         ONNXShape: test_quantized_shape,
@@ -1979,4 +2059,107 @@ def test_quantized_shape(shape):
     # Test the serialization of ONNXShape
     check_serialization(
         q_op, ONNXShape, equal_method=partial(quantized_op_results_are_equal, q_input=q_input)
+    )
+
+
+@pytest.mark.parametrize("n_bits", [16])
+@pytest.mark.parametrize(
+    "params",
+    [
+        (
+            numpy.random.uniform(low=-2.0, high=2.0, size=(1, 1, 32, 32)),
+            (3, 3),
+            (2, 2),
+            (0, 0, 0, 0),
+        ),
+        (
+            numpy.random.uniform(low=-1.2, high=0.2, size=(10, 1, 16, 16)),
+            (2, 2),
+            (1, 1),
+            (0, 0, 0, 0),
+        ),
+        (
+            numpy.random.uniform(low=-2.0, high=2.0, size=(2, 32, 4, 4)),
+            (2, 2),
+            (1, 1),
+            (0, 0, 0, 0),
+        ),
+        (
+            numpy.random.uniform(low=-2.0, high=2.0, size=(2, 32, 4, 4)),
+            (2, 4),
+            (1, 1),
+            (1, 2, 1, 2),
+        ),
+        (
+            numpy.random.uniform(low=-2.0, high=2.0, size=(2, 32, 4, 4)),
+            (2, 4),
+            (1, 1),
+            (0, 2, 0, 2),
+        ),
+        (
+            numpy.random.uniform(low=-2.0, high=2.0, size=(2, 32, 5, 5)),
+            (3, 3),
+            (1, 1),
+            (1, 1, 1, 1),
+        ),
+        (
+            numpy.random.uniform(low=-2.0, high=2.0, size=(2, 1, 7, 5)),
+            (5, 1),
+            (1, 1),
+            (1, 2, 0, 4),
+        ),
+        (
+            numpy.random.uniform(low=-2.0, high=2.0, size=(1, 1, 16, 16)),
+            (2, 2),
+            (4, 4),
+            (1, 2, 0, 4),
+        ),
+    ],
+)
+@pytest.mark.parametrize("is_signed", [True, False])
+def test_quantized_unfold(params, n_bits, is_signed, check_r2_score, check_float_array_equal):
+    """Test the quantized average pool operator."""
+
+    # Retrieve arguments
+    net_input, kernel_shape, strides, pads = params
+
+    # Create quantized data
+    q_input = QuantizedArray(n_bits, net_input, is_signed=is_signed)
+
+    q_op = QuantizedUnfold(
+        n_bits,
+        OP_DEBUG_NAME + "QuantizedUnfold",
+        strides=strides,
+        pads=pads,
+        kernel_shape=kernel_shape,
+        # ceil_mode=ceil_mode,
+        input_quant_opts=q_input.quantizer.quant_options,
+    )
+
+    # Compute the result in floating point
+    expected_result = q_op.calibrate(net_input)
+
+    # Pad the input if needed
+    tinputs = torch.Tensor(net_input.copy())
+
+    # Torch uses padding  (padding_left,padding_right, padding_top,padding_bottom)
+    # While ONNX and Concrete ML use (padding_top, padding_left, padding_bottom, padding_right)
+    tx_pad = torch.nn.functional.pad(tinputs, (pads[1], pads[3], pads[0], pads[2]))
+
+    # Compute the torch unfold
+    torch_res = torch.nn.functional.unfold(tx_pad, kernel_shape, 1, 0, strides).numpy()
+
+    check_float_array_equal(torch_res, expected_result)
+
+    # Compute the quantized result
+    result = q_op(q_input).dequant()
+
+    # The fp32 and quantized results should be very similar when quantization precision is high
+    check_r2_score(expected_result, result)
+
+    # Test the serialization of QuantizedUnfold
+    check_serialization(
+        q_op,
+        QuantizedUnfold,
+        equal_method=partial(quantized_op_results_are_equal, q_input=q_input),
     )

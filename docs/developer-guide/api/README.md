@@ -76,6 +76,7 @@
 - [`torch_models.CNNMaxPool`](./concrete.ml.pytest.torch_models.md#class-cnnmaxpool): Torch CNN model for the tests with a max pool.
 - [`torch_models.CNNOther`](./concrete.ml.pytest.torch_models.md#class-cnnother): Torch CNN model for the tests.
 - [`torch_models.ConcatFancyIndexing`](./concrete.ml.pytest.torch_models.md#class-concatfancyindexing): Concat with fancy indexing.
+- [`torch_models.Conv1dModel`](./concrete.ml.pytest.torch_models.md#class-conv1dmodel): Small model that uses a 1D convolution operator.
 - [`torch_models.DoubleQuantQATMixNet`](./concrete.ml.pytest.torch_models.md#class-doublequantqatmixnet): Torch model that with two different quantizers on the input.
 - [`torch_models.EncryptedMatrixMultiplicationModel`](./concrete.ml.pytest.torch_models.md#class-encryptedmatrixmultiplicationmodel): PyTorch module for performing matrix multiplication between two encrypted values.
 - [`torch_models.ExpandModel`](./concrete.ml.pytest.torch_models.md#class-expandmodel): Minimalist network that expands the input tensor to a larger size.
@@ -169,6 +170,7 @@
 - [`quantized_ops.QuantizedSub`](./concrete.ml.quantization.quantized_ops.md#class-quantizedsub): Subtraction operator.
 - [`quantized_ops.QuantizedTanh`](./concrete.ml.quantization.quantized_ops.md#class-quantizedtanh): Quantized Tanh op.
 - [`quantized_ops.QuantizedTranspose`](./concrete.ml.quantization.quantized_ops.md#class-quantizedtranspose): Transpose operator for quantized inputs.
+- [`quantized_ops.QuantizedUnfold`](./concrete.ml.quantization.quantized_ops.md#class-quantizedunfold): Quantized Unfold op.
 - [`quantized_ops.QuantizedUnsqueeze`](./concrete.ml.quantization.quantized_ops.md#class-quantizedunsqueeze): Unsqueeze operator.
 - [`quantized_ops.QuantizedWhere`](./concrete.ml.quantization.quantized_ops.md#class-quantizedwhere): Where operator on quantized arrays.
 - [`quantizers.MinMaxQuantizationStats`](./concrete.ml.quantization.quantizers.md#class-minmaxquantizationstats): Calibration set statistics.
@@ -355,6 +357,7 @@
 - [`ops_impl.numpy_tanh`](./concrete.ml.onnx.ops_impl.md#function-numpy_tanh): Compute tanh in numpy according to ONNX spec.
 - [`ops_impl.numpy_thresholdedrelu`](./concrete.ml.onnx.ops_impl.md#function-numpy_thresholdedrelu): Compute thresholdedrelu in numpy according to ONNX spec.
 - [`ops_impl.numpy_transpose`](./concrete.ml.onnx.ops_impl.md#function-numpy_transpose): Transpose in numpy according to ONNX spec.
+- [`ops_impl.numpy_unfold`](./concrete.ml.onnx.ops_impl.md#function-numpy_unfold): Compute Unfold using Torch.
 - [`ops_impl.numpy_where`](./concrete.ml.onnx.ops_impl.md#function-numpy_where): Compute the equivalent of numpy.where.
 - [`ops_impl.numpy_where_body`](./concrete.ml.onnx.ops_impl.md#function-numpy_where_body): Compute the equivalent of numpy.where.
 - [`ops_impl.onnx_func_raw_args`](./concrete.ml.onnx.ops_impl.md#function-onnx_func_raw_args): Decorate a numpy onnx function to flag the raw/non quantized inputs.

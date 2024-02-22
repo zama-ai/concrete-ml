@@ -295,6 +295,7 @@ from .ops_impl import (
     numpy_tanh,
     numpy_thresholdedrelu,
     numpy_transpose,
+    numpy_unfold,
     numpy_unsqueeze,
     numpy_where,
     rounded_numpy_equal_for_trees,
@@ -382,6 +383,7 @@ ONNX_OPS_TO_NUMPY_IMPL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
     "Shape": numpy_shape,
     "ConstantOfShape": numpy_constant_of_shape,
     "Expand": numpy_expand,
+    "Unfold": numpy_unfold,
 }
 
 

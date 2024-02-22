@@ -777,8 +777,9 @@ class QuantizedConv(QuantizedMixingOp):
 
         # Validate the parameters
         assert_true(
-            len(self.kernel_shape) == 2,
-            "The convolution operator currently supports only 2d",
+            len(self.kernel_shape) in (1, 2),
+            "The convolution operator currently only supports 1d or 2d. "
+            f"Got {len(self.kernel_shape)}-d",
         )
         assert_true(
             len(self.kernel_shape) == len(self.strides),
@@ -787,7 +788,7 @@ class QuantizedConv(QuantizedMixingOp):
         )
         assert_true(
             bool(numpy.all(numpy.asarray(self.dilations) == 1)),
-            "The convolution operator in Concrete does not suppport dilation",
+            "The convolution operator in Concrete does not support dilation",
         )
         assert_true(
             len(self.pads) == 2 * len(self.kernel_shape),
@@ -796,7 +797,7 @@ class QuantizedConv(QuantizedMixingOp):
             " standard",
         )
 
-    # pylint: disable-next=too-many-statements
+    # pylint: disable-next=too-many-statements, too-many-locals
     def q_impl(
         self,
         *q_inputs: ONNXOpInputOutputType,
@@ -847,9 +848,6 @@ class QuantizedConv(QuantizedMixingOp):
             f"group ({self.group}).",
         )
 
-        # Prepare a constant tensor to compute the sum of the inputs
-        q_weights_1 = numpy.ones_like(q_weights.qvalues)
-
         assert q_weights.quantizer.scale is not None
         assert q_weights.quantizer.zero_point is not None
 
@@ -862,6 +860,25 @@ class QuantizedConv(QuantizedMixingOp):
         pad_value = int(q_input.quantizer.zero_point)
         q_input_pad = numpy_onnx_pad(q_input.qvalues, self.pads, pad_value, True)
 
+        is_conv1d = len(self.kernel_shape) == 1
+
+        q_weights_values = q_weights.qvalues
+        kernel_shape = self.kernel_shape
+        strides = self.strides
+        dilations = self.dilations
+
+        # Workaround for handling torch's Conv1d operator until it is supported by Concrete Python
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4117
+        if is_conv1d:
+            q_input_pad = numpy.expand_dims(q_input_pad, axis=-2)
+            q_weights_values = numpy.expand_dims(q_weights_values, axis=-2)
+            kernel_shape = (1, kernel_shape[0])
+            strides = (1, strides[0])
+            dilations = (1, dilations[0])
+
+        # Prepare a constant tensor to compute the sum of the inputs
+        q_weights_1 = numpy.ones_like(q_weights_values)
+
         # We follow the Quantized Gemm implementation
         # which in turn follows Eq.7 in https://arxiv.org/abs/1712.05877
         # to split the core computation from the zero points and scales.
@@ -869,21 +886,22 @@ class QuantizedConv(QuantizedMixingOp):
         # Compute the first encrypted term that convolves weights and inputs
         # Force padding to 0 as padding needs to use a custom padding initializer
         # and is thus manually performed in the code above
-        fake_pads = [0] * len(self.pads)
+        fake_pads = [0, 0] * len(kernel_shape)
 
         with tag(self.op_instance_name + ".conv"):
             conv_wx = fhe_conv(
                 q_input_pad,
-                q_weights.qvalues,
+                q_weights_values,
                 bias=None,
                 pads=fake_pads,
-                strides=self.strides,
-                dilations=self.dilations,
+                kernel_shape=kernel_shape,
+                strides=strides,
+                dilations=dilations,
                 group=self.group,
             )
 
         # The total number of elements that are convolved by the application of a single kernel
-        n_weights = numpy.prod(q_weights.qvalues.shape[1:])
+        n_weights = numpy.prod(q_weights_values.shape[1:])
 
         # If the weights have symmetric quantization, their zero point will be 0
         # The following check avoids the computation of the sum of the inputs, which may have
@@ -900,9 +918,10 @@ class QuantizedConv(QuantizedMixingOp):
                     q_input_pad,
                     q_weights_1,
                     bias=None,
-                    pads=[0, 0, 0, 0],
-                    strides=self.strides,
-                    dilations=self.dilations,
+                    pads=fake_pads,
+                    kernel_shape=kernel_shape,
+                    strides=strides,
+                    dilations=dilations,
                     group=self.group,
                 )
 
@@ -911,14 +930,22 @@ class QuantizedConv(QuantizedMixingOp):
         else:
             numpy_q_out = conv_wx
 
+        # Workaround for handling torch's Conv1d operator until it is supported by Concrete Python
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4117
+        if is_conv1d:
+            numpy_q_out = numpy.squeeze(numpy_q_out, axis=-2)
+
         if self.debug_value_tracker is not None:
             # pylint: disable-next=unsubscriptable-object
             self.debug_value_tracker[self.op_instance_name]["output"] = numpy_q_out
 
+        weight_sum_axes = (1, 2) if is_conv1d else (1, 2, 3)
+        weight_transpose_axes = (1, 0, 2) if is_conv1d else (1, 0, 2, 3)
+
         # Compute the third term, the sum of the weights which is a constant
         sum_weights = q_input.quantizer.zero_point * numpy.sum(
-            q_weights.qvalues, axis=(1, 2, 3), keepdims=True
-        ).transpose(1, 0, 2, 3)
+            q_weights.qvalues, axis=weight_sum_axes, keepdims=True
+        ).transpose(*weight_transpose_axes)
 
         # Compute the forth term which is a constant
         final_term = n_weights * q_input.quantizer.zero_point * q_weights.quantizer.zero_point
@@ -928,6 +955,8 @@ class QuantizedConv(QuantizedMixingOp):
         # Note that we don't re-quantize the output of the conv, this will be done by
         # any Gemm/Add/Conv layers that follow
         m_matmul = q_input.quantizer.scale * q_weights.quantizer.scale
+
+        bias_shape = (1, -1, 1) if is_conv1d else (1, -1, 1, 1)
 
         # If this operation's result are network outputs, return
         # directly the integer values and an appropriate quantization parameters that
@@ -944,7 +973,7 @@ class QuantizedConv(QuantizedMixingOp):
             out_zp: Union[int, numpy.ndarray] = sum_weights - final_term
             if q_bias is not None:
                 # Reshape the biases to broadcast them to each channel
-                out_zp = out_zp - q_bias.values.reshape((1, -1, 1, 1)) / m_matmul
+                out_zp = out_zp - q_bias.values.reshape(bias_shape) / m_matmul
 
             # We identify terms in the above equation to determine what
             # the scale/zero-point of the in-the-clear quantizer should be
@@ -956,7 +985,8 @@ class QuantizedConv(QuantizedMixingOp):
             # The bias scale should be the same scale as the one of the weights * inputs
             assert q_bias.quantizer.scale is not None
             assert numpy.isclose(q_bias.quantizer.scale, m_matmul)
-            numpy_q_out += q_bias.qvalues.reshape((1, -1, 1, 1))
+
+            numpy_q_out += q_bias.qvalues.reshape(bias_shape)
 
         with tag(self.op_instance_name + ".conv_rounding"):
             # Apply Concrete rounding (if relevant)
@@ -973,7 +1003,7 @@ class QuantizedConv(QuantizedMixingOp):
         if q_bias is not None and not q_bias.quantizer.is_precomputed_qat:
             # The bias addition is handled in float and will be fused into a TLU
             # Reshape the biases to broadcast them to each channel
-            numpy_q_out = numpy_q_out + q_bias.values.reshape((1, -1, 1, 1))  # bias_part
+            numpy_q_out = numpy_q_out + q_bias.values.reshape(bias_shape)  # bias_part
 
         # And return as a QuantizedArray initialized from the float data, keeping
         # track of the quantization parameters
@@ -1013,27 +1043,46 @@ class QuantizedAvgPool(QuantizedMixingOp):
         )
 
         # Get the ONNX parameters
-        self.ceil_mode = attrs.get("ceil_mode", None)
+        self.ceil_mode = attrs.get("ceil_mode", 0)
+        self.auto_pad = attrs.get("auto_pad", "NOTSET")
         self.kernel_shape = attrs.get("kernel_shape", None)
+
+        assert_true(self.kernel_shape is not None, "Setting parameter 'kernel_shape' is required.")
+
+        self.count_include_pad = attrs.get("count_include_pad", 1)
         self.pads = attrs.get("pads", tuple([0] * 2 * (len(self.kernel_shape) - 2)))
         self.dilations = attrs.get("dilations", tuple([1] * len(self.kernel_shape)))
         self.strides = attrs.get("strides", tuple([1] * len(self.kernel_shape)))
 
         # Validate the parameters
         assert_true(
-            len(self.kernel_shape) == 2,
-            "The Average Pool operator currently supports only 2d",
+            self.auto_pad == "NOTSET",
+            "The 'auto_pad' parameter is not supported. Please keep the the default 'NOTSET' value "
+            "and provide explicit padding.",
         )
+
+        assert_true(
+            len(self.kernel_shape) == 2,
+            "The Average Pool operator currently supports only 2d kernels.",
+        )
+
+        assert_true(
+            self.count_include_pad == 1,
+            "Pad pixels must be included when calculating values on the edges. Please set "
+            "'count_include_pad' to 1.",
+        )
+
         assert_true(
             len(self.kernel_shape) == len(self.strides),
-            "The Average Pool operator requires the number of strides to "
-            "be the same as the number of kernel dimensions",
+            "The Average Pool operator requires the number of strides to be the same as the number "
+            "of kernel dimensions.",
         )
+
         assert_true(
             len(self.pads) == 2 * len(self.kernel_shape),
             "The Average Pool operator in Concrete ML requires padding to be specified as "
             " (pad_left_dim1, pad_right_dim1, pad_left_dim2, pad_right_dim2, ...), following ONNX"
-            " standard",
+            " standard.",
         )
 
         self.kernel: Union[numpy.ndarray, None] = None
@@ -2479,3 +2528,128 @@ class QuantizedEqual(QuantizedOp):
         # We do not support testing a == b where a,b are encrypted
         # only comparing to a constant is supported
         assert_true(constant_inputs is not None and len(constant_inputs) >= 1)
+
+
+class QuantizedUnfold(QuantizedMixingOp):
+    """Quantized Unfold op."""
+
+    _impl_for_op_named: str = "Unfold"
+
+    # Since this op takes a single input, we can set int_input_names to a single default id
+    def __init__(
+        self,
+        n_bits_output: int,
+        op_instance_name: str,
+        int_input_names: Set[str] = None,
+        constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
+        input_quant_opts: QuantizationOptions = None,
+        **attrs,
+    ) -> None:
+
+        super().__init__(
+            n_bits_output,
+            op_instance_name,
+            int_input_names,
+            constant_inputs,
+            input_quant_opts,
+            **attrs,
+        )
+
+        # Get the ONNX parameters
+        self.kernel_shape = attrs.get("kernel_shape", None)
+        self.pads = attrs.get("pads", tuple([0] * 2 * (len(self.kernel_shape) - 2)))
+        self.dilations = attrs.get("dilations", tuple([1] * len(self.kernel_shape)))
+        self.strides = attrs.get("strides", tuple([1] * len(self.kernel_shape)))
+
+        # Validate the parameters
+        assert_true(
+            len(self.kernel_shape) == 2,
+            "The Unfold operator currently supports only 2d",
+        )
+        assert_true(
+            len(self.kernel_shape) == len(self.strides),
+            "The Unfold operator requires the number of strides to "
+            "be the same as the number of kernel dimensions",
+        )
+        assert_true(
+            len(self.pads) == 2 * len(self.kernel_shape),
+            "The Unfold operator in Concrete ML requires padding to be specified as "
+            " (pad_left_dim1, pad_right_dim1, pad_left_dim2, pad_right_dim2, ...), following ONNX"
+            " standard",
+        )
+
+        self.kernel: Union[numpy.ndarray, None] = None
+        self.norm_const: Union[float, None] = None
+
+    def q_impl(
+        self,
+        *q_inputs: ONNXOpInputOutputType,
+        **attrs,
+    ) -> ONNXOpInputOutputType:
+
+        # Retrieve the quantized inputs
+        prepared_inputs = self._prepare_inputs_with_constants(
+            *q_inputs, calibrate=False, quantize_actual_values=True
+        )
+        q_input: QuantizedArray = prepared_inputs[0]
+
+        n_in_channels = q_input.qvalues.shape[1]
+        kernels_list = []
+        for _ in range(n_in_channels):
+            for row in range(self.kernel_shape[0]):
+                for col in range(self.kernel_shape[1]):
+                    kernel = numpy.zeros(
+                        (1, 1, self.kernel_shape[0], self.kernel_shape[1]),
+                        dtype=numpy.int64,
+                    )
+                    kernel[:, :, row, col] = 1
+                    kernels_list.append(kernel)
+        kernels = numpy.concatenate(numpy.array(kernels_list), axis=0)
+
+        # for mypy: The Quantized ops can only run on QuantizedArray that have quantization
+        # parameters (i.e., were fully constructed). This should always be the case, except
+        # during the UniformQuantizer initialization when the zero_point can exist as None
+        assert q_input.quantizer.zero_point is not None
+
+        # Compute padding with floor and apply it to the input, pad with the input zero-point
+        pool_pads = compute_onnx_pool_padding(
+            q_input.qvalues.shape, self.kernel_shape, self.pads, self.strides, ceil_mode=0
+        )
+
+        # Can only pad with scalar zero-points, but zero-points can be float in special cases
+        # for output layers
+        _check_op_input_zero_point(q_input.quantizer.zero_point, self.op_instance_name)
+        pad_value = int(q_input.quantizer.zero_point)
+        q_input_pad = numpy_onnx_pad(q_input.qvalues, pool_pads, pad_value, int_only=True)
+
+        # Remark that here, we are _not_ using Concrete pad, since it would pad with
+        # 0's while we want to pad with zero-point's. So, instead, he have done the padding
+        # on our side, with q_input_pad
+        fake_pads = [0] * len(self.pads)
+
+        with tag(self.op_instance_name + ".unfold"):
+            sum_result = fhe_conv(
+                q_input_pad, kernels, None, fake_pads, self.strides, None, None, n_in_channels
+            )
+
+        if self.debug_value_tracker is not None:
+            # pylint: disable-next=unsubscriptable-object
+            self.debug_value_tracker[self.op_instance_name][
+                "output"
+            ] = sum_result  # pragma: no cover
+
+        result = (
+            sum_result.astype(numpy.float64) - q_input.quantizer.zero_point
+        ) * q_input.quantizer.scale
+
+        # Reshape to fit the same shape output as unfold
+        result = result.reshape((result.shape[0], result.shape[1], -1))
+
+        return QuantizedArray(
+            self.n_bits,
+            result,
+            value_is_float=True,
+            options=self._get_output_quant_opts(),
+            stats=self.output_quant_stats,
+            params=self.output_quant_params,
+        )

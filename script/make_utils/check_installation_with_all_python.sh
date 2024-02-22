@@ -86,6 +86,7 @@ do
         make sync_env
     elif [ "$METHOD" == "clone" ]
     then
+        deactivate
         rm -rf "${VENV}"
         TMP_DIR=".tmp_dir_clone_${VERSION}"
         rm -rf "${TMP_DIR}"
@@ -97,7 +98,7 @@ do
         cd ../..
         rm -rf "${TMP_DIR}"
     else
-        echo "What is this method $METHOD"
+        echo "Unsupported method: $METHOD"
         exit 255
     fi
 

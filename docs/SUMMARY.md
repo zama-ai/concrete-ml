@@ -16,6 +16,7 @@
 - [Neural Networks](built-in-models/neural-networks.md)
 - [Nearest Neighbors](built-in-models/nearest-neighbors.md)
 - [Pandas](built-in-models/pandas.md)
+- [Encrypted Training](built-in-models/training.md)
 - [Built-in Model Examples](built-in-models/ml_examples.md)
 
 ## Deep Learning

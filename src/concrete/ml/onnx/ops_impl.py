@@ -1280,7 +1280,10 @@ def numpy_conv(
     """
 
     # Convert the inputs to tensors to compute conv using torch
-    assert_true(len(kernel_shape) == 2, "The convolution operator currently supports only 2-d")
+    assert_true(
+        len(kernel_shape) in (1, 2),
+        f"The convolution operator currently only supports 1d or 2d. Got {len(kernel_shape)}-d",
+    )
     assert_true(
         bool(numpy.all(numpy.asarray(dilations) == 1)),
         "The convolution operator in Concrete does not support dilation",
@@ -1301,8 +1304,33 @@ def numpy_conv(
     # Pad the input if needed
     x_pad = numpy_onnx_pad(x, pads)
 
+    is_conv1d = len(kernel_shape) == 1
+
+    # Workaround for handling torch's Conv1d operator until it is supported by Concrete Python
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4117
+    if is_conv1d:
+        x_pad = numpy.expand_dims(x_pad, axis=-2)
+        w = numpy.expand_dims(w, axis=-2)
+        kernel_shape = (1, kernel_shape[0])
+        strides = (1, strides[0])
+        dilations = (1, dilations[0])
+
     # Compute the torch convolution
-    res = fhe_conv(x_pad, w, b, None, strides, dilations, None, group)
+    res = fhe_conv(
+        x=x_pad,
+        weight=w,
+        bias=b,
+        pads=None,
+        strides=strides,
+        dilations=dilations,
+        kernel_shape=kernel_shape,
+        group=group,
+    )
+
+    # Workaround for handling torch's Conv1d operator until it is supported by Concrete Python
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4117
+    if is_conv1d:
+        res = numpy.squeeze(res, axis=-2)
 
     return (res,)
 
@@ -1310,10 +1338,12 @@ def numpy_conv(
 def numpy_avgpool(
     x: numpy.ndarray,
     *,
-    ceil_mode: int,
     kernel_shape: Tuple[int, ...],
-    pads: Tuple[int, ...] = None,
-    strides: Tuple[int, ...] = None,
+    auto_pad: str = "NOTSET",
+    ceil_mode: int = 0,
+    count_include_pad: int = 1,
+    pads: Optional[Tuple[int, ...]] = None,
+    strides: Optional[Tuple[int, ...]] = None,
 ) -> Tuple[numpy.ndarray]:
     """Compute Average Pooling using Torch.
 
@@ -1322,29 +1352,55 @@ def numpy_avgpool(
     See: https://github.com/onnx/onnx/blob/main/docs/Operators.md#AveragePool
 
     Args:
-        x (numpy.ndarray): input data (many dtypes are supported). Shape is N x C x H x W for 2d
-        ceil_mode (int): ONNX rounding parameter, expected 0 (torch style dimension computation)
-        kernel_shape (Tuple[int, ...]): shape of the kernel. Should have 2 elements for 2d conv
-        pads (Tuple[int, ...]): padding in ONNX format (begin, end) on each axis
-        strides (Tuple[int, ...]): stride of the convolution on each axis
+        x (numpy.ndarray): Input data of shape (N, C, H, W), as only 2D inputs are currently
+            supported.
+        kernel_shape (Tuple[int, ...]): The size of the kernel along each axis. Currently, only 2D
+            kernels are supported.
+        auto_pad (str): Only the default "NOTSET" value is currently supported, which means
+            explicit padding is used.
+        ceil_mode (int): Whether to use ONNX's ceil (1) or floor (0, the default) to compute the
+            output shape.
+        count_include_pad (int): Whether include pad pixels when calculating values for the edges.
+            Currently, setting this parameter to 0 is not supported in Concrete ML.
+        pads (Tuple[int, ...]): Padding for the beginning and ending along each spatial axis.
+            Expected format is [x1_begin, x2_begin...x1_end, x2_end, ...] where xi_begin (resp.
+            xi_end) is the number of pixels added at the beginning (resp. end) of axis `i`.
+        strides (Tuple[int, ...]): Stride along each spatial axis. If not present, the stride
+            defaults to 1 along each spatial axis.
 
     Returns:
         res (numpy.ndarray): a tensor of size (N x InChannels x OutHeight x OutWidth).
            See https://pytorch.org/docs/stable/generated/torch.nn.AvgPool2d.html
-
-    Raises:
-        AssertionError: if the pooling arguments are wrong
     """
 
-    assert_true(len(kernel_shape) == 2, "The average pool operator currently supports only 2-d")
+    assert_true(
+        auto_pad == "NOTSET",
+        "The 'auto_pad' parameter is not supported. Please keep the the default 'NOTSET' value and "
+        "provide explicit padding.",
+    )
 
-    # For mypy
-    assert pads is None or len(pads) == 4
+    assert_true(
+        len(kernel_shape) == 2, "The Average Pool operator currently supports only 2d kernels."
+    )
 
-    # For mypy
-    assert len(kernel_shape) == 2
+    assert_true(
+        count_include_pad == 1,
+        "Pad pixels must be included when calculating values on the edges. Please set "
+        "'count_include_pad' to 1.",
+    )
 
-    assert strides is None or len(strides) == 2
+    assert_true(
+        strides is None or len(kernel_shape) == len(strides),
+        "The Average Pool operator requires the number of strides to be the same as the number of "
+        "kernel dimensions.",
+    )
+
+    assert_true(
+        pads is None or len(pads) == 2 * len(kernel_shape),
+        "The Average Pool operator in Concrete ML requires padding to be specified as "
+        " (pad_left_dim1, pad_right_dim1, pad_left_dim2, pad_right_dim2, ...), following ONNX"
+        " standard.",
+    )
 
     # Use default values if the ONNX did not set these parameters
     pads = (0, 0, 0, 0) if pads is None else pads
@@ -1480,9 +1536,9 @@ def numpy_pad(
 def numpy_cast(data: numpy.ndarray, *, to: int) -> Tuple[numpy.ndarray]:
     """Execute ONNX cast in Numpy.
 
-    For traced values during compilation, it supports only booleans, which are converted to float.
-    For raw values (used in constant folding or shape computations), any cast is allowed.
-
+    This function supports casting to booleans, floats, and double for traced values,
+    converting them accordingly. For raw values (used in constant folding or shape computations),
+    any cast is allowed.
     See: https://github.com/onnx/onnx/blob/main/docs/Operators.md#Cast
 
     Args:
@@ -1496,7 +1552,12 @@ def numpy_cast(data: numpy.ndarray, *, to: int) -> Tuple[numpy.ndarray]:
     if isinstance(data, RawOpOutput):
         return (data.astype(onnx.helper.tensor_dtype_to_np_dtype(to)).view(RawOpOutput),)
 
-    assert_true(to == onnx.TensorProto.BOOL)
+    allowed_types = (onnx.TensorProto.BOOL, onnx.TensorProto.FLOAT, onnx.TensorProto.DOUBLE)
+    assert to in allowed_types, (
+        f"Invalid 'to' data type: {onnx.TensorProto.DataType.Name(to)}. "
+        f"Only {', '.join(onnx.TensorProto.DataType.Name(t) for t in allowed_types)}"
+        "are allowed for casting."
+    )
 
     # Will be used for traced values
     return (data.astype(numpy.float64),)
@@ -2068,3 +2129,74 @@ def numpy_expand(x: numpy.ndarray, shape: Optional[Tuple[int]] = None) -> Tuple[
     assert_true(shape_difference >= 0, "Target shape cannot have fewer dimensions than input shape")
 
     return (numpy.broadcast_to(x, target_shape),)
+
+
+def numpy_unfold(
+    x: numpy.ndarray,
+    *,
+    kernel_shape: Tuple[int, ...],
+    pads: Tuple[int, ...] = None,
+    strides: Tuple[int, ...] = None,
+) -> Tuple[numpy.ndarray]:
+    """Compute Unfold using Torch.
+
+    Currently supports 2d Unfold with torch semantics. This function is ONNX compatible.
+
+    See: https://github.com/onnx/onnx/blob/main/docs/Operators.md
+
+    Args:
+        x (numpy.ndarray): input data (many dtypes are supported). Shape is N x C x H x W for 2d
+        kernel_shape (Tuple[int, ...]): shape of the kernel. Should have 2 elements for 2d conv
+        pads (Tuple[int, ...]): padding in ONNX format (begin, end) on each axis
+        strides (Tuple[int, ...]): stride of the convolution on each axis
+
+    Returns:
+        res (numpy.ndarray): a tensor of size (N x InChannels x OutHeight * OutWidth).
+           See https://pytorch.org/docs/stable/generated/torch.nn.Unfold.html
+
+    Raises:
+        AssertionError: if the unfold arguments are wrong
+    """
+
+    assert_true(len(kernel_shape) == 2, "The unfold operator currently supports only 2-d")
+
+    # For mypy
+    assert pads is None or len(pads) == 4
+
+    # For mypy
+    assert len(kernel_shape) == 2
+
+    assert strides is None or len(strides) == 2
+
+    # Use default values if the ONNX did not set these parameters
+    pads = (0, 0, 0, 0) if pads is None else pads
+    strides = (1, 1) if strides is None else strides
+
+    # Compute the unfold using a grouped convolution (groups = input channels)
+    # This means that each slice of the kernel is applied on each input channel respectively
+    # We create kernels with only one one at each position, which will redirect the kernel
+    # outputs to the output channels
+    n_in_channels = x.shape[1]
+    kernels_list = []
+    for _ in range(n_in_channels):
+        for row in range(kernel_shape[0]):
+            for col in range(kernel_shape[1]):
+                kernel = numpy.zeros(
+                    (1, 1, kernel_shape[0], kernel_shape[1]),
+                    dtype=numpy.int64,
+                )
+                kernel[:, :, row, col] = 1
+                kernels_list.append(kernel)
+    kernels = numpy.concatenate(numpy.array(kernels_list), axis=0)
+
+    # Pad the input tensor
+    pool_pads = compute_onnx_pool_padding(x.shape, kernel_shape, pads, strides, ceil_mode=0)
+    q_input_pad = numpy_onnx_pad(x, pool_pads)
+
+    # Compute the kernels of input values for each kernel position
+    res = fhe_conv(q_input_pad, kernels, None, [0, 0, 0, 0], strides, None, None, n_in_channels)
+
+    # reshape to fit the torch.F.unfold function output shapes
+    res = res.reshape((res.shape[0], res.shape[1], -1))
+
+    return (res,)

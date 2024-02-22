@@ -139,7 +139,7 @@ jobs:
 
       - name: Install dependencies
         id: install-deps
-        uses: nick-fields/retry@v2
+        uses: nick-fields/retry@v3
         with:
           max_attempts: 5
           timeout_minutes: 20
@@ -182,7 +182,7 @@ jobs:
       - name: Upload results
         id: upload-results
         run: |
-          curl \
+          curl --fail-with-body \
           -H "Authorization: Bearer ${{ secrets.NEW_ML_PROGRESS_TRACKER_TOKEN }}" \
           -H "Content-Type: application/json" \
           -d @converted.json \

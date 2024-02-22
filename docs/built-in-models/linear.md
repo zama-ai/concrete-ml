@@ -20,6 +20,8 @@ Using these models in FHE is extremely similar to what can be done with scikit-l
 
 Models are also compatible with some of scikit-learn's main workflows, such as `Pipeline()` and `GridSearch()`.
 
+## Pre-trained models
+
 It is possible to convert an already trained scikit-learn linear model to a Concrete ML one by using the [`from_sklearn_model`](../developer-guide/api/concrete.ml.sklearn.base.md#classmethod-from_sklearn_model) method. See [below for an example](#loading-a-pre-trained-model). This functionality is only available for linear models.
 
 ## Quantization parameters
@@ -27,6 +29,9 @@ It is possible to convert an already trained scikit-learn linear model to a Conc
 The `n_bits` parameter controls the bit-width of the inputs and weights of the linear models. When non-linear mapping is applied by the model, such as _exp_ or _sigmoid_, Concrete ML applies it on the client-side, on clear-text values that are the decrypted output of the linear part of the model. Thus, Linear Models do not use table lookups, and can, therefore, use high precision integers for weight and inputs.
 
 The `n_bits` parameter can be set to `8` or more bits for models with up to `300` input dimensions. When the input has more dimensions, `n_bits` must be reduced to `6-7`. All performance metrics are preserved down to `n_bits=6`, compared to the non-quantized float models from scikit-learn.
+
+The same quantization parameters (i.e., scale and zero-point) are applied on all features, so it can be beneficial to make all feature distribution similar by using standard or min-max normalization.
+For a more detailed comparison of the impact of such pre-processing please refer to [the logistic regression notebook](../advanced_examples/LogisticRegression.ipynb).
 
 ## Example
 

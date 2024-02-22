@@ -6,25 +6,25 @@ Concrete ML provides features for advanced users to adjust cryptographic paramet
 
 Concrete ML makes use of table lookups (TLUs) to represent any non-linear operation (e.g., a sigmoid). TLUs are implemented through the Programmable Bootstrapping (PBS) operation, which applies a non-linear operation in the cryptographic realm.
 
-The result of TLU operations is obtained with a specific error probability. Concrete ML offers the possibility to set this error probability, which influences the cryptographic parameters. The higher the success rate, the more restrictive the parameters become. This can affect both key generation and, more significantly, FHE execution time.
+The result of TLU operations is obtained with a specific tolerance to off-by-one errors. Concrete ML offers the possibility to set the probability of such errors occurring, which influences the cryptographic parameters. The lower the tolerance, the more restrictive the parameters become, making both key generation and, more significantly, FHE execution time slower.
 
 {% hint style="info" %}
 Concrete ML has a _simulation_ mode where the impact of approximate computation of TLUs on the model accuracy can be determined. The simulation is much faster, speeding up model development significantly. The behavior in simulation mode is representative of the behavior of the model on encrypted data.
 {% endhint %}
 
-In Concrete ML, there are three different ways to define the error probability:
+In Concrete ML, there are three different ways to define the tolerance to off-by-one errors for each TLU operation:
 
-- setting `p_error`, the error probability of an individual TLU (see [here](advanced_features.md#an-error-probability-for-an-individual-tlu))
-- setting `global_p_error`, the error probability of the full circuit (see [here](advanced_features.md#a-global-error-probability-for-the-entire-model))
+- setting `p_error`, the error probability of an individual TLU (see [here](advanced_features.md#tolerance-to-off-by-one-error-for-an-individual-tlu))
+- setting `global_p_error`, the error probability of the full circuit (see [here](advanced_features.md#a-global-tolerance-for-one-off-errors-for-the-entire-model))
 - not setting `p_error` nor `global_p_error`, and using default parameters (see [here](advanced_features.md#using-default-error-probability))
 
 {% hint style="warning" %}
-`p_error` and `global_p_error` are somehow two concurrent parameters, in the sense they both have an impact on the choice of cryptographic parameters. It is forbidden in Concrete ML to set both `p_error` and `global_p_error` simultaneously.
+`p_error` and `global_p_error` cannot be set at the same time, as they are incompatible with each other.
 {% endhint %}
 
-### An error probability for an individual TLU
+### Tolerance to off-by-one error for an individual TLU
 
-The first way to set error probabilities in Concrete ML is at the local level, by directly setting the probability of error of each individual TLU. This probability is referred to as `p_error`. A given PBS operation has a `1 - p_error` chance of being successful. The successful evaluation here means that the value decrypted after FHE evaluation is exactly the same as the one that would be computed in the clear.
+The first way to set error probabilities in Concrete ML is at the local level, by directly setting the tolerance to error of each individual TLU operation (such as activation functions for a neuron output). This tolerance is referred to as `p_error`. A given PBS operation has a `1 - p_error` chance of being correct 100% of the time. The successful evaluation here means that the value decrypted after FHE evaluation is exactly the same as the one that would be computed in the clear. Otherwise, off-by-one errors might occur, but, in practice, these errors are not necessarily problematic if they are sufficiently rare.
 
 For simplicity, it is best to use [default options](advanced_features.md#using-default-error-probability), irrespective of the type of model. Especially for deep neural networks, default values may be too pessimistic, reducing computation speed without any improvement in accuracy. For deep neural networks, some TLU errors might not affect the accuracy of the network, so `p_error` can be safely increased (e.g., see CIFAR classifications in [our showcase](../getting-started/showcase.md)).
 
@@ -63,9 +63,9 @@ clf.compile(X_train, p_error=0.1)
 
 If the `p_error` value is specified and [simulation](compilation.md#fhe-simulation) is enabled, the run will take into account the randomness induced by the choice of `p_error`. This results in statistical similarity to the FHE evaluation.
 
-### A global error probability for the entire model
+### A global tolerance for one-off-errors for the entire model
 
-A `global_p_error` is also available and defines the probability of success for the entire model. Here, the `p_error` for every PBS is computed internally in Concrete such that the `global_p_error` is reached.
+A `global_p_error` is also available and defines the probability of 100% correctness for the entire model, compared to execution in the clear. In this case, the `p_error` for every TLU is determined internally in Concrete such that the `global_p_error` is reached for the whole model.
 
 There might be cases where the user encounters a `No cryptography parameter found` error message. Increasing the `p_error` or the `global_p_error` in this case might help.
 
@@ -78,7 +78,7 @@ Usage is similar to the `p_error` parameter:
 clf.compile(X_train, global_p_error=0.1)
 ```
 
-In the above example, XGBoostClassifier in FHE has a 1/10 probability to have a shifted output value compared to the expected value. The shift is relative to the expected value, so even if the result is different, it should be **around** the expected value.
+In the above example, XGBoostClassifier in FHE has a 1/10 probability to have a one-off output value compared to the expected value. The shift is relative to the expected value, so even if the result is different, it should be **close** to the expected value.
 
 ### Using default error probability
 
@@ -162,7 +162,7 @@ $$t = L - P$$
 
 Then, the rounding operation can be computed as:
 
-$$ \mathrm{round\_to\_t\_bits}(x, t) = \left\lfloor  \frac{x}{2^t} \right\rceil \cdot 2^t $$
+$$ \mathrm{round\_to\_P\_bits}(x, t) = \left\lfloor  \frac{x}{2^t} \right\rceil \cdot 2^t $$
 
 where $$x$$ is the input number, and $$\lfloor \cdot \rceil$$ denotes the operation that rounds to the nearest integer.
 

@@ -20,7 +20,14 @@ from .quantizers import (
     UniformQuantizationParameters,
 )
 
-ONNXOpInputOutputType = Union[numpy.ndarray, QuantizedArray, None]
+ONNXOpInputOutputType = Union[
+    numpy.ndarray,
+    QuantizedArray,
+    None,
+    bool,
+    int,
+    float,
+]
 
 ALL_QUANTIZED_OPS: Set[Type] = set()
 
@@ -969,7 +976,8 @@ class QuantizedMixingOp(QuantizedOp, is_utility=True):
 
             # Update the lsbs_to_remove value in the dictionary
             self.lsbs_to_remove[rounding_operation_id] = max(
-                self.lsbs_to_remove.get(rounding_operation_id, 0), computed_lsbs_to_remove
+                self.lsbs_to_remove.get(rounding_operation_id, 0),
+                computed_lsbs_to_remove,
             )
 
         # Rounding logic

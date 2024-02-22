@@ -3,12 +3,16 @@
 import argparse
 import datetime
 import json
-from importlib.metadata import version
+import platform
+import socket
+import subprocess
 from pathlib import Path
 from typing import Any, Dict, List, Union
 
+import cpuinfo
 import numpy as np
 import pandas as pd
+import psutil
 from convert import get_git_hash, get_git_hash_date, git_iso_to_python_iso, is_git_diff
 
 
@@ -28,9 +32,79 @@ def minimum_bribes(q):
     return bribes
 
 
+def get_size(bytes_count: float, suffix="B"):
+    """
+    Scale bytes to its proper format
+    e.g:
+        1253656 => '1.20MB'
+        1253656678 => '1.17GB'
+    """
+    factor = 1024
+    for unit in ["", "K", "M", "G", "T", "P"]:
+        if bytes_count < factor:
+            return f"{bytes_count:.2f} {unit}{suffix}"
+        bytes_count /= factor
+    return f"{bytes_count:.2f} {suffix}"
+
+
+def get_system_information():
+    # From https://stackoverflow.com/questions/3103178/how-to-get-the-system-info-with-python
+    info = {}
+    # What is naturally dumped by python-progress-tracker
+    info["ram"] = get_size(psutil.virtual_memory().total)
+    info["cpu"] = cpuinfo.get_cpu_info()["brand_raw"]
+    info["os"] = f"{platform.system()} {platform.release()}"
+
+    # Added metadata about the system
+    info["platform"] = platform.system()
+    info["platform-release"] = platform.release()
+    info["platform-version"] = platform.version()
+    info["architecture"] = platform.machine()
+    info["hostname"] = socket.gethostname()
+    info["processor"] = platform.processor()
+    info["physical_cores"] = psutil.cpu_count(logical=False)
+    info["total_cores"] = psutil.cpu_count(logical=True)
+    uname = platform.uname()
+    info["machine"] = uname.machine
+    info["processor"] = uname.processor
+    info["system"] = uname.system
+    info["node_name"] = uname.node
+    info["release"] = uname.release
+    info["version"] = uname.version
+    info["swap"] = get_size(psutil.swap_memory().total)
+
+    return info
+
+
+def get_ec2_metadata():
+    res = {}
+    try:
+        output = subprocess.check_output("ec2metadata", shell=True, encoding="utf-8")
+        for line in output.split("\n"):
+            if line:
+                splitted = line.split(": ")
+                if len(splitted) == 2:
+                    key, value = splitted
+                    res[key] = value
+            else:
+                print(line)
+        return res
+    except subprocess.CalledProcessError as exception:
+        print(exception)
+        return res
+
+
+def value_else_none(value):
+    if value != value:  # pylint: disable=comparison-with-itself
+        return None
+    return value
+
+
 def main(model_name):
     # Get metrics
     results = pd.read_csv("./inference_results.csv")
+    with open("./metadata.json", "r", encoding="utf-8") as file:
+        metadata = json.load(file)
     assert isinstance(results, pd.DataFrame)
     timing_columns = [col for col in results.columns if col.endswith("_time")]
     timings = results[timing_columns]
@@ -73,47 +147,56 @@ def main(model_name):
     # Collect everything
     session_data: Dict[str, Union[Dict, List]] = {}
 
+    ec2_metadata = get_ec2_metadata()
+
     # Create machine
+    # We should probably add the platform to the DB too
     session_data["machine"] = {
-        "machine_name": None,
-        "machine_specs": {
-            "cpu": None,
-            "ram": None,
-            "os": None,
-        },
+        "machine_name": ec2_metadata.get("instance-type", socket.gethostname()),
+        "machine_specs": get_system_information(),
     }
 
     # Create experiments
     experiments = []
     dataset_name = "CIFAR-10"
-    experiment_representation: Dict[str, Any] = {}
-    experiment_representation["experiment_name"] = f"cifar-10-{model_name}"
-    experiment_representation["experiment_metadata"] = {
-        "model_name": model_name,
-        "dataset_name": dataset_name,
-        "cml_version": version("concrete-ml"),
-        "cnp_version": version("concrete-python"),
-    }
-    experiment_representation["git_hash"] = current_git_hash
-    experiment_representation["git_timestamp"] = current_git_hash_timestamp
-    experiment_representation["experiment_timestamp"] = current_timestamp
+    experiment_data: Dict[str, Any] = {}
+    experiment_data["experiment_name"] = f"cifar-10-{model_name}"
+    experiment_data["experiment_metadata"] = metadata
+    experiment_data["experiment_metadata"].update(
+        {
+            "model_name": model_name,
+            "dataset_name": dataset_name,
+        }
+    )
+    experiment_data["git_hash"] = current_git_hash
+    experiment_data["git_timestamp"] = current_git_hash_timestamp
+    experiment_data["experiment_timestamp"] = current_timestamp
 
-    experiment_representation["metrics"] = []
+    experiment_data["metrics"] = []
     for key, value in timing_means.items():
-        experiment_representation["metrics"].append({"metric_name": f"{key}_mean", "value": value})
+        experiment_data["metrics"].append(
+            {"metric_name": f"{key}_mean", "value": value_else_none(value)}
+        )
     for key, value in timing_stds.items():
-        experiment_representation["metrics"].append({"metric_name": f"{key}_std", "value": value})
-    experiment_representation["metrics"].append(
-        {"metric_name": "num_samples", "value": num_samples}
+        experiment_data["metrics"].append(
+            {"metric_name": f"{key}_std", "value": value_else_none(value)}
+        )
+    experiment_data["metrics"].append(
+        {"metric_name": "num_samples", "value": value_else_none(num_samples)}
     )
-    experiment_representation["metrics"].append({"metric_name": "top_1_acc", "value": top_1_acc})
-    experiment_representation["metrics"].append(
-        {"metric_name": "top_1_acc_diff", "value": top_1_acc_diff}
+    experiment_data["metrics"].append(
+        {"metric_name": "top_1_acc", "value": value_else_none(top_1_acc)}
     )
-    experiment_representation["metrics"].append(
-        {"metric_name": "chaos_distance_mean", "value": chaos_distance_mean}
+    experiment_data["metrics"].append(
+        {"metric_name": "top_1_acc_diff", "value": value_else_none(top_1_acc_diff)}
     )
-    experiments.append(experiment_representation)
+    experiment_data["metrics"].append(
+        {
+            "metric_name": "chaos_distance_mean",
+            "value": value_else_none(chaos_distance_mean),
+        }
+    )
+    experiments.append(experiment_data)
     session_data["experiments"] = experiments
 
     # Dump modified file

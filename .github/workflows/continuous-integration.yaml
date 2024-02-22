@@ -99,7 +99,7 @@ env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   # The 'FAILED_TESTS_ARE_FLAKY' variable is used to print a warning messages if flaky tests are
-  # re-run. By default, we do not want to print this warning
+  # rerun. By default, we do not want to print this warning
   FAILED_TESTS_ARE_FLAKY: "false"
 
 jobs:
@@ -239,7 +239,7 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -420,15 +420,16 @@ jobs:
 
           make setup_env
 
+      # Commit types are found in https://www.conventionalcommits.org/en/v1.0.0/
       - name: Check commits first line format
         id: commit-first-line
         if: ${{ fromJSON(env.IS_PR) && steps.install-deps.outcome == 'success' && !cancelled() }}
         uses: gsactions/commit-message-checker@16fa2d5de096ae0d35626443bcd24f1e756cafee
         with:
-          pattern: '^((feat|fix|chore|refactor|style|test|docs)(\((bounds|helpers|data_types|debugging|extensions|fhe_circuit|mlir|graph|optimization|representation|tracing|values|benchmarks|ci|scripts|compilation|execution|deps)\))?(\!)?\:) .+$'
+          pattern: '^((build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)\:) .+$'
           flags: 'gs'
-          error: "Your first line has to contain a commit type and scope like \"feat(my_feature): msg\".\
-            Pattern: '^((feat|fix|chore|refactor|style|test|docs)(\\((bounds|helpers|data_types|debugging|extensions|fhe_circuit|mlir|graph|optimization|representation|tracing|values|benchmarks|ci|scripts|compilation|execution|deps)\\))(\\!)??\\:)'"
+          error: "Your first line has to contain a commit type like \"feat: message\".\
+            Pattern: '^((build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)\\:)'"
           excludeDescription: 'true' # optional: this excludes the description body of a pull request
           excludeTitle: 'true' # optional: this excludes the title of a pull request
           checkAllCommitMessages: 'true' # optional: this checks all commits associated with a pull request
@@ -495,7 +496,7 @@ jobs:
           && steps.install-deps.outcome == 'success'
           && steps.make-pcc.outcome == 'success' 
           && !cancelled()
-        uses: tj-actions/changed-files@v41.1.1
+        uses: tj-actions/changed-files@v42.0.4
         with:
           files_yaml: |
             src:
@@ -510,6 +511,8 @@ jobs:
               - tests/seeding/test_seeding.py
             docs:
               - docs/**
+              - '*.md'
+              - LICENSE
             use_cases:
               - use_case_examples/**
             codeblocks:
@@ -626,7 +629,7 @@ jobs:
 
       - name: Upload docs artifacts
         if: ${{ steps.tar-docs.outcome == 'success' && !cancelled() }}
-        uses: actions/upload-artifact@1eb3cb2b3e0f29609092a73eb033bb759a334595
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3
         with:
           name: html-docs
           path: docs/_build/html/docs.tar
@@ -651,7 +654,7 @@ jobs:
   
       - name: Upload changelog artifacts
         if: ${{ steps.changelog.outcome == 'success' && !cancelled() }}
-        uses: actions/upload-artifact@1eb3cb2b3e0f29609092a73eb033bb759a334595
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3
         with:
           name: changelog
           path: ${{ steps.changelog.outputs.changelog-file }}
@@ -673,7 +676,7 @@ jobs:
 
       - name: Upload wheel artifacts
         if: ${{ steps.build-wheel.outcome == 'success' && !cancelled() }}
-        uses: actions/upload-artifact@1eb3cb2b3e0f29609092a73eb033bb759a334595
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3
         with:
           name: py3-wheel
           path: dist/*.whl
@@ -689,7 +692,7 @@ jobs:
       # If only some test files were changed, this step is skipped and each associated tests will be
       # run individually in a following step (pytest_modified_tests_only)
       # If regular tests failed, a following script checks for flaky tests. If all failed tests 
-      # are known flaky tests, they are re-run. Otherwise, the step exits with status 1.
+      # are known flaky tests, they are rerun. Otherwise, the step exits with status 1.
       # The 'bash +e {0}' is added here in order to make sure that the step does not exit directly 
       # if 'make pytest' fails
       - name: PyTest Source Code (regular)
@@ -728,7 +731,7 @@ jobs:
 
             echo "FAILED_TESTS_ARE_FLAKY=${FAILED_TESTS_ARE_FLAKY}" >> "$GITHUB_ENV"
 
-            # If all failed tests are known flaky tests, try to re-run them
+            # If all failed tests are known flaky tests, try to rerun them
             if [[ "${FAILED_TESTS_ARE_FLAKY}" == "true" ]]; then
               make pytest_run_last_failed
             
@@ -738,10 +741,10 @@ jobs:
             fi
           fi
 
-      # If regular tests passed but at least one known flaky test have been re-run, a warning
+      # If regular tests passed but at least one known flaky test have been rerun, a warning
       # comment is published in the PR and all flaky tests that initially failed are listed
       - name: Warn PR with flaky tests
-        uses: marocchino/sticky-pull-request-comment@efaaab3fd41a9c3de579aba759d2552635e590fd
+        uses: marocchino/sticky-pull-request-comment@331f8f5b4215f0445d3c07b4967662a32a2d3e31
         if: steps.pytest_regular.outcome == 'success' && fromJSON(env.FAILED_TESTS_ARE_FLAKY) && !cancelled()
         with:
           header: flaky-test
@@ -818,7 +821,7 @@ jobs:
           ./script/actions_utils/coverage.sh global-coverage-infos.json
 
       - name: Comment with coverage
-        uses: marocchino/sticky-pull-request-comment@efaaab3fd41a9c3de579aba759d2552635e590fd
+        uses: marocchino/sticky-pull-request-comment@331f8f5b4215f0445d3c07b4967662a32a2d3e31
         if: ${{ steps.coverage.outcome != 'skipped' && !cancelled() }}
         continue-on-error: true
         with:
@@ -965,7 +968,7 @@ jobs:
     if: ${{ always() && (needs.start-runner-linux.result != 'skipped') }}
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

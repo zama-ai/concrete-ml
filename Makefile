@@ -12,14 +12,14 @@ CONCRETE_PACKAGE_PATH=$(SRC_DIR)/concrete
 COUNT?=1
 RANDOMLY_SEED?=$$RANDOM
 PYTEST_OPTIONS:=
-POETRY_VERSION:=1.2.2
+POETRY_VERSION:=1.7.1
 APIDOCS_OUTPUT?="./docs/developer-guide/api"
 OPEN_PR="true"
 
 # Force the installation of a Concrete Python version, which is very useful with nightly versions
 # /!\ WARNING /!\: This version should NEVER be a wildcard as it might create some
 # issues when trying to run it in the future.
-CONCRETE_PYTHON_VERSION="concrete-python==2.5.0"
+CONCRETE_PYTHON_VERSION="concrete-python==2.5.1"
 
 # Force the installation of Concrete Python's latest version, release-candidates included
 # CONCRETE_PYTHON_VERSION="$$(poetry run python \
@@ -27,6 +27,10 @@ CONCRETE_PYTHON_VERSION="concrete-python==2.5.0"
 # --pyproject-toml-file pyproject.toml \
 # --get-pip-install-spec-for-dependency concrete-python)"
 
+# At the end of the command, we currently need to force an 'import skorch' in Python in order to 
+# avoid an obscure bug that led to all pytest commands to fail when installing dependencies with 
+# Poetry >= 1.3. It is however not very clear how this import fixes the issue, as the bug was 
+# difficult to understand and reproduce, so the line might become obsolete in the future.
 .PHONY: setup_env # Set up the environment
 setup_env:
 	@# The keyring install is to allow pip to fetch credentials for our internal repo if needed
@@ -52,6 +56,7 @@ setup_env:
 	echo "Installing $(CONCRETE_PYTHON_VERSION)" && \
 	poetry run python -m pip install -U --pre "$(CONCRETE_PYTHON_VERSION)"
 	"$(MAKE)" fix_omp_issues_for_intel_mac
+	poetry run python -c "import skorch" || true # Details above
 
 .PHONY: sync_env # Synchronise the environment
 sync_env: 
@@ -235,8 +240,7 @@ pytest_internal_parallel:
 # --global-coverage-infos-json=global-coverage-infos.json is to dump the coverage report in the file 
 # --cov PATH is the directory PATH to consider for coverage. Default to SRC_DIR=src
 # --cov-fail-under=100 is to make the command fail if coverage does not reach a 100%
-# --cov-report=term-missing:skip-covered is used to print the missing lines for coverage withtout 
-# taking into account skiped tests
+# --cov-report=term-missing:skip-covered is used to avoid printing covered lines for all files
 .PHONY: pytest # Run pytest on all tests
 pytest:
 	"$(MAKE)" pytest_internal_parallel \
@@ -270,12 +274,25 @@ pytest_no_flaky: check_current_flaky_tests
 
 # Runnning latest failed tests works by accessing pytest's cache. It is therefore recommended to
 # call '--cache-clear' when calling the previous pytest run. 
+# --cov PATH is the directory PATH to consider for coverage. Default to SRC_DIR=src
+# --cov-append is to make the coverage of the previous pytest run to also consider the tests that are
+# going to be re-executed by 'pytest_run_last_failed'
+# --cov-fail-under=100 is to make the command fail if coverage does not reach a 100%
+# --cov-report=term-missing:skip-covered is used to avoid printing covered lines for all files
+# --global-coverage-infos-json=global-coverage-infos.json is to dump the coverage report in the file 
 # --last-failed runs all last failed tests
 # --last-failed-no-failures none' indicates pytest not to run anything (instead of running 
 # all tests over again) if no failed tests are found
 .PHONY: pytest_run_last_failed # Run all failed tests from the previous pytest run
 pytest_run_last_failed:
-	poetry run pytest $(TEST) --last-failed --last-failed-no-failures none
+	poetry run pytest $(TEST) \
+	--cov=$(SRC_DIR) \
+	--cov-append \
+	--cov-fail-under=100 \
+	--cov-report=term-missing:skip-covered \
+	--global-coverage-infos-json=global-coverage-infos.json \
+	--last-failed \
+	--last-failed-no-failures none
 
 .PHONY: pytest_one # Run pytest on a single file or directory (TEST)
 pytest_one:
@@ -577,13 +594,10 @@ changelog: check_version_coherence
 	PROJECT_VER="$${poetry version --short}" && \
 	poetry run python ./script/make_utils/changelog_helper.py > "CHANGELOG_$${PROJECT_VER}.md"
 
-.PHONY: show_scope # Show the accepted types and optional scopes (for git conventional commits)
-show_scope:
-	@echo "Accepted types and optional scopes:"
+.PHONY: show_commit_rules # Show the accepted rules for git conventional commits
+show_commit_rules:
+	@echo "Accepted commit rules:"
 	@cat .github/workflows/continuous-integration.yaml | grep feat | grep pattern | cut -f 2- -d ":" | cut -f 2- -d " "
-
-.PHONY: show_type # Show the accepted types and optional scopes (for git conventional commits)
-show_type:show_scope
 
 .PHONY: licenses # Generate the list of licenses of dependencies
 licenses:

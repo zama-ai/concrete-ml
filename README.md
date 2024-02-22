@@ -2,39 +2,71 @@
 <!-- product name logo -->
   <img width=600 src="https://user-images.githubusercontent.com/5758427/231206363-a6639df8-2253-40d8-836e-e3c22d36d6ad.png">
 </p>
+
 <hr>
 
 <p align="center">
-  <a href="https://docs.zama.ai/concrete-ml"> 📒 Read documentation</a> | <a href="https://zama.ai/community"> 💛 Community support</a>
+  <a href="https://docs.zama.ai/concrete-ml"> 📒 Documentation</a> | <a href="https://zama.ai/community"> 💛 Community support</a> | <a href="https://github.com/zama-ai/awesome-zama"> 📚 FHE resources by Zama</a>
 </p>
+
 <p align="center">
-<!-- Version badge using shields.io -->
-  <a href="https://github.com/zama-ai/concrete-ml/releases">
-    <img src="https://img.shields.io/github/v/release/zama-ai/concrete-ml?style=flat-square">
-  </a>
-<!-- Link to tutorials badge using shields.io -->
-  <a href="#online-demos-and-tutorials">
-    <img src="https://img.shields.io/badge/Learn-%20Tutorials%20and%20demos-orange?style=flat-square">
-  </a>
-<!-- Zama Bounty Program -->
-  <a href="https://github.com/zama-ai/bounty-program">
-    <img src="https://img.shields.io/badge/Contribute-Zama%20Bounty%20Program-yellow?style=flat-square">
-  </a>
+  <a href="https://github.com/zama-ai/concrete-ml/releases"><img src="https://img.shields.io/github/v/release/zama-ai/concrete-ml?style=flat-square"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-BSD--3--Clause--Clear-%23ffb243?style=flat-square"></a>
+  <a href="https://github.com/zama-ai/bounty-program"><img src="https://img.shields.io/badge/Contribute-Zama%20Bounty%20Program-%23ffd208?style=flat-square"></a>
 </p>
-<hr>
 
-Concrete ML is a Privacy-Preserving Machine Learning (PPML) open-source set of tools built on top of [Concrete](https://github.com/zama-ai/concrete) by [Zama](https://github.com/zama-ai). It aims to simplify the use of fully homomorphic encryption (FHE) for data scientists to help them automatically turn machine learning models into their homomorphic equivalent. Concrete ML was designed with ease-of-use in mind, so that data scientists can use it without knowledge of cryptography. Notably, the Concrete ML model classes are similar to those in scikit-learn and it is also possible to convert PyTorch models to FHE.
+## About
 
-## Main features.
+### What is Concrete ML
 
-Data scientists can use models with APIs which are close to the frameworks they use, with additional options to run inferences in FHE.
+**Concrete ML** is a Privacy-Preserving Machine Learning (PPML) open-source set of tools built on top of [Concrete](https://github.com/zama-ai/concrete) by [Zama](https://github.com/zama-ai).
 
-Concrete ML features:
+It simplifies the use of fully homomorphic encryption (FHE) for data scientists so that they can automatically turn machine learning models into their homomorphic equivalents, and use them without knowledge of cryptography.
 
-- built-in models, which are ready-to-use FHE-friendly models with a user interface that is equivalent to their the scikit-learn and XGBoost counterparts
-- support for customs models that can use quantization aware training. These are developed by the user using PyTorch or keras/tensorflow and are imported into Concrete ML through ONNX
+Concrete ML is designed with ease of use in mind. Data scientists can use models with APIs that are close to the frameworks they already know well, while additional options to those models allow them to run inference or training on encrypted data with FHE. The Concrete ML model classes are similar to those in scikit-learn and it is also possible to convert PyTorch models to FHE.
+<br></br>
 
-## Installation.
+### Main features
+
+- **Built-in models**: Ready-to-use FHE-friendly models with a user interface that is equivalent to their the scikit-learn and XGBoost counterparts
+- **Customs models**: Concrete ML supports models that can use quantization-aware training. These are developed by the user using PyTorch or keras/tensorflow and are imported into Concrete ML through ONNX
+
+*Learn more about Concrete ML features in the [documentation](https://docs.zama.ai/concrete-ml/readme).*
+<br></br>
+
+### Use cases
+
+By leveraging FHE, Concrete ML can unlock a myriad of new use cases for machine learning, such as enabling secure and private data collaboration, protecting sensitive data while still allowing for analysis, and facilitating machine learning on data-sets that are subject to strict data privacy regulations, for instance
+
+- **Healthcare data analysis**: Improve patient care while maintaining privacy by allowing secure, confidential data sharing between healthcare providers.
+- **Financial services**: Facilitate secure financial data analysis for risk management and fraud detection, keeping client information encrypted and safe.
+- **Ad campaign tracking**: Create targeted advertising and campaign insights in a post-cookie era, ensuring user privacy through encrypted data analysis.
+- **Industries:** Enable predictive maintenance in the cloud while keeping sensitive data confidential, enhancing efficiency and data security.
+- **Biometrics:** Give the ability to create user authentication applications without having to reveal their identities.
+- **Government:** Enable governments to create digitized versions of their services without having to trust cloud providers.
+
+*See more use cases in the list of [demos](#demos).*
+<br></br>
+
+## Table of Contents
+
+- **[Getting Started](#getting-started)**
+  - [Installation](#installation)
+  - [A simple example](#a-simple-example)
+- **[Resources](#resources)**
+  - [Demos](#demos)
+  - [Tutorials](#tutorials)
+  - [Documentation](#documentation)
+- **[Working with Concrete ML](#working-with-concrete-ml)**
+  - [Citations](#citations)
+  - [Contributing](#contributing)
+  - [License](#license)
+- **[Support](#support)**
+  <br></br>
+
+## Getting Started
+
+### Installation
 
 Depending on your OS, Concrete ML may be installed with Docker or with pip:
 
@@ -47,16 +79,14 @@ Depending on your OS, Concrete ML may be installed with Docker or with pip:
 | macOS 11+ (Apple Silicon: M1, M2, etc.) |         Yes         |       Yes        |
 
 Note: Concrete ML only supports Python `3.8`, `3.9` and `3.10`.
+Concrete ML can be installed on Kaggle ([see this question on the community for more details](https://community.zama.ai/t/how-do-we-use-concrete-ml-on-kaggle/332)) and on Google Colab.
 
-Concrete ML can be installed on Kaggle ([see question on community for more details](https://community.zama.ai/t/how-do-we-use-concrete-ml-on-kaggle/332)) and on Google Colab.
-
-### Docker
+#### Docker
 
 To install with Docker, pull the `concrete-ml` image as follows:
-
 `docker pull zamafhe/concrete-ml:latest`
 
-### Pip
+#### Pip
 
 To install Concrete ML from PyPi, run the following:
 
@@ -65,11 +95,15 @@ pip install -U pip wheel setuptools
 pip install concrete-ml
 ```
 
-You can find more detailed installation instructions in [this part of the documentation](docs/getting-started/pip_installing.md)
+*Find more detailed installation instructions in [this part of the documentation](https://docs.zama.ai/concrete-ml/getting-started/pip_installing)*
 
-## A simple Concrete ML example with scikit-learn.
+<p align="right">
+  <a href="#about" > ↑ Back to top </a> 
+</p>
 
-A simple example which is very close to scikit-learn is as follows, for a logistic regression :
+### A simple example
+
+Here is a simple example which is very close to scikit-learn for a logistic regression :
 
 ```python
 from sklearn.datasets import make_classification
@@ -107,6 +141,7 @@ print(f"Similarity: {int((y_pred_fhe == y_pred_clear).mean()*100)}%")
     # Similarity: 100%
 ```
 
+<br></br>
 It is also possible to call encryption, model prediction, and decryption functions separately as follows.
 Executing these steps separately is equivalent to calling `predict_proba` on the model instance.
 
@@ -135,42 +170,65 @@ print("Probability with `predict_proba`: ", y_proba_fhe)
 print("Probability with encrypt/run/decrypt calls: ", y0)
 ```
 
-This example is explained in more detail in the [linear model documentation](docs/built-in-models/linear.md). Concrete ML built-in models
-have APIs that are almost identical to their scikit-learn counterparts. It is also possible to convert PyTorch networks to FHE with the Concrete ML conversion APIs. Please refer to the [linear models](docs/built-in-models/linear.md), [tree-based models](docs/built-in-models/tree.md) and [neural networks](docs/built-in-models/neural-networks.md) documentation for more examples, showing the scikit-learn-like API of the built-in
-models.
+*This example is explained in more detail in the [linear model documentation](https://docs.zama.ai/concrete-ml/built-in-models/linear).*
 
-## Documentation.
+Concrete ML built-in models have APIs that are almost identical to their scikit-learn counterparts. It is also possible to convert PyTorch networks to FHE with the Concrete ML conversion APIs. Please refer to the [linear models](docs/built-in-models/linear.md), [tree-based models](docs/built-in-models/tree.md) and [neural networks](docs/built-in-models/neural-networks.md) documentation for more examples, showing the scikit-learn-like API of the built-in models.
+
+<p align="right">
+  <a href="#about" > ↑ Back to top </a> 
+</p>
+
+## Resources
+
+### Demos
+
+#### Live demos on Hugging Face
+
+- [Credit card approval](https://huggingface.co/spaces/zama-fhe/credit_card_approval_prediction):  Predicting credit scoring card approval application in which sensitive data can be shared and analyzed without exposing the actual information to neither the three parties involved, nor the server processing it.
+  - Check the code [here](https://huggingface.co/spaces/zama-fhe/credit_card_approval_prediction/tree/main)
+- [Sentiment analysis with transformers](https://huggingface.co/blog/sentiment-analysis-fhe): predicting if an encrypted tweet / short message is positive, negative or neutral, using FHE.
+  - Check the code [here](https://huggingface.co/spaces/zama-fhe/encrypted_sentiment_analysis/tree/main) and the [blog post](https://huggingface.co/blog/sentiment-analysis-fhe)
+- [Health diagnosis](https://huggingface.co/spaces/zama-fhe/encrypted_health_prediction): giving a diagnosis using FHE to preserve the privacy of the patient based on a patient's symptoms, history and other health factors.
+  - Check the code [here](https://huggingface.co/spaces/zama-fhe/encrypted_health_prediction/tree/main)
+- [Encrypted image filtering](https://huggingface.co/spaces/zama-fhe/encrypted_image_filtering) : filtering encrypted images by applying filters such as black-and-white, ridge detection, or your own filter.
+  - Check the code [here](https://huggingface.co/spaces/zama-fhe/encrypted_image_filtering/tree/main)
+
+#### Other demos
+
+- [Encrypted Large Language Model](use_case_examples/llm/): converting a user-defined part of a Large Language Model for encrypted text generation. This demo shows the trade-off between quantization and accuracy for text generation and shows how to run the model in FHE.
+- [Private inference for federated learned models](use_case_examples/federated_learning/): private training of a Logistic Regression model and then importing the model into Concrete ML and performing encrypted prediction.
+- [Titanic](use_case_examples/titanic/KaggleTitanic.ipynb): solving the [Kaggle Titanic competition](https://www.kaggle.com/c/titanic/). Implemented with XGBoost from Concrete ML, this example comes as a companion of the [Kaggle notebook](https://www.kaggle.com/code/concretemlteam/titanic-with-privacy-preserving-machine-learning), and was the subject of a blogpost in [KDnuggets](https://www.kdnuggets.com/2022/08/machine-learning-encrypted-data.html).
+- [CIFAR10 FHE-friendly model with Brevitas](use_case_examples/cifar/cifar_brevitas_training): training a VGG9 FHE-compatible neural network using Brevitas, and a script to run the neural network in FHE. Execution in FHE takes ~4 minutes per image and shows an accuracy of 88.7%.
+- [CIFAR10 / CIFAR100 FHE-friendly models with Transfer Learning approach](use_case_examples/cifar/cifar_brevitas_finetuning): series of three notebooks, that convert a pre-trained FP32 VGG11 neural network into a quantized model using Brevitas. The model is fine-tuned on the CIFAR data-sets, converted for FHE execution with Concrete ML and evaluated using FHE simulation. For CIFAR10 and CIFAR100, respectively, our simulations show an accuracy of 90.2% and 68.2%.
+- [FHE neural network splitting for client/server deployment](use_case_examples/cifar/cifar_brevitas_with_model_splitting): explaining how to split a computationally-intensive neural network model in two parts. First, we execute the first part on the client side in the clear, and the output of this step is encrypted. Next, to complete the computation, the second part of the model is evaluated with FHE. This tutorial also shows the impact of FHE speed/accuracy trade-off on CIFAR10, limiting PBS to 8-bit, and thus achieving 62% accuracy.
+
+*If you have built awesome projects using Concrete ML, please let us know and we will be happy to showcase them here!*
+<br></br>
+
+### Tutorials
+
+- [\[Video tutorial\] Train a linear classifier on encrypted data using Concrete ML and Fully Homomorphic Encryption (FHE)](https://www.youtube.com/watch?v=QVsZ33jBlq4)
+- [\[Video tutorial\] How To Convert a Scikit-learn Model Into Its Homomorphic Equivalent](https://www.zama.ai/post/how-to-convert-a-scikit-learn-model-into-its-homomorphic-equivalent)
+- [Linear Regression Over Encrypted Data With Homomorphic Encryption](https://www.zama.ai/post/linear-regression-using-linear-svr-and-concrete-ml-homomorphic-encryption)
+- [How to Deploy a Machine Learning Model With Concrete ML](https://www.zama.ai/post/how-to-deploy-machine-learning-models-with-concrete-ml)
+- More [Built-in models tutorials](docs/built-in-models/ml_examples.md) and [Deep learning tutorials](docs/deep-learning/examples.md)
+
+*Explore more useful resources in [Awesome Zama repo](https://github.com/zama-ai/awesome-zama)*
+<br></br>
+
+### Documentation
 
 Full, comprehensive documentation is available here: [https://docs.zama.ai/concrete-ml](https://docs.zama.ai/concrete-ml).
 
-## Online demos and tutorials.
+<p align="right">
+  <a href="#about" > ↑ Back to top </a> 
+</p>
 
-Various tutorials are given for [built-in models](docs/built-in-models/ml_examples.md) and for [deep learning](docs/deep-learning/examples.md) In addition, several complete use-cases are explored:
+## Working with Concrete ML
 
-- [Encrypted Large Language Model](use_case_examples/llm/): convert a user-defined part of a Large Language Model for encrypted text generation. Shows the trade-off between quantization and accuracy for text generation and shows how to run the model in FHE.
+### Citations
 
-- [Credit Scoring](use_case_examples/credit_scoring/): predict the chance of a given loan applicant defaulting on loan repayment while keeping the user's data private. Shows how Concrete ML models easily replace their scikit-learn equivalents
-
-- [Health diagnosis](use_case_examples/disease_prediction/): based on a patient's symptoms, history and other health factors, give
-  a diagnosis using FHE to preserve the privacy of the patient.
-
-- [Titanic](use_case_examples/titanic/KaggleTitanic.ipynb): solve the [Kaggle Titanic competition](https://www.kaggle.com/c/titanic/). Implemented with XGBoost from Concrete ML, this example comes as a companion of the [Kaggle notebook](https://www.kaggle.com/code/concretemlteam/titanic-with-privacy-preserving-machine-learning), and was the subject of a blogpost in [KDnuggets](https://www.kdnuggets.com/2022/08/machine-learning-encrypted-data.html).
-
-- [Sentiment analysis with transformers](use_case_examples/sentiment_analysis_with_transformer): predict if an encrypted tweet / short message is positive, negative or neutral, using FHE. The [live interactive](https://huggingface.co/spaces/zama-fhe/encrypted_sentiment_analysis) demo is available on Hugging Face. This [blog post](https://huggingface.co/blog/sentiment-analysis-fhe) explains how this demo works!
-
-- [CIFAR10 FHE-friendly model with Brevitas](use_case_examples/cifar/cifar_brevitas_training): train a VGG9 FHE-compatible neural network using Brevitas, and a script to run the neural network in FHE. Execution in FHE takes ~4 minutes per image and shows an accuracy of 88.7%.
-
-- [CIFAR10 / CIFAR100 FHE-friendly models with Transfer Learning approach](use_case_examples/cifar/cifar_brevitas_finetuning): series of three notebooks, that convert a pre-trained FP32 VGG11 neural network into a quantized model using Brevitas. The model is fine-tuned on the CIFAR data-sets, converted for FHE execution with Concrete ML and evaluated using FHE simulation. For CIFAR10 and CIFAR100, respectively, our simulations show an accuracy of 90.2% and 68.2%.
-
-- [FHE neural network splitting for client/server deployment](use_case_examples/cifar/cifar_brevitas_with_model_splitting): explains how to split a computationally-intensive neural network model in two parts. First, we execute the first part on the client side in the clear, and the output of this step is encrypted. Next, to complete the computation, the second part of the model is evaluated with FHE. This tutorial also shows the impact of FHE speed/accuracy trade-off on CIFAR10, limiting PBS to 8-bit, and thus achieving 62% accuracy.
-
-- [Encrypted image filtering](use_case_examples/image_filtering): filter encrypted images by applying filters such as black-and-white, ridge detection, or your own filter.
-
-If you have built awesome projects using Concrete ML, feel free to let us know and we'll link to them!
-
-## Citing Concrete ML
-
-To cite Concrete ML, notably in academic papers, please use the following entry, which list authors by order of first commit:
+To cite Concrete ML in academic papers, please use the following entry:
 
 ```text
 @Misc{ConcreteML,
@@ -181,12 +239,27 @@ To cite Concrete ML, notably in academic papers, please use the following entry,
 }
 ```
 
-## Need support?
+### Contributing
+
+To contribute to Concrete ML, please refer to [this section of the documentation](docs/developer-guide/contributing.md).
+<br></br>
+
+### License
+
+This software is distributed under the **BSD-3-Clause-Clear** license. If you have any questions, please contact us at hello@zama.ai.
+
+<p align="right">
+  <a href="#about" > ↑ Back to top </a> 
+</p>
+
+## Support
 
 <a target="_blank" href="https://community.zama.ai">
-  <img src="https://user-images.githubusercontent.com/5758427/231115030-21195b55-2629-4c01-9809-be5059243999.png">
+  <img src="https://github.com/zama-ai/concrete-ml/assets/157474013/0cb69022-fd02-4dbc-801b-51401f3bc07c">
 </a>
 
-## License.
+🌟 If you find this project helpful or interesting, please consider giving it a star on GitHub! Your support helps to grow the community and motivates further development.
 
-This software is distributed under the BSD-3-Clause-Clear license. If you have any questions, please contact us at hello@zama.ai.
+<p align="right">
+  <a href="#tabout" > ↑ Back to top </a> 
+</p>

@@ -7,6 +7,16 @@ on:
         default: "main"
         required: true
         type: string
+      alternative-cp-wheel-artifact-id:
+        description: Alternative Concrete-Python Wheel Artifact-ID (see https://github.com/zama-ai/concrete/actions/workflows/concrete_python_release.yml)
+        default: "none"
+        required: true
+        type: string
+      alternative-cp-branch:
+        description: Alternative Concrete-Python Branch
+        default: "none"
+        required: true
+        type: string
       benchmark:
         description: Benchmark to run (cifar-10-8b or cifar-10-16b)
         default: "cifar-10-16b"
@@ -14,16 +24,14 @@ on:
         options:
           - "cifar-10-8b"
           - "cifar-10-16b"
-      instance_type:
-        description: Instance type on which to launch benchmarks
-        default: "m6i.metal"
-        type: choice
-        options:
-          - "m6i.metal"
-          - "u-6tb1.112xlarge"
       num_samples:
         description: Number of samples to use
         default: "3"
+        type: string
+        required: true
+      p_error:
+        description: P-error to use
+        default: "0.01"
         type: string
         required: true
 
@@ -36,53 +44,32 @@ env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   AGENT_TOOLSDIRECTORY: /opt/hostedtoolcache
   RUNNER_TOOL_CACHE: /opt/hostedtoolcache
+  SLAB_PROFILE: big-cpu
+
 
 # Jobs
 jobs:
-  start-cifar-runner:
-    name: Launch AWS instances
-    runs-on: ubuntu-20.04
-    defaults:
-      run:
-        shell: bash
-    container:
-      image: ubuntu:20.04
+  setup-ec2:
+    name: Setup EC2 instance
+    runs-on: ubuntu-latest
     outputs:
-      label: ${{ steps.start-cifar10-8bit-runner.outputs.label }}
-      ec2-instance-id: ${{ steps.start-cifar10-8bit-runner.outputs.ec2-instance-id || '' }}
+      runner-name: ${{ steps.start-instance.outputs.label }}
+      instance-id: ${{ steps.start-instance.outputs.ec2-instance-id }}
     steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-      - name: Start CIFAR-10 8-bit runner
-        id: start-cifar10-8bit-runner
-        uses: machulav/ec2-github-runner@2c4d1dcf2c54673ed3bfd194c4b6919ed396a209
+      - name: Start instance
+        id: start-instance
+        uses: zama-ai/slab-github-runner@ab65ad70bb9f9e9251e4915ea5612bcad23cd9b1
         with:
           mode: start
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
-          ec2-instance-type: ${{ github.event.inputs.instance_type }}
-          subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
-          security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
-          aws-resource-tags: >
-            [
-              {"Key": "Name", "Value": "cml-benchmark-cifar10"},
-              {"Key": "GitHubRepository", "Value": "${{ github.repository }}"},
-              {"Key": "Actor", "Value": "${{ github.actor }}"},
-              {"Key": "Action", "Value": "${{ github.action }}"},
-              {"Key": "GitHash", "Value": "${{ github.sha }}"},
-              {"Key": "RefName", "Value": "${{ github.ref_name }}"},
-              {"Key": "RunId", "Value": "${{ github.run_id }}"},
-              {"Key": "Team", "Value": "CML"}
-            ]
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          profile: ${{ env.SLAB_PROFILE }}
 
   run-cifar-10:
-    needs: [start-cifar-runner]
+    needs: [setup-ec2]
     name: Run benchmark
-    runs-on: ${{ needs.start-cifar-runner.outputs.label }}
+    runs-on: ${{ needs.setup-ec2.outputs.runner-name }}
     env:
       PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
       PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
@@ -115,6 +102,36 @@ jobs:
           ./script/make_utils/setup_os_deps.sh
           make setup_env
 
+      - name: Alternative Concrete Python Wheel Download
+        if: github.event.inputs.alternative-cp-wheel-artifact-id != 'none'
+        run: |
+          curl -L \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          -o concrete-python.whl.zip \
+          https://api.github.com/repos/zama-ai/concrete/actions/artifacts/${{ github.event.inputs.alternative-cp-wheel-artifact-id }}/zip
+
+      - name: Alternative Concrete Python Wheel Install
+        if: github.event.inputs.alternative-cp-wheel-artifact-id != 'none'
+        run: |
+          source .venv/bin/activate
+          unzip concrete-python.whl.zip
+          pip install concrete_python-*.whl
+
+      - name: Alternative Concrete Python Branch Checkout
+        if: github.event.inputs.alternative-cp-branch != 'none'
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          path: concrete
+          repository: zama-ai/concrete
+          ref: ${{ github.event.inputs.alternative-cp-branch }}
+
+      - name: Alternative Concrete Python Branch Source Install
+        if: github.event.inputs.alternative-cp-branch != 'none'
+        run: |
+          cp -R concrete/frontends/concrete-python/concrete/* .venv/lib/python3.*/site-packages/concrete/
+
       # CIFAR-10-8b benchmark
       - name: Benchmark - CIFAR-10-8b
         if: github.event.inputs.benchmark == 'cifar-10-8b'
@@ -128,81 +145,85 @@ jobs:
         if: github.event.inputs.benchmark == 'cifar-10-16b'
         run: |
           source .venv/bin/activate
-          NUM_SAMPLES=${{ github.event.inputs.num_samples }} python3 ./use_case_examples/cifar/cifar_brevitas_training/evaluate_one_example_fhe.py
+          NUM_SAMPLES=${{ github.event.inputs.num_samples }} P_ERROR=${{ github.event.inputs.p_error }} python3 ./use_case_examples/cifar/cifar_brevitas_training/evaluate_one_example_fhe.py
           python3 ./benchmarks/convert_cifar.py --model-name "16-bits-trained-v0"
 
-      - name: Upload results
-        if: ${{ github.repository == 'zama-ai/concrete-ml-internal' }}
-        id: upload-results
-        run: |
-          curl \
-          -H "Authorization: Bearer ${{ secrets.NEW_ML_PROGRESS_TRACKER_TOKEN }}" \
-          -H "Content-Type: application/json" \
-          -d @to_upload.json \
-          -X POST "${{ secrets.NEW_ML_PROGRESS_TRACKER_URL }}experiment"
-
       - name: Archive raw predictions
-        uses: actions/upload-artifact@v4.1.0
+        uses: actions/upload-artifact@v4.3.1
         with:
           name: predictions.csv
           path: inference_results.csv
 
       - name: Archive metrics
-        uses: actions/upload-artifact@v4.1.0
+        uses: actions/upload-artifact@v4.3.1
         with:
           name: metrics.json
           path: to_upload.json
 
       - name: Archive MLIR
-        uses: actions/upload-artifact@v4.1.0
+        uses: actions/upload-artifact@v4.3.1
         with:
           name: mlir.txt
           path: cifar10.mlir
 
       - name: Archive Graph
-        uses: actions/upload-artifact@v4.1.0
+        uses: actions/upload-artifact@v4.3.1
         with:
           name: graph.txt
           path: cifar10.graph
 
       - name: Archive client
-        uses: actions/upload-artifact@v4.1.0
+        uses: actions/upload-artifact@v4.3.1
         with:
           name: client.zip
           path: client_server/client.zip
 
       - name: Archive server
-        uses: actions/upload-artifact@v4.1.0
+        uses: actions/upload-artifact@v4.3.1
         with:
           name: server.zip
           path: client_server/server.zip
 
-  stop-runner:
-    name: Stop EC2 runner
-    needs: [run-cifar-10, start-cifar-runner]
-    runs-on: ubuntu-20.04
-    timeout-minutes: 2
-    if: ${{ always() }}
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+      # We need to keep this as the last step to avoid not uploading the artifacts
+      # if the step crashes
+      - name: Upload results
+        id: upload-results
+        if: github.event.inputs.alternative-cp-branch == 'none' && github.event.inputs.alternative-cp-wheel-artifact-id == 'none'
+        run: |
+          # Log the json
+          cat to_upload.json | jq
+          
+          # We need to sleep to avoid log issues
+          sleep 1.
 
-      - name: Stop EC2 runner
-        uses: machulav/ec2-github-runner@2c4d1dcf2c54673ed3bfd194c4b6919ed396a209
-        if: ${{ always() }}
+          # Upload the json to the benchmark database
+          curl --fail-with-body \
+          -H "Authorization: Bearer ${{ secrets.NEW_ML_PROGRESS_TRACKER_TOKEN }}" \
+          -H "Content-Type: application/json; charset=UTF-8" \
+          -d @to_upload.json \
+          -X POST "${{ secrets.NEW_ML_PROGRESS_TRACKER_URL }}experiment"
+
+  teardown-ec2:
+    name: Teardown EC2 instance (fast-tests)
+    if: ${{ always() }}
+    needs: [ setup-ec2, run-cifar-10 ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Stop instance
+        id: stop-instance
+        uses: zama-ai/slab-github-runner@ab65ad70bb9f9e9251e4915ea5612bcad23cd9b1
         with:
           mode: stop
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          label: ${{ needs.start-cifar-runner.outputs.label }}
-          ec2-instance-id: ${{ needs.start-cifar-runner.outputs.ec2-instance-id }}
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          profile: ${{ env.SLAB_PROFILE }}
+          label: ${{ needs.setup-ec2.outputs.runner-name }}
 
   slack-notification:
     runs-on: ubuntu-20.04
     needs: [run-cifar-10]
+    if: github.event.inputs.alternative-cp-branch == 'none' && github.event.inputs.alternative-cp-wheel-artifact-id == 'none'
     steps:
       - name: Slack Notification
         if: ${{ always() }}

@@ -67,7 +67,7 @@ Get the post-processing parameters.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module.py#L739"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module.py#L754"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `bitwidth_and_range_report`
 
@@ -83,7 +83,7 @@ Report the ranges and bit-widths for layers that mix encrypted integer values.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module.py#L207"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module.py#L222"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_compiled`
 
@@ -99,7 +99,7 @@ Check if the quantized module is compiled.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module.py#L610"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module.py#L625"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -139,7 +139,7 @@ Compile the module's forward function.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module.py#L566"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module.py#L581"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
@@ -159,7 +159,7 @@ Take the last layer q_out and use its de-quant function.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module.py#L190"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module.py#L205"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
@@ -175,7 +175,7 @@ Dump itself to a file.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module.py#L137"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module.py#L152"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -191,7 +191,7 @@ Dump itself to a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module.py#L182"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module.py#L197"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -207,7 +207,7 @@ Dump itself to a string.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module.py#L298"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module.py#L313"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -216,7 +216,7 @@ forward(
     *x: ndarray,
     fhe: Union[FheMode, str] = <FheMode.DISABLE: 'disable'>,
     debug: bool = False
-) → Union[ndarray, Tuple[ndarray, ], Tuple[Union[Tuple[ndarray, ], ndarray], Dict[str, Dict[Union[int, str], Union[ndarray, QuantizedArray, NoneType]]]]]
+) → Union[ndarray, Tuple[ndarray, ], Tuple[Union[Tuple[ndarray, ], ndarray], Dict[str, Dict[Union[int, str], Union[ndarray, QuantizedArray, NoneType, bool, int, float]]]]]
 ```
 
 Forward pass with numpy function only on floating points.
@@ -235,7 +235,7 @@ This method executes the forward pass in the clear, with simulation or in FHE. I
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module.py#L156"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module.py#L171"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `load_dict`
 
@@ -255,7 +255,7 @@ Load itself from a string.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module.py#L238"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module.py#L253"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -277,7 +277,7 @@ For quantized modules, there is no post-processing step but the method is kept t
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module.py#L541"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module.py#L556"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 
@@ -297,7 +297,7 @@ Take the inputs in fp32 and quantize it using the learned quantization parameter
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module.py#L372"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module.py#L387"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantized_forward`
 
@@ -321,7 +321,7 @@ Forward function for the FHE circuit.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module.py#L592"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module.py#L607"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `set_inputs_quantization_parameters`
 
@@ -337,7 +337,7 @@ Set the quantization parameters for the module's inputs.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module.py#L126"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module.py#L141"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `set_reduce_sum_copy`
 

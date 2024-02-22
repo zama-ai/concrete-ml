@@ -47,7 +47,7 @@ def _raise_qat_import_error(bad_qat_ops: List[Tuple[str, str]]):
         "found during calibration do not appear to be quantized. \n\n"
         + "\n".join(
             map(
-                lambda info: f"* Tensor {info[0]}, input of an {info[1]} operation",
+                lambda info: f"* Tensor {info[0]}, input of a {info[1]} operation",
                 bad_qat_ops,
             )
         )
@@ -96,31 +96,46 @@ class QuantizedModule:
         quant_layers_dict: Optional[Dict[str, Tuple[Tuple[str, ...], QuantizedOp]]] = None,
         onnx_model: Optional[onnx.ModelProto] = None,
     ):
+
+        all_or_none_params = [
+            ordered_module_input_names,
+            ordered_module_output_names,
+            quant_layers_dict,
+        ]
+        if not (
+            all(v is None or v == {} for v in all_or_none_params)
+            or not any(v is None or v == {} for v in all_or_none_params)
+        ):
+            raise ValueError(
+                "Please either set all three 'ordered_module_input_names', "
+                "'ordered_module_output_names' and 'quant_layers_dict' or none of them."
+            )
+
+        self.ordered_module_input_names = (
+            tuple(ordered_module_input_names) if ordered_module_input_names else ()
+        )
+        self.ordered_module_output_names = (
+            tuple(ordered_module_output_names) if ordered_module_output_names else ()
+        )
+        self.quant_layers_dict = (
+            copy.deepcopy(quant_layers_dict) if quant_layers_dict is not None else {}
+        )
+
         # Set base attributes for API consistency. This could be avoided if an abstract base class
         # is created for both Concrete ML models and QuantizedModule
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2899
-        self.fhe_circuit = None
+        self.input_quantizers: List[UniformQuantizer] = []
+        self.output_quantizers: List[UniformQuantizer] = []
+        self.fhe_circuit: Optional[Circuit] = None
         self._is_compiled = False
-        self.input_quantizers = []
-        self.output_quantizers = []
         self._onnx_model = onnx_model
         self._post_processing_params: Dict[str, Any] = {}
 
-        # If any of the arguments are not provided, skip the init
-        if not all([ordered_module_input_names, ordered_module_output_names, quant_layers_dict]):
-            return
-
-        # for mypy
-        assert isinstance(ordered_module_input_names, Iterable)
-        assert isinstance(ordered_module_output_names, Iterable)
-        assert all([ordered_module_input_names, ordered_module_output_names, quant_layers_dict])
-        self.ordered_module_input_names = tuple(ordered_module_input_names)
-        self.ordered_module_output_names = tuple(ordered_module_output_names)
-
-        assert quant_layers_dict is not None
-        self.quant_layers_dict = copy.deepcopy(quant_layers_dict)
-
-        self.output_quantizers = self._set_output_quantizers()
+        # Initialize output quantizers based on quant_layers_dict
+        if self.quant_layers_dict:
+            self.output_quantizers = self._set_output_quantizers()
+        else:
+            self.output_quantizers = []
 
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4127
     def set_reduce_sum_copy(self):

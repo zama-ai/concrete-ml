@@ -19,16 +19,17 @@ def write_failed_tests_comment(failed_tests_comment_path: Path, failed_tests_rep
 
             # Write the comment's title and main header
             if failed_tests_report["all_failed_tests_are_flaky"]:
-                f.write("## :warning: Known flaky tests have been re-run :warning:\n\n")
+                f.write("## :warning: Known flaky tests have been rerun :warning:\n\n")
                 failed_tests_header = (
-                    "One or several tests initially failed but were detected as known flaky tests. "
-                    "They therefore have been re-run and passed. See below for more details.\n\n"
+                    "One or several tests initially failed but were identified as known flaky. "
+                    "tests. Therefore, they have been rerun and passed. See below for more "
+                    "details.\n\n"
                 )
             else:
-                f.write("## ❌ Some tests failed after re-run ❌\n\n")
+                f.write("## ❌ Some tests failed after rerun ❌\n\n")
                 failed_tests_header = (
-                    "At least one of the following tests initially failed. They therefore have "
-                    "been re-run but failed again. See below for more details.\n\n"
+                    "At least one of the following tests initially failed. They have therefore"
+                    "been rerun but failed again. See below for more details.\n\n"
                 )
 
             f.writelines(failed_tests_header)
@@ -97,8 +98,14 @@ def write_failed_tests_report(
                 else:
                     failed_tests_report["non_flaky"].append(test_name)  # type: ignore[attr-defined]
 
-        # If no non-flaky tests failed, report that all failed tests were known flaky tests
-        if not failed_tests_report["non_flaky"]:
+        # If there are some flaky tests but no non-flaky tests failed, report that all failed tests
+        # were known flaky tests
+        # We need to make sure that at least one flaky test has been detected for one specific
+        # reason: if, for example, a test file has a syntax error, pytest will "crash" and therefore
+        # won't collect any tests in the file. The problem is that this will return an 'exitcode'
+        # of 1, making this script unexpectedly return 'all_failed_tests_are_flaky=True' in the
+        # case where 'failed_tests_report["non_flaky"]' is empty
+        if failed_tests_report["flaky"] and not failed_tests_report["non_flaky"]:
             failed_tests_report["all_failed_tests_are_flaky"] = True
 
     else:
