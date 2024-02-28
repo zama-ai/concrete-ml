@@ -91,6 +91,28 @@ DATASETS_ARGS = {
             ]
         ),
     },
+    "MNIST": {
+        "dataset": datasets.MNIST,
+        "mean": (0.5),
+        "std": (0.5),
+        "train_transform": transforms.Compose(
+            [
+                transforms.ToTensor(),
+                transforms.Normalize((0.5,), (0.5,)),
+                # transforms.RandomRotation(5, fill=(1,)),
+                transforms.GaussianBlur(kernel_size=(3, 3)),
+                # transforms.RandomHorizontalFlip(0.5),
+                # transforms.Resize(20),
+            ]
+        ),
+        "test_transform": transforms.Compose(
+            [
+                transforms.ToTensor(),
+                transforms.Normalize((0.5,), (0.5,)),
+                # transforms.Resize(20),
+            ]
+        ),
+    },
 }
 
 
@@ -140,11 +162,14 @@ def get_dataloader(
         Tuple[DataLoader, DataLoader]: Training and test data loaders.
     """
 
-    g = torch.Generator()
-    g.manual_seed(param["seed"])
-    np.random.seed(param["seed"])
-    torch.manual_seed(param["seed"])
-    random.seed(param["seed"])
+    g = None
+
+    if param["seed"]:
+        g = torch.Generator()
+        g.manual_seed(param["seed"])
+        np.random.seed(param["seed"])
+        torch.manual_seed(param["seed"])
+        random.seed(param["seed"])
 
     max_examples = param.get("dataset_size", None)
     train_dataset = get_torchvision_dataset(
@@ -333,8 +358,10 @@ def train(
         nn.Module: the trained model.
     """
 
-    torch.manual_seed(param["seed"])
-    random.seed(param["seed"])
+    if param["seed"]:
+
+        torch.manual_seed(param["seed"])
+        random.seed(param["seed"])
 
     model = model.to(device)
 
