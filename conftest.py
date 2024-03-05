@@ -1,4 +1,5 @@
 """PyTest configuration file."""
+import hashlib
 import json
 import random
 import re
@@ -47,15 +48,6 @@ def pytest_addoption(parser):
         default=None,
         type=str,
         help="To dump pytest-cov term report to a text file.",
-    )
-
-    parser.addoption(
-        "--forcing_random_seed",
-        action="store",
-        default=None,
-        type=int,
-        help="To force the seed of each and every unit test, to be able to "
-        "reproduce a particular issue.",
     )
 
     parser.addoption(
@@ -176,28 +168,69 @@ def function_to_seed_torch(seed):
 
 
 @pytest.fixture(autouse=True)
-def autoseeding_of_everything(record_property, request):
+def autoseeding_of_everything(request):
     """Seed everything we can, for determinism."""
-    main_seed = request.config.getoption("--forcing_random_seed", default=None)
 
-    if main_seed is None:
-        main_seed = random.randint(0, 2**64 - 1)
+    # Explanations on the seeding system:
+    #
+    # The used seed (called sub_seed below) for a test of a function f_i (e.g.,
+    # test_compute_bits_precision) on a configuration c_j (e.g., x0-8) of a test file t_k (e.g.,
+    # tests/common/test_utils.py) is computed as some hash(f_i, c_j, t_k, randomly-seed)
+    #
+    # It allows to reproduce bugs we would have had on a full pytest execution on a configuration
+    # (f_i, c_j, t_k) by calling pytest on this single configuration with the --randomly-seed
+    # parameter and no other arguments.
+    #
+    # In particular, it is resistant to crashes which would prevent the few prints below in this
+    # function, which details some seeding information
 
-    seed = main_seed
-    record_property("main seed", main_seed)
+    randomly_seed = request.config.getoption("--randomly-seed", default=None)
 
-    # Python
-    random.seed(seed)
-    print("\nForcing seed to random.seed to ", seed)
+    if randomly_seed is None:
+        raise ValueError("--randomly-seed has not been properly configured internally")
+
+    # We need to find the relative file path of the test file. It does not look native with request,
+    # so we recompute it.
+    absolute_path = str(request.fspath)
+
+    # This avoids unexpected test paths with several "concrete-ml/tests" occurrences, which may
+    # happen only if the developer cloned with a very strange path
+    assert (
+        absolute_path.count("concrete-ml/test") == 1
+    ), f"{absolute_path=} has several 'concrete-ml/tests' occurences, which is unexpected"
+
+    relative_file_path = absolute_path[
+        absolute_path.find("concrete-ml/test") + len("concrete-ml/") :
+    ]
+
+    # Derive the sub_seed from the randomly_seed and the test name
+    derivation_string = f"{relative_file_path} # {str(request.node.name)} # {randomly_seed}"
+
+    hash_object = hashlib.sha256()
+    hash_object.update(b"{derivation_string}")
+    hash_object.digest()
+    hash_value = hash_object.hexdigest()
+
+    # The hash is a SHA256, so 256b. And random.seed wants a 64b seed and numpy.random.seed wants a
+    # 32b seed. So we reduce a bit
+    sub_seed = int(hash_value, 16) % 2**64
+
+    print(f"\nUsing {randomly_seed=}\nUsing {derivation_string=}\nUsing {sub_seed=}")
+
+    # And then, do everything per this sub_seed
+    seed = sub_seed
+
     print(
-        f"\nRelaunch the tests with --forcing_random_seed {seed} "
-        + "--randomly-dont-reset-seed to reproduce. Remark that adding --randomly-seed=... "
-        + "is needed when the testcase uses randoms in pytest parameters"
+        f"\nRelaunch the tests with --randomly_seed {randomly_seed} "
+        + "--randomly-dont-reset-seed to reproduce."
     )
     print(
         "Remark that potentially, any option used in the pytest call may have an impact so in "
         + "case of problem to reproduce, you may want to have a look to `make pytest` options"
     )
+
+    # Python
+    random.seed(seed)
 
     # Numpy
     seed += 1
@@ -206,7 +239,8 @@ def autoseeding_of_everything(record_property, request):
     # Seed torch
     seed += 1
     function_to_seed_torch(seed)
-    return {"main seed": main_seed}
+
+    return {"randomly seed": randomly_seed}
 
 
 @pytest.fixture

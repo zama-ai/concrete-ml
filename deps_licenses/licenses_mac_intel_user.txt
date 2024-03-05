@@ -1,10 +1,9 @@
 Name, Version, License
 GitPython, 3.1.41, BSD License
 PyYAML, 6.0.1, MIT License
-annotated-types, 0.6.0, MIT License
-anyio, 4.2.0, MIT License
-boto3, 1.34.37, Apache Software License
-botocore, 1.34.37, Apache Software License
+anyio, 3.7.1, MIT License
+boto3, 1.34.38, Apache Software License
+botocore, 1.34.38, Apache Software License
 brevitas, 0.8.0, UNKNOWN
 certifi, 2023.7.22, Mozilla Public License 2.0 (MPL 2.0)
 charset-normalizer, 3.3.2, MIT License
@@ -14,7 +13,7 @@ concrete-python, 2.5.1, BSD-3-Clause
 dependencies, 2.0.1, BSD License
 dill, 0.3.8, BSD License
 exceptiongroup, 1.2.0, MIT License
-fastapi, 0.109.2, MIT License
+fastapi, 0.103.2, MIT License
 filelock, 3.13.1, The Unlicense (Unlicense)
 flatbuffers, 23.5.26, Apache Software License
 fsspec, 2024.2.0, BSD License
@@ -40,8 +39,7 @@ packaging, 23.2, Apache Software License; BSD License
 pluggy, 1.4.0, MIT License
 protobuf, 3.20.3, BSD-3-Clause
 psutil, 5.9.8, BSD License
-pydantic, 2.6.1, MIT License
-pydantic_core, 2.16.2, MIT License
+pydantic, 1.10.14, MIT License
 pytest, 7.4.1, MIT License
 pytest-json-report, 1.5.0, MIT
 pytest-metadata, 3.1.0, Mozilla Public License 2.0 (MPL 2.0)
@@ -58,7 +56,7 @@ skops, 0.5.0, MIT
 skorch, 0.11.0, new BSD 3-Clause
 smmap, 5.0.1, BSD License
 sniffio, 1.3.0, Apache Software License; MIT License
-starlette, 0.36.3, BSD License
+starlette, 0.27.0, BSD License
 sympy, 1.12, BSD License
 tabulate, 0.8.10, MIT License
 threadpoolctl, 3.2.0, BSD License
