@@ -1,4 +1,4 @@
-# Inference in the Cloud
+# Inference in the cloud
 
 Concrete ML models can be easily deployed in a client/server setting, enabling the creation of privacy-preserving services in the cloud.
 
@@ -13,9 +13,9 @@ The overall communications protocol to enable cloud deployment of machine learni
 The steps detailed above are:
 
 1. The model developer deploys the compiled machine learning model to the server. This model includes the cryptographic parameters. The server is now ready to provide private inference.
-1. The client requests the cryptographic parameters (also called "client specs"). Once it receives them from the server, the _secret_ and _evaluation_ keys are generated.
-1. The client sends the _evaluation_ key to the server. The server is now ready to accept requests from this client. The client sends their encrypted data.
-1. The server uses the _evaluation_ key to securely run inference on the user's data and sends back the encrypted result.
-1. The client now decrypts the result and can send back new requests.
+2. The client requests the cryptographic parameters (also called "client specs"). Once it receives them from the server, the _secret_ and _evaluation_ keys are generated.
+3. The client sends the _evaluation_ key to the server. The server is now ready to accept requests from this client. The client sends their encrypted data.
+4. The server uses the _evaluation_ key to securely run inference on the user's data and sends back the encrypted result.
+5. The client now decrypts the result and can send back new requests.
 
-For more information on how to implement this basic secure inference protocol, refer to the [Production Deployment section](../advanced-topics/client_server.md) and to the [client/server example](../advanced_examples/ClientServer.ipynb).
+For more information on how to implement this basic secure inference protocol, refer to the [Production Deployment section](../guides/client\_server.md) and to the [client/server example](../advanced\_examples/ClientServer.ipynb).

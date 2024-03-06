@@ -11,7 +11,7 @@ Since FHE is currently limited to 16-bit integers, it is necessary to quantize m
 Quantization implemented in Concrete ML is applied in two ways:
 
 1. Built-in models apply quantization internally and the user only needs to configure some quantization parameters. This approach requires little work by the user but may not be a one-size-fits-all solution for all types of models. The final quantized model is FHE-friendly and ready to predict over encrypted data. In this setting, Post-Training Quantization (PTQ) is used for linear models, data quantization is used for tree-based models and, finally, Quantization Aware Training (QAT) is included in the built-in neural network models.
-1. For custom neural networks with more complex topology, obtaining FHE-compatible models with good accuracy requires QAT. Concrete ML offers the possibility for the user to perform quantization before compiling to FHE. This can be achieved through a third-party library that offers QAT tools, such as [Brevitas](https://github.com/Xilinx/brevitas) for PyTorch. In this approach, the user is responsible for implementing a full-integer model, respecting FHE constraints. Please refer to the [advanced QAT tutorial](../deep-learning/fhe_friendly_models.md) for tips on designing FHE neural networks.
+2. For custom neural networks with more complex topology, obtaining FHE-compatible models with good accuracy requires QAT. Concrete ML offers the possibility for the user to perform quantization before compiling to FHE. This can be achieved through a third-party library that offers QAT tools, such as [Brevitas](https://github.com/Xilinx/brevitas) for PyTorch. In this approach, the user is responsible for implementing a full-integer model, respecting FHE constraints. Please refer to the [advanced QAT tutorial](../deep-learning/fhe\_friendly\_models.md) for tips on designing FHE neural networks.
 
 {% hint style="info" %}
 While Concrete ML quantizes machine learning models, the data that the client has is often in floating point. Concrete ML models provide APIs to quantize inputs and de-quantize outputs.
@@ -33,7 +33,7 @@ The other important parameter from this quantization schema is the `zero point` 
 
 $$Z_p = \mathtt{round} \left(- \frac{\alpha}{S} \right)$$
 
-When using quantized values in a matrix multiplication or convolution, the equations for computing the result become more complex. The IntelLabs Distiller documentation provides a more [detailed explanation](https://intellabs.github.io/distiller/algo_quantization.html) of the maths used to quantize values and how to keep computations consistent.
+When using quantized values in a matrix multiplication or convolution, the equations for computing the result become more complex. The IntelLabs Distiller documentation provides a more [detailed explanation](https://intellabs.github.io/distiller/algo\_quantization.html) of the maths used to quantize values and how to keep computations consistent.
 
 ### Quantization special cases
 
@@ -63,11 +63,9 @@ For built-in **neural networks**, the maximum accumulator bit-width cannot be pr
 
 The models implemented in Concrete ML provide features to let the user quantize the input data and de-quantize the output data.
 
-In a client/server setting, the client is responsible for quantizing inputs before sending them, encrypted, to the server. The client must then de-quantize the encrypted integer results received from the server. See the [Production Deployment](client_server.md) section for more details.
+In a client/server setting, the client is responsible for quantizing inputs before sending them, encrypted, to the server. The client must then de-quantize the encrypted integer results received from the server. See the [Production Deployment](../guides/client\_server.md) section for more details.
 
 Here is a simple example showing how to perform inference, starting from float values and ending up with float values. The FHE engine that is compiled for ML models does not support data batching.
-
-<!--pytest-codeblocks:skip-->
 
 ```python
 # Assume 
@@ -89,8 +87,6 @@ y_pred = np.argmax(y_proba, 1)
 
 Alternatively, the `forward` method groups the quantization, FHE execution and de-quantization steps all together.
 
-<!--pytest-codeblocks:skip-->
-
 ```python
 # Assume 
 #   quantized_module : QuantizedModule
@@ -106,4 +102,4 @@ y_pred = np.argmax(y_proba, 1)
 
 ## Resources
 
-- IntelLabs distiller explanation of quantization: [Distiller documentation](https://intellabs.github.io/distiller/algo_quantization.html)
+* IntelLabs distiller explanation of quantization: [Distiller documentation](https://intellabs.github.io/distiller/algo\_quantization.html)

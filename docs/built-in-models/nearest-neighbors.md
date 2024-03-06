@@ -1,10 +1,10 @@
-# Nearest-neighbors
+# Nearest neighbors
 
 Concrete ML offers nearest neighbors non-parametric classification models with a scikit-learn interface through the `KNeighborsClassifier` class.
 
-|                                                Concrete ML                                                 | scikit-learn                                                                                                          |
-| :--------------------------------------------------------------------------------------------------------: | --------------------------------------------------------------------------------------------------------------------- |
-| [KNeighborsClassifier](../developer-guide/api/concrete.ml.sklearn.neighbors.md#class-kneighborsclassifier) | [KNeighborsClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html) |
+|                                              Concrete ML                                              | scikit-learn                                                                                                          |
+| :---------------------------------------------------------------------------------------------------: | --------------------------------------------------------------------------------------------------------------------- |
+| [KNeighborsClassifier](../references/api/concrete.ml.sklearn.neighbors.md#class-kneighborsclassifier) | [KNeighborsClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html) |
 
 ## Example usage
 
@@ -18,9 +18,9 @@ The `KNeighborsClassifier` class quantizes the training data-set that is given t
 
 The `predict` method of the `KNeighborsClassifier` performs the following steps:
 
-- quantization of the test vectors, performed in the clear
-- computation of the top-k class indices of the closest training set vector, on encrypted data
-- majority vote of the top-k class labels to find the class for each test vector, performed in the clear
+* quantization of the test vectors, performed in the clear
+* computation of the top-k class indices of the closest training set vector, on encrypted data
+* majority vote of the top-k class labels to find the class for each test vector, performed in the clear
 
 ## Inference time considerations
 

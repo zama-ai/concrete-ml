@@ -11,20 +11,20 @@ The diagram below gives an overview of the steps involved in the conversion of a
 All Concrete ML built-in models follow the same pattern for FHE conversion:
 
 1. The models are trained with sklearn or PyTorch.
-1. All models have a PyTorch implementation for inference. This implementation is provided either by a third-party tool such as [Hummingbird](external_libraries.md#hummingbird) or implemented directly in Concrete ML.
-1. The PyTorch model is exported to ONNX. For more information on the use of ONNX in Concrete ML, see [here](onnx_pipeline.md#torch-to-numpy-conversion-using-onnx).
-1. The Concrete ML ONNX parser checks that all the operations in the ONNX graph are supported and assigns reference NumPy operations to them. This step produces a `NumpyModule`.
-1. Quantization is performed on the [`NumpyModule`](./api/concrete.ml.torch.numpy_module.md#class-numpymodule), producing a [`QuantizedModule`](./api/concrete.ml.quantization.quantized_module.md#class-quantizedmodule). Two steps are performed: calibration and assignment of equivalent [`QuantizedOp`](./api/concrete.ml.quantization.base_quantized_op.md#class-quantizedop) objects to each ONNX operation. The `QuantizedModule` class is the quantized counterpart of the `NumpyModule`.
-1. Once the `QuantizedModule` is built, Concrete is used to trace the `._forward()` function of the `QuantizedModule`.
+2. All models have a PyTorch implementation for inference. This implementation is provided either by a third-party tool such as [Hummingbird](external\_libraries.md#hummingbird) or implemented directly in Concrete ML.
+3. The PyTorch model is exported to ONNX. For more information on the use of ONNX in Concrete ML, see [here](onnx\_pipeline.md#torch-to-numpy-conversion-using-onnx).
+4. The Concrete ML ONNX parser checks that all the operations in the ONNX graph are supported and assigns reference NumPy operations to them. This step produces a `NumpyModule`.
+5. Quantization is performed on the [`NumpyModule`](../../references/api/concrete.ml.torch.numpy\_module.md#class-numpymodule), producing a [`QuantizedModule`](../../references/api/concrete.ml.quantization.quantized\_module.md#class-quantizedmodule). Two steps are performed: calibration and assignment of equivalent [`QuantizedOp`](../../references/api/concrete.ml.quantization.base\_quantized\_op.md#class-quantizedop) objects to each ONNX operation. The `QuantizedModule` class is the quantized counterpart of the `NumpyModule`.
+6. Once the `QuantizedModule` is built, Concrete is used to trace the `._forward()` function of the `QuantizedModule`.
 
-Moreover, by passing a user provided `nn.Module` to step 2 of the above process, Concrete ML supports custom user models. See the associated [FHE-friendly model documentation](../deep-learning/fhe_friendly_models.md) for instructions about working with such models.
+Moreover, by passing a user provided `nn.Module` to step 2 of the above process, Concrete ML supports custom user models. See the associated [FHE-friendly model documentation](../../deep-learning/fhe\_friendly\_models.md) for instructions about working with such models.
 
-![Torch compilation flow with ONNX](../.gitbook/assets/torch_to_numpy_with_onnx.svg)
+![Torch compilation flow with ONNX](../../.gitbook/assets/torch\_to\_numpy\_with\_onnx.svg)
 
 Once an ONNX model is imported, it is converted to a `NumpyModule`, then to a `QuantizedModule` and, finally, to an FHE circuit. However, as the diagram shows, it is perfectly possible to stop at the `NumpyModule` level if you just want to run the PyTorch model as NumPy code without doing quantization.
 
 {% hint style="info" %}
-Note that the `NumpyModule` interpreter currently [supports the following ONNX operators](../deep-learning/onnx_support.md#supported-operators).
+Note that the `NumpyModule` interpreter currently [supports the following ONNX operators](../../deep-learning/onnx\_support.md#supported-operators).
 {% endhint %}
 
 ## Inspecting the ONNX models
