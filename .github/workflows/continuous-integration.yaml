@@ -520,7 +520,7 @@ jobs:
               - '!.*/**'
               - '!docs/_*/**'
               - '!docs/SUMMARY.md'
-              - '!docs/developer-guide/api/**.md'
+              - '!docs/references/api/**.md'
             dependencies:
               - deps_licenses/licenses_linux_user.txt.md5
             conftest:

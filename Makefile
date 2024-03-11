@@ -13,7 +13,7 @@ COUNT?=1
 RANDOMLY_SEED?=$$RANDOM
 PYTEST_OPTIONS:=
 POETRY_VERSION:=1.7.1
-APIDOCS_OUTPUT?="./docs/developer-guide/api"
+APIDOCS_OUTPUT?="./docs/references/api"
 OPEN_PR="true"
 
 # Force the installation of a Concrete Python version, which is very useful with nightly versions
@@ -669,7 +669,7 @@ mdformat:
 # Remark we need to remove .md's in venv
 check_mdformat:
 	"$(MAKE)" mdformat
-	find docs -name "*.md" | grep -v docs/developer-guide/tmp.api_for_check | xargs git diff --quiet
+	find docs -name "*.md" | grep -v docs/references/tmp.api_for_check | xargs git diff --quiet
 
 .PHONY: benchmark # Perform benchmarks
 benchmark:

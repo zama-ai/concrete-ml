@@ -78,7 +78,7 @@ docs/_build/
 docs-copy/
 
 # GitBook
-docs/developer-guide/api/.pages
+docs/references/api/.pages
 
 # PyBuilder
 target/
