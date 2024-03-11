@@ -2,19 +2,19 @@
 
 Concrete ML provides several of the most popular `classification` and `regression` tree models that can be found in [scikit-learn](https://scikit-learn.org/stable/):
 
-|                                              Concrete ML                                             |                                                                           scikit-learn                                                                           |
+|                                             Concrete ML                                              |                                                                           scikit-learn                                                                           |
 | :--------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 | [DecisionTreeClassifier](../references/api/concrete.ml.sklearn.tree.md#class-decisiontreeclassifier) |     [DecisionTreeClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier)     |
-|  [DecisionTreeRegressor](../references/api/concrete.ml.sklearn.tree.md#class-decisiontreeregressor)  |       [DecisionTreeRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeRegressor.html#sklearn.tree.DecisionTreeRegressor)      |
+|  [DecisionTreeRegressor](../references/api/concrete.ml.sklearn.tree.md#class-decisiontreeregressor)  |      [DecisionTreeRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeRegressor.html#sklearn.tree.DecisionTreeRegressor)       |
 |  [RandomForestClassifier](../references/api/concrete.ml.sklearn.rf.md#class-randomforestclassifier)  | [RandomForestClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier) |
-|   [RandomForestRegressor](../references/api/concrete.ml.sklearn.rf.md#class-randomforestregressor)   |   [RandomForestRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor)  |
+|   [RandomForestRegressor](../references/api/concrete.ml.sklearn.rf.md#class-randomforestregressor)   |  [RandomForestRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor)   |
 
 Concrete ML also supports [XGBoost](https://xgboost.ai/)'s `XGBClassifier` and `XGBRegressor`:
 
-|                                    Concrete ML                                    |                                                 XGboost                                                 |
-| :-------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------: |
-| [XGBClassifier](../references/api/concrete.ml.sklearn.xgb.md#class-xgbclassifier) | [XGBClassifier](https://xgboost.readthedocs.io/en/stable/python/python\_api.html#xgboost.XGBClassifier) |
-|  [XGBRegressor](../references/api/concrete.ml.sklearn.xgb.md#class-xgbregressor)  |  [XGBRegressor](https://xgboost.readthedocs.io/en/stable/python/python\_api.html#xgboost.XGBRegressor)  |
+|                                    Concrete ML                                    |                                                XGboost                                                 |
+| :-------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------: |
+| [XGBClassifier](../references/api/concrete.ml.sklearn.xgb.md#class-xgbclassifier) | [XGBClassifier](https://xgboost.readthedocs.io/en/stable/python/python_api.html#xgboost.XGBClassifier) |
+|  [XGBRegressor](../references/api/concrete.ml.sklearn.xgb.md#class-xgbregressor)  |  [XGBRegressor](https://xgboost.readthedocs.io/en/stable/python/python_api.html#xgboost.XGBRegressor)  |
 
 {% hint style="info" %}
 For a formal explanation of the mechanisms that enable FHE-compatible decision trees, please see the following paper: [Privacy-Preserving Tree-Based Inference with Fully Homomorphic Encryption, arXiv:2303.01254](https://arxiv.org/abs/2303.01254)
@@ -26,7 +26,7 @@ As the maximum depth parameter of decision trees and tree-ensemble models strong
 
 ## Example
 
-Here's an example of how to use this model in FHE on a popular data-set using some of scikit-learn's pre-processing tools. A more complete example can be found in the [XGBClassifier notebook](../tutorials/ml\_examples.md).
+Here's an example of how to use this model in FHE on a popular data-set using some of scikit-learn's pre-processing tools. A more complete example can be found in the [XGBClassifier notebook](../tutorials/ml_examples.md).
 
 ```python
 from sklearn.datasets import load_breast_cancer
@@ -110,9 +110,9 @@ print(f"{(y_pred_fhe == y_pred_clear[:N_TEST_FHE]).sum()} "
 #  1 examples over 1 have an FHE inference equal to the clear inference
 ```
 
-Similarly, the decision boundaries of the Concrete ML model can be plotted and compared to the results of the classical XGBoost model executed in the clear. A 6-bit model is shown in order to illustrate the impact of quantization on classification. Similar plots can be found in the [Classifier Comparison notebook](../tutorials/ml\_examples.md).
+Similarly, the decision boundaries of the Concrete ML model can be plotted and compared to the results of the classical XGBoost model executed in the clear. A 6-bit model is shown in order to illustrate the impact of quantization on classification. Similar plots can be found in the [Classifier Comparison notebook](../tutorials/ml_examples.md).
 
-![Comparison of clasification decision boundaries between FHE and plaintext models](../figures/xgb\_comparison\_pipeline.png)
+![Comparison of clasification decision boundaries between FHE and plaintext models](../figures/xgb_comparison_pipeline.png)
 
 ## Quantization parameters
 
@@ -122,7 +122,7 @@ When `n_bits` is set to a low value, the quantization process may sometimes crea
 
 The following graph shows that using 5-6 bits of quantization is usually sufficient to reach the performance of a non-quantized XGBoost model on floating point data. The metrics plotted are accuracy and F1-score on the `spambase` data-set.
 
-![XGBoost n\_bits comparison](../figures/XGBClassifier\_nbits.png)
+![XGBoost n_bits comparison](../figures/XGBClassifier_nbits.png)
 
 ## FHE Inference time considerations
 

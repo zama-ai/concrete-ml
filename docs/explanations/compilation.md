@@ -6,15 +6,15 @@ As FHE execution is much slower than execution on non-encrypted data, Concrete M
 
 ## Compilation to FHE
 
-Concrete ML implements model inference using Concrete as a backend. In order to execute in FHE, a numerical program written in Concrete needs to be compiled. This functionality is [described here](https://docs.zama.ai/concrete/getting-started/quick\_start), and Concrete ML hides away most of the complexity of this step, completing the entire compilation process itself.
+Concrete ML implements model inference using Concrete as a backend. In order to execute in FHE, a numerical program written in Concrete needs to be compiled. This functionality is [described here](https://docs.zama.ai/concrete/getting-started/quick_start), and Concrete ML hides away most of the complexity of this step, completing the entire compilation process itself.
 
 From the perspective of the Concrete ML user, the compilation process performed by Concrete can be broken up into 3 steps:
 
 1. tracing the NumPy program and creating a Concrete op-graph
-2. checking the op-graph for FHE compatability
-3. producing machine code for the op-graph (this step automatically determines cryptographic parameters)
+1. checking the op-graph for FHE compatability
+1. producing machine code for the op-graph (this step automatically determines cryptographic parameters)
 
-Additionally, the [client/server API](../guides/client\_server.md) packages the result of the last step in a way that allows the deployment of the encrypted circuit to a server, as well as key generation, encryption, and decryption on the client side.
+Additionally, the [client/server API](../guides/client_server.md) packages the result of the last step in a way that allows the deployment of the encrypted circuit to a server, as well as key generation, encryption, and decryption on the client side.
 
 ### Built-in models
 
@@ -78,8 +78,8 @@ The first step in the list above takes a Python function implemented using the C
 
 The result of this single step of the compilation pipeline allows the:
 
-* execution of the op-graph, which includes TLUs, on clear non-encrypted data. This is not secure, but it is much faster than executing in FHE. This mode is useful for debugging, especially when looking for appropriate model hyper-parameters
-* verification of the maximum bit-width of the op-graph and the intermediary bit-widths of model layers, to evaluate their impact on FHE execution latency
+- execution of the op-graph, which includes TLUs, on clear non-encrypted data. This is not secure, but it is much faster than executing in FHE. This mode is useful for debugging, especially when looking for appropriate model hyper-parameters
+- verification of the maximum bit-width of the op-graph and the intermediary bit-widths of model layers, to evaluate their impact on FHE execution latency
 
 Simulation is enabled for all Concrete ML models once they are compiled as shown above. Obtaining the simulated predictions of the models is done by setting the `fhe="simulate"` argument to prediction methods:
 

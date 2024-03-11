@@ -16,18 +16,18 @@ GIT_LFS_SKIP_SMUDGE=1 git clone https://github.com/zama-ai/concrete-ml
 
 ## Automatic installation
 
-A simple way to have everything installed is to use the development Docker (see the [Docker setup](docker\_setup.md) guide). On Linux and macOS, you have to run the script in `./script/make_utils/setup_os_deps.sh`. Specify the `--linux-install-python` flag if you want to install python3.8 as well on apt-enabled Linux distributions. The script should install everything you need for Docker and bare OS development (you can first review the content of the file to check what it will do).
+A simple way to have everything installed is to use the development Docker (see the [Docker setup](docker_setup.md) guide). On Linux and macOS, you have to run the script in `./script/make_utils/setup_os_deps.sh`. Specify the `--linux-install-python` flag if you want to install python3.8 as well on apt-enabled Linux distributions. The script should install everything you need for Docker and bare OS development (you can first review the content of the file to check what it will do).
 
 {% hint style="danger" %}
 For Windows users, the `setup_os_deps.sh` script does not install dependencies because of how many different installation methods there are due to the lack of a single package manager.
 
-The first step is to [install Python](project\_setup.md#python) (as some of the dev tools depend on it), then [Poetry](project\_setup.md#poetry). In addition to installing Python, you are still going to need the following software available on path on Windows, as some of the basic dev tools depend on them:
+The first step is to [install Python](project_setup.md#python) (as some of the dev tools depend on it), then [Poetry](project_setup.md#poetry). In addition to installing Python, you are still going to need the following software available on path on Windows, as some of the basic dev tools depend on them:
 
-* git [https://gitforwindows.org/](https://gitforwindows.org/)
-* jq [https://github.com/stedolan/jq/releases](https://github.com/stedolan/jq/releases)
-* make [https://gist.github.com/evanwill/0207876c3243bbb6863e65ec5dc3f058#make](https://gist.github.com/evanwill/0207876c3243bbb6863e65ec5dc3f058#make)
+- git [https://gitforwindows.org/](https://gitforwindows.org/)
+- jq [https://github.com/stedolan/jq/releases](https://github.com/stedolan/jq/releases)
+- make [https://gist.github.com/evanwill/0207876c3243bbb6863e65ec5dc3f058#make](https://gist.github.com/evanwill/0207876c3243bbb6863e65ec5dc3f058#make)
 
-Development on Windows only works with the Docker environment. Follow [this link to setup the Docker environment](docker\_setup.md).
+Development on Windows only works with the Docker environment. Follow [this link to setup the Docker environment](docker_setup.md).
 {% endhint %}
 
 ## Manual installation
@@ -102,9 +102,9 @@ source .venv/Scripts/activate
 
 ### Setting up environment on Docker
 
-Docker automatically creates and sources a venv in \~/dev\_venv/
+Docker automatically creates and sources a venv in ~/dev_venv/
 
-The venv persists thanks to volumes. It also creates a volume for \~/.cache to speedup later reinstallations. You can check which Docker volumes exist with:
+The venv persists thanks to volumes. It also creates a volume for ~/.cache to speedup later reinstallations. You can check which Docker volumes exist with:
 
 ```shell
 docker volume ls

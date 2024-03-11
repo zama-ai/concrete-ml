@@ -6,10 +6,10 @@ Concrete ML has support for quantized ML models and also provides quantization t
 
 The [`QuantizedArray`](../../references/api/concrete.ml.quantization.quantizers.md#class-quantizedarray) class takes several arguments that determine how float values are quantized:
 
-* `n_bits` defines the precision used in quantization
-* `values` are floating point values that will be converted to integers
-* `is_signed` determines if the quantized integer values should allow negative values
-* `is_symmetric` determines if the range of floating point values to be quantized should be taken as symmetric around zero
+- `n_bits` defines the precision used in quantization
+- `values` are floating point values that will be converted to integers
+- `is_signed` determines if the quantized integer values should allow negative values
+- `is_symmetric` determines if the range of floating point values to be quantized should be taken as symmetric around zero
 
 See also the [UniformQuantizer](../../references/api/concrete.ml.quantization.quantizers.md#class-uniformquantizer) reference for more information:
 
@@ -80,17 +80,17 @@ Built-in neural networks expose the `quantized_module` member, while a `Quantize
 
 The quantized versions of floating point model operations are stored in the `QuantizedModule`. The `ONNX_OPS_TO_QUANTIZED_IMPL` dictionary maps ONNX floating point operators (e.g., Gemm) to their quantized equivalent (e.g., QuantizedGemm). For more information on implementing these operations, please see the [FHE-compatible op-graph section](fhe-op-graphs.md).
 
-The computation graph is taken from the corresponding floating point ONNX graph exported from scikit-learn [using HummingBird](external\_libraries.md#hummingbird), or from the ONNX graph exported by PyTorch. Calibration is used to obtain quantized parameters for the operations in the `QuantizedModule`. Parameters are also determined for the quantization of inputs during model deployment.
+The computation graph is taken from the corresponding floating point ONNX graph exported from scikit-learn [using HummingBird](external_libraries.md#hummingbird), or from the ONNX graph exported by PyTorch. Calibration is used to obtain quantized parameters for the operations in the `QuantizedModule`. Parameters are also determined for the quantization of inputs during model deployment.
 
 {% hint style="info" %}
 Calibration is the process of determining the typical distributions of values encountered for the intermediate values of a model during inference.
 
-To perform calibration, an interpreter goes through the ONNX graph in [topological order](https://en.wikipedia.org/wiki/Topological\_sorting) and stores the intermediate results as it goes. The statistics of these values determine quantization parameters.
+To perform calibration, an interpreter goes through the ONNX graph in [topological order](https://en.wikipedia.org/wiki/Topological_sorting) and stores the intermediate results as it goes. The statistics of these values determine quantization parameters.
 {% endhint %}
 
 That `QuantizedModule` generates the Concrete function that is compiled to FHE. The compilation will succeed if the intermediate values conform to the 16-bits precision limit of the Concrete stack. See [the compilation section](../compilation.md) for details.
 
 ## Resources
 
-* Lei Mao's blog on quantization: [Quantization for Neural Networks](https://leimao.github.io/article/Neural-Networks-Quantization/)
-* Google paper on neural network quantization and integer-only inference: [Quantization and Training of Neural Networks for Efficient Integer-Arithmetic-Only Inference](https://arxiv.org/abs/1712.05877)
+- Lei Mao's blog on quantization: [Quantization for Neural Networks](https://leimao.github.io/article/Neural-Networks-Quantization/)
+- Google paper on neural network quantization and integer-only inference: [Quantization and Training of Neural Networks for Efficient Integer-Arithmetic-Only Inference](https://arxiv.org/abs/1712.05877)

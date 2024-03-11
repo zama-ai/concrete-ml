@@ -10,7 +10,7 @@ Hybrid models provide a balance between on-device deployment and cloud-based dep
 If model IP protection is important, care must be taken in choosing the parts of a model to be executed on the cloud. Some black-box model stealing attacks rely on knowledge distillation or on differential methods. As a general rule, the difficulty to steal a machine learning model is proportional to the size of the model, in terms of numbers of parameters and model depth.
 {% endhint %}
 
-The hybrid model deployment API provides an easy way to integrate the [standard deployment procedure](client\_server.md) into neural network style models that are compiled with [`compile_brevitas_qat_model`](../references/api/concrete.ml.torch.compile.md#function-compile\_brevitas\_qat\_model) or [`compile_torch_model`](../references/api/concrete.ml.torch.compile.md#function-compile\_torch\_model).
+The hybrid model deployment API provides an easy way to integrate the [standard deployment procedure](client_server.md) into neural network style models that are compiled with [`compile_brevitas_qat_model`](../references/api/concrete.ml.torch.compile.md#function-compile_brevitas_qat_model) or [`compile_torch_model`](../references/api/concrete.ml.torch.compile.md#function-compile_torch_model).
 
 ## Compilation
 
@@ -66,9 +66,9 @@ hybrid_model.save_and_clear_private_info(model_dir, via_mlir=True)
 
 ## Server Side Deployment
 
-The [`save_and_clear_private_info`](../references/api/concrete.ml.torch.hybrid\_model.md#method-save\_and\_clear\_private\_info) function serializes the FHE circuits corresponding to the various parts of the model that were chosen to be moved server-side. It also saves the client-side model, removing the weights of the layers that are transferred server-side. Furthermore it saves all necessary information required to serve these sub-models with FHE, using the [`FHEModelDev`](../references/api/concrete.ml.deployment.fhe\_client\_server.md#class-fhemodeldev) class.
+The [`save_and_clear_private_info`](../references/api/concrete.ml.torch.hybrid_model.md#method-save_and_clear_private_info) function serializes the FHE circuits corresponding to the various parts of the model that were chosen to be moved server-side. It also saves the client-side model, removing the weights of the layers that are transferred server-side. Furthermore it saves all necessary information required to serve these sub-models with FHE, using the [`FHEModelDev`](../references/api/concrete.ml.deployment.fhe_client_server.md#class-fhemodeldev) class.
 
-The [`FHEModelServer`](../references/api/concrete.ml.deployment.fhe\_client\_server.md#class-fhemodelserver) class should be used to create a server application that creates end-points to serve these sub-models:
+The [`FHEModelServer`](../references/api/concrete.ml.deployment.fhe_client_server.md#class-fhemodelserver) class should be used to create a server application that creates end-points to serve these sub-models:
 
 ```
 input_shape_subdir = tuple_to_underscore_str( (1,) + inputs.shape[1:] )
@@ -76,7 +76,7 @@ MODULES = { model_name: { submodule_name: {"path":  model_dir / submodule_name /
 server =  FHEModelServer(str(MODULES[model_name][submodule_name]["path"]))
 ```
 
-For more information about serving FHE models, see the [client/server section](client\_server.md#serving).
+For more information about serving FHE models, see the [client/server section](client_server.md#serving).
 
 ## Client Side
 
@@ -93,7 +93,7 @@ hybrid_model = HybridFHEModel(
 )
 ```
 
-Next, the client application must obtain the parameters necessary to encrypt and quantize data, as detailed in the [client/server documentation](client\_server.md#production-deployment).
+Next, the client application must obtain the parameters necessary to encrypt and quantize data, as detailed in the [client/server documentation](client_server.md#production-deployment).
 
 ```
 path_to_clients = Path(__file__).parent / "clients"

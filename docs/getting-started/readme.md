@@ -2,7 +2,7 @@
 
 [⭐️ Star the repo on Github](https://github.com/zama-ai/concrete-ml) | [🗣 Community support forum](https://community.zama.ai/c/concrete-ml/8) | [📁 Contribute to the project](../developer/contributing.md)
 
-![](<../.gitbook/assets/3 (1) (1).png>)
+![](<../.gitbook/assets/3%20(1)%20(1).png>)
 
 Concrete ML is an open source, privacy-preserving, machine learning framework based on Fully Homomorphic Encryption (FHE). It enables data scientists without any prior knowledge of cryptography to automatically turn machine learning models into their FHE equivalent, using familiar APIs from scikit-learn and PyTorch (see how it looks for [linear models](../built-in-models/linear.md), [tree-based models](../built-in-models/tree.md), and [neural networks](../built-in-models/neural-networks.md)). Concrete ML supports converting models for inference with FHE but can also [train some models](../built-in-models/training.md) on encrypted data.
 
@@ -12,7 +12,7 @@ Training on encrypted data provides the highest level of privacy but is slower t
 
 ## Example usage
 
-Here is a simple example of classification on encrypted data using logistic regression. More examples can be found [here](../tutorials/ml\_examples.md).
+Here is a simple example of classification on encrypted data using logistic regression. More examples can be found [here](../tutorials/ml_examples.md).
 
 ```python
 from sklearn.datasets import make_classification
@@ -77,9 +77,9 @@ print("Probability with encrypt/run/decrypt calls: ", y0)
 
 This example shows the typical flow of a Concrete ML model:
 
-* The model is trained on unencrypted (plaintext) data using scikit-learn. As FHE operates over integers, Concrete ML quantizes the model to use only integers during inference.
-* The quantized model is compiled to an FHE equivalent. Under the hood, the model is first converted to a Concrete Python program, then compiled.
-* Inference can then be done on encrypted data. The above example shows encrypted inference in the model-development phase. Alternatively, during [deployment](cloud.md) in a client/server setting, the data is encrypted by the client, processed securely by the server, and then decrypted by the client.
+- The model is trained on unencrypted (plaintext) data using scikit-learn. As FHE operates over integers, Concrete ML quantizes the model to use only integers during inference.
+- The quantized model is compiled to an FHE equivalent. Under the hood, the model is first converted to a Concrete Python program, then compiled.
+- Inference can then be done on encrypted data. The above example shows encrypted inference in the model-development phase. Alternatively, during [deployment](cloud.md) in a client/server setting, the data is encrypted by the client, processed securely by the server, and then decrypted by the client.
 
 ## Current limitations
 
@@ -97,18 +97,18 @@ Concrete ML is built on top of Zama's [Concrete](https://github.com/zama-ai/conc
 
 ## Online demos and tutorials
 
-Various tutorials are available for [built-in models](../tutorials/ml\_examples.md) and [deep learning](../tutorials/examples.md). Several stand-alone demos for use cases can be found in the [Demos and Tutorials](../tutorials/showcase.md) section.
+Various tutorials are available for [built-in models](../tutorials/ml_examples.md) and [deep learning](../tutorials/examples.md). Several stand-alone demos for use cases can be found in the [Demos and Tutorials](../tutorials/showcase.md) section.
 
 If you have built awesome projects using Concrete ML, feel free to let us know and we'll link to your work!
 
 ## Additional resources
 
-* [Dedicated Concrete ML community support](https://community.zama.ai/c/concrete-ml/8)
-* [Zama's blog](https://www.zama.ai/blog)
-* [FHE.org community](https://fhe.org)
+- [Dedicated Concrete ML community support](https://community.zama.ai/c/concrete-ml/8)
+- [Zama's blog](https://www.zama.ai/blog)
+- [FHE.org community](https://fhe.org)
 
 ## Support
 
-* Support forum: [https://community.zama.ai](https://community.zama.ai) (we answer in less than 24 hours).
-* Live discussion on the FHE.org Discord server: [https://discord.fhe.org](https://discord.fhe.org) (inside the #**concrete** channel).
-* Do you have a question about Zama? Write us on [Twitter](https://twitter.com/zama\_fhe) or send us an email at: **hello@zama.ai**
+- Support forum: [https://community.zama.ai](https://community.zama.ai) (we answer in less than 24 hours).
+- Live discussion on the FHE.org Discord server: [https://discord.fhe.org](https://discord.fhe.org) (inside the #**concrete** channel).
+- Do you have a question about Zama? Write us on [Twitter](https://twitter.com/zama_fhe) or send us an email at: **hello@zama.ai**

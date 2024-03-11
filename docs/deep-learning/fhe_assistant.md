@@ -8,7 +8,7 @@ The [simulation functionality](../explanations/compilation.md#fhe-simulation) of
 
 The simulation mode can be useful when developing and iterating on an ML model implementation. As FHE non-linear models work with integers up to 16 bits, with a trade-off between the number of bits and the FHE execution speed, the simulation can help to find the optimal model design.
 
-Simulation is much faster than FHE execution. This allows for faster debugging and model optimization. For example, this was used for the red/blue contours in the [Classifier Comparison notebook](../tutorials/ml\_examples.md), as computing in FHE for the whole grid and all the classifiers would take significant time.
+Simulation is much faster than FHE execution. This allows for faster debugging and model optimization. For example, this was used for the red/blue contours in the [Classifier Comparison notebook](../tutorials/ml_examples.md), as computing in FHE for the whole grid and all the classifiers would take significant time.
 
 The following example shows how to use the simulation mode in Concrete ML.
 
@@ -58,7 +58,7 @@ concrete_clf.compile(X, debug_config)
 Compilation errors that signal that the ML model is not FHE compatible are usually of two types:
 
 1. TLU input maximum bit-width is exceeded
-2. No crypto-parameters can be found for the ML model: `RuntimeError: NoParametersFound` is raised by the compiler
+1. No crypto-parameters can be found for the ML model: `RuntimeError: NoParametersFound` is raised by the compiler
 
 The following produces a neural network that is not FHE-compatible:
 
@@ -114,13 +114,13 @@ Function you are trying to compile cannot be compiled:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 17-bit value is used as an input to a table lookup
 ```
 
-The error `this 17-bit value is used as an input to a table lookup` indicates that the 16-bit limit on the input of the Table Lookup (TLU) operation has been exceeded. To pinpoint the model layer that causes the error, Concrete ML provides the [bitwidth\_and\_range\_report](../references/api/concrete.ml.quantization.quantized\_module.md#method-bitwidth\_and\_range\_report) helper function. First, the model must be compiled so that it can be [simulated](fhe\_assistant.md#simulation).
+The error `this 17-bit value is used as an input to a table lookup` indicates that the 16-bit limit on the input of the Table Lookup (TLU) operation has been exceeded. To pinpoint the model layer that causes the error, Concrete ML provides the [bitwidth_and_range_report](../references/api/concrete.ml.quantization.quantized_module.md#method-bitwidth_and_range_report) helper function. First, the model must be compiled so that it can be [simulated](fhe_assistant.md#simulation).
 
 ### Fixing compilation errors
 
 To make this network FHE-compatible one can apply several techniques:
 
-1. use [rounded accumulators](../explanations/advanced\_features.md#rounded-activations-and-quantizers) by specifying the `rounding_threshold_bits` parameter. Please evaluate the accuracy of the model using simulation if you use this feature, as it may impact accuracy. Setting a value 2-bit higher than the quantization `n_bits` should be a good start.
+1. use [rounded accumulators](../explanations/advanced_features.md#rounded-activations-and-quantizers) by specifying the `rounding_threshold_bits` parameter. Please evaluate the accuracy of the model using simulation if you use this feature, as it may impact accuracy. Setting a value 2-bit higher than the quantization `n_bits` should be a good start.
 
 ```python
 torch_model = SimpleNet(20)
@@ -145,7 +145,7 @@ quantized_numpy_module = compile_torch_model(
 )
 ```
 
-3. adjust the tolerance for one-off errors using the `p_error` parameter. See [this section for more explanation](../explanations/advanced\_features.md#approximate-computations) on this tolerance.
+3. adjust the tolerance for one-off errors using the `p_error` parameter. See [this section for more explanation](../explanations/advanced_features.md#approximate-computations) on this tolerance.
 
 ```python
 torch_model = SimpleNet(10)

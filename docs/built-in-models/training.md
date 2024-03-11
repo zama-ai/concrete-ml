@@ -1,6 +1,6 @@
 # Encrypted training
 
-Concrete ML offers the possibility to train [SGD Logistic Regression](../references/api/concrete.ml.sklearn.linear\_model.md#class-sgdclassifier) on encrypted data. The [logistic regression training](../advanced\_examples/LogisticRegressionTraining.ipynb) example shows this feature in action.
+Concrete ML offers the possibility to train [SGD Logistic Regression](../references/api/concrete.ml.sklearn.linear_model.md#class-sgdclassifier) on encrypted data. The [logistic regression training](../advanced_examples/LogisticRegressionTraining.ipynb) example shows this feature in action.
 
 This example shows how to instantiate a logistic regression model that trains on encrypted data:
 

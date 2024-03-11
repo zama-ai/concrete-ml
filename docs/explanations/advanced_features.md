@@ -14,9 +14,9 @@ Concrete ML has a _simulation_ mode where the impact of approximate computation 
 
 In Concrete ML, there are three different ways to define the tolerance to off-by-one errors for each TLU operation:
 
-* setting `p_error`, the error probability of an individual TLU (see [here](advanced\_features.md#tolerance-to-off-by-one-error-for-an-individual-tlu))
-* setting `global_p_error`, the error probability of the full circuit (see [here](advanced\_features.md#a-global-tolerance-for-one-off-errors-for-the-entire-model))
-* not setting `p_error` nor `global_p_error`, and using default parameters (see [here](advanced\_features.md#using-default-error-probability))
+- setting `p_error`, the error probability of an individual TLU (see [here](advanced_features.md#tolerance-to-off-by-one-error-for-an-individual-tlu))
+- setting `global_p_error`, the error probability of the full circuit (see [here](advanced_features.md#a-global-tolerance-for-one-off-errors-for-the-entire-model))
+- not setting `p_error` nor `global_p_error`, and using default parameters (see [here](advanced_features.md#using-default-error-probability))
 
 {% hint style="warning" %}
 `p_error` and `global_p_error` cannot be set at the same time, as they are incompatible with each other.
@@ -26,21 +26,21 @@ In Concrete ML, there are three different ways to define the tolerance to off-by
 
 The first way to set error probabilities in Concrete ML is at the local level, by directly setting the tolerance to error of each individual TLU operation (such as activation functions for a neuron output). This tolerance is referred to as `p_error`. A given PBS operation has a `1 - p_error` chance of being correct 100% of the time. The successful evaluation here means that the value decrypted after FHE evaluation is exactly the same as the one that would be computed in the clear. Otherwise, off-by-one errors might occur, but, in practice, these errors are not necessarily problematic if they are sufficiently rare.
 
-For simplicity, it is best to use [default options](advanced\_features.md#using-default-error-probability), irrespective of the type of model. Especially for deep neural networks, default values may be too pessimistic, reducing computation speed without any improvement in accuracy. For deep neural networks, some TLU errors might not affect the accuracy of the network, so `p_error` can be safely increased (e.g., see CIFAR classifications in [our showcase](../tutorials/showcase.md)).
+For simplicity, it is best to use [default options](advanced_features.md#using-default-error-probability), irrespective of the type of model. Especially for deep neural networks, default values may be too pessimistic, reducing computation speed without any improvement in accuracy. For deep neural networks, some TLU errors might not affect the accuracy of the network, so `p_error` can be safely increased (e.g., see CIFAR classifications in [our showcase](../tutorials/showcase.md)).
 
 Here is a visualization of the effect of the `p_error` on a neural network model with a `p_error = 0.1` compared to execution in the clear (i.e., no error):
 
-![Impact of p\_error in a Neural Network](../figures/p\_error\_nn.png)
+![Impact of p_error in a Neural Network](../figures/p_error_nn.png)
 
 Varying `p_error` in the one hidden-layer neural network above produces the following inference times. Increasing `p_error` to 0.1 halves the inference time with respect to a `p_error` of 0.001. In the graph above, the decision boundary becomes noisier with a higher `p_error`.
 
-| p\_error | Inference Time (ms) |
-| :------: | ------------------- |
-|   0.001  | 0.80                |
-|   0.01   | 0.41                |
-|    0.1   | 0.37                |
+| p_error | Inference Time (ms) |
+| :-----: | ------------------- |
+|  0.001  | 0.80                |
+|  0.01   | 0.41                |
+|   0.1   | 0.37                |
 
-The speedup depends on model complexity, but, in an iterative approach, it is possible to search for a good value of `p_error` to obtain a speedup while maintaining good accuracy. Concrete ML provides a tool to find a good value for `p_error` based on [binary search](advanced\_features.md#searching-for-the-best-error-probability).
+The speedup depends on model complexity, but, in an iterative approach, it is possible to search for a good value of `p_error` to obtain a speedup while maintaining good accuracy. Concrete ML provides a tool to find a good value for `p_error` based on [binary search](advanced_features.md#searching-for-the-best-error-probability).
 
 Users have the possibility to change this `p_error` by passing an argument to the `compile` function of any of the models. Here is an example:
 
@@ -166,9 +166,9 @@ where $$x$$ is the input number, and $$\lfloor \cdot \rceil$$ denotes the operat
 
 In Concrete ML, this feature is currently implemented for custom neural networks through the compile functions, including
 
-* `concrete.ml.torch.compile_torch_model`,
-* `concrete.ml.torch.compile_onnx_model` and
-* `concrete.ml.torch.compile_brevitas_qat_model`.
+- `concrete.ml.torch.compile_torch_model`,
+- `concrete.ml.torch.compile_onnx_model` and
+- `concrete.ml.torch.compile_brevitas_qat_model`.
 
 The `rounding_threshold_bits` argument can be set to a specific bit-width. It is important to choose an appropriate bit-width threshold to balance the trade-off between speed and accuracy. By reducing the bit-width of intermediate tensors, it is possible to speed-up computations while maintaining accuracy.
 
@@ -181,11 +181,11 @@ To find the best trade-off between speed and accuracy, it is recommended to expe
 In practice, the process looks like this:
 
 1. Set a `rounding_threshold_bits` to a relatively high P. Say, 8 bits.
-2. Check the accuracy
-3. Update P = P - 1
-4. repeat steps 2 and 3 until the accuracy loss is above a certain, acceptable threshold.
+1. Check the accuracy
+1. Update P = P - 1
+1. repeat steps 2 and 3 until the accuracy loss is above a certain, acceptable threshold.
 
-An example of such implementation is available in [evaluate\_torch\_cml.py](../../use\_case\_examples/cifar/cifar\_brevitas\_training/evaluate\_one\_example\_fhe.py) and [CifarInFheWithSmallerAccumulators.ipynb](../../use\_case\_examples/cifar/cifar\_brevitas\_finetuning/CifarInFheWithSmallerAccumulators.ipynb)
+An example of such implementation is available in [evaluate_torch_cml.py](../../use_case_examples/cifar/cifar_brevitas_training/evaluate_one_example_fhe.py) and [CifarInFheWithSmallerAccumulators.ipynb](../../use_case_examples/cifar/cifar_brevitas_finetuning/CifarInFheWithSmallerAccumulators.ipynb)
 
 ## Seeing compilation information
 
@@ -209,7 +209,7 @@ clf.compile(X_train, verbose=True, show_mlir=True, p_error=0.033)
 
 Here, one will see:
 
-* the computation graph (typically):
+- the computation graph (typically):
 
 ```
 Computation Graph
@@ -233,7 +233,7 @@ Computation Graph
 return %15
 ```
 
-* the MLIR, produced by Concrete:
+- the MLIR, produced by Concrete:
 
 ```
 MLIR
@@ -265,7 +265,7 @@ module {
 }
 ```
 
-* information from the optimizer (including cryptographic parameters):
+- information from the optimizer (including cryptographic parameters):
 
 ```
 Optimizer
@@ -295,21 +295,21 @@ Optimizer
 
 In this latter optimization, the following information will be provided:
 
-* The bit-width ("6-bit integers") used in the program: for the moment, the compiler only supports a single precision (i.e., that all PBS are promoted to the same bit-width - the largest one). Therefore, this bit-width predominantly drives the speed of the program, and it is essential to reduce it as much as possible for faster execution.
-* The maximal norm2 ("7 manp"), which has an impact on the crypto parameters: The larger this norm2, the slower PBS will be. The norm2 is related to the norm of some constants appearing in your program, in a way which will be clarified in the Concrete documentation.
-* The probability of error of an individual PBS, which was requested by the user ("3.300000e-02 error per pbs call" in User Config).
-* The probability of error of the full circuit, which was requested by the user ("1.000000e+00 error per circuit call" in User Config). Here, the probability 1 stands for "not used", since we had set the individual probability via `p_error`.
-* The probability of error of an individual PBS, which is found by the optimizer ("1/30 errors (3.234529e-02)").
-* The probability of error of the full circuit which is found by the optimizer ("1/10 errors (9.390887e-02)").
-* An estimation of the cost of the circuit ("4.214000e+02 Millions Operations"): Large values indicate a circuit that will execute more slowly.
+- The bit-width ("6-bit integers") used in the program: for the moment, the compiler only supports a single precision (i.e., that all PBS are promoted to the same bit-width - the largest one). Therefore, this bit-width predominantly drives the speed of the program, and it is essential to reduce it as much as possible for faster execution.
+- The maximal norm2 ("7 manp"), which has an impact on the crypto parameters: The larger this norm2, the slower PBS will be. The norm2 is related to the norm of some constants appearing in your program, in a way which will be clarified in the Concrete documentation.
+- The probability of error of an individual PBS, which was requested by the user ("3.300000e-02 error per pbs call" in User Config).
+- The probability of error of the full circuit, which was requested by the user ("1.000000e+00 error per circuit call" in User Config). Here, the probability 1 stands for "not used", since we had set the individual probability via `p_error`.
+- The probability of error of an individual PBS, which is found by the optimizer ("1/30 errors (3.234529e-02)").
+- The probability of error of the full circuit which is found by the optimizer ("1/10 errors (9.390887e-02)").
+- An estimation of the cost of the circuit ("4.214000e+02 Millions Operations"): Large values indicate a circuit that will execute more slowly.
 
 Here is some further information about cryptographic parameters:
 
-* 1x glwe\_dimension
-* 2\*\*11 polynomial (2048)
-* 762 lwe dimension
-* keyswitch l,b=5,3
-* blindrota l,b=2,15
-* wopPbs : false
+- 1x glwe_dimension
+- 2\*\*11 polynomial (2048)
+- 762 lwe dimension
+- keyswitch l,b=5,3
+- blindrota l,b=2,15
+- wopPbs : false
 
 This optimizer feedback is a work in progress and will be modified and improved in future releases.

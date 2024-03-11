@@ -1,13 +1,13 @@
 # Using Torch
 
-In addition to the built-in models, Concrete ML supports generic machine learning models implemented with Torch, or [exported as ONNX graphs](onnx\_support.md).
+In addition to the built-in models, Concrete ML supports generic machine learning models implemented with Torch, or [exported as ONNX graphs](onnx_support.md).
 
-As [Quantization Aware Training (QAT)](../explanations/quantization.md) is the most appropriate method of training neural networks that are compatible with [FHE constraints](../getting-started/concepts.md#model-accuracy-considerations-under-fhe-constraints), Concrete ML works with [Brevitas](../explanations/inner-workings/external\_libraries.md#brevitas), a library providing QAT support for PyTorch.
+As [Quantization Aware Training (QAT)](../explanations/quantization.md) is the most appropriate method of training neural networks that are compatible with [FHE constraints](../getting-started/concepts.md#model-accuracy-considerations-under-fhe-constraints), Concrete ML works with [Brevitas](../explanations/inner-workings/external_libraries.md#brevitas), a library providing QAT support for PyTorch.
 
 The following example uses a simple QAT PyTorch model that implements a fully connected neural network with two hidden layers. Due to its small size, making this model respect FHE constraints is relatively easy.
 
 {% hint style="info" %}
-Converting neural networks to use FHE can be done with `compile_brevitas_qat_model` or with `compile_torch_model` for post-training quantization. If the model can not be converted to FHE two types of errors can be raised: (1) crypto-parameters can not be found and, (2) table look-up bit-width limit is exceeded. See the [debugging section](fhe\_assistant.md#compilation-error-debugging) if you encounter these errors.
+Converting neural networks to use FHE can be done with `compile_brevitas_qat_model` or with `compile_torch_model` for post-training quantization. If the model can not be converted to FHE two types of errors can be raised: (1) crypto-parameters can not be found and, (2) table look-up bit-width limit is exceeded. See the [debugging section](fhe_assistant.md#compilation-error-debugging) if you encounter these errors.
 {% endhint %}
 
 ```python
@@ -38,7 +38,7 @@ class QATSimpleNet(nn.Module):
 
 ```
 
-Once the model is trained, calling the [`compile_brevitas_qat_model`](../references/api/concrete.ml.torch.compile.md#function-compile\_brevitas\_qat\_model) from Concrete ML will automatically perform conversion and compilation of a QAT network. Here, 3-bit quantization is used for both the weights and activations. The `compile_brevitas_qat_model` function automatically identifies the number of quantization bits used in the Brevitas model.
+Once the model is trained, calling the [`compile_brevitas_qat_model`](../references/api/concrete.ml.torch.compile.md#function-compile_brevitas_qat_model) from Concrete ML will automatically perform conversion and compilation of a QAT network. Here, 3-bit quantization is used for both the weights and activations. The `compile_brevitas_qat_model` function automatically identifies the number of quantization bits used in the Brevitas model.
 
 ```python
 from concrete.ml.torch.compile import compile_brevitas_qat_model
@@ -98,12 +98,12 @@ In this example, the input values `x_test` and the predicted values `y_pred` are
 
 The user can also perform the inference on clear data. Two approaches exist:
 
-* `quantized_module.forward(quantized_x, fhe="simulate")`: simulates FHE execution taking into account Table Lookup errors.\
+- `quantized_module.forward(quantized_x, fhe="simulate")`: simulates FHE execution taking into account Table Lookup errors.\
   De-quantization must be done in a second step as for actual FHE execution. Simulation takes into account the `p_error`/`global_p_error` parameters
-* `quantized_module.forward(quantized_x, fhe="disable")`: computes predictions in the clear on quantized data, and then de-quantize the result. The return value of this function contains the de-quantized (float) output of running the model in the clear. Calling this function on clear data is useful when debugging, but this does not perform actual FHE simulation.
+- `quantized_module.forward(quantized_x, fhe="disable")`: computes predictions in the clear on quantized data, and then de-quantize the result. The return value of this function contains the de-quantized (float) output of running the model in the clear. Calling this function on clear data is useful when debugging, but this does not perform actual FHE simulation.
 
 {% hint style="info" %}
-FHE simulation allows to measure the impact of the Table Lookup error on the model accuracy. The Table Lookup error can be adjusted using `p_error`/`global_p_error`, as described in the [approximate computation ](../explanations/advanced\_features.md#approximate-computations)section.
+FHE simulation allows to measure the impact of the Table Lookup error on the model accuracy. The Table Lookup error can be adjusted using `p_error`/`global_p_error`, as described in the [approximate computation ](../explanations/advanced_features.md#approximate-computations)section.
 {% endhint %}
 
 ## Generic Quantization Aware Training import
@@ -112,7 +112,7 @@ While the example above shows how to import a Brevitas/PyTorch model, Concrete M
 
 QAT models contain quantizers in the PyTorch graph. These quantizers ensure that the inputs to the Linear/Dense and Conv layers are quantized.
 
-Suppose that `n_bits_qat` is the bit-width of activations and weights during the QAT process. To import a PyTorch QAT network, you can use the [`compile_torch_model`](../references/api/concrete.ml.torch.compile.md#function-compile\_torch\_model) library function, passing `import_qat=True`:
+Suppose that `n_bits_qat` is the bit-width of activations and weights during the QAT process. To import a PyTorch QAT network, you can use the [`compile_torch_model`](../references/api/concrete.ml.torch.compile.md#function-compile_torch_model) library function, passing `import_qat=True`:
 
 ```python
 from concrete.ml.torch.compile import compile_torch_model
@@ -126,7 +126,7 @@ quantized_module = compile_torch_model(
 )
 ```
 
-Alternatively, if you want to import an ONNX model directly, please see [the ONNX guide](onnx\_support.md). The [`compile_onnx_model`](../references/api/concrete.ml.torch.compile.md#function-compile\_onnx\_model) also supports the `import_qat` parameter.
+Alternatively, if you want to import an ONNX model directly, please see [the ONNX guide](onnx_support.md). The [`compile_onnx_model`](../references/api/concrete.ml.torch.compile.md#function-compile_onnx_model) also supports the `import_qat` parameter.
 
 {% hint style="warning" %}
 When importing QAT models using this generic pipeline, a representative calibration set should be given as quantization parameters in the model need to be inferred from the statistics of the values encountered during inference.
@@ -140,99 +140,99 @@ Concrete ML supports a variety of PyTorch operators that can be used to build fu
 
 #### Univariate operators
 
-* [`torch.nn.identity`](https://pytorch.org/docs/stable/generated/torch.nn.Identity.html)
-* [`torch.clip`](https://pytorch.org/docs/stable/generated/torch.clip.html)
-* [`torch.clamp`](https://pytorch.org/docs/stable/generated/torch.clamp.html)
-* [`torch.round`](https://pytorch.org/docs/stable/generated/torch.round.html)
-* [`torch.floor`](https://pytorch.org/docs/stable/generated/torch.floor.html)
-* [`torch.min`](https://pytorch.org/docs/stable/generated/torch.min.html)
-* [`torch.max`](https://pytorch.org/docs/stable/generated/torch.max.html)
-* [`torch.abs`](https://pytorch.org/docs/stable/generated/torch.abs.html)
-* [`torch.neg`](https://pytorch.org/docs/stable/generated/torch.neg.html)
-* [`torch.sign`](https://pytorch.org/docs/stable/generated/torch.sign.html)
-* [`torch.logical_or, torch.Tensor operator ||`](https://pytorch.org/docs/stable/generated/torch.logical\_or.html)
-* [`torch.logical_not`](https://pytorch.org/docs/stable/generated/torch.logical\_not.html)
-* [`torch.gt, torch.greater`](https://pytorch.org/docs/stable/generated/torch.gt.html)
-* [`torch.ge, torch.greater_equal`](https://pytorch.org/docs/stable/generated/torch.ge.html)
-* [`torch.lt, torch.less`](https://pytorch.org/docs/stable/generated/torch.lt.html)
-* [`torch.le, torch.less_equal`](https://pytorch.org/docs/stable/generated/torch.le.html)
-* [`torch.eq`](https://pytorch.org/docs/stable/generated/torch.eq.html)
-* [`torch.where`](https://pytorch.org/docs/stable/generated/torch.where.html)
-* [`torch.exp`](https://pytorch.org/docs/stable/generated/torch.exp.html)
-* [`torch.log`](https://pytorch.org/docs/stable/generated/torch.log.html)
-* [`torch.pow`](https://pytorch.org/docs/stable/generated/torch.pow.html)
-* [`torch.sum`](https://pytorch.org/docs/stable/generated/torch.sum.html)
-* [`torch.mul, torch.Tensor operator *`](https://pytorch.org/docs/stable/generated/torch.mul.html)
-* [`torch.div, torch.Tensor operator /`](https://pytorch.org/docs/stable/generated/torch.div.html)
-* [`torch.nn.BatchNorm2d`](https://pytorch.org/docs/stable/generated/torch.nn.BatchNorm2d.html)
-* [`torch.nn.BatchNorm3d`](https://pytorch.org/docs/stable/generated/torch.nn.BatchNorm3d.html)
-* [`torch.erf, torch.special.erf`](https://pytorch.org/docs/stable/special.html#torch.special.erf)
-* [`torch.nn.functional.pad`](https://pytorch.org/docs/stable/generated/torch.nn.functional.pad.html)
+- [`torch.nn.identity`](https://pytorch.org/docs/stable/generated/torch.nn.Identity.html)
+- [`torch.clip`](https://pytorch.org/docs/stable/generated/torch.clip.html)
+- [`torch.clamp`](https://pytorch.org/docs/stable/generated/torch.clamp.html)
+- [`torch.round`](https://pytorch.org/docs/stable/generated/torch.round.html)
+- [`torch.floor`](https://pytorch.org/docs/stable/generated/torch.floor.html)
+- [`torch.min`](https://pytorch.org/docs/stable/generated/torch.min.html)
+- [`torch.max`](https://pytorch.org/docs/stable/generated/torch.max.html)
+- [`torch.abs`](https://pytorch.org/docs/stable/generated/torch.abs.html)
+- [`torch.neg`](https://pytorch.org/docs/stable/generated/torch.neg.html)
+- [`torch.sign`](https://pytorch.org/docs/stable/generated/torch.sign.html)
+- [`torch.logical_or, torch.Tensor operator ||`](https://pytorch.org/docs/stable/generated/torch.logical_or.html)
+- [`torch.logical_not`](https://pytorch.org/docs/stable/generated/torch.logical_not.html)
+- [`torch.gt, torch.greater`](https://pytorch.org/docs/stable/generated/torch.gt.html)
+- [`torch.ge, torch.greater_equal`](https://pytorch.org/docs/stable/generated/torch.ge.html)
+- [`torch.lt, torch.less`](https://pytorch.org/docs/stable/generated/torch.lt.html)
+- [`torch.le, torch.less_equal`](https://pytorch.org/docs/stable/generated/torch.le.html)
+- [`torch.eq`](https://pytorch.org/docs/stable/generated/torch.eq.html)
+- [`torch.where`](https://pytorch.org/docs/stable/generated/torch.where.html)
+- [`torch.exp`](https://pytorch.org/docs/stable/generated/torch.exp.html)
+- [`torch.log`](https://pytorch.org/docs/stable/generated/torch.log.html)
+- [`torch.pow`](https://pytorch.org/docs/stable/generated/torch.pow.html)
+- [`torch.sum`](https://pytorch.org/docs/stable/generated/torch.sum.html)
+- [`torch.mul, torch.Tensor operator *`](https://pytorch.org/docs/stable/generated/torch.mul.html)
+- [`torch.div, torch.Tensor operator /`](https://pytorch.org/docs/stable/generated/torch.div.html)
+- [`torch.nn.BatchNorm2d`](https://pytorch.org/docs/stable/generated/torch.nn.BatchNorm2d.html)
+- [`torch.nn.BatchNorm3d`](https://pytorch.org/docs/stable/generated/torch.nn.BatchNorm3d.html)
+- [`torch.erf, torch.special.erf`](https://pytorch.org/docs/stable/special.html#torch.special.erf)
+- [`torch.nn.functional.pad`](https://pytorch.org/docs/stable/generated/torch.nn.functional.pad.html)
 
 #### Shape modifying operators
 
-* [`torch.reshape`](https://pytorch.org/docs/stable/generated/torch.reshape.html)
-* [`torch.Tensor.view`](https://pytorch.org/docs/stable/generated/torch.Tensor.view.html#torch.Tensor.view)
-* [`torch.flatten`](https://pytorch.org/docs/stable/generated/torch.flatten.html)
-* [`torch.unsqueeze`](https://pytorch.org/docs/stable/generated/torch.unsqueeze.html)
-* [`torch.squeeze`](https://pytorch.org/docs/stable/generated/torch.squeeze.html)
-* [`torch.transpose`](https://pytorch.org/docs/stable/generated/torch.transpose.html)
-* [`torch.concat, torch.cat`](https://pytorch.org/docs/stable/generated/torch.cat.html)
-* [`torch.nn.Unfold`](https://pytorch.org/docs/stable/generated/torch.nn.Unfold.html)
+- [`torch.reshape`](https://pytorch.org/docs/stable/generated/torch.reshape.html)
+- [`torch.Tensor.view`](https://pytorch.org/docs/stable/generated/torch.Tensor.view.html#torch.Tensor.view)
+- [`torch.flatten`](https://pytorch.org/docs/stable/generated/torch.flatten.html)
+- [`torch.unsqueeze`](https://pytorch.org/docs/stable/generated/torch.unsqueeze.html)
+- [`torch.squeeze`](https://pytorch.org/docs/stable/generated/torch.squeeze.html)
+- [`torch.transpose`](https://pytorch.org/docs/stable/generated/torch.transpose.html)
+- [`torch.concat, torch.cat`](https://pytorch.org/docs/stable/generated/torch.cat.html)
+- [`torch.nn.Unfold`](https://pytorch.org/docs/stable/generated/torch.nn.Unfold.html)
 
 #### Tensor operators
 
-* [`torch.Tensor.expand`](https://pytorch.org/docs/stable/generated/torch.Tensor.expand.html)
-* [`torch.Tensor.to`](https://pytorch.org/docs/stable/generated/torch.Tensor.to.html) -- for casting to dtype
+- [`torch.Tensor.expand`](https://pytorch.org/docs/stable/generated/torch.Tensor.expand.html)
+- [`torch.Tensor.to`](https://pytorch.org/docs/stable/generated/torch.Tensor.to.html) -- for casting to dtype
 
 #### Multi-variate operators: encrypted input and unencrypted constants
 
-* [`torch.nn.Linear`](https://pytorch.org/docs/stable/generated/torch.nn.Linear.html)
-* [`torch.conv1d`, `torch.nn.Conv1D`](https://pytorch.org/docs/stable/generated/torch.nn.Conv1d.html)
-* [`torch.conv2d`, `torch.nn.Conv2D`](https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html)
-* [`torch.nn.AvgPool2d`](https://pytorch.org/docs/stable/generated/torch.nn.AvgPool2d.html)
-* [`torch.nn.MaxPool2d`](https://pytorch.org/docs/stable/generated/torch.nn.MaxPool2d.html)
+- [`torch.nn.Linear`](https://pytorch.org/docs/stable/generated/torch.nn.Linear.html)
+- [`torch.conv1d`, `torch.nn.Conv1D`](https://pytorch.org/docs/stable/generated/torch.nn.Conv1d.html)
+- [`torch.conv2d`, `torch.nn.Conv2D`](https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html)
+- [`torch.nn.AvgPool2d`](https://pytorch.org/docs/stable/generated/torch.nn.AvgPool2d.html)
+- [`torch.nn.MaxPool2d`](https://pytorch.org/docs/stable/generated/torch.nn.MaxPool2d.html)
 
 Concrete ML also supports some of their QAT equivalents from Brevitas.
 
-* `brevitas.nn.QuantLinear`
-* `brevitas.nn.QuantConv1d`
-* `brevitas.nn.QuantConv2d`
+- `brevitas.nn.QuantLinear`
+- `brevitas.nn.QuantConv1d`
+- `brevitas.nn.QuantConv2d`
 
 #### Multi-variate operators: encrypted+unencrypted or encrypted+encrypted inputs
 
-* [`torch.add, torch.Tensor operator +`](https://pytorch.org/docs/stable/generated/torch.Tensor.add.html)
-* [`torch.sub, torch.Tensor operator -`](https://pytorch.org/docs/stable/generated/torch.Tensor.sub.html)
-* [`torch.matmul`](https://pytorch.org/docs/stable/generated/torch.matmul.html)
+- [`torch.add, torch.Tensor operator +`](https://pytorch.org/docs/stable/generated/torch.Tensor.add.html)
+- [`torch.sub, torch.Tensor operator -`](https://pytorch.org/docs/stable/generated/torch.Tensor.sub.html)
+- [`torch.matmul`](https://pytorch.org/docs/stable/generated/torch.matmul.html)
 
 ### Quantizers
 
-* `brevitas.nn.QuantIdentity`
+- `brevitas.nn.QuantIdentity`
 
 ### Activation functions
 
-* [`torch.nn.CELU`](https://pytorch.org/docs/stable/generated/torch.nn.CELU.html)
-* [`torch.nn.ELU`](https://pytorch.org/docs/stable/generated/torch.nn.ELU.html)
-* [`torch.nn.GELU`](https://pytorch.org/docs/stable/generated/torch.nn.GELU.html)
-* [`torch.nn.Hardshrink`](https://pytorch.org/docs/stable/generated/torch.nn.Hardshrink.html)
-* [`torch.nn.HardSigmoid`](https://pytorch.org/docs/stable/generated/torch.nn.Hardsigmoid.html)
-* [`torch.nn.Hardswish`](https://pytorch.org/docs/stable/generated/torch.nn.Hardswish)
-* [`torch.nn.HardTanh`](https://pytorch.org/docs/stable/generated/torch.nn.Hardtanh.html)
-* [`torch.nn.LeakyReLU`](https://pytorch.org/docs/stable/generated/torch.nn.LeakyReLU.html)
-* [`torch.nn.LogSigmoid`](https://pytorch.org/docs/stable/generated/torch.nn.LogSigmoid.html)
-* [`torch.nn.Mish`](https://pytorch.org/docs/stable/generated/torch.nn.Mish.html)
-* [`torch.nn.PReLU`](https://pytorch.org/docs/stable/generated/torch.nn.PReLU.html)
-* [`torch.nn.ReLU6`](https://pytorch.org/docs/stable/generated/torch.nn.ReLU6.html)
-* [`torch.nn.ReLU`](https://pytorch.org/docs/stable/generated/torch.nn.ReLU.html)
-* [`torch.nn.SELU`](https://pytorch.org/docs/stable/generated/torch.nn.SELU.html)
-* [`torch.nn.Sigmoid`](https://pytorch.org/docs/stable/generated/torch.nn.Sigmoid.html)
-* [`torch.nn.SiLU`](https://pytorch.org/docs/stable/generated/torch.nn.SiLU.html)
-* [`torch.nn.Softplus`](https://pytorch.org/docs/stable/generated/torch.nn.Softplus.html)
-* [`torch.nn.Softshrink`](https://pytorch.org/docs/stable/generated/torch.nn.Softshrink.html)
-* [`torch.nn.Softsign`](https://pytorch.org/docs/stable/generated/torch.nn.Softsign.html)
-* [`torch.nn.Tanh`](https://pytorch.org/docs/stable/generated/torch.nn.Tanh.html)
-* [`torch.nn.Tanhshrink`](https://pytorch.org/docs/stable/generated/torch.nn.Tanhshrink.html)
-* [`torch.nn.Threshold`](https://pytorch.org/docs/stable/generated/torch.nn.Threshold.html) -- partial support
+- [`torch.nn.CELU`](https://pytorch.org/docs/stable/generated/torch.nn.CELU.html)
+- [`torch.nn.ELU`](https://pytorch.org/docs/stable/generated/torch.nn.ELU.html)
+- [`torch.nn.GELU`](https://pytorch.org/docs/stable/generated/torch.nn.GELU.html)
+- [`torch.nn.Hardshrink`](https://pytorch.org/docs/stable/generated/torch.nn.Hardshrink.html)
+- [`torch.nn.HardSigmoid`](https://pytorch.org/docs/stable/generated/torch.nn.Hardsigmoid.html)
+- [`torch.nn.Hardswish`](https://pytorch.org/docs/stable/generated/torch.nn.Hardswish)
+- [`torch.nn.HardTanh`](https://pytorch.org/docs/stable/generated/torch.nn.Hardtanh.html)
+- [`torch.nn.LeakyReLU`](https://pytorch.org/docs/stable/generated/torch.nn.LeakyReLU.html)
+- [`torch.nn.LogSigmoid`](https://pytorch.org/docs/stable/generated/torch.nn.LogSigmoid.html)
+- [`torch.nn.Mish`](https://pytorch.org/docs/stable/generated/torch.nn.Mish.html)
+- [`torch.nn.PReLU`](https://pytorch.org/docs/stable/generated/torch.nn.PReLU.html)
+- [`torch.nn.ReLU6`](https://pytorch.org/docs/stable/generated/torch.nn.ReLU6.html)
+- [`torch.nn.ReLU`](https://pytorch.org/docs/stable/generated/torch.nn.ReLU.html)
+- [`torch.nn.SELU`](https://pytorch.org/docs/stable/generated/torch.nn.SELU.html)
+- [`torch.nn.Sigmoid`](https://pytorch.org/docs/stable/generated/torch.nn.Sigmoid.html)
+- [`torch.nn.SiLU`](https://pytorch.org/docs/stable/generated/torch.nn.SiLU.html)
+- [`torch.nn.Softplus`](https://pytorch.org/docs/stable/generated/torch.nn.Softplus.html)
+- [`torch.nn.Softshrink`](https://pytorch.org/docs/stable/generated/torch.nn.Softshrink.html)
+- [`torch.nn.Softsign`](https://pytorch.org/docs/stable/generated/torch.nn.Softsign.html)
+- [`torch.nn.Tanh`](https://pytorch.org/docs/stable/generated/torch.nn.Tanh.html)
+- [`torch.nn.Tanhshrink`](https://pytorch.org/docs/stable/generated/torch.nn.Tanhshrink.html)
+- [`torch.nn.Threshold`](https://pytorch.org/docs/stable/generated/torch.nn.Threshold.html) -- partial support
 
 {% hint style="info" %}
 The equivalent versions from `torch.functional` are also supported.

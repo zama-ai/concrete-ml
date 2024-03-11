@@ -32,7 +32,7 @@ Our team of experts usually answers within 24 hours in working days.
 
 ### Developers
 
-* [Contribute to Concrete ML](developer/contributing.md)
-* [Check the latest release note](https://github.com/zama-ai/concrete-ml/releases)
-* [Request a feature](https://github.com/zama-ai/concrete-ml/issues/new?assignees=\&labels=feature\&projects=\&template=feature\_request.md)
-* [Report a bug](https://github.com/zama-ai/concrete-ml/issues/new?assignees=\&labels=bug\&projects=\&template=bug\_report.md)
+- [Contribute to Concrete ML](developer/contributing.md)
+- [Check the latest release note](https://github.com/zama-ai/concrete-ml/releases)
+- [Request a feature](https://github.com/zama-ai/concrete-ml/issues/new?assignees=&labels=feature&projects=&template=feature_request.md)
+- [Report a bug](https://github.com/zama-ai/concrete-ml/issues/new?assignees=&labels=bug&projects=&template=bug_report.md)
