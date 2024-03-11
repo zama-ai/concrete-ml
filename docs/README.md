@@ -2,7 +2,7 @@
 
 [⭐️ Star the repo on Github](https://github.com/zama-ai/concrete-ml) | 📚 [FHE resources by Zama](https://github.com/zama-ai/awesome-zama/tree/main) | 💬 [Community support](https://community.zama.ai/)
 
-<figure><img src=".gitbook/assets/doc_header..png" alt=""><figcaption></figcaption></figure>
+<figure><img src=".gitbook/assets/doc_header.png" alt=""><figcaption></figcaption></figure>
 
 Concrete ML is an open-source, privacy-preserving, machine learning framework based on Fully Homomorphic Encryption (FHE).
 
