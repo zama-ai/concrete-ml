@@ -9,7 +9,7 @@
     :hidden:
     :caption: Getting Started
 
-    getting-started/readme.md
+    getting-started/README.md
     getting-started/pip_installing.md
     getting-started/concepts.md
     getting-started/cloud.md

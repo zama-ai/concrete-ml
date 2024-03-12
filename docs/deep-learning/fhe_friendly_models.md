@@ -4,7 +4,7 @@ This guide provides a complete example of converting a PyTorch neural network in
 
 In general, quantization can be carried out in two different ways: either during Quantization Aware Training (QAT) or after the training phase with Post-Training Quantization (PTQ).
 
-Regarding FHE-friendly neural networks, QAT is the best way to reach optimal accuracy under [FHE constraints](../getting-started/#current-limitations). This technique allows weights and activations to be reduced to very low bit-widths (e.g., 2-3 bits), which, combined with pruning, can keep accumulator bit-widths low.
+Regarding FHE-friendly neural networks, QAT is the best way to reach optimal accuracy under [FHE constraints](../getting-started/README.md#current-limitations). This technique allows weights and activations to be reduced to very low bit-widths (e.g., 2-3 bits), which, combined with pruning, can keep accumulator bit-widths low.
 
 Concrete ML uses the third-party library [Brevitas](https://github.com/Xilinx/brevitas) to perform QAT for PyTorch NNs, but options exist for other frameworks such as Keras/Tensorflow.
 

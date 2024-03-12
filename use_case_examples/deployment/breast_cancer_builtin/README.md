@@ -9,7 +9,7 @@ To do so please refer to [AWS documentation](https://docs.aws.amazon.com/cli/lat
 One can also run this example locally using Docker, or just by running the scripts locally.
 
 1. To train your model you can use `train.py`, or `train_with_docker.sh` to use Docker (recommended way).
-   This will train a model and [serialize the FHE circuit](../../../docs/advanced-topics/client_server.md) in a new folder called `./dev`.
+   This will train a model and [serialize the FHE circuit](../../../docs/guides/client_server.md) in a new folder called `./dev`.
 1. Once that's done you can use the script provided in Concrete ML in `src/concrete/ml/deployment/`, either use `deploy_to_aws.py` or `deploy_to_docker.py` according to your need.
 
 - `python -m concrete.ml.deployment.deploy_to_docker --path-to-model ./dev`

@@ -1,10 +1,10 @@
 # Table of contents
 
-- [Welcome to Concrete ML](README.md)
+- [Welcome](README.md)
 
 ## Getting Started
 
-- [What is Concrete ML?](getting-started/readme.md)
+- [What is Concrete ML?](getting-started/README.md)
 - [Installation](getting-started/pip_installing.md)
 - [Key concepts](getting-started/concepts.md)
 - [Inference in the cloud](getting-started/cloud.md)
@@ -37,7 +37,7 @@
 
 - [See all tutorials](tutorials/showcase.md)
 - [Built-in model examples](tutorials/ml_examples.md)
-- [Deep learning examples](tutorials/examples.md)
+- [Deep learning examples](tutorials/dl_examples.md)
 
 ## References
 

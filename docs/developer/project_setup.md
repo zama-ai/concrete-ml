@@ -155,7 +155,7 @@ rm -rf .venv
 make setup_env
 ```
 
-At this point, you should consider using Docker as nobody will have the exact same setup as you. If, however, you need to develop on your OS directly, you can [ask Zama for help](../getting-started/#support).
+At this point, you should consider using Docker as nobody will have the exact same setup as you. If, however, you need to develop on your OS directly, you can [ask Zama for help](../README.md#supports).
 
 #### in Docker
 

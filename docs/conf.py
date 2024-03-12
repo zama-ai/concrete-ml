@@ -60,8 +60,6 @@ exclude_patterns = [
     "SUMMARY.md",
     "advanced_examples/*.ipynb",
     "references/api/*.md",
-    "developer-guide/workflow/README.md",
-    "developer-guide/inner-workings/README.md",
     "conventions.md",
 ]
 

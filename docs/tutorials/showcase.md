@@ -2,8 +2,8 @@
 
 ## Start here
 
-- [Build-in model examples](broken-reference)
-- [Deep learning examples](examples.md)
+- [Build-in model examples](ml_examples.md)
+- [Deep learning examples](dl_examples.md)
 
 ## Go further
 

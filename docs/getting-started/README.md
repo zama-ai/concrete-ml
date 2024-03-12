@@ -1,8 +1,6 @@
 # What is Concrete ML?
 
-[⭐️ Star the repo on Github](https://github.com/zama-ai/concrete-ml) | [🗣 Community support forum](https://community.zama.ai/c/concrete-ml/8) | [📁 Contribute to the project](../developer/contributing.md)
-
-![](<../.gitbook/assets/3%20(1)%20(1).png>)
+<figure><img src="../.gitbook/assets/doc_header_CML.png" alt=""><figcaption></figcaption></figure>
 
 Concrete ML is an open source, privacy-preserving, machine learning framework based on Fully Homomorphic Encryption (FHE). It enables data scientists without any prior knowledge of cryptography to automatically turn machine learning models into their FHE equivalent, using familiar APIs from scikit-learn and PyTorch (see how it looks for [linear models](../built-in-models/linear.md), [tree-based models](../built-in-models/tree.md), and [neural networks](../built-in-models/neural-networks.md)). Concrete ML supports converting models for inference with FHE but can also [train some models](../built-in-models/training.md) on encrypted data.
 
@@ -97,7 +95,7 @@ Concrete ML is built on top of Zama's [Concrete](https://github.com/zama-ai/conc
 
 ## Online demos and tutorials
 
-Various tutorials are available for [built-in models](../tutorials/ml_examples.md) and [deep learning](../tutorials/examples.md). Several stand-alone demos for use cases can be found in the [Demos and Tutorials](../tutorials/showcase.md) section.
+Various tutorials are available for [built-in models](../tutorials/ml_examples.md) and [deep learning](../tutorials/dl_examples.md). Several stand-alone demos for use cases can be found in the [Demos and Tutorials](../tutorials/showcase.md) section.
 
 If you have built awesome projects using Concrete ML, feel free to let us know and we'll link to your work!
 
