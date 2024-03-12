@@ -1,13 +1,13 @@
 # See all tutorials
 
-### Start here
+## Start here
 
 - [Build-in model examples](broken-reference)
 - [Deep learning examples](examples.md)
 
-### Go further
+## Go further
 
-#### Live demos on Hugging Face:
+### Live demos on Hugging Face:
 
 - [Credit card approval](https://huggingface.co/spaces/zama-fhe/credit_card_approval_prediction): Predicting credit scoring card approval application in which sensitive data can be shared and analyzed without exposing the actual information to neither the three parties involved, nor the server processing it.
   - Check the code [here](https://huggingface.co/spaces/zama-fhe/credit_card_approval_prediction/tree/main)
@@ -18,7 +18,7 @@
 - [Encrypted image filtering](https://huggingface.co/spaces/zama-fhe/encrypted_image_filtering): filtering encrypted images by applying filters such as black-and-white, ridge detection, or your own filter.
   - Check the code [here](https://huggingface.co/spaces/zama-fhe/encrypted_image_filtering/tree/main)
 
-#### Code examples on Github:
+### Code examples on Github:
 
 - [GPT-2 in FHE](https://github.com/zama-ai/concrete-ml/blob/release/1.4.x/use_case_examples/llm/README.md): Privacy-preserving text generation based on a user's prompt
 - [Titanic](https://github.com/zama-ai/concrete-ml/blob/release/1.4.x/use_case_examples/titanic/README.md): Train an XGB classifier that can perform encrypted prediction for the [Kaggle Titanic competition](https://www.kaggle.com/c/titanic/)
@@ -27,7 +27,7 @@
 - [Encrypted sentiment analysis](https://github.com/zama-ai/concrete-ml/blob/release/1.4.x/use_case_examples/sentiment_analysis_with_transformer/README.md):A Hugging Face space that securely analyzes the sentiment expressed in a short text
 - [Credit scoring](https://github.com/zama-ai/concrete-ml/blob/release/1.4.x/use_case_examples/credit_scoring/README.md): Predict the chance of a given loan applicant defaulting on loan repayment
 
-#### Blog tutorials:
+### Blog tutorials:
 
 - [Build an end-to-end encrypted Shazam application using Concrete ML](https://www.zama.ai/post/encrypted-shazam-using-fully-homomorphic-encryption-concrete-ml-tutorial) - February 2024
 - [Linear regression over encrypted data with homomorphic encryption](https://www.zama.ai/post/linear-regression-using-linear-svr-and-concrete-ml-homomorphic-encryption) - June 2023
@@ -37,7 +37,7 @@
 - [Sentiment analysis over encrypted data](https://huggingface.co/blog/sentiment-analysis-fhe) - November 2022
 - [Titanic Competition with Privacy Preserving Machine Learning](https://www.zama.ai/post/titanic-competition-with-privacy-preserving-machine-learning-using-concrete-ml) - August 2022
 
-#### Video tutorials
+### Video tutorials
 
 - [Train a linear classifier on encrypted data using Concrete ML and Fully Homomorphic Encryption (FHE)](https://www.zama.ai/post/video-tutorial-train-a-linear-classifier-on-encrypted-data-using-concrete-ml-and-fully-homomorphic-encryption-fhe) - February 2024
 - [How to convert a scikit-learn model into its homomorphic equivalent](https://www.zama.ai/post/how-to-convert-a-scikit-learn-model-into-its-homomorphic-equivalent) - June 2023

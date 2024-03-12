@@ -1,6 +1,6 @@
 # Table of contents
 
-- [Welcome to Cocnrete ML](README.md)
+- [Welcome to Concrete ML](README.md)
 
 ## Getting Started
 

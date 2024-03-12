@@ -9,10 +9,10 @@
     :hidden:
     :caption: Getting Started
 
+    getting-started/readme.md
     getting-started/pip_installing.md
     getting-started/concepts.md
     getting-started/cloud.md
-    getting-started/showcase.md
 
 .. toctree::
     :maxdepth: 0
@@ -24,7 +24,6 @@
     built-in-models/neural-networks.md
     built-in-models/nearest-neighbors.md
     built-in-models/pandas.md
-    built-in-models/ml_examples.md
     built-in-models/training.md
 
 .. toctree::
@@ -34,7 +33,6 @@
 
     deep-learning/torch_support.md
     deep-learning/onnx_support.md
-    deep-learning/examples.md
     deep-learning/fhe_friendly_models.md
     deep-learning/fhe_assistant.md
     deep-learning/optimizing_inference.md
@@ -42,41 +40,59 @@
 .. toctree::
     :maxdepth: 0
     :hidden:
-    :caption:  Advanced topics
+    :caption: Guides
 
-    advanced-topics/quantization.md
-    advanced-topics/pruning.md
-    advanced-topics/compilation.md
-    advanced-topics/prediction_with_fhe.md
-    advanced-topics/client_server.md
-    advanced-topics/advanced_features.md
-    advanced-topics/serialization.md
-    advanced-topics/hybrid-models.md
+    guides/prediction_with_fhe.md
+    guides/client_server.md
+    guides/hybrid-models.md
+    guides/serialization.md
 
 .. toctree::
     :maxdepth: 0
     :hidden:
-    :caption: Developer - Workflow
+    :caption: Tutorials
 
-    developer-guide/project_setup.md
-    developer-guide/docker_setup.md
-    developer-guide/documenting.md
-    developer-guide/debug_support_submit_issues.md
-    developer-guide/contributing.md
+    tutorials/showcase.md
+    tutorials/ml_examples.md
+    tutorials/dl_examples.md
 
 .. toctree::
-    :maxdepth: 0
-    :hidden:
-    :caption: Developer - Inner Workings
-
-    developer-guide/onnx_pipeline.md
-    developer-guide/quantization_internal.md
-    developer-guide/fhe-op-graphs.md
-    developer-guide/external_libraries.md
-
-.. toctree::
-    :maxdepth: 0
+    :maxdepth: 1
     :hidden:
     :caption: API
 
     API <_apidoc/modules.rst>
+
+.. toctree::
+    :maxdepth: 0
+    :hidden:
+    :caption: Explanations
+
+    explanations/quantization.md
+    explanations/pruning.md
+    explanations/compilation.md
+    explanations/advanced_features.md
+
+.. toctree::
+    :maxdepth: 1
+    :hidden:
+    :caption: Project Architecture
+
+    explanations/inner-workings/README.md
+    explanations/inner-workings/onnx_pipeline.md
+    explanations/inner-workings/quantization_internal.md
+    explanations/inner-workings/fhe-op-graphs.md
+    explanations/inner-workings/external_libraries.md
+
+.. toctree::
+    :maxdepth: 0
+    :hidden:
+    :caption: Developer
+
+    developer/project_setup.md
+    developer/docker_setup.md
+    developer/documenting.md
+    developer/debug_support_submit_issues.md
+    developer/contributing.md
+
+
