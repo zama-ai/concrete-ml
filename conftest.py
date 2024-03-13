@@ -193,18 +193,20 @@ def autoseeding_of_everything(request):
     absolute_path = str(request.fspath)
 
     # Find the tests directory by searching for '/tests/' in the path
-    test_dir_index = absolute_path.find('/tests/')
+    test_dir_index = absolute_path.find("/tests/")
     if test_dir_index == -1:
-        raise ValueError("Unable to find '/tests/' directory in the path. Make sure the test file is within a '/tests/' directory.")
+        raise ValueError(
+            "Unable to find '/tests/' directory in the path. Make sure the test file is within a '/tests/' directory."
+        )
 
     # Extract the relative path from the point of the '/tests/' directory
-    relative_file_path = absolute_path[test_dir_index + 1:]
+    relative_file_path = absolute_path[test_dir_index + 1 :]
 
     # Derive the sub_seed from the randomly_seed and the test name
     derivation_string = f"{relative_file_path} # {str(request.node.name)} # {randomly_seed}"
 
     hash_object = hashlib.sha256()
-    hash_object.update(derivation_string.encode('utf-8'))
+    hash_object.update(derivation_string.encode("utf-8"))
     hash_value = hash_object.hexdigest()
 
     # The hash is a SHA256, so 256b. And random.seed wants a 64b seed and numpy.random.seed wants a
