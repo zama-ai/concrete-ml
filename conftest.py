@@ -196,7 +196,8 @@ def autoseeding_of_everything(request):
     test_dir_index = absolute_path.find("/tests/")
     if test_dir_index == -1:
         raise ValueError(
-            "Unable to find '/tests/' directory in the path. Make sure the test file is within a '/tests/' directory."
+            "Unable to find '/tests/' directory in the path. "
+            "Make sure the test file is within a '/tests/' directory."
         )
 
     # Extract the relative path from the point of the '/tests/' directory
