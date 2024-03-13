@@ -22,7 +22,7 @@ Start building with Concrete ML by exploring its core features, discovering esse
 
 Refer to the API, review product architecture, and access additional resources for in-depth explanations while working with Concrete ML.
 
-- [API](references/api/)
+- [API](references/api/README.md)
 - [Quantization](explanations/quantization.md)
 - [Pruning](explanations/pruning.md)
 - [Compilation](explanations/compilation.md)

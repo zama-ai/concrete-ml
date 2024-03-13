@@ -20,12 +20,12 @@
 
 ### Code examples on Github:
 
-- [GPT-2 in FHE](https://github.com/zama-ai/concrete-ml/blob/release/1.4.x/use_case_examples/llm/README.md): Privacy-preserving text generation based on a user's prompt
-- [Titanic](https://github.com/zama-ai/concrete-ml/blob/release/1.4.x/use_case_examples/titanic/README.md): Train an XGB classifier that can perform encrypted prediction for the [Kaggle Titanic competition](https://www.kaggle.com/c/titanic/)
-- [Federated learning and private inference](https://github.com/zama-ai/concrete-ml/blob/release/1.4.x/use_case_examples/federated_learning/README.md): Use federated learning to train a Logistic Regression while preserving training data confidentiality. Import the model into Concrete ML and perform encrypted prediction
-- [Neutral network fine-tuning](https://github.com/zama-ai/concrete-ml/blob/release/1.4.x/use_case_examples/cifar/cifar_brevitas_finetuning/README.md): Fine-tune a VGG network to classify the CIFAR image data-sets and predict on encrypted data
-- [Encrypted sentiment analysis](https://github.com/zama-ai/concrete-ml/blob/release/1.4.x/use_case_examples/sentiment_analysis_with_transformer/README.md):A Hugging Face space that securely analyzes the sentiment expressed in a short text
-- [Credit scoring](https://github.com/zama-ai/concrete-ml/blob/release/1.4.x/use_case_examples/credit_scoring/README.md): Predict the chance of a given loan applicant defaulting on loan repayment
+- [GPT-2 in FHE](../../use_case_examples/llm/README.md): Privacy-preserving text generation based on a user's prompt
+- [Titanic](../../use_case_examples/titanic/README.md): Train an XGB classifier that can perform encrypted prediction for the [Kaggle Titanic competition](https://www.kaggle.com/c/titanic/)
+- [Federated learning and private inference](../../use_case_examples/federated_learning/README.md): Use federated learning to train a Logistic Regression while preserving training data confidentiality. Import the model into Concrete ML and perform encrypted prediction
+- [Neutral network fine-tuning](../../use_case_examples/cifar/cifar_brevitas_finetuning/README.md): Fine-tune a VGG network to classify the CIFAR image data-sets and predict on encrypted data
+- [Encrypted sentiment analysis](../../use_case_examples/sentiment_analysis_with_transformer/README.md):A Hugging Face space that securely analyzes the sentiment expressed in a short text
+- [Credit scoring](../../use_case_examples/credit_scoring/README.md): Predict the chance of a given loan applicant defaulting on loan repayment
 
 ### Blog tutorials:
 

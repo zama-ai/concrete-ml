@@ -425,6 +425,10 @@ docs_no_links: clean_docs check_docs_dollars
 	! grep -r "hint style" docs-copy
 	@# Replace $$, $/$ and /$$ by $
 	./script/make_utils/fix_double_dollars_issues_with_mdformat.sh docs-copy --single_dollar
+	@# Replace `href="*.md` patterns with `href="*.html` because Sphinx does not handle them
+	./script/make_utils/fix_md_to_html_conversion_from_sphinx_in_href.sh docs-copy
+	@# Replace `references/api/README.md` with `_apidoc/modules.html`.
+	./script/make_utils/fix_api_readme_reference.sh docs-copy
 	@# Fix not-compatible paths
 	./script/make_utils/fix_gitbook_paths.sh docs-copy
 	@# Docs
