@@ -1,11 +1,9 @@
-"""Helper script to replace Replace `href="*.md` patterns with `href="*.html` because Sphinx does 
-not handle them."""
+"""Helper script to replace `href="*.md` patterns with `href="*.html`."""
 
 import argparse
 import multiprocessing
 import re
 import sys
-from functools import partial
 from pathlib import Path
 
 

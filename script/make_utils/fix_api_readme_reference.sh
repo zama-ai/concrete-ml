@@ -2,7 +2,6 @@
 
 set -e
 DIRECTORY=$1
-OPTIONS=$2
 
 MD_FILES=$(find "$DIRECTORY" -type f -name "index.rst")
 
