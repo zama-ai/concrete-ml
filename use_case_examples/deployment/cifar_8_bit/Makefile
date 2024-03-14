@@ -14,4 +14,4 @@ two: one
 	@python -m concrete.ml.deployment.deploy_to_docker --only-build
 
 three: two
-	@python build_docker_client_image.py
+	@docker build --tag cifar_client -f Dockerfile.client .

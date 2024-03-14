@@ -1,12 +1,12 @@
 FROM zamafhe/concrete-ml
 WORKDIR /project
-RUN python -m pip install torchvision==0.14.1 --no-deps
+COPY requirements.txt  requirements.txt
+#RUN python -m pip install torchvision==0.14.1 --no-deps
+RUN python -m pip install -r requirements.txt
 RUN python -m pip install requests
-COPY ./compile.py ./compile.py
-COPY ./encrypted_module.py ./encrypted_module.py
-COPY ./model.py ./model.py
-COPY ./clear_module.py ./clear_module.py
-COPY ./brevitas_utils.py ./brevitas_utils.py
-COPY ./constants.py ./constants.py
-COPY ./8_bit_model.pt ./8_bit_model.pt
+
+COPY models/ models/
+COPY experiments/ experiments/
+COPY compile.py compile.py
+
 ENTRYPOINT python compile.py

@@ -40,18 +40,48 @@
 #   - Update the current p-error with the mean of the bounds
 
 import argparse
+from typing import Dict, Optional
 
+import numpy
 import torch
-from model import CNV
+from models import cnv_2w2a
 from sklearn.metrics import top_k_accuracy_score
 from torchvision import datasets, transforms
 
-from concrete.ml.pytest.utils import (
-    data_calibration_processing,
-    get_torchvision_dataset,
-    load_torch_model,
-)
 from concrete.ml.search_parameters import BinarySearch
+
+
+def get_torchvision_dataset(
+    dataset_config: Dict,
+    train_set: bool,
+    max_examples: Optional[int] = None,
+):
+    """Get train or testing data-set.
+
+    Args:
+        param (Dict): Set of hyper-parameters to use based on the selected torchvision data-set.
+            It must contain: data-set transformations (torchvision.transforms.Compose), and the
+            data-set_size (Optional[int]).
+        train_set (bool): Use train data-set if True, else testing data-set
+
+    Returns:
+        A torchvision data-sets.
+    """
+
+    transform = dataset_config["train_transform"] if train_set else dataset_config["test_transform"]
+    dataset = dataset_config["dataset"](
+        download=True, root="./data", train=train_set, transform=transform
+    )
+
+    if max_examples is not None:
+        assert len(dataset) > max_examples, "Invalid max number of examples"
+        dataset = torch.utils.data.random_split(
+            dataset,
+            [max_examples, len(dataset) - max_examples],
+        )[0]
+
+    return dataset
+
 
 DATASETS_ARGS = {
     "CIFAR10": {
@@ -71,8 +101,8 @@ DATASETS_ARGS = {
 
 MODELS_ARGS = {
     "CIFAR10_8b": {
-        "model_class": CNV,
-        "path": "./use_case_examples/cifar_brevitas_with_model_splitting/8_bit_model.pt",
+        "model_class": cnv_2w2a,
+        "path": "experiments/CNV_2W2A_2W2A_20221114_131345/checkpoints/best.tar",
         "params": {
             "num_classes": 10,
             "weight_bit_width": 2,
@@ -88,26 +118,24 @@ def main(args):
 
     if args.verbose:
         print(f"** Download `{args.dataset_name=}` dataset")
-    dataset = get_torchvision_dataset(DATASETS_ARGS[args.dataset_name], train_set=True)
-    x_calib, y = data_calibration_processing(dataset, n_sample=args.n_sample)
+    dataset = get_torchvision_dataset(
+        DATASETS_ARGS[args.dataset_name], train_set=True, max_examples=args.n_sample
+    )
+
+    all_y, all_x = [], []
+    # Iterate over n batches, to apply any necessary torch transformations to the data-set
+    for x_batch, y_batch in dataset:
+        all_x.append(numpy.expand_dims(x_batch.numpy(), 0))
+        all_y.append(y_batch)
+    x_calib, y = numpy.concatenate(all_x), numpy.asarray(all_y)
 
     if args.verbose:
         print(f"** Load `{args.model_name=}` network")
 
     checkpoint = torch.load(MODELS_ARGS[args.model_name]["path"], map_location=args.device)
-    state_dict = checkpoint["model_state_dict"]
-
-    model = load_torch_model(
-        MODELS_ARGS[args.model_name]["model_class"],
-        state_dict,
-        MODELS_ARGS[args.model_name]["params"],
-    )
+    model = cnv_2w2a(pre_trained=False)
+    model.load_state_dict(checkpoint["state_dict"], strict=False)
     model.eval()
-
-    with torch.no_grad():
-        x_calib = model.clear_module(torch.tensor(x_calib)).numpy()
-
-    model = model.encrypted_module
 
     if args.verbose:
         print("** `p_error` search")
