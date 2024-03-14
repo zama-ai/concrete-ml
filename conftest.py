@@ -189,26 +189,25 @@ def autoseeding_of_everything(request):
     if randomly_seed is None:
         raise ValueError("--randomly-seed has not been properly configured internally")
 
-    # We need to find the relative file path of the test file. It does not look native with request,
-    # so we recompute it.
+    # Get the absolute path of the test file
     absolute_path = str(request.fspath)
 
-    # This avoids unexpected test paths with several "concrete-ml/tests" occurrences, which may
-    # happen only if the developer cloned with a very strange path
-    assert (
-        absolute_path.count("concrete-ml/test") == 1
-    ), f"{absolute_path=} has several 'concrete-ml/tests' occurences, which is unexpected"
+    # Find the tests directory by searching for '/tests/' in the path
+    test_dir_index = absolute_path.find("/tests/")
+    if test_dir_index == -1:
+        raise ValueError(
+            "Unable to find '/tests/' directory in the path. "
+            "Make sure the test file is within a '/tests/' directory."
+        )
 
-    relative_file_path = absolute_path[
-        absolute_path.find("concrete-ml/test") + len("concrete-ml/") :
-    ]
+    # Extract the relative path from the point of the '/tests/' directory
+    relative_file_path = absolute_path[test_dir_index + 1 :]
 
     # Derive the sub_seed from the randomly_seed and the test name
     derivation_string = f"{relative_file_path} # {str(request.node.name)} # {randomly_seed}"
 
     hash_object = hashlib.sha256()
-    hash_object.update(b"{derivation_string}")
-    hash_object.digest()
+    hash_object.update(derivation_string.encode("utf-8"))
     hash_value = hash_object.hexdigest()
 
     # The hash is a SHA256, so 256b. And random.seed wants a 64b seed and numpy.random.seed wants a
