@@ -1,13 +1,13 @@
-# Neural Networks
+# Neural networks
 
 Concrete ML provides simple built-in neural networks models with a scikit-learn interface through the `NeuralNetClassifier` and `NeuralNetRegressor` classes.
 
-|                                            Concrete ML                                             | scikit-learn                                                                                                 |
-| :------------------------------------------------------------------------------------------------: | ------------------------------------------------------------------------------------------------------------ |
-| [NeuralNetClassifier](../developer-guide/api/concrete.ml.sklearn.qnn.md#class-neuralnetclassifier) | [MLPClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPClassifier.html) |
-|  [NeuralNetRegressor](../developer-guide/api/concrete.ml.sklearn.qnn.md#class-neuralnetregressor)  | [MLPRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPRegressor.html)   |
+|                                          Concrete ML                                          | scikit-learn                                                                                                 |
+| :-------------------------------------------------------------------------------------------: | ------------------------------------------------------------------------------------------------------------ |
+| [NeuralNetClassifier](../references/api/concrete.ml.sklearn.qnn.md#class-neuralnetclassifier) | [MLPClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPClassifier.html) |
+|  [NeuralNetRegressor](../references/api/concrete.ml.sklearn.qnn.md#class-neuralnetregressor)  | [MLPRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPRegressor.html)   |
 
-The neural network models are implemented with [skorch](https://skorch.readthedocs.io/en/stable/index.html), which provides a scikit-learn-like interface to Torch models (more [here](../developer-guide/external_libraries.md#skorch)).
+The neural network models are implemented with [skorch](https://skorch.readthedocs.io/en/stable/index.html), which provides a scikit-learn-like interface to Torch models (more [here](../explanations/inner-workings/external_libraries.md#skorch)).
 
 Concrete ML models are multi-layer, fully-connected, networks with customizable activation functions and have a number of neurons in each layer. This approach is similar to what is available in scikit-learn when using the `MLPClassifier`/`MLPRegressor` classes. The built-in models train easily with a single call to `.fit()`, which will automatically quantize weights and activations. These models use Quantization Aware Training, allowing good performance for low precision (down to 2-3 bits) weights and activations.
 
@@ -18,7 +18,7 @@ Good quantization parameter values are critical to make models [respect FHE cons
 {% endhint %}
 
 {% hint style="warning" %}
-Using `nn.ReLU` as the activation function benefits from an optimization where [quantization uses powers-of-two scales](../advanced-topics/quantization.md#quantization-special-cases). This results in much faster inference times in FHE, thanks to a TFHE primitive that performs fast division by powers of two.
+Using `nn.ReLU` as the activation function benefits from an optimization where [quantization uses powers-of-two scales](../explanations/quantization.md#quantization-special-cases). This results in much faster inference times in FHE, thanks to a TFHE primitive that performs fast division by powers of two.
 {% endhint %}
 
 ## Example usage
@@ -39,7 +39,7 @@ params = {
 concrete_classifier = NeuralNetClassifier(**params)
 ```
 
-The [Classifier Comparison notebook](ml_examples.md) shows the behavior of built-in neural networks on several synthetic data-sets.
+The [Classifier Comparison notebook](../tutorials/ml_examples.md) shows the behavior of built-in neural networks on several synthetic data-sets.
 
 ![Comparison neural networks](../figures/neural_nets_builtin.png)
 
@@ -54,8 +54,8 @@ The figure above right shows the Concrete ML neural network, trained with Quanti
 
 - `n_w_bits` (default 3): number of bits for weights
 - `n_a_bits` (default 3): number of bits for activations and inputs
-- `n_accum_bits`: maximum accumulator bit-width that is desired. By default, this is unbounded, which, for weight and activation bit-width settings, [may make the trained networks fail in compilation](#overflow-errors). When used, the implementation will attempt to keep accumulators under this bit-width through [pruning](../advanced-topics/pruning.md) (i.e., setting some weights to zero)
-- `power_of_two_scaling` (default True): forces quantization scales to be powers-of-two, which, when coupled with the ReLU activation, benefits from strong FHE inference time optimization. See this [section](../advanced-topics/quantization.md#quantization-special-cases) in the quantization documentation for more details.
+- `n_accum_bits`: maximum accumulator bit-width that is desired. By default, this is unbounded, which, for weight and activation bit-width settings, [may make the trained networks fail in compilation](neural-networks.md#overflow-errors). When used, the implementation will attempt to keep accumulators under this bit-width through [pruning](../explanations/pruning.md) (i.e., setting some weights to zero)
+- `power_of_two_scaling` (default True): forces quantization scales to be powers-of-two, which, when coupled with the ReLU activation, benefits from strong FHE inference time optimization. See this [section](../explanations/quantization.md#quantization-special-cases) in the quantization documentation for more details.
 
 ### Training parameters (from skorch)
 
@@ -67,7 +67,7 @@ Other parameters from skorch can be found in the [skorch documentation](https://
 
 ### Advanced parameters
 
-- `module__n_hidden_neurons_multiplier`: The number of hidden neurons will be automatically set proportional to the dimensionality of the input. This parameter controls the proportionality factor and is set to 4 by default. This value gives good accuracy while avoiding accumulator overflow. See the [pruning](../advanced-topics/pruning.md) and [quantization](../advanced-topics/quantization.md) sections for more info.
+- `module__n_hidden_neurons_multiplier`: The number of hidden neurons will be automatically set proportional to the dimensionality of the input. This parameter controls the proportionality factor and is set to 4 by default. This value gives good accuracy while avoiding accumulator overflow. See the [pruning](../explanations/pruning.md) and [quantization](../explanations/quantization.md) sections for more info.
 
 ### Class weights
 

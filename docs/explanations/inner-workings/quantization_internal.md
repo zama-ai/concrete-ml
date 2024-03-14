@@ -1,17 +1,17 @@
-# Quantization Tools
+# Quantization tools
 
 ## Quantizing data
 
 Concrete ML has support for quantized ML models and also provides quantization tools for Quantization Aware Training and Post-Training Quantization. The core of this functionality is the conversion of floating point values to integers and back. This is done using `QuantizedArray` in `concrete.ml.quantization`.
 
-The [`QuantizedArray`](./api/concrete.ml.quantization.quantizers.md#class-quantizedarray) class takes several arguments that determine how float values are quantized:
+The [`QuantizedArray`](../../references/api/concrete.ml.quantization.quantizers.md#class-quantizedarray) class takes several arguments that determine how float values are quantized:
 
 - `n_bits` defines the precision used in quantization
 - `values` are floating point values that will be converted to integers
 - `is_signed` determines if the quantized integer values should allow negative values
 - `is_symmetric` determines if the range of floating point values to be quantized should be taken as symmetric around zero
 
-See also the [UniformQuantizer](./api/concrete.ml.quantization.quantizers.md#class-uniformquantizer) reference for more information:
+See also the [UniformQuantizer](../../references/api/concrete.ml.quantization.quantizers.md#class-uniformquantizer) reference for more information:
 
 ```python
 from concrete.ml.quantization import QuantizedArray
@@ -92,7 +92,7 @@ Calibration is the process of determining the typical distributions of values en
 To perform calibration, an interpreter goes through the ONNX graph in [topological order](https://en.wikipedia.org/wiki/Topological_sorting) and stores the intermediate results as it goes. The statistics of these values determine quantization parameters.
 {% endhint %}
 
-That `QuantizedModule` generates the Concrete function that is compiled to FHE. The compilation will succeed if the intermediate values conform to the 16-bits precision limit of the Concrete stack. See [the compilation section](../advanced-topics/compilation.md) for details.
+That `QuantizedModule` generates the Concrete function that is compiled to FHE. The compilation will succeed if the intermediate values conform to the 16-bits precision limit of the Concrete stack. See [the compilation section](../compilation.md) for details.
 
 ## Resources
 

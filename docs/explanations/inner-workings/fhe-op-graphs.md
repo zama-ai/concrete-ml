@@ -1,4 +1,4 @@
-# FHE Op-graph Design
+# FHE Op-graph design
 
 The [ONNX import](onnx_pipeline.md) section gave an overview of the conversion of a generic ONNX graph to an FHE-compatible Concrete ML op-graph. This section describes the implementation of operations in the Concrete ML op-graph and the way floating point can be used in some parts of the op-graphs through table lookup operations.
 
@@ -9,13 +9,13 @@ Concrete, the underlying implementation of TFHE that powers Concrete ML, enables
 1. **arithmetic operations**: the addition of two encrypted values and multiplication of encrypted values with clear scalars. These are used, for example, in dot-products, matrix multiplication (linear layers), and convolution.
 1. **table lookup operations (TLU)**: using an encrypted value as an index, return the value of a lookup table at that index. This is implemented using Programmable Bootstrapping. This operation is used to perform any non-linear computation such as activation functions, quantization, and normalization.
 
-Since machine learning models use floating point inputs and weights, they first need to be converted to integers using [quantization](../advanced-topics/quantization.md).
+Since machine learning models use floating point inputs and weights, they first need to be converted to integers using [quantization](../quantization.md).
 
 Alternatively, it is possible to use a table lookup to avoid the quantization of the entire graph, by converting floating-point ONNX subgraphs into lambdas and computing their corresponding lookup tables to be evaluated directly in FHE. This operator-fusion technique only requires the input and output of the lambdas to be integers.
 
 For example, in the following graph there is a single input, which must be an encrypted integer tensor. The following series of univariate functions is then fed into a matrix multiplication (MatMul) and fused into a single table lookup with integer inputs and outputs.
 
-![](../.gitbook/assets/image_3.png)
+![](../../.gitbook/assets/image_3.png)
 
 ## ONNX operations
 
@@ -30,7 +30,7 @@ Thus, `QuantizedOp` instances may need to quantize their inputs or the result of
 
 The `QuantizedOp` class provides a generic implementation of an ONNX operation, including the quantization of inputs and outputs, with the computation implemented in NumPy in `ops_impl.py`. It is possible to picture the architecture of the `QuantizedOp` as the following structure:
 
-![](../.gitbook/assets/image_4.png)
+![](../../.gitbook/assets/image_4.png)
 
 This figure shows that the `QuantizedOp` has a body that implements the computation of the operation, following the [ONNX spec](https://github.com/onnx/onnx/blob/main/docs/Operators.md). The operation's body can take either integer or float inputs and can output float or integer values. Two quantizers are attached to the operation: one that takes float inputs and produces integer inputs and one that does the same for the output.
 
@@ -38,7 +38,7 @@ This figure shows that the `QuantizedOp` has a body that implements the computat
 
 Depending on the position of the op in the graph and its inputs, the `QuantizedOp` can be fully fused to a TLU.
 
-![](../.gitbook/assets/image_8.png)
+![](../../.gitbook/assets/image_8.png)
 
 Many ONNX ops are trivially univariate, as they multiply variable inputs with constants or apply univariate functions such as ReLU, Sigmoid, etc. This includes operations between the input and the MatMul in the graph above (subtraction, comparison, multiplication, etc. between inputs and constants).
 
@@ -46,15 +46,15 @@ Many ONNX ops are trivially univariate, as they multiply variable inputs with co
 
 Operations, such as matrix multiplication of encrypted inputs with a constant matrix or convolution with constant weights, require that the encrypted inputs be integers. In this case, the input quantizer of the `QuantizedOp` is applied. These types of operations are implemented with a class that derives from `QuantizedOp` and implements `q_impl`, such as `QuantizedGemm` and `QuantizedConv`.
 
-![](../.gitbook/assets/image_5.png)
+![](../../.gitbook/assets/image_5.png)
 
 ### Operations that produce graph outputs
 
 Finally, some operations produce graph outputs, which must be integers. These operations need to quantize their outputs as follows:
 
-![](../.gitbook/assets/image_1.png)
+![](../../.gitbook/assets/image_1.png)
 
-![](../.gitbook/assets/image_9.png)
+![](../../.gitbook/assets/image_9.png)
 
 The diagram above shows that both float ops and integer ops need to quantize their outputs to integers when placed at the end of the graph.
 
@@ -62,7 +62,7 @@ The diagram above shows that both float ops and integer ops need to quantize the
 
 To chain the operation types described above following the ONNX graph, Concrete ML constructs a function that calls the `q_impl` of the `QuantizedOp` instances in the graph in sequence, and uses Concrete to trace the execution and compile to FHE. Thus, in this chain of function calls, all groups of that instruction that operate in floating point will be fused to TLUs. In FHE, this lookup table is computed with a PBS.
 
-![](../.gitbook/assets/image_6.png)
+![](../../.gitbook/assets/image_6.png)
 
 The red contours show the groups of elementary Concrete instructions that will be converted to TLUs.
 

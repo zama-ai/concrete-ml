@@ -2,7 +2,7 @@
 
 set -e
 
-FILES=$(cd docs && find developer-guide/api -name "*.md")
+FILES=$(cd docs && find references/api -name "*.md")
 
 # New apidocs section
 TMP_FILE=$(mktemp /tmp/apidocs.XXXXXX)

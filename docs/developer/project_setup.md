@@ -1,15 +1,15 @@
-# Set Up the Project
+# Set up the project
 
 Concrete ML is a `Python` library, so `Python` should be installed to develop Concrete ML. `v3.8` and `v3.9` are the only supported versions. Concrete ML also uses `Poetry` and `Make`.
 
 First of all, you need to `git clone` the project:
 
-<!--	
-```bash	
-cd /tmp	
-rm -rf concrete-ml	
-```	
--->	
+<!--
+```bash
+cd /tmp
+rm -rf concrete-ml
+```
+-->
 
 <!--pytest-codeblocks:cont-->
 
@@ -18,8 +18,6 @@ git clone https://github.com/zama-ai/concrete-ml
 ```
 
 Several files are tracked by [git-lfs](https://git-lfs.github.com/). While a few are required for running some tests, most of them are used for benchmarking and use case examples. By default, `git clone` downloads all LFS files, which can add up to several hundreds of MB to the directory. Is it however possible to disable such behavior by running the running the following command instead :
-
-<!-- We already cloned the repo just above -->
 
 <!--pytest-codeblocks:skip-->
 
@@ -168,7 +166,7 @@ rm -rf .venv
 make setup_env
 ```
 
-At this point, you should consider using Docker as nobody will have the exact same setup as you. If, however, you need to develop on your OS directly, you can [ask Zama for help](../README.md#support).
+At this point, you should consider using Docker as nobody will have the exact same setup as you. If, however, you need to develop on your OS directly, you can [ask Zama for help](../README.md#supports).
 
 #### in Docker
 

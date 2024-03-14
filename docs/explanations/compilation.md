@@ -14,13 +14,13 @@ From the perspective of the Concrete ML user, the compilation process performed 
 1. checking the op-graph for FHE compatability
 1. producing machine code for the op-graph (this step automatically determines cryptographic parameters)
 
-Additionally, the [client/server API](client_server.md) packages the result of the last step in a way that allows the deployment of the encrypted circuit to a server, as well as key generation, encryption, and decryption on the client side.
+Additionally, the [client/server API](../guides/client_server.md) packages the result of the last step in a way that allows the deployment of the encrypted circuit to a server, as well as key generation, encryption, and decryption on the client side.
 
 ### Built-in models
 
 Compilation is performed for built-in models with the `compile` method :
 
-<!--pytest-codeblocks:skip-->	
+<!--pytest-codeblocks:skip-->
 
 ```python
     clf.compile(X_train)
@@ -28,8 +28,7 @@ Compilation is performed for built-in models with the `compile` method :
 
 ### scikit-learn pipelines
 
-When using a pipeline, the Concrete ML model can predict with FHE during the pipeline execution, but it needs
-to be compiled beforehand. The compile function must be called on the Concrete ML model:
+When using a pipeline, the Concrete ML model can predict with FHE during the pipeline execution, but it needs to be compiled beforehand. The compile function must be called on the Concrete ML model:
 
 ```python
 import numpy
@@ -71,7 +70,7 @@ model_pca.predict(X_test[[0]], fhe="execute")
 
 For custom models, with one of the `compile_brevitas_qat_model` (for Brevitas models with Quantization Aware Training) or `compile_torch_model` (PyTorch models using Post-Training Quantization) functions:
 
-<!--pytest-codeblocks:skip-->	
+<!--pytest-codeblocks:skip-->
 
 ```python
     quantized_numpy_module = compile_brevitas_qat_model(torch_model, X_train)
@@ -88,7 +87,7 @@ The result of this single step of the compilation pipeline allows the:
 
 Simulation is enabled for all Concrete ML models once they are compiled as shown above. Obtaining the simulated predictions of the models is done by setting the `fhe="simulate"` argument to prediction methods:
 
-<!--pytest-codeblocks:skip-->	
+<!--pytest-codeblocks:skip-->
 
 ```python
     Z = clf.predict_proba(X, fhe="simulate")
@@ -96,7 +95,7 @@ Simulation is enabled for all Concrete ML models once they are compiled as shown
 
 Moreover, the maximum accumulator bit-width is determined as follows:
 
-<!--pytest-codeblocks:skip-->	
+<!--pytest-codeblocks:skip-->
 
 ```python
     bit_width = clf.quantized_module_.fhe_circuit.graph.maximum_integer_bit_width()

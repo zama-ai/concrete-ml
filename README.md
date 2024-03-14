@@ -31,7 +31,7 @@ Concrete ML is designed with ease of use in mind. Data scientists can use models
 - **Built-in models**: Ready-to-use FHE-friendly models with a user interface that is equivalent to their the scikit-learn and XGBoost counterparts
 - **Customs models**: Concrete ML supports models that can use quantization-aware training. These are developed by the user using PyTorch or keras/tensorflow and are imported into Concrete ML through ONNX
 
-*Learn more about Concrete ML features in the [documentation](https://docs.zama.ai/concrete-ml/readme).*
+*Learn more about Concrete ML features in the [documentation](https://docs.zama.ai/concrete-ml).*
 <br></br>
 
 ### Use cases
@@ -211,7 +211,7 @@ Concrete ML built-in models have APIs that are almost identical to their scikit-
 - [\[Video tutorial\] How To Convert a Scikit-learn Model Into Its Homomorphic Equivalent](https://www.zama.ai/post/how-to-convert-a-scikit-learn-model-into-its-homomorphic-equivalent)
 - [Linear Regression Over Encrypted Data With Homomorphic Encryption](https://www.zama.ai/post/linear-regression-using-linear-svr-and-concrete-ml-homomorphic-encryption)
 - [How to Deploy a Machine Learning Model With Concrete ML](https://www.zama.ai/post/how-to-deploy-machine-learning-models-with-concrete-ml)
-- More [Built-in models tutorials](docs/built-in-models/ml_examples.md) and [Deep learning tutorials](docs/deep-learning/examples.md)
+- More [Built-in models tutorials](docs/tutorials/ml_examples.md) and [Deep learning tutorials](docs/tutorials/dl_examples.md)
 
 *Explore more useful resources in [Awesome Zama repo](https://github.com/zama-ai/awesome-zama)*
 <br></br>
@@ -241,7 +241,7 @@ To cite Concrete ML in academic papers, please use the following entry:
 
 ### Contributing
 
-To contribute to Concrete ML, please refer to [this section of the documentation](docs/developer-guide/contributing.md).
+To contribute to Concrete ML, please refer to [this section of the documentation](docs/developer/contributing.md).
 <br></br>
 
 ### License

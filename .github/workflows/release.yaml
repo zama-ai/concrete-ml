@@ -16,7 +16,7 @@ on:
       - 'release/*'
     paths:
       - src/concrete/ml/version.py
-      - 'docs/developer-guide/api/**'
+      - 'docs/references/api/**'
 
 # We need to make sure that the concurrency group is not identical to the continuous-integration.yaml
 # one, else the release workflow will be canceled when calling that latter for tests. More 

@@ -1,4 +1,4 @@
-# External Libraries
+# External libraries
 
 ## Hummingbird
 
@@ -48,9 +48,9 @@ Concrete ML uses [skorch](https://skorch.readthedocs.io/en/stable/) to implement
 
 This wrapper implements Torch training boilerplate code, lessening the work required of the user. It is possible to add hooks during the training phase, for example once an epoch is finished.
 
-skorch allows the user to easily create a classifier or regressor around a neural network (NN), implemented in Torch as a `nn.Module`, which is used by Concrete ML to provide a fully-connected, multi-layer NN with a configurable number of layers and optional pruning (see [pruning](../advanced-topics/pruning.md) and the [neural network documentation](../built-in-models/neural-networks.md) for more information).
+skorch allows the user to easily create a classifier or regressor around a neural network (NN), implemented in Torch as a `nn.Module`, which is used by Concrete ML to provide a fully-connected, multi-layer NN with a configurable number of layers and optional pruning (see [pruning](../pruning.md) and the [neural network documentation](../../built-in-models/neural-networks.md) for more information).
 
-Under the hood, Concrete ML uses a skorch wrapper around a single PyTorch module, `SparseQuantNeuralNetwork`. More information can be found [in the API guide](./api/concrete.ml.sklearn.qnn_module.md#class-sparsequantneuralnetwork).
+Under the hood, Concrete ML uses a skorch wrapper around a single PyTorch module, `SparseQuantNeuralNetwork`. More information can be found [in the API guide](../../references/api/concrete.ml.sklearn.qnn_module.md#class-sparsequantneuralnetwork).
 
 ```
 class SparseQuantNeuralNetImpl(nn.Module):
@@ -64,7 +64,7 @@ class SparseQuantNeuralNetImpl(nn.Module):
 While Brevitas provides many types of quantization, for Concrete ML, a custom _"mixed integer"_ quantization applies. This _"mixed integer"_ quantization is much simpler than the _"integer only"_ mode of Brevitas. The _"mixed integer"_ network design is defined as:
 
 - all weights and activations of convolutional, linear and pooling layers must be quantized (e.g., using Brevitas layers, `QuantConv2D`, `QuantAvgPool2D`, `QuantLinear`)
-- PyTorch floating-point versions of univariate functions can be used (e.g., `torch.relu`, `nn.BatchNormalization2D`, `torch.max` (encrypted vs. constant), `torch.add`, `torch.exp`). See the [PyTorch supported layers page](../deep-learning/torch_support.md) for a full list.
+- PyTorch floating-point versions of univariate functions can be used (e.g., `torch.relu`, `nn.BatchNormalization2D`, `torch.max` (encrypted vs. constant), `torch.add`, `torch.exp`). See the [PyTorch supported layers page](../../deep-learning/torch_support.md) for a full list.
 
 The _"mixed integer"_ mode used in Concrete ML neural networks is based on the [_"integer only"_ Brevitas quantization](https://github.com/Xilinx/brevitas#low-precision-integer-only-lenet) that makes both weights and activations representable as integers during training. However, through the use of lookup tables in Concrete ML, floating point univariate PyTorch functions are supported.
 
@@ -88,7 +88,7 @@ class QATnetwork(nn.Module):
 
 For examples of such a _"mixed integer"_ network design, please see the Quantization Aware Training examples:
 
-- [QuantizationAwareTraining.ipynb](../../docs/advanced_examples/QuantizationAwareTraining.ipynb)
-- [ConvolutionalNeuralNetwork.ipynb](../../docs/advanced_examples/ConvolutionalNeuralNetwork.ipynb)
+- [QuantizationAwareTraining.ipynb](../../advanced_examples/QuantizationAwareTraining.ipynb)
+- [ConvolutionalNeuralNetwork.ipynb](../../advanced_examples/ConvolutionalNeuralNetwork.ipynb)
 
-You can also refer to the [`SparseQuantNeuralNetImpl`](./api/concrete.ml.sklearn.qnn_module.md#class-sparsequantneuralnetwork) class, which is the basis of the built-in `NeuralNetworkClassifier`.
+You can also refer to the [`SparseQuantNeuralNetImpl`](../../references/api/concrete.ml.sklearn.qnn_module.md#class-sparsequantneuralnetwork) class, which is the basis of the built-in `NeuralNetworkClassifier`.

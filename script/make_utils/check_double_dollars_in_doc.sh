@@ -12,9 +12,9 @@
 
 # MacOS's grep is different from GNU's so we need to differenciate here.
 if [[ $(uname) == "Darwin" ]]; then
-  OUT=$(find docs -name "*.md" -not -path "docs/developer-guide/*" -print0 | xargs -0 grep -n -E '((^| |^$)\$[^$])|([^$]\$$)|([^$]$[^$])')
+  OUT=$(find docs -name "*.md" -not -path "docs/developer/*" -print0 | xargs -0 grep -n -E '((^| |^$)\$[^$])|([^$]\$$)|([^$]$[^$])')
 else
-  OUT=$(find docs -name "*.md" -not -path "docs/developer-guide/*" -print0 | xargs -0 grep -n -P '((^| |^$)\$[^$])|([^$]\$$)|([^$]$[^$])')
+  OUT=$(find docs -name "*.md" -not -path "docs/developer/*" -print0 | xargs -0 grep -n -P '((^| |^$)\$[^$])|([^$]\$$)|([^$]$[^$])')
 fi
 
 if [ -n "${OUT}" ]; then

@@ -13,7 +13,7 @@ COUNT?=1
 RANDOMLY_SEED?=$$RANDOM
 PYTEST_OPTIONS:=
 POETRY_VERSION:=1.7.1
-APIDOCS_OUTPUT?="./docs/developer-guide/api"
+APIDOCS_OUTPUT?="./docs/references/api"
 OPEN_PR="true"
 
 # Force the installation of a Concrete Python version, which is very useful with nightly versions
@@ -425,10 +425,12 @@ docs_no_links: clean_docs check_docs_dollars
 	! grep -r "hint style" docs-copy
 	@# Replace $$, $/$ and /$$ by $
 	./script/make_utils/fix_double_dollars_issues_with_mdformat.sh docs-copy --single_dollar
+	@# Replace `href="*.md` patterns with `href="*.html` because Sphinx does not handle them
+	./script/make_utils/fix_md_to_html_conversion_from_sphinx_in_href.sh docs-copy
+	@# Replace `references/api/README.md` with `_apidoc/modules.html`.
+	./script/make_utils/fix_api_readme_reference.sh docs-copy
 	@# Fix not-compatible paths
 	./script/make_utils/fix_gitbook_paths.sh docs-copy
-	@# Fixing cardboard
-	poetry run python script/doc_utils/fix_gitbook_table.py --files docs-copy/getting-started/showcase.md
 	@# Docs
 	cd docs-copy && poetry run "$(MAKE)" html SPHINXOPTS='-W --keep-going'
 	@# Copy images from GitBook
@@ -669,7 +671,7 @@ mdformat:
 # Remark we need to remove .md's in venv
 check_mdformat:
 	"$(MAKE)" mdformat
-	find docs -name "*.md" | grep -v docs/developer-guide/tmp.api_for_check | xargs git diff --quiet
+	find docs -name "*.md" | grep -v docs/references/tmp.api_for_check | xargs git diff --quiet
 
 .PHONY: benchmark # Perform benchmarks
 benchmark:

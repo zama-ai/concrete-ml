@@ -63,7 +63,7 @@ For built-in **neural networks**, the maximum accumulator bit-width cannot be pr
 
 The models implemented in Concrete ML provide features to let the user quantize the input data and de-quantize the output data.
 
-In a client/server setting, the client is responsible for quantizing inputs before sending them, encrypted, to the server. The client must then de-quantize the encrypted integer results received from the server. See the [Production Deployment](client_server.md) section for more details.
+In a client/server setting, the client is responsible for quantizing inputs before sending them, encrypted, to the server. The client must then de-quantize the encrypted integer results received from the server. See the [Production Deployment](../guides/client_server.md) section for more details.
 
 Here is a simple example showing how to perform inference, starting from float values and ending up with float values. The FHE engine that is compiled for ML models does not support data batching.
 

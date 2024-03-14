@@ -33,7 +33,7 @@ Fixing some of the weights to 0 makes the network graph look more similar to the
 
 ![Pruned Fully Connected Neural Network](../figures/prunednet.png)
 
-While pruning weights can reduce the prediction performance of the neural network, studies show that a high level of pruning (above 50%) can often be applied. See here how Concrete ML uses pruning in [Fully Connected Neural Networks](../developer-guide/api/concrete.ml.sklearn.qnn.md#class-neuralnetclassifier).
+While pruning weights can reduce the prediction performance of the neural network, studies show that a high level of pruning (above 50%) can often be applied. See here how Concrete ML uses pruning in [Fully Connected Neural Networks](../references/api/concrete.ml.sklearn.qnn.md#class-neuralnetclassifier).
 
 ## Pruning in practice
 
