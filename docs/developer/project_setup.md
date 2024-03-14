@@ -19,7 +19,7 @@ git clone https://github.com/zama-ai/concrete-ml
 
 Several files are tracked by [git-lfs](https://git-lfs.github.com/). While a few are required for running some tests, most of them are used for benchmarking and use case examples. By default, `git clone` downloads all LFS files, which can add up to several hundreds of MB to the directory. Is it however possible to disable such behavior by running the running the following command instead :
 
-<!--pytest-codeblocks:cont-->
+<!--pytest-codeblocks:skip-->
 
 ```bash
 GIT_LFS_SKIP_SMUDGE=1 git clone https://github.com/zama-ai/concrete-ml
