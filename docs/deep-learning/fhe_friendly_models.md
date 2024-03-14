@@ -102,6 +102,8 @@ The QAT import tool in Concrete ML is a work in progress. While it has been test
 
 With Brevitas, the network above becomes:
 
+<!--pytest-codeblocks:cont-->
+
 ```python
 from brevitas import nn as qnn
 from brevitas.core.quant import QuantType
@@ -178,6 +180,8 @@ In a typical setting, the weights will not all have the maximum or minimum value
 This fact can be leveraged to train a network with more neurons, while not overflowing the accumulator, using a technique called [pruning](../explanations/pruning.md) where the developer can impose a number of zero-valued weights. Torch [provides support for pruning](https://pytorch.org/tutorials/intermediate/pruning_tutorial.html) out of the box.
 
 The following code shows how to use pruning in the previous example:
+
+<!--pytest-codeblocks:cont-->
 
 ```python
 import torch.nn.utils.prune as prune

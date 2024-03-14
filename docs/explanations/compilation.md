@@ -20,6 +20,8 @@ Additionally, the [client/server API](../guides/client_server.md) packages the r
 
 Compilation is performed for built-in models with the `compile` method :
 
+<!--pytest-codeblocks:skip-->
+
 ```python
     clf.compile(X_train)
 ```
@@ -68,6 +70,8 @@ model_pca.predict(X_test[[0]], fhe="execute")
 
 For custom models, with one of the `compile_brevitas_qat_model` (for Brevitas models with Quantization Aware Training) or `compile_torch_model` (PyTorch models using Post-Training Quantization) functions:
 
+<!--pytest-codeblocks:skip-->
+
 ```python
     quantized_numpy_module = compile_brevitas_qat_model(torch_model, X_train)
 ```
@@ -83,11 +87,15 @@ The result of this single step of the compilation pipeline allows the:
 
 Simulation is enabled for all Concrete ML models once they are compiled as shown above. Obtaining the simulated predictions of the models is done by setting the `fhe="simulate"` argument to prediction methods:
 
+<!--pytest-codeblocks:skip-->
+
 ```python
     Z = clf.predict_proba(X, fhe="simulate")
 ```
 
 Moreover, the maximum accumulator bit-width is determined as follows:
+
+<!--pytest-codeblocks:skip-->
 
 ```python
     bit_width = clf.quantized_module_.fhe_circuit.graph.maximum_integer_bit_width()

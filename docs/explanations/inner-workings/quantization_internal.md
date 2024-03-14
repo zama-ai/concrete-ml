@@ -38,6 +38,8 @@ print("q_A.dequant() = ", q_A.dequant())
 
 It is also possible to use symmetric quantization, where the integer values are centered around 0:
 
+<!--pytest-codeblocks:cont-->
+
 ```python
 q_A = QuantizedArray(3, A)
 print("Unsigned: q_A.qvalues = ", q_A.qvalues)
@@ -53,6 +55,8 @@ print("q_A.quantizer.zero_point = ", q_A.quantizer.zero_point)
 ```
 
 In the following example, showing the de-quantization of model outputs, the `QuantizedArray` class is used in a different way. Here it uses pre-quantized integer values and has the `scale` and `zero-point` set explicitly. Once the `QuantizedArray` is constructed, calling `dequant()` will compute the floating point values corresponding to the integer values `qvalues`, which are the output of the `fhe_circuit.encrypt_run_decrypt(..)` call.
+
+<!--pytest-codeblocks:cont-->
 
 ```python
 import numpy

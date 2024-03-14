@@ -73,6 +73,8 @@ Other parameters from skorch can be found in the [skorch documentation](https://
 
 You can give weights to each class to use in training. Note that this must be supported by the underlying PyTorch loss function.
 
+<!--pytest-codeblocks:skip-->
+
 ```python
     from sklearn.utils.class_weight import compute_class_weight
     params["criterion__weight"] = compute_class_weight("balanced", classes=classes, y=y_train)

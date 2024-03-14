@@ -67,6 +67,8 @@ In a client/server setting, the client is responsible for quantizing inputs befo
 
 Here is a simple example showing how to perform inference, starting from float values and ending up with float values. The FHE engine that is compiled for ML models does not support data batching.
 
+<!--pytest-codeblocks:skip-->
+
 ```python
 # Assume 
 #   quantized_module : QuantizedModule
@@ -86,6 +88,8 @@ y_pred = np.argmax(y_proba, 1)
 ```
 
 Alternatively, the `forward` method groups the quantization, FHE execution and de-quantization steps all together.
+
+<!--pytest-codeblocks:skip-->
 
 ```python
 # Assume 

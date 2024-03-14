@@ -17,6 +17,8 @@ from hummingbird.ml import convert
 
 This function can be used to convert a machine learning model to an ONNX as follows:
 
+<!--pytest-codeblocks:cont-->
+
 ```python
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression

@@ -50,6 +50,8 @@ print(f"Similarity: {(y_pred_fhe == y_pred_clear).mean():.1%}")
 
 It is also possible to call encryption, model prediction, and decryption functions separately as follows. Executing these steps separately is equivalent to calling `predict_proba` on the model instance.
 
+<!--pytest-codeblocks:cont-->
+
 ```python
 # Predict probability for a single example
 y_proba_fhe = model.predict_proba(X_test[[0]], fhe="execute")

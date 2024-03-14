@@ -71,6 +71,8 @@ There might be cases where the user encounters a `No cryptography parameter foun
 
 Usage is similar to the `p_error` parameter:
 
+<!--pytest-codeblocks:cont-->
+
 ```python
 # Here we set the global_p_error parameter
 clf.compile(X_train, global_p_error=0.1)

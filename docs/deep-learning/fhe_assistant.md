@@ -122,6 +122,8 @@ To make this network FHE-compatible one can apply several techniques:
 
 1. use [rounded accumulators](../explanations/advanced_features.md#rounded-activations-and-quantizers) by specifying the `rounding_threshold_bits` parameter. Please evaluate the accuracy of the model using simulation if you use this feature, as it may impact accuracy. Setting a value 2-bit higher than the quantization `n_bits` should be a good start.
 
+<!--pytest-codeblocks:cont-->
+
 ```python
 torch_model = SimpleNet(20)
 
@@ -135,6 +137,8 @@ quantized_numpy_module = compile_torch_model(
 
 2. reduce the accumulator bit-width of the second layer named `fc2`. To do this, a simple solution is to reduce the number of neurons, as it is proportional to the bit-width.
 
+<!--pytest-codeblocks:cont-->
+
 ```python
 torch_model = SimpleNet(10)
 
@@ -146,6 +150,8 @@ quantized_numpy_module = compile_torch_model(
 ```
 
 3. adjust the tolerance for one-off errors using the `p_error` parameter. See [this section for more explanation](../explanations/advanced_features.md#approximate-computations) on this tolerance.
+
+<!--pytest-codeblocks:cont-->
 
 ```python
 torch_model = SimpleNet(10)
@@ -165,6 +171,8 @@ In FHE, univariate functions are encoded as table lookups, which are then implem
 Furthermore, the cost of PBS will depend on the bit-width of the compiled circuit. Every additional bit in the maximum bit-width raises the complexity of the PBS by a significant factor. It may be of interest to the model developer, then, to determine the bit-width of the circuit and the amount of PBS it performs.
 
 This can be done by inspecting the MLIR code produced by the Compiler:
+
+<!--pytest-codeblocks:cont-->
 
 ```python
 print(quantized_numpy_module.fhe_circuit.mlir)
@@ -207,6 +215,8 @@ module {
 There are several calls to `FHELinalg.apply_mapped_lookup_table` and `FHELinalg.apply_lookup_table`. These calls apply PBS to the cells of their input tensors. Their inputs in the listing above are: `tensor<1x2x!FHE.eint<8>>` for the first and last call and `tensor<1x50x!FHE.eint<8>>` for the two calls in the middle. Thus, PBS is applied 104 times.
 
 Retrieving the bit-width of the circuit is then simply:
+
+<!--pytest-codeblocks:cont-->
 
 ```python
 print(quantized_numpy_module.fhe_circuit.graph.maximum_integer_bit_width())

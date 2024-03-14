@@ -20,6 +20,8 @@ To activate encrypted training simply set `fit_encrypted=True` in the constructo
 
 Next, to perform the training on encrypted data, call the `fit` function with the `fhe="execute"` argument:
 
+<!--pytest-codeblocks:skip-->
+
 ```python
 model.fit(X_binary, y_binary, fhe="execute")
 ```

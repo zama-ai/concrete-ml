@@ -129,6 +129,8 @@ Here, `prepared_inputs` will contain one or more `QuantizedArray`, of which the 
 
 Once the required integer processing code is implemented, the output of the `q_impl` function must be implemented as a single `QuantizedArray`. Most commonly, this is built using the de-quantized results of the processing done in `q_impl`.
 
+<!--pytest-codeblocks:skip-->
+
 ```python
     result = (
         sum_result.astype(numpy.float32) - q_input.quantizer.zero_point
@@ -147,6 +149,8 @@ Once the required integer processing code is implemented, the output of the `q_i
 ### Case 3: Both a floating point and an integer implementation are necessary
 
 In this case, in `q_impl` you can check whether the current operation can be fused by calling `self.can_fuse()`. You can then have both a floating-point and an integer implementation. The traced execution path will depend on `can_fuse()`:
+
+<!--pytest-codeblocks:skip-->
 
 ```python
 

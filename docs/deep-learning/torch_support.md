@@ -40,6 +40,8 @@ class QATSimpleNet(nn.Module):
 
 Once the model is trained, calling the [`compile_brevitas_qat_model`](../references/api/concrete.ml.torch.compile.md#function-compile_brevitas_qat_model) from Concrete ML will automatically perform conversion and compilation of a QAT network. Here, 3-bit quantization is used for both the weights and activations. The `compile_brevitas_qat_model` function automatically identifies the number of quantization bits used in the Brevitas model.
 
+<!--pytest-codeblocks:cont-->
+
 ```python
 from concrete.ml.torch.compile import compile_brevitas_qat_model
 import numpy
@@ -86,6 +88,8 @@ Note that the accuracy on larger data-sets, when the accumulator size is low, is
 
 The model can now perform encrypted inference.
 
+<!--pytest-codeblocks:cont-->
+
 ```python
 x_test = numpy.array([numpy.random.randn(N_FEAT)])
 
@@ -113,6 +117,8 @@ While the example above shows how to import a Brevitas/PyTorch model, Concrete M
 QAT models contain quantizers in the PyTorch graph. These quantizers ensure that the inputs to the Linear/Dense and Conv layers are quantized.
 
 Suppose that `n_bits_qat` is the bit-width of activations and weights during the QAT process. To import a PyTorch QAT network, you can use the [`compile_torch_model`](../references/api/concrete.ml.torch.compile.md#function-compile_torch_model) library function, passing `import_qat=True`:
+
+<!--pytest-codeblocks:skip-->
 
 ```python
 from concrete.ml.torch.compile import compile_torch_model
