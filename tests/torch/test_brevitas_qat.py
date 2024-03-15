@@ -7,163 +7,22 @@ import numpy
 import pytest
 import torch
 import torch.utils
-from brevitas.quant import Int8ActPerTensorFloat, Int8WeightPerTensorFloat
-from brevitas.quant.scaled_int import IntBias
-from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from torch import nn
-from torch.utils.data import DataLoader, TensorDataset
 
 from concrete.ml.common import utils
 from concrete.ml.common.utils import (
     is_classifier_or_partial_classifier,
     is_regressor_or_partial_regressor,
 )
-from concrete.ml.pytest.torch_models import (
-    NetWithConstantsFoldedBeforeOps,
-    QuantCustomModel,
-    TinyQATCNN,
-)
+from concrete.ml.pytest.torch_models import NetWithConstantsFoldedBeforeOps
+from concrete.ml.pytest.utils import train_brevitas_network_tinymnist
 from concrete.ml.quantization.base_quantized_op import QuantizedMixingOp
 from concrete.ml.quantization.post_training import PowerOfTwoScalingRoundPBSAdapter
-from concrete.ml.quantization.qat_quantizers import Int8ActPerTensorPoT, Int8WeightPerTensorPoT
 from concrete.ml.sklearn import _get_sklearn_neural_net_models
 from concrete.ml.sklearn.qnn_module import SparseQuantNeuralNetwork
 from concrete.ml.torch.compile import compile_brevitas_qat_model
-
-
-def forward_test_torch(net, test_loader):
-    """Test the network: measure accuracy on the test set.
-
-    Args:
-        test_loader: the test loader
-
-    Returns:
-        res: the number of correctly classified test examples
-
-    """
-
-    # Freeze normalization layers
-    net.eval()
-
-    all_y_pred = numpy.zeros((len(test_loader)), dtype=numpy.int64)
-    all_targets = numpy.zeros((len(test_loader)), dtype=numpy.int64)
-
-    # Iterate over the batches
-    idx = 0
-    for data, target in test_loader:
-        # Accumulate the ground truth labels
-        endidx = idx + target.shape[0]
-        all_targets[idx:endidx] = target.numpy()
-
-        # Run forward and get the raw predictions first
-        raw_pred = net(data).detach().numpy()
-
-        # Get the predicted class id, handle NaNs
-        if numpy.any(numpy.isnan(raw_pred)):
-            output = -1  # pragma: no cover
-        else:
-            output = raw_pred.argmax(1)
-
-        all_y_pred[idx:endidx] = output
-
-        idx += target.shape[0]
-
-    # Print out the accuracy as a percentage
-    n_correct = numpy.sum(all_targets == all_y_pred)
-    return n_correct
-
-
-def train_brevitas_network_tinymnist(is_cnn, qat_bits, signed, narrow, pot_scaling):
-    """Train a QAT network on tiny mnist.
-
-    Args:
-        is_cnn (bool): whether to train a CNN or a FC network
-        qat_bits (int): quantization bits
-        signed (bool): use signed quantization
-        narrow (bool): use brevitas narrow range quantization
-        pot_scaling (int): use power of two scaling quantization
-
-    Returns:
-        result (Tuple): the network, the dataset and the test data loader
-    """
-    # And some helpers for visualization.
-    x_all, y_all = load_digits(return_X_y=True)
-
-    # The sklearn Digits data-set, though it contains digit images, keeps these images in vectors
-    # so we need to reshape them to 2D first. The images are 8x8 px in size and monochrome
-    if is_cnn:
-        x_all = numpy.expand_dims(x_all.reshape((-1, 8, 8)), 1)
-
-    x_train, x_test, y_train, y_test = train_test_split(
-        x_all, y_all, test_size=0.25, shuffle=True, random_state=numpy.random.randint(0, 2**15)
-    )
-
-    def train_one_epoch(net, optimizer, train_loader):
-        # Cross Entropy loss for classification when not using a softmax layer in the network
-        loss = nn.CrossEntropyLoss()
-
-        net.train()
-        avg_loss = 0
-        for data, target in train_loader:
-            optimizer.zero_grad()
-            output = net(data)
-            loss_net = loss(output, target.long())
-            loss_net.backward()
-            optimizer.step()
-            avg_loss += loss_net.item()
-
-        return avg_loss / len(train_loader)
-
-    # Prepare the data:
-    # Create a train data loader
-    train_dataset = TensorDataset(torch.Tensor(x_train), torch.Tensor(y_train))
-    train_dataloader = DataLoader(train_dataset, batch_size=64)
-
-    # Create a test data loader to supply batches for network evaluation (test)
-    test_dataset = TensorDataset(torch.Tensor(x_test), torch.Tensor(y_test))
-    test_dataloader = DataLoader(test_dataset)
-
-    trained_ok = False
-
-    while not trained_ok:
-        # Create the tiny CNN module with 10 output classes
-        if is_cnn:
-            net = TinyQATCNN(10, qat_bits, 4 if qat_bits <= 3 else 20, signed, narrow, pot_scaling)
-        else:
-            if pot_scaling:
-                act_quant = Int8ActPerTensorPoT
-                weight_quant = Int8WeightPerTensorPoT
-                bias_quant = IntBias
-            else:
-                act_quant = Int8ActPerTensorFloat
-                weight_quant = Int8WeightPerTensorFloat
-                bias_quant = None
-
-            net = QuantCustomModel(64, 10, 100, qat_bits, act_quant, weight_quant, bias_quant)
-
-        # Train a single epoch to have a fast test, accuracy should still be the same for both
-        # FHE simulation and torch
-        # But train 3 epochs for the FHE simulation test to check that training works well
-        n_epochs = 1 if qat_bits <= 3 else 3
-
-        # Train the network with Adam, output the test set accuracy every epoch
-        optimizer = torch.optim.Adam(net.parameters())
-        for _ in range(n_epochs):
-            train_one_epoch(net, optimizer, train_dataloader)
-
-        # Finally, disable pruning (sets the pruned weights to 0)
-        if hasattr(net, "toggle_pruning"):
-            net.toggle_pruning(False)
-
-        torch_correct = forward_test_torch(net, test_dataloader)
-
-        # If number of correct results was zero, training failed and there were NaNs in the weights
-        # Retrain while training is bad
-        trained_ok = torch_correct > 0
-
-    return net, x_all, test_dataloader
 
 
 # This test is a known flaky
