@@ -1564,3 +1564,90 @@ class Conv1dModel(nn.Module):
         x = self.bn1(x)
         x = self.fc1(x)
         return x
+
+
+class TorchAutoRoundingTLUTester(nn.Module):
+    """A small quantized network with Brevitas, trained on make_classification."""
+
+    def __init__(
+        self,
+        is_conv: bool,
+        tlu_unique_mode: str,
+    ):
+        """Initialize a torch module for PTQ testing of TLU adjustment.
+
+        This model contains a linear layer or a conv layer. It adds
+        biases after the conv layer or the linear layers so that
+        the TLUs are unique per tensor, per axis or per cell.
+
+        Args:
+            is_conv (bool): indicate whether to build a convolutional network or a FCNN
+            tlu_unique_mode (str): one of
+                - "per_tensor": all inputs map to the same values for all dimensions
+                - "axis_w", "axis_h": tlu outputs are unique per width or height axis
+                - "per_cell": tlu outputs are unique per output tensor cell
+                - "per_neuron": tlu outputs are unique per channel
+
+        Raises:
+            AssertionError: if the tlu_unique_mode was invalid
+        """
+        super().__init__()
+
+        assert tlu_unique_mode in ["per_tensor", "axis_w", "axis_h", "per_cell", "per_neuron"]
+
+        self.n_neurons = 10
+
+        self.input_shape = (1, 1, 8, 8) if is_conv else (1, self.n_neurons)
+
+        self.layer = (
+            nn.Conv2d(1, self.n_neurons, 3, 1, 1, bias=False)
+            if is_conv
+            else nn.Linear(int(numpy.prod(self.input_shape)), self.n_neurons, bias=False)
+        )
+
+        bias_scale = 10.0
+
+        self.bias = torch.FloatTensor([0])
+        if tlu_unique_mode == "per_tensor":
+            self.bias = torch.FloatTensor([numpy.random.uniform()])
+        elif tlu_unique_mode == "per_cell":
+            assert is_conv, "Only the conv TLU adjust model supports per cell offsets"
+            self.bias = torch.FloatTensor(numpy.random.uniform(size=self.input_shape))
+        elif tlu_unique_mode == "axis_w":
+            assert is_conv, "Only the conv TLU adjust model supports per axis offsets"
+            self.bias = torch.FloatTensor(
+                numpy.random.uniform(
+                    size=(self.input_shape[0], self.input_shape[1], self.input_shape[2], 1)
+                )
+            )
+        elif tlu_unique_mode == "axis_h":
+            assert is_conv, "Only the conv TLU adjust model supports per axis offsets"
+            self.bias = torch.FloatTensor(
+                numpy.random.uniform(
+                    size=(self.input_shape[0], self.input_shape[1], 1, self.input_shape[3])
+                )
+            )
+        elif tlu_unique_mode == "per_neuron":
+            if is_conv:
+                self.bias = torch.FloatTensor(numpy.random.uniform(size=(1, self.n_neurons, 1, 1)))
+            else:
+                self.bias = torch.FloatTensor(numpy.random.uniform(size=self.input_shape))
+        else:
+            raise AssertionError("Invalid value for tlu_unique_mode: " + tlu_unique_mode)
+
+        self.bias = torch.FloatTensor(self.bias * bias_scale)
+
+    def forward(self, x):
+        """Forward pass.
+
+        Args:
+            x (torch.tensor): The input of the model.
+
+        Returns:
+            torch.tensor: Output of the network.
+        """
+        x = self.layer(x)
+        x += self.bias
+        x = torch.relu(x)
+
+        return x

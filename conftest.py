@@ -176,6 +176,23 @@ def simulation_configuration():
     )
 
 
+@pytest.fixture
+def simulation_configuration():
+    """Return the simulation test compilation configuration for simulation."""
+
+    # Parameter `enable_unsafe_features` and `use_insecure_key_cache` are needed in order to be
+    # able to cache generated keys through `insecure_key_cache_location`. As the name suggests,
+    # these parameters are unsafe and should only be used for debugging in development
+    return Configuration(
+        dump_artifacts_on_unexpected_failures=False,
+        enable_unsafe_features=True,
+        use_insecure_key_cache=True,
+        insecure_key_cache_location="ConcreteNumpyKeyCache",
+        fhe_simulation=True,
+        fhe_execution=False,
+    )
+
+
 REMOVE_COLOR_CODES_RE = re.compile(r"\x1b[^m]*m")
 
 
@@ -230,7 +247,10 @@ def autoseeding_of_everything(request):
     relative_file_path = absolute_path[test_dir_index + 1 :]
 
     # Derive the sub_seed from the randomly_seed and the test name
-    derivation_string = f"{relative_file_path} # {str(request.node.name)} # {randomly_seed}"
+    derivation_string = (
+        f"{relative_file_path} # {str(request.node.name)} "
+        f"# {randomly_seed} # {str(request.node.own_markers)}"
+    )
 
     hash_object = hashlib.sha256()
     hash_object.update(derivation_string.encode("utf-8"))

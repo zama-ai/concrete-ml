@@ -5,16 +5,20 @@ from functools import partial
 from importlib.metadata import version
 from pathlib import Path
 
+import numpy as np
 import torch
 from concrete.fhe import Exactness
 from concrete.fhe.compilation.configuration import Configuration
+from concrete.fhe.mlir.processors import ProcessRounding
 from models import cnv_2w2a
 from torch.utils.data import DataLoader
 from trainer import get_test_set
 
+from concrete.ml.common.preprocessors import TLUDeltaBasedOptimizer
 from concrete.ml.quantization import QuantizedModule
 from concrete.ml.torch.compile import compile_brevitas_qat_model
 
+SIMULATE_ONLY = True
 CURRENT_DIR = Path(__file__).resolve().parent
 KEYGEN_CACHE_DIR = CURRENT_DIR.joinpath(".keycache")
 
@@ -22,7 +26,8 @@ KEYGEN_CACHE_DIR = CURRENT_DIR.joinpath(".keycache")
 # observe a decrease in torch's top1 accuracy when using MPS devices
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3953
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-NUM_SAMPLES = int(os.environ.get("NUM_SAMPLES", 1))
+
+NUM_SAMPLES = int(os.environ.get("NUM_SAMPLES", 1000 if SIMULATE_ONLY else 1))
 P_ERROR = float(os.environ.get("P_ERROR", 0.01))
 
 
@@ -68,7 +73,7 @@ torch_model.load_state_dict(checkpoint["state_dict"], strict=False)
 
 # Import and load the CIFAR test dataset
 test_set = get_test_set(dataset="CIFAR10", datadir=CURRENT_DIR.joinpath(".datasets/"))
-test_loader = DataLoader(test_set, batch_size=100, shuffle=False)
+test_loader = DataLoader(test_set, batch_size=NUM_SAMPLES, shuffle=False)
 
 # Get the first sample
 x, labels = next(iter(test_loader))
@@ -77,11 +82,20 @@ x, labels = next(iter(test_loader))
 # cache generated keys through `insecure_key_cache_location`. As the name suggests, these
 # parameters are unsafe and should only be used for debugging in development
 # Multi-parameter strategy is used in order to speed-up the FHE executions
+base_configuration = Configuration()
+
+tlu_optimizer = TLUDeltaBasedOptimizer()
 configuration = Configuration(
     dump_artifacts_on_unexpected_failures=False,
     enable_unsafe_features=True,
     use_insecure_key_cache=True,
     insecure_key_cache_location=KEYGEN_CACHE_DIR,
+    additional_pre_processors=[
+        tlu_optimizer,
+    ],
+    fhe_simulation=SIMULATE_ONLY,
+    fhe_execution=not SIMULATE_ONLY
+    # additional_processors=[InsertRounding(4)]
 )
 
 print("Compiling the model.")
@@ -96,6 +110,8 @@ quantized_numpy_module, compilation_execution_time = measure_execution_time(
 )
 assert isinstance(quantized_numpy_module, QuantizedModule)
 
+print(tlu_optimizer.statistics)
+
 print(f"Compilation time took {compilation_execution_time} seconds")
 
 # Display the max bit-width in the model
@@ -109,12 +125,19 @@ print("Saving graph and mlir to disk.")
 open("cifar10.graph", "w").write(str(quantized_numpy_module.fhe_circuit))
 open("cifar10.mlir", "w").write(quantized_numpy_module.fhe_circuit.mlir)
 
-# Key generation
-print("Creation of the private and evaluation keys.")
-_, keygen_execution_time = measure_execution_time(quantized_numpy_module.fhe_circuit.keygen)(
-    force=True
-)
-print(f"Keygen took {keygen_execution_time} seconds")
+import sys
+
+if sys.platform == "darwin":
+    print("skipping fhe evaluation on darwin platform")
+    sys.exit(0)
+
+if not SIMULATE_ONLY:
+    # Key generation
+    print("Creation of the private and evaluation keys.")
+    _, keygen_execution_time = measure_execution_time(quantized_numpy_module.fhe_circuit.keygen)(
+        force=True
+    )
+    print(f"Keygen took {keygen_execution_time} seconds")
 
 # Data torch to numpy
 x_numpy = x.numpy()
@@ -142,47 +165,71 @@ for image_index in range(NUM_SAMPLES):
         partial(quantized_numpy_module.fhe_circuit.simulate)
     )(q_x_numpy)
 
-    # Encrypt the input
-    encrypted_q_x_numpy, encryption_execution_time = measure_execution_time(
-        quantized_numpy_module.fhe_circuit.encrypt
-    )(q_x_numpy)
-    print(f"Encryption of a single input (image) took {encryption_execution_time} seconds\n")
+    if not SIMULATE_ONLY:
+        # Encrypt the input
+        encrypted_q_x_numpy, encryption_execution_time = measure_execution_time(
+            quantized_numpy_module.fhe_circuit.encrypt
+        )(q_x_numpy)
+        print(f"Encryption of a single input (image) took {encryption_execution_time} seconds\n")
 
-    print(f"Size of ENCRYPTED input is {quantized_numpy_module.fhe_circuit.size_of_inputs} bytes")
-    print(f"Size of ENCRYPTED output is {quantized_numpy_module.fhe_circuit.size_of_outputs} bytes")
+        print(
+            f"Size of ENCRYPTED input is {quantized_numpy_module.fhe_circuit.size_of_inputs} bytes"
+        )
+        print(
+            f"Size of ENCRYPTED output is {quantized_numpy_module.fhe_circuit.size_of_outputs} bytes"
+        )
+        print(
+            f"Size of keyswitch key is {quantized_numpy_module.fhe_circuit.size_of_keyswitch_keys} bytes"
+        )
+        print(
+            f"Size of bootstrap key is {quantized_numpy_module.fhe_circuit.size_of_bootstrap_keys} bytes"
+        )
+        print(
+            f"Size of secret key is {quantized_numpy_module.fhe_circuit.size_of_secret_keys} bytes"
+        )
+        print(f"Complexity is {quantized_numpy_module.fhe_circuit.complexity}\n")
+
+        print("Running FHE inference")
+        fhe_output, fhe_execution_time = measure_execution_time(
+            quantized_numpy_module.fhe_circuit.run
+        )(encrypted_q_x_numpy)
+        print(f"FHE inference over a single image took {fhe_execution_time}")
+
+        # Decrypt print the result
+        decrypted_fhe_output, decryption_execution_time = measure_execution_time(
+            quantized_numpy_module.fhe_circuit.decrypt
+        )(fhe_output)
+
+    else:
+        decrypted_fhe_output, _ = measure_execution_time(
+            quantized_numpy_module.fhe_circuit.simulate
+        )(q_x_numpy)
+
     print(
-        f"Size of keyswitch key is {quantized_numpy_module.fhe_circuit.size_of_keyswitch_keys} bytes"
+        f"Expected prediction. Class={np.argmax(expected_quantized_prediction)} Logits={expected_quantized_prediction}"
     )
     print(
-        f"Size of bootstrap key is {quantized_numpy_module.fhe_circuit.size_of_bootstrap_keys} bytes"
+        f"Circuit prediction with {'simulation' if not SIMULATE_ONLY else 'FHE'}: Class={np.argmax(decrypted_fhe_output)} Logits={decrypted_fhe_output}"
     )
-    print(f"Size of secret key is {quantized_numpy_module.fhe_circuit.size_of_secret_keys} bytes")
-    print(f"Complexity is {quantized_numpy_module.fhe_circuit.complexity}\n")
-
-    print("Running FHE inference")
-    fhe_output, fhe_execution_time = measure_execution_time(quantized_numpy_module.fhe_circuit.run)(
-        encrypted_q_x_numpy
-    )
-    print(f"FHE inference over a single image took {fhe_execution_time}")
-
-    # Decrypt print the result
-    decrypted_fhe_output, decryption_execution_time = measure_execution_time(
-        quantized_numpy_module.fhe_circuit.decrypt
-    )(fhe_output)
-    print(f"Expected prediction: {expected_quantized_prediction}")
-    print(f"Decrypted prediction: {decrypted_fhe_output}")
 
     result = {
         "image_index": image_index,
         # Timings
         "quantization_time": quantization_execution_time,
-        "encryption_time": encryption_execution_time,
-        "fhe_time": fhe_execution_time,
-        "decryption_time": decryption_execution_time,
         "inference_time": clear_inference_time,
         "label": labels[image_index].item(),
         "p_error": P_ERROR,
     }
+
+    if not SIMULATE_ONLY:
+        result = {
+            **result,
+            **{
+                "encryption_time": encryption_execution_time,
+                "fhe_time": fhe_execution_time,
+                "decryption_time": decryption_execution_time,
+            },
+        }
 
     for prediction_index, prediction in enumerate(expected_quantized_prediction[0]):
         result[f"quantized_prediction_{prediction_index}"] = prediction
