@@ -7,22 +7,21 @@ from pathlib import Path
 def main():
     path_of_script = Path(__file__).parent.resolve()
     files = [
-        "encrypted_module.py",
-        "clear_module.py",
-        "model.py",
-        "brevitas_utils.py",
-        "8_bit_model.pt",
-        "constants.py",
+        "models/__init__.py",
+        "models/cnv_2w2a.ini",
+        "models/common.py",
+        "models/model.py",
+        "models/tensor_norm.py",
+        "experiments/CNV_2W2A_2W2A_20221114_131345/checkpoints/best.tar",
     ]
 
     # Copy files
     for file_name in files:
-        source = Path(
-            path_of_script / f"../../cifar_brevitas_with_model_splitting/{file_name}"
-        ).resolve()
+        source = Path(path_of_script / f"../../cifar/cifar_brevitas_training/{file_name}").resolve()
         target = Path(path_of_script / file_name).resolve()
         if not target.exists():
             print(f"{source} -> {target}")
+            target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(src=source, dst=target)
 
     # Build image

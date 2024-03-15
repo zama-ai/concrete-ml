@@ -7,7 +7,7 @@ import torch
 import torchvision
 import torchvision.transforms as transforms
 from concrete.fhe import Configuration
-from model import CNV
+from models import cnv_2w2a
 
 from concrete.ml.deployment import FHEModelDev
 from concrete.ml.torch.compile import compile_brevitas_qat_model
@@ -15,10 +15,19 @@ from concrete.ml.torch.compile import compile_brevitas_qat_model
 
 def main():
     # Load model
-    model = CNV(num_classes=10, weight_bit_width=2, act_bit_width=2, in_bit_width=3, in_ch=3)
-    loaded = torch.load(Path(__file__).parent / "8_bit_model.pt")
-    model.load_state_dict(loaded["model_state_dict"])
-    model = model.eval()
+    #    model = CNV(num_classes=10, weight_bit_width=2, act_bit_width=2, in_bit_width=3, in_ch=3)
+    #    loaded = torch.load(Path(__file__).parent / "8_bit_model.pt")
+    #    model.load_state_dict(loaded["model_state_dict"])
+
+    # Instantiate the model
+    model = cnv_2w2a(pre_trained=False)
+    model.eval()
+    # Load the saved parameters using the available checkpoint
+    checkpoint = torch.load(
+        Path(__file__).parent / "experiments/CNV_2W2A_2W2A_20221114_131345/checkpoints/best.tar",
+        map_location=torch.device("cpu"),
+    )
+    model.load_state_dict(checkpoint["state_dict"], strict=False)
 
     IMAGE_TRANSFORM = transforms.Compose(
         [transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
@@ -47,19 +56,14 @@ def main():
         [train_set[index][0] for index in range(min(num_samples, len(train_set)))]
     )
 
-    # Create a representative input-set that will be used used for both computing quantization
-    # parameters and compiling the model
-    with torch.no_grad():
-        train_features_sub_set = model.clear_module(train_sub_set)
-
     compilation_onnx_path = "compilation_model.onnx"
     print("Compiling the model ...")
     start_compile = time.time()
 
     # Compile the quantized model
     quantized_numpy_module = compile_brevitas_qat_model(
-        torch_model=model.encrypted_module,
-        torch_inputset=train_features_sub_set,
+        torch_model=model,
+        torch_inputset=train_sub_set,
         p_error=0.05,
         output_onnx_file=compilation_onnx_path,
         n_bits=8,

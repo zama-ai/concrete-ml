@@ -7,7 +7,6 @@ This repository provides resources and documentation on different use-cases for 
 1. [Use-Cases](#use-cases)
    - [Fine-Tuning VGG11 CIFAR-10/100](#fine-tuning-cifar)
    - [Training Ternary VGG9 on CIFAR10](#training-ternary-vgg-on-cifar10)
-   - [CIFAR-10 VGG9 with one client-side layer](#cifar-10-with-a-split-model)
 1. [Installation](#installation)
 1. [Further Reading & Resources](#further-reading)
 
@@ -32,14 +31,6 @@ Notebooks:
 - **Training & Inference**: Scripts provided to train the network and evaluate its performance. It also includes simulations in Concrete ML and insights into the performance enhancement using rounding.
 
 [Results & Metrics](./cifar_brevitas_training/README.md#accuracy-and-performance)
-
-### CIFAR-10 with a Split Model
-
-- **Description**: This method divides the model into two segments: one that operates in plaintext (clear) and the other in Fully Homomorphic Encryption (FHE). This division allows for greater precision in the input layer while taking advantage of FHE's privacy-preserving capabilities in the subsequent layers.
-- **Model Design**: Aims at using 8-bit accumulators to speed up FHE inference. The design incorporates pruning techniques and employs 2-bit weights to meet this aim.
-- **Implementation**: Provides step-by-step guidance on how to execute the hybrid clear/FHE model, focusing on the details and decisions behind selecting the optimal `p_error` value. Special attention is given to the binary search method to balance accuracy and FHE performance.
-
-[Results & Metrics](./cifar_brevitas_with_model_splitting/README.md#results)
 
 ## Installation
 

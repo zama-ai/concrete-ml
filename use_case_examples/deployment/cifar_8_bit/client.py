@@ -13,17 +13,12 @@ import os
 import sys
 from pathlib import Path
 
-# Append CIFAR-10 8-bit example
-PATH_TO_CIFAR_MODEL = Path(__file__).parent / "../../cifar_brevitas_with_model_splitting/"
-sys.path.append(str(PATH_TO_CIFAR_MODEL.resolve()))
-
 import grequests
 import numpy
 import requests
 import torch
 import torchvision
 import torchvision.transforms as transforms
-from clear_module import ClearModule
 
 from concrete.ml.deployment import FHEModelClient
 
@@ -35,12 +30,6 @@ STATUS_OK = 200
 
 
 def main():
-    # Load clear part of the model
-    model = ClearModule(out_bit_width=3, in_ch=3)
-    loaded = torch.load(Path(__file__).parent / "clear_module.pt")
-    model.load_state_dict(loaded)
-    model = model.eval()
-
     # Load data
     IMAGE_TRANSFORM = transforms.Compose(
         [transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
@@ -68,10 +57,6 @@ def main():
         [train_set[index][0] for index in range(min(num_samples, len(train_set)))]
     )
 
-    # Pre-processing -> images -> feature maps
-    with torch.no_grad():
-        train_features_sub_set = model(train_sub_set)
-
     # Get the necessary data for the client
     # client.zip
     zip_response = requests.get(f"{URL}/get_client")
@@ -80,7 +65,7 @@ def main():
         file.write(zip_response.content)
 
     # Get the data to infer
-    X = train_features_sub_set[:1]
+    X = train_sub_set[:1]
 
     # Create the client
     client = FHEModelClient(path_dir="./", key_dir="./keys")
