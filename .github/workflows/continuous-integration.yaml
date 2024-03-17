@@ -117,7 +117,7 @@ jobs:
       instance-type: ${{ steps.set-matrix.outputs.instance-type }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
 
       - name: Set matrix
         id: set-matrix
@@ -236,7 +236,7 @@ jobs:
       matrix: ${{ steps.update-linux-matrix.outputs.linux-matrix }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
@@ -380,7 +380,7 @@ jobs:
       # Checkout the code
       # 'fetch-depth' is set to 0 in order to fetch all tags (used for generating the changelog)
       - name: Checkout Code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
         with:
           fetch-depth: 0
       
@@ -1030,7 +1030,7 @@ jobs:
  
       # Checkout the code
       - name: Checkout Code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
       
       # Pull the only LFS files needed for regular tests, avoiding to download files stored for 
       # benchmarks and use cases 
@@ -1097,7 +1097,7 @@ jobs:
     name: Send Slack notification
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
 
       - name: Prepare whole job status
         if: ${{ always() }}
