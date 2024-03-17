@@ -99,7 +99,7 @@ jobs:
           echo "PR_BODY=${PR_BODY}" >> "$GITHUB_ENV"
 
       - name: Open PR
-        uses: peter-evans/create-pull-request@a4f52f8033a6168103c2538976c07b467e8163bc
+        uses: peter-evans/create-pull-request@70a41aba780001da0a30141984ae2a0c95d8704e
         with:
           token: ${{ secrets.BOT_TOKEN }}
           commit-message: "chore: refresh notebooks"
