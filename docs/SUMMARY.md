@@ -41,6 +41,7 @@
 
 ## References
 
+<!-- auto-created, do not edit, begin -->
 - [API](references/api/README.md)
   - [concrete.ml.common.check_inputs.md](references/api/concrete.ml.common.check_inputs.md)
   - [concrete.ml.common.debugging.custom_assert.md](references/api/concrete.ml.common.debugging.custom_assert.md)
@@ -93,6 +94,7 @@
   - [concrete.ml.torch.md](references/api/concrete.ml.torch.md)
   - [concrete.ml.torch.numpy_module.md](references/api/concrete.ml.torch.numpy_module.md)
   - [concrete.ml.version.md](references/api/concrete.ml.version.md)
+<!-- auto-created, do not edit, end -->
 
 ## Explanations
 
