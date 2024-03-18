@@ -503,6 +503,7 @@ class BaseEstimator:
         p_error: Optional[float] = None,
         global_p_error: Optional[float] = None,
         verbose: bool = False,
+        compress_evaluation_keys: bool = True,
     ) -> Circuit:
         """Compile the model.
 
@@ -525,6 +526,7 @@ class BaseEstimator:
                 currently set to 0. Default to None, which sets this error to a default value.
             verbose (bool): Indicate if compilation information should be printed
                 during compilation. Default to False.
+            compress_evaluation_keys (bool): Indicate if we compress keys. Default to True
 
         Returns:
             Circuit: The compiled Circuit.
@@ -572,6 +574,7 @@ class BaseEstimator:
             single_precision=False,
             fhe_simulation=False,
             fhe_execution=True,
+            compress_evaluation_keys=compress_evaluation_keys,
         )
 
         self._is_compiled = True
@@ -1148,6 +1151,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         p_error: Optional[float] = None,
         global_p_error: Optional[float] = None,
         verbose: bool = False,
+        compress_evaluation_keys: bool = True,
     ) -> Circuit:
         # Reset for double compile
         self._is_compiled = False
@@ -1170,6 +1174,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
             p_error=p_error,
             global_p_error=global_p_error,
             verbose=verbose,
+            compress_evaluation_keys=compress_evaluation_keys,
         )
 
         # Make sure that no avoidable TLUs are found in the built-in model

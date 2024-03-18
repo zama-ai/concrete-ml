@@ -632,6 +632,7 @@ class QuantizedModule:
         global_p_error: Optional[float] = None,
         verbose: bool = False,
         inputs_encryption_status: Optional[Sequence[str]] = None,
+        compress_evaluation_keys: bool = True,
     ) -> Circuit:
         """Compile the module's forward function.
 
@@ -655,6 +656,7 @@ class QuantizedModule:
                 during compilation. Default to False.
             inputs_encryption_status (Optional[Sequence[str]]): encryption status ('clear',
                 'encrypted') for each input.
+            compress_evaluation_keys (bool): Indicate if we compress keys. Default to True
 
         Returns:
             Circuit: The compiled Circuit.
@@ -745,6 +747,7 @@ class QuantizedModule:
             single_precision=False,
             fhe_simulation=False,
             fhe_execution=True,
+            compress_evaluation_keys=compress_evaluation_keys,
         )
 
         self._is_compiled = True

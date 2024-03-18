@@ -1492,6 +1492,7 @@ def test_input_support(
 
 
 @pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
+@pytest.mark.parametrize("compress_evaluation_keys", [True, False])
 def test_inference_methods(
     model_class,
     parameters,
@@ -1499,6 +1500,7 @@ def test_inference_methods(
     is_weekly_option,
     check_float_array_equal,
     default_configuration,
+    compress_evaluation_keys,
     verbose=True,
 ):
     """Test inference methods."""
@@ -1506,7 +1508,7 @@ def test_inference_methods(
 
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
-    model.compile(x, default_configuration)
+    model.compile(x, default_configuration, compress_evaluation_keys=compress_evaluation_keys)
 
     if verbose:
         print("Run check_inference_methods")
@@ -1562,6 +1564,7 @@ def test_pipeline(
         < min(N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS, N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE)
     ],
 )
+@pytest.mark.parametrize("compress_evaluation_keys", [True, False])
 # pylint: disable=too-many-branches
 def test_predict_correctness(
     model_class,
@@ -1572,6 +1575,7 @@ def test_predict_correctness(
     default_configuration,
     check_is_good_execution_for_cml_vs_circuit,
     is_weekly_option,
+    compress_evaluation_keys,
     verbose=True,
 ):
     """Test prediction correctness between clear quantized and FHE simulation or execution."""
@@ -1591,7 +1595,7 @@ def test_predict_correctness(
     if verbose:
         print("Compile the model")
 
-    model.compile(x, default_configuration)
+    model.compile(x, default_configuration, compress_evaluation_keys=compress_evaluation_keys)
 
     if verbose:
         print(f"Check prediction correctness for {fhe_samples} samples.")
@@ -1621,6 +1625,7 @@ def test_predict_correctness(
         < min(N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS, N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE)
     ],
 )
+@pytest.mark.parametrize("compress_evaluation_keys", [True, False])
 # pylint: disable=too-many-branches
 def test_separated_inference(
     model_class,
@@ -1631,6 +1636,7 @@ def test_separated_inference(
     default_configuration,
     is_weekly_option,
     check_float_array_equal,
+    compress_evaluation_keys,
     verbose=True,
 ):
     """Test prediction correctness between clear quantized and FHE simulation or execution."""
@@ -1651,7 +1657,9 @@ def test_separated_inference(
     if verbose:
         print("Compile the model")
 
-    fhe_circuit = model.compile(x, default_configuration)
+    fhe_circuit = model.compile(
+        x, default_configuration, compress_evaluation_keys=compress_evaluation_keys
+    )
 
     if verbose:
         print("Run check_separated_inference")
