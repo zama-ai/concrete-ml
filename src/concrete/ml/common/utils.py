@@ -38,7 +38,7 @@ MAX_BITWIDTH_BACKWARD_COMPATIBLE = 8
 # when simulating FHE executions
 # Set 'USE_OLD_VL' to False by default once the new simulation is fixed
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4091
-USE_OLD_VL = True
+USE_OLD_VL = False
 
 # Debug option for testing round PBS optimization
 # Setting this option to true will make quantizers "round half up"
