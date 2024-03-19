@@ -9,5 +9,4 @@ TIME_NB="${USE_CASE_DIR}/time_notebook_execution.sh"
 run_example: one
 
 one:
-	@bash download_data.sh
 	@$(TIME_NB) KaggleTitanic.ipynb
