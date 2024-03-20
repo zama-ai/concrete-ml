@@ -7,8 +7,7 @@ from concrete.ml.pandas._utils import deserialize_evaluation_keys, serialize_eva
 
 _script_dir = Path(__file__).parent
 
-_CLIENTS_DIR = _script_dir / "client_files"
-_SERVERS_DIR = _script_dir / "server_files"
+_CLIENT_SERVER_DIR = _script_dir / "_client_server_files"
 
 _N_BITS_PANDAS = 4
 
@@ -89,8 +88,8 @@ def _get_min_max_allowed():
 
 
 def _save_client_server(config, force_save=True):
-    client_path = _CLIENTS_DIR / "client.zip"
-    server_path = _SERVERS_DIR / "server.zip"
+    client_path = _CLIENT_SERVER_DIR / "client.zip"
+    server_path = _CLIENT_SERVER_DIR / "server.zip"
 
     if force_save or not client_path.is_file() or not server_path.is_file():
         client_path.parent.mkdir(parents=True, exist_ok=True)
@@ -108,7 +107,7 @@ def _save_client_server(config, force_save=True):
 
 
 def load_client(keys_path=None):
-    client_path = _CLIENTS_DIR / "client.zip"
+    client_path = _CLIENT_SERVER_DIR / "client.zip"
     client = fhe.Client.load(client_path)
 
     if keys_path is not None:
@@ -126,6 +125,6 @@ def get_client_and_eval_keys(keys_path=None):
 
 
 def load_server():
-    server_path = _SERVERS_DIR / "server.zip"
+    server_path = _CLIENT_SERVER_DIR / "server.zip"
     server = fhe.Server.load(server_path)
     return server
