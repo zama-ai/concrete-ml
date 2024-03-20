@@ -23,9 +23,9 @@ from .client_server import _N_BITS_PANDAS, _get_encrypt_config, _get_min_max_all
 def _validate_pandas_df(pandas_df: pandas.DataFrame, min_value: int, max_value: int):
     """Check that the data-frame only contains values between the given min/max."""
 
-    non_integer_columns = pandas_df.columns[
-        ~pandas_df.dtypes.apply(lambda x: numpy.issubdtype(x, numpy.integer))
-    ]
+    non_integer_columns = list(
+        pandas_df.columns[~pandas_df.dtypes.apply(lambda x: numpy.issubdtype(x, numpy.integer))]
+    )
     if non_integer_columns:
         raise ValueError(
             f"Columns {non_integer_columns} contain non-integer values, which is currently noy "
@@ -40,8 +40,7 @@ def _validate_pandas_df(pandas_df: pandas.DataFrame, min_value: int, max_value: 
             f"Columns {column_names_less_than_min} contain values less than {min_value}, "
             "which is currently not allowed."
             + " This is because 0 values are used to represent NaN values for FHE computations."
-            * min_value
-            <= 1
+            * (min_value <= 1)
         )
 
     columns_greater_than_max = (pandas_df > max_value).any()
@@ -237,7 +236,7 @@ class EncryptedDataFrame:
 
         return cls(encrypted_values, encrypted_nan, column_names)
 
-    def dump(self, file_path):
+    def to_json(self, file_path):
         file_path = Path(file_path)
 
         encrypted_df_dict = self.to_dict()
@@ -245,7 +244,7 @@ class EncryptedDataFrame:
             json.dump(encrypted_df_dict, file)
 
     @classmethod
-    def load(cls, file_path):
+    def from_json(cls, file_path):
         file_path = Path(file_path)
 
         with file_path.open("r") as file:

@@ -51,9 +51,9 @@ def serialize_value(value: fhe.Value):
     return value.serialize().hex()
 
 
-def serialize_evaluation_keys(value: fhe.Value):
+def serialize_evaluation_keys(evaluation_keys: fhe.EvaluationKeys):
     """Serialize evaluation keys into a byte string."""
-    return serialize_value(value)
+    return evaluation_keys.serialize()
 
 
 def serialize_elementwise(array: numpy.ndarray):
@@ -71,6 +71,6 @@ def deserialize_elementwise(array: numpy.ndarray):
     return numpy.vectorize(deserialize_value)(array)
 
 
-def deserialize_evaluation_keys(evaluation_keys: str):
+def deserialize_evaluation_keys(evaluation_keys: bytes):
     """Deserialize evaluation keys represented as a byte string."""
-    return fhe.EvaluationKeys.deserialize(bytes.fromhex(evaluation_keys))
+    return fhe.EvaluationKeys.deserialize(evaluation_keys)
