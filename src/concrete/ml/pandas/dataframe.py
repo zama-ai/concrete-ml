@@ -18,11 +18,9 @@ from concrete.ml.pandas._utils import (
     serialize_evaluation_keys,
     serialize_value,
 )
-from concrete.ml.pandas.client_server import (
-    _N_BITS_PANDAS,
-    _get_encrypt_config,
-    _get_min_max_allowed,
-)
+from concrete.ml.pandas.client_server import _SERVER_PATH, _get_encrypt_config, _get_min_max_allowed
+
+_SERVER = fhe.Server.load(_SERVER_PATH)
 
 
 def _validate_pandas_df(pandas_df: pandas.DataFrame, min_value: int, max_value: int):
@@ -107,7 +105,6 @@ class EncryptedDataFrame:
     def join(
         self,
         other,
-        server,
         on=None,
         how="left",
         lsuffix="",
@@ -127,7 +124,6 @@ class EncryptedDataFrame:
         if how == "cross":
             return self.merge(
                 other,
-                server,
                 how=how,
                 on=on,
                 suffixes=(lsuffix, rsuffix),
@@ -136,7 +132,6 @@ class EncryptedDataFrame:
             )
         return self.merge(
             other,
-            server,
             left_on=on,
             how=how,
             left_index=on is None,
@@ -149,7 +144,6 @@ class EncryptedDataFrame:
     def merge(
         self,
         other,
-        server,
         how="left",
         on=None,
         left_on=None,
@@ -173,7 +167,7 @@ class EncryptedDataFrame:
         joined_array, joined_column_names = encrypted_merge(
             self,
             other,
-            server,
+            _SERVER,
             how=how,
             on=on,
             left_on=left_on,
