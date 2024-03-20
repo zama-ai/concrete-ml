@@ -2,10 +2,6 @@ import numpy
 import pandas
 from pandas.core.reshape.merge import _MergeOperation
 
-from concrete import fhe
-
-from .client_server import SUPPORTED_PANDAS_OPS_AND_KWARGS
-
 
 def encrypted_left_join(
     df_left,
@@ -141,13 +137,6 @@ def encrypted_merge(
     parameters 'how' and 'validate' are different than in Pandas.
     """
     # Raise errors for unsupported parameters
-    supported_how_types = SUPPORTED_PANDAS_OPS_AND_KWARGS["merge"]["how"]
-    if how not in supported_how_types:
-        raise ValueError(
-            f"Merge type '{how}' is not currently supported. Expected one of "
-            f"{supported_how_types}."
-        )
-
     if left_on is not None or right_on is not None or left_index or right_index:
         raise ValueError(
             "The following parameters are currently not supported, please use 'how' instead : "
