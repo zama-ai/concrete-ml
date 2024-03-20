@@ -13,21 +13,33 @@ from .client_server import (
 from .dataframe import EncryptedDataFrame
 
 
-def encrypt_from_pandas(pandas_df):
-    return EncryptedDataFrame.encrypt_from_pandas(pandas_df)
+def encrypt_from_pandas(pandas_df, client, operator):
+    return EncryptedDataFrame.encrypt_from_pandas(pandas_df, client, operator)
 
 
-def encrypt_from_csv(file_path):
-    return EncryptedDataFrame.encrypt_from_csv(file_path)
+def encrypt_from_csv(file_path, **pandas_kwargs):
+    return EncryptedDataFrame.encrypt_from_csv(file_path, **pandas_kwargs)
 
 
 def load_encrypted_dataframe(file_path):
-    return EncryptedDataFrame.load(file_path)
+    return EncryptedDataFrame.from_json(file_path)
 
 
-def join(encrypted_df_left, encrypted_df_right, **pandas_kwargs):
-    return encrypted_df_left.join(encrypted_df_right, **pandas_kwargs)
+def join(
+    encrypted_df_left: EncryptedDataFrame,
+    encrypted_df_right: EncryptedDataFrame,
+    evaluation_keys,
+    server,
+    **pandas_kwargs
+):
+    return encrypted_df_left.join(encrypted_df_right, evaluation_keys, server, **pandas_kwargs)
 
 
-def merge(encrypted_df_left, encrypted_df_right, **pandas_kwargs):
-    return encrypted_df_left.merge(encrypted_df_right, **pandas_kwargs)
+def merge(
+    encrypted_df_left: EncryptedDataFrame,
+    encrypted_df_right: EncryptedDataFrame,
+    evaluation_keys,
+    server,
+    **pandas_kwargs
+):
+    return encrypted_df_left.merge(encrypted_df_right, evaluation_keys, server, **pandas_kwargs)
