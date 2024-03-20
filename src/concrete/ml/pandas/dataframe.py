@@ -6,9 +6,8 @@ import numpy
 import pandas
 
 from concrete import fhe
-
-from ._operators import encrypted_merge
-from ._utils import (
+from concrete.ml.pandas._operators import encrypted_merge
+from concrete.ml.pandas._utils import (
     decrypt_elementwise,
     deserialize_elementwise,
     deserialize_evaluation_keys,
@@ -19,7 +18,11 @@ from ._utils import (
     serialize_evaluation_keys,
     serialize_value,
 )
-from .client_server import _N_BITS_PANDAS, _get_encrypt_config, _get_min_max_allowed
+from concrete.ml.pandas.client_server import (
+    _N_BITS_PANDAS,
+    _get_encrypt_config,
+    _get_min_max_allowed,
+)
 
 
 def _validate_pandas_df(pandas_df: pandas.DataFrame, min_value: int, max_value: int):
@@ -57,11 +60,11 @@ def _validate_pandas_df(pandas_df: pandas.DataFrame, min_value: int, max_value: 
         )
 
 
-def _pre_process_from_pandas(pandas_df: pandas.DataFrame, operator) -> numpy.ndarray:
+def _pre_process_from_pandas(pandas_df: pandas.DataFrame) -> numpy.ndarray:
     """Pre-process the Pandas data-frame."""
     # Make sure the given data-frame only contains integer values between the allowed min and max
     # Additionally, forbid 0 values as they are then used to represent encrypted NaN values
-    min, max = _get_min_max_allowed(operator)
+    min, max = _get_min_max_allowed()
     _validate_pandas_df(pandas_df, min, max)
 
     # Replace NaN values with 0
@@ -190,23 +193,20 @@ class EncryptedDataFrame:
 
         return joined_df
 
-    # TODO: remove "operator" (if possible)
     @classmethod
-    def encrypt_from_pandas(cls, pandas_df, client, evaluation_keys, operator):
-        pandas_array = _pre_process_from_pandas(pandas_df, operator)
+    def encrypt_from_pandas(cls, pandas_df, client, evaluation_keys):
+        pandas_array = _pre_process_from_pandas(pandas_df)
 
         # TODO: how to provide encrypt configuration
-        encrypted_values = encrypt_elementwise(
-            pandas_array, client, **_get_encrypt_config(operator)
-        )
-        encrypted_nan = encrypt_value(0, client, **_get_encrypt_config(operator))
+        encrypted_values = encrypt_elementwise(pandas_array, client, **_get_encrypt_config())
+        encrypted_nan = encrypt_value(0, client, **_get_encrypt_config())
 
         return cls(encrypted_values, encrypted_nan, evaluation_keys, pandas_df.columns)
 
     @classmethod
-    def encrypt_from_csv(cls, file_path, client, evaluation_keys, operator, **pandas_kwargs):
+    def encrypt_from_csv(cls, file_path, client, evaluation_keys, **pandas_kwargs):
         pandas_df = pandas.read_csv(file_path, **pandas_kwargs)
-        return cls.encrypt_from_pandas(pandas_df, client, evaluation_keys, operator)
+        return cls.encrypt_from_pandas(pandas_df, client, evaluation_keys)
 
     def decrypt_to_pandas(self, client):
         clear_array = decrypt_elementwise(self.encrypted_values, client)

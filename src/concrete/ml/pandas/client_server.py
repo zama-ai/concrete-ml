@@ -3,8 +3,7 @@ from functools import partial
 from pathlib import Path
 
 from concrete import fhe
-
-from ._utils import deserialize_evaluation_keys, serialize_evaluation_keys
+from concrete.ml.pandas._utils import deserialize_evaluation_keys, serialize_evaluation_keys
 
 _script_dir = Path(__file__).parent
 
@@ -77,28 +76,21 @@ _PANDAS_OPS_TO_CIRCUIT_CONFIG = {
             "n": 4,
             "pos": 1,
         },
-        "min": 1,
-        "max": _get_left_right_join_max_value(_N_BITS_PANDAS),
     }
 }
 
-SUPPORTED_PANDAS_OPS_AND_KWARGS = {"merge": {"how": ["left", "right"]}}
+
+def _get_encrypt_config():
+    return _PANDAS_OPS_TO_CIRCUIT_CONFIG["left_right_join"]["encrypt_config"]
 
 
-def _get_encrypt_config(operator):
-    return _PANDAS_OPS_TO_CIRCUIT_CONFIG[operator]["encrypt_config"]
+def _get_min_max_allowed():
+    return (1, _get_left_right_join_max_value(_N_BITS_PANDAS))
 
 
-def _get_min_max_allowed(operator):
-    return (
-        _PANDAS_OPS_TO_CIRCUIT_CONFIG[operator]["min"],
-        _PANDAS_OPS_TO_CIRCUIT_CONFIG[operator]["max"],
-    )
-
-
-def _save_client_server(operator, config, clients_dir, servers_dir, force_save):
-    client_path = clients_dir / operator / "client.zip"
-    server_path = servers_dir / operator / "server.zip"
+def _save_client_server(config, force_save=True):
+    client_path = _CLIENTS_DIR / "client.zip"
+    server_path = _SERVERS_DIR / "server.zip"
 
     if force_save or not client_path.is_file() or not server_path.is_file():
         client_path.parent.mkdir(parents=True, exist_ok=True)
@@ -115,13 +107,8 @@ def _save_client_server(operator, config, clients_dir, servers_dir, force_save):
         merge_circuit.client.save(client_path)
 
 
-def save_clients_servers(clients_dir=_CLIENTS_DIR, servers_dir=_SERVERS_DIR, force_save=True):
-    for operator, config in _PANDAS_OPS_TO_CIRCUIT_CONFIG.items():
-        _save_client_server(operator, config, clients_dir, servers_dir, force_save)
-
-
-def load_client(operator, clients_dir=_CLIENTS_DIR, keys_path=None):
-    client_path = clients_dir / operator / "client.zip"
+def load_client(keys_path=None):
+    client_path = _CLIENTS_DIR / "client.zip"
     client = fhe.Client.load(client_path)
 
     if keys_path is not None:
@@ -132,46 +119,13 @@ def load_client(operator, clients_dir=_CLIENTS_DIR, keys_path=None):
     return client
 
 
-def get_client_and_eval_keys(operator, clients_dir=_CLIENTS_DIR, keys_path=None):
-    client = load_client(operator, clients_dir=clients_dir, keys_path=keys_path)
+def get_client_and_eval_keys(keys_path=None):
+    client = load_client(keys_path=keys_path)
 
     return client, client.evaluation_keys
 
 
-def load_server(operator, servers_dir=_SERVERS_DIR):
-    server_path = servers_dir / operator / "server.zip"
+def load_server():
+    server_path = _SERVERS_DIR / "server.zip"
     server = fhe.Server.load(server_path)
     return server
-
-
-def load_clients(clients_dir=_CLIENTS_DIR, force_keygen=True):
-    clients = {}
-
-    for operator in _PANDAS_OPS_TO_CIRCUIT_CONFIG:
-        client = load_client(operator, clients_dir, keygen=force_keygen)
-        clients[operator] = client
-
-    return clients
-
-
-def get_clients_and_eval_keys(clients_dir=_CLIENTS_DIR, force_keygen=True):
-    clients = {}
-
-    for operator in _PANDAS_OPS_TO_CIRCUIT_CONFIG:
-        client, eval_keys = get_client_and_eval_keys(
-            operator, clients_dir=clients_dir, force_keygen=force_keygen
-        )
-        clients[operator]["client"] = client
-        clients[operator]["evaluation_keys"] = eval_keys
-
-    return clients
-
-
-def load_servers(servers_dir=_SERVERS_DIR, keygen=True):
-    servers = {}
-
-    for operator in _PANDAS_OPS_TO_CIRCUIT_CONFIG:
-        server = load_server(operator, servers_dir, keygen=keygen)
-        servers[operator] = server
-
-    return servers

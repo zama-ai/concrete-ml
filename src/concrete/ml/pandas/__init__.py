@@ -1,24 +1,13 @@
-from .client_server import (
-    SUPPORTED_PANDAS_OPS_AND_KWARGS,
-    get_client_and_eval_keys,
-    get_clients_and_eval_keys,
-    load_client,
-    load_clients,
-    load_server,
-    load_servers,
-    save_clients_servers,
-)
+from .client_server import get_client_and_eval_keys, load_client, load_server
 from .dataframe import EncryptedDataFrame
 
 
-def encrypt_from_pandas(pandas_df, client, evaluation_keys, operator):
-    return EncryptedDataFrame.encrypt_from_pandas(pandas_df, client, evaluation_keys, operator)
+def encrypt_from_pandas(pandas_df, client, evaluation_keys):
+    return EncryptedDataFrame.encrypt_from_pandas(pandas_df, client, evaluation_keys)
 
 
-def encrypt_from_csv(file_path, client, evaluation_keys, operator, **pandas_kwargs):
-    return EncryptedDataFrame.encrypt_from_csv(
-        file_path, client, evaluation_keys, operator, **pandas_kwargs
-    )
+def encrypt_from_csv(file_path, client, evaluation_keys, **pandas_kwargs):
+    return EncryptedDataFrame.encrypt_from_csv(file_path, client, evaluation_keys, **pandas_kwargs)
 
 
 def load_encrypted_dataframe(file_path):
