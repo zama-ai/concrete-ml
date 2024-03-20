@@ -236,116 +236,7 @@ class QuantizedGemm(QuantizedMixingOp):
 
         p = input2_q_values.shape[-2]
 
-        # Remove the manual matrix multiplication when we can handle input precision with rounding
-        # FIXME: https://github.com/zama-ai/concrete-internal/issues/512
-        def enc_mul(x, y):
-            r"""Encrypted multiplication of two input arrays.
-
-            This function computes the encrypted multiplication of two numpy arrays.
-            It uses the following equality:
-
-            \[
-            (x + y)^2 - (x - y)^2 = 4xy
-            \]
-
-            This equation simplifies to the standard multiplication operation.
-
-            In TFHE, this allows to do encrypted multiplication with 2 PBS.
-
-            Args:
-                x (numpy.ndarray): The first input numpy array.
-                y (numpy.ndarray): The second input numpy array.
-
-            Returns:
-                numpy.ndarray: The result of the encrypted multiplication.
-            """
-            with tag("pbs_multiplication"):
-                # Compute sum and difference of x and y
-                add = x + y
-                sub = x - y
-
-                # Apply Concrete rounding to the addition and substraction
-                with tag(self.op_instance_name + ".pbs_matmul_rounding_add"):
-                    add = self.cnp_round(add, calibrate_rounding, rounding_operation_id="add")
-                with tag(self.op_instance_name + ".pbs_matmul_rounding_sub"):
-                    sub = self.cnp_round(sub, calibrate_rounding, rounding_operation_id="sub")
-
-                # Square the rounded sums and differences, and divide by 4
-                add_pow = (add.astype(numpy.float64)) ** 2
-                sub_pow = (sub.astype(numpy.float64)) ** 2
-                add_pow_divide = (add_pow / 4.0).astype(numpy.int64)
-                sub_pow_divide = (sub_pow / 4.0).astype(numpy.int64)
-
-            # Return the result of the multiplication
-            return add_pow_divide - sub_pow_divide
-
-        # Remove the manual matrix multiplication when we can handle input precision with rounding
-        # FIXME: https://github.com/zama-ai/concrete-internal/issues/512
-        def matmul(a, b):
-            """Matrix multiplication of two input arrays, supporting 2D or 3D.
-
-            This function performs matrix multiplication on either 2D or 3D numpy arrays.
-            It supports batch processing, where either or both inputs can be a batch
-            (3D array), and handles the reshaping and summation operations required
-            for matrix multiplication.
-
-            Args:
-                a (numpy.ndarray): The first input array, can be 2D or 3D.
-                b (numpy.ndarray): The second input array, can be 2D or 3D.
-
-            Returns:
-                numpy.ndarray: The result of the matrix multiplication.
-            """
-            with tag("encrypted_matmul"):
-                # Determine the dimensions of inputs and handle 3D (batch) inputs
-                a_3d = a.ndim == 3
-                b_3d = b.ndim == 3
-
-                # Extract shapes and batch sizes
-                if a_3d:
-                    batch_a, m, n = a.shape
-                else:
-                    m, n = a.shape
-                    batch_a = 1
-
-                if b_3d:
-                    batch_b, n_b, p = b.shape
-                else:
-                    n_b, p = b.shape
-                    batch_b = 1
-
-                # Check for dimension compatibility
-                assert_true(n == n_b, "Inner dimensions do not match for matrix multiplication")
-                assert (
-                    batch_a == batch_b or batch_a == 1 or batch_b == 1
-                ), "Batch sizes must be equal or one must be 1"
-
-                # Determine the batch size for the operation
-                batch_size = batch_a
-                c = zeros(shape=(batch_size, m, p))
-
-                # Perform batched matrix multiplication
-                for i in range(batch_size):
-                    # Slice the batch or use the whole array if not batched
-                    a_slice = a[i] if a_3d else a
-                    b_slice = b[i] if b_3d else b
-
-                    # Reshape for element-wise multiplication
-                    a_reshaped = a_slice.reshape((m, n, 1))
-                    b_reshaped = b_slice.reshape((1, n, p))
-
-                    # Perform encrypted multiplication and sum along the axis
-                    enc_mul_result = enc_mul(a_reshaped, b_reshaped)
-                    c[i] = numpy.sum(enc_mul_result, axis=1)
-
-                # Squeeze the first dimension if both inputs were 2D
-                if not a_3d and not b_3d:
-                    c = numpy.squeeze(c, axis=0)
-
-                # Return the result of matrix multiplication
-                return c
-
-        # Remove the manual matrix multiplication when we can handle input precision with rounding
+        # Remove the copy trick when the all PBS on n_bits is handled by concrete-python
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4127
         @univariate
         def copy_function(x):
@@ -373,12 +264,7 @@ class QuantizedGemm(QuantizedMixingOp):
 
         # Core matmul operation in full integers with a shape change (INTEGERS)
         with tag(self.op_instance_name + ".matmul"):
-            # We implement our own encrypted matmul to be able to round before PBS
-            if is_encrypted_gemm:
-                matmul = matmul(input1_q_values_copy, input2_q_values_copy)
-            # Otherwise we let concrete do it
-            else:
-                matmul = input1_q_values_copy @ input2_q_values_copy
+            matmul = input1_q_values_copy @ input2_q_values_copy
 
         input1_q_values_copy = (
             copy_function(input1_q_values) if is_encrypted_gemm else input1_q_values
