@@ -210,9 +210,9 @@ spcc_internal: $(SPCC_DEPS)
 # -svv disables capturing of stdout/stderr and enables verbose output
 # --count N is to repeate all tests N times (with different seeds). Default is to COUNT=1.
 # --randomly-dont-reorganize is to prevent Pytest from shuffling the tests' order
-# --randomly-dont-reset-seed is to make sure that, if we run the same test several times (with
-# @pytest.mark.repeat(3)), different seeds are used, even if things are still deterministic using 
-# the main seed
+# --randomly-dont-reset-seed is important: if it was not there, the randomly package would reset
+# seeds to the same value, for all tests, resulting in same random's being taken in the tests, which
+# reduces a bit the impact / coverage of our tests
 # --capture=tee-sys is to make sure that, in case of crash, we can search for "Forcing seed to" in 
 # stdout in order to be able to reproduce the failed test using that seed
 # --cache-clear is to clear all Pytest's cache at before running the tests. This is done in order to 
