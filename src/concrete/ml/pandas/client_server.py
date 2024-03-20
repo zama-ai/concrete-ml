@@ -8,6 +8,8 @@ from concrete.ml.pandas._utils import deserialize_evaluation_keys, serialize_eva
 _script_dir = Path(__file__).parent
 
 _CLIENT_SERVER_DIR = _script_dir / "_client_server_files"
+_CLIENT_PATH = _CLIENT_SERVER_DIR / "client.zip"
+_SERVER_PATH = _CLIENT_SERVER_DIR / "server.zip"
 
 _N_BITS_PANDAS = 4
 
@@ -88,12 +90,9 @@ def _get_min_max_allowed():
 
 
 def _save_client_server(config, force_save=True):
-    client_path = _CLIENT_SERVER_DIR / "client.zip"
-    server_path = _CLIENT_SERVER_DIR / "server.zip"
-
-    if force_save or not client_path.is_file() or not server_path.is_file():
-        client_path.parent.mkdir(parents=True, exist_ok=True)
-        server_path.parent.mkdir(parents=True, exist_ok=True)
+    if force_save or not _CLIENT_PATH.is_file() or not _SERVER_PATH.is_file():
+        _CLIENT_PATH.parent.mkdir(parents=True, exist_ok=True)
+        _SERVER_PATH.parent.mkdir(parents=True, exist_ok=True)
 
         inputset = config["get_inputset"]()
         cp_func = config["to_compile"]
@@ -102,13 +101,12 @@ def _save_client_server(config, force_save=True):
         merge_circuit = cp_func.compile(inputset, composable=True)
 
         # Save the client and server files
-        merge_circuit.server.save(server_path, via_mlir=True)
-        merge_circuit.client.save(client_path)
+        merge_circuit.server.save(_SERVER_PATH, via_mlir=True)
+        merge_circuit.client.save(_CLIENT_PATH)
 
 
 def load_client(keys_path=None):
-    client_path = _CLIENT_SERVER_DIR / "client.zip"
-    client = fhe.Client.load(client_path)
+    client = fhe.Client.load(_CLIENT_PATH)
 
     if keys_path is not None:
         client.keys.load_if_exists_generate_and_save_otherwise(keys_path)
@@ -122,9 +120,3 @@ def get_client_and_eval_keys(keys_path=None):
     client = load_client(keys_path=keys_path)
 
     return client, client.evaluation_keys
-
-
-def load_server():
-    server_path = _CLIENT_SERVER_DIR / "server.zip"
-    server = fhe.Server.load(server_path)
-    return server

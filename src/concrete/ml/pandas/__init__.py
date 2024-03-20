@@ -18,17 +18,15 @@ def join(
     encrypted_df_left: EncryptedDataFrame,
     encrypted_df_right: EncryptedDataFrame,
     evaluation_keys,
-    server,
     **pandas_kwargs
 ):
-    return encrypted_df_left.join(encrypted_df_right, evaluation_keys, server, **pandas_kwargs)
+    return encrypted_df_left.join(encrypted_df_right, evaluation_keys, **pandas_kwargs)
 
 
 def merge(
     encrypted_df_left: EncryptedDataFrame,
     encrypted_df_right: EncryptedDataFrame,
     evaluation_keys,
-    server,
     **pandas_kwargs
 ):
-    return encrypted_df_left.merge(encrypted_df_right, evaluation_keys, server, **pandas_kwargs)
+    return encrypted_df_left.merge(encrypted_df_right, evaluation_keys, **pandas_kwargs)
