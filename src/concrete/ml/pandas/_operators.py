@@ -10,7 +10,6 @@ from .client_server import SUPPORTED_PANDAS_OPS_AND_KWARGS
 def encrypted_left_join(
     df_left,
     df_right,
-    evaluation_keys: fhe.EvaluationKeys,
     server,
     on=None,
     left_on=None,
@@ -103,7 +102,10 @@ def encrypted_left_join(
                 # an iteration only)
                 merge_inputs = (right_value_to_join, value_to_put_right, left_key, right_key)
 
-                right_value_to_join = server.run(*merge_inputs, evaluation_keys=evaluation_keys)
+                # TODO: how to use evaluation_keys ?
+                right_value_to_join = server.run(
+                    *merge_inputs, evaluation_keys=df_left.evaluation_keys
+                )
 
             right_row_to_join.append(right_value_to_join)
         array_joined.append(array_joined_i_left)
@@ -120,7 +122,6 @@ def encrypted_left_join(
 def encrypted_merge(
     df_left,
     df_right,
-    evaluation_keys: fhe.EvaluationKeys,
     server,
     how="left",
     on=None,
@@ -203,7 +204,6 @@ def encrypted_merge(
         joined_array = encrypted_left_join(
             df_left,
             df_right,
-            evaluation_keys,
             server,
             on=on,
             left_on=left_on,
