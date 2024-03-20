@@ -212,7 +212,8 @@ spcc_internal: $(SPCC_DEPS)
 # --randomly-dont-reorganize is to prevent Pytest from shuffling the tests' order
 # --randomly-dont-reset-seed is to make sure that, if we run the same test several times (with
 # @pytest.mark.repeat(3)), different seeds are used, even if things are still deterministic using 
-# the main seed
+# the main seed. --randomly-dont-reset-seed is also important to make that all seeds are different,
+# from one test to the other
 # --capture=tee-sys is to make sure that, in case of crash, we can search for "Forcing seed to" in 
 # stdout in order to be able to reproduce the failed test using that seed
 # --cache-clear is to clear all Pytest's cache at before running the tests. This is done in order to 
