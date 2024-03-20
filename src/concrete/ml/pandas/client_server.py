@@ -172,20 +172,3 @@ def load_servers(servers_dir=_SERVERS_DIR, keygen=True):
         servers[operator] = server
 
     return servers
-
-
-def load_eval_keys(file_path):
-    file_path = Path(file_path)
-    with file_path.open("rb") as file:
-        serialized_evaluation_keys = file.read()
-
-    evaluation_keys = deserialize_evaluation_keys(serialized_evaluation_keys)
-    return evaluation_keys
-
-
-def dump_eval_keys(evaluation_keys, file_path):
-    serialized_evaluation_keys = serialize_evaluation_keys(evaluation_keys)
-
-    file_path = Path(file_path)
-    with file_path.open("wb") as file:
-        file.write(serialized_evaluation_keys)

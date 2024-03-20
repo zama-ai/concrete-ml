@@ -11,10 +11,12 @@ from ._operators import encrypted_merge
 from ._utils import (
     decrypt_elementwise,
     deserialize_elementwise,
+    deserialize_evaluation_keys,
     deserialize_value,
     encrypt_elementwise,
     encrypt_value,
     serialize_elementwise,
+    serialize_evaluation_keys,
     serialize_value,
 )
 from .client_server import _N_BITS_PANDAS, _get_encrypt_config, _get_min_max_allowed
@@ -87,17 +89,21 @@ class EncryptedDataFrame:
     """Define an encrypted data-frame that can be serialized."""
 
     def __init__(
-        self, encrypted_values: numpy.ndarray, encrypted_nan: fhe.Value, column_names: List[str]
+        self,
+        encrypted_values: numpy.ndarray,
+        encrypted_nan: fhe.Value,
+        evaluation_keys: fhe.EvaluationKeys,
+        column_names: List[str],
     ):
         self.encrypted_values = encrypted_values
         self.encrypted_nan = encrypted_nan
+        self.evaluation_keys = evaluation_keys
         self.column_names = list(column_names)
         self.column_names_to_index = {name: index for index, name in enumerate(column_names)}
 
     def join(
         self,
         other,
-        evaluation_keys: fhe.EvaluationKeys,
         server,
         on=None,
         how="left",
@@ -118,7 +124,6 @@ class EncryptedDataFrame:
         if how == "cross":
             return self.merge(
                 other,
-                evaluation_keys,
                 server,
                 how=how,
                 on=on,
@@ -128,7 +133,6 @@ class EncryptedDataFrame:
             )
         return self.merge(
             other,
-            evaluation_keys,
             server,
             left_on=on,
             how=how,
@@ -142,7 +146,6 @@ class EncryptedDataFrame:
     def merge(
         self,
         other,
-        evaluation_keys: fhe.EvaluationKeys,
         server,
         how="left",
         on=None,
@@ -167,7 +170,6 @@ class EncryptedDataFrame:
         joined_array, joined_column_names = encrypted_merge(
             self,
             other,
-            evaluation_keys,
             server,
             how=how,
             on=on,
@@ -182,13 +184,15 @@ class EncryptedDataFrame:
             validate=validate,
         )
 
-        joined_df = EncryptedDataFrame(joined_array, self.encrypted_nan, joined_column_names)
+        joined_df = EncryptedDataFrame(
+            joined_array, self.encrypted_nan, self.evaluation_keys, joined_column_names
+        )
 
         return joined_df
 
     # TODO: remove "operator" (if possible)
     @classmethod
-    def encrypt_from_pandas(cls, pandas_df, client, operator):
+    def encrypt_from_pandas(cls, pandas_df, client, evaluation_keys, operator):
         pandas_array = _pre_process_from_pandas(pandas_df, operator)
 
         # TODO: how to provide encrypt configuration
@@ -197,12 +201,12 @@ class EncryptedDataFrame:
         )
         encrypted_nan = encrypt_value(0, client, **_get_encrypt_config(operator))
 
-        return cls(encrypted_values, encrypted_nan, pandas_df.columns)
+        return cls(encrypted_values, encrypted_nan, evaluation_keys, pandas_df.columns)
 
     @classmethod
-    def encrypt_from_csv(cls, file_path, **pandas_kwargs):
+    def encrypt_from_csv(cls, file_path, client, evaluation_keys, operator, **pandas_kwargs):
         pandas_df = pandas.read_csv(file_path, **pandas_kwargs)
-        return cls.encrypt_from_pandas(pandas_df)
+        return cls.encrypt_from_pandas(pandas_df, client, evaluation_keys, operator)
 
     def decrypt_to_pandas(self, client):
         clear_array = decrypt_elementwise(self.encrypted_values, client)
@@ -217,11 +221,13 @@ class EncryptedDataFrame:
         """Serialize the instance to a dictionary."""
         encrypted_values = serialize_elementwise(self.encrypted_values)
         encrypted_nan = serialize_value(self.encrypted_nan)
+        evaluation_keys = serialize_evaluation_keys(self.evaluation_keys)
 
         # A Numpy array is not serializable using JSON so we need to convert to a list
         output_dict = {
             "encrypted_values": encrypted_values.tolist(),
             "encrypted_nan": encrypted_nan,
+            "evaluation_keys": evaluation_keys,
             "column_names": self.column_names,
         }
 
@@ -232,9 +238,10 @@ class EncryptedDataFrame:
         """Load an instance from a dictionary."""
         encrypted_values = deserialize_elementwise(dict_to_load["encrypted_values"])
         encrypted_nan = deserialize_value(dict_to_load["encrypted_nan"])
+        evaluation_keys = deserialize_evaluation_keys(dict_to_load["evaluation_keys"])
         column_names = dict_to_load["column_names"]
 
-        return cls(encrypted_values, encrypted_nan, column_names)
+        return cls(encrypted_values, encrypted_nan, evaluation_keys, column_names)
 
     def to_json(self, file_path):
         file_path = Path(file_path)
