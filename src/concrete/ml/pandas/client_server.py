@@ -120,17 +120,20 @@ def save_clients_servers(clients_dir=_CLIENTS_DIR, servers_dir=_SERVERS_DIR, for
         _save_client_server(operator, config, clients_dir, servers_dir, force_save)
 
 
-def load_client(operator, clients_dir=_CLIENTS_DIR, force_keygen=True):
+def load_client(operator, clients_dir=_CLIENTS_DIR, keys_path=None):
     client_path = clients_dir / operator / "client.zip"
     client = fhe.Client.load(client_path)
 
-    client.keygen(force_keygen)
+    if keys_path is not None:
+        client.keys.load_if_exists_generate_and_save_otherwise(keys_path)
+    else:
+        client.keygen(True)
 
     return client
 
 
-def get_client_and_eval_keys(operator, clients_dir=_CLIENTS_DIR, force_keygen=True):
-    client = load_client(operator, clients_dir=clients_dir, force_keygen=force_keygen)
+def get_client_and_eval_keys(operator, clients_dir=_CLIENTS_DIR, keys_path=None):
+    client = load_client(operator, clients_dir=clients_dir, keys_path=keys_path)
 
     return client, client.evaluation_keys
 
