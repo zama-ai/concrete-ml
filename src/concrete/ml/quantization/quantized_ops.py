@@ -10,7 +10,7 @@ from typing import Any, Dict, Optional, Sequence, Set, Union
 import numpy
 from concrete.fhe import conv as fhe_conv
 from concrete.fhe import maxpool as fhe_maxpool
-from concrete.fhe import tag, univariate, zeros
+from concrete.fhe import tag, univariate
 from typing_extensions import SupportsIndex
 
 from ..common.debugging import assert_false, assert_true
