@@ -157,6 +157,8 @@ def encrypted_merge(
     if validate not in ("1:1", "one-to-one"):
         raise ValueError("Indices must be unique in both data-frames.")
 
+    joined_dtype_mappings = {**df_left.dtype_mappings, **df_right.dtype_mappings}
+
     # Retrieve the input column names and build empty data-frames based on them
     # Insert
     empty_df_left = pandas.DataFrame(index=range(1), columns=df_left.column_names)
@@ -205,6 +207,6 @@ def encrypted_merge(
             validate=validate,
         )
 
-        return joined_array, joined_column_names
+        return joined_array, joined_column_names, joined_dtype_mappings
 
     raise NotImplemented(f"Merge type '{how}' is not currently implemented.")
