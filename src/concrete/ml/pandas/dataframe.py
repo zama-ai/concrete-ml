@@ -23,11 +23,13 @@ from concrete.ml.pandas.client_server import _SERVER_PATH, _get_encrypt_config, 
 _SERVER = fhe.Server.load(_SERVER_PATH)
 
 
-def _validate_pandas_df(pandas_df: pandas.DataFrame, min_value: int, max_value: int):
+def _validate_pandas_dataframe(pandas_dataframe: pandas.DataFrame, min_value: int, max_value: int):
     """Check that the data-frame only contains values between the given min/max."""
 
     non_integer_columns = list(
-        pandas_df.columns[~pandas_df.dtypes.apply(lambda x: numpy.issubdtype(x, numpy.integer))]
+        pandas_dataframe.columns[
+            ~pandas_dataframe.dtypes.apply(lambda x: numpy.issubdtype(x, numpy.integer))
+        ]
     )
     if non_integer_columns:
         raise ValueError(
@@ -35,7 +37,7 @@ def _validate_pandas_df(pandas_df: pandas.DataFrame, min_value: int, max_value: 
             "allowed."
         )
 
-    columns_less_than_min = (pandas_df < min_value).any()
+    columns_less_than_min = (pandas_dataframe < min_value).any()
     column_names_less_than_min = columns_less_than_min[columns_less_than_min].index.tolist()
 
     if column_names_less_than_min:
@@ -46,7 +48,7 @@ def _validate_pandas_df(pandas_df: pandas.DataFrame, min_value: int, max_value: 
             * (min_value <= 1)
         )
 
-    columns_greater_than_max = (pandas_df > max_value).any()
+    columns_greater_than_max = (pandas_dataframe > max_value).any()
     column_names_greater_than_max = columns_greater_than_max[
         columns_greater_than_max
     ].index.tolist()
@@ -58,17 +60,17 @@ def _validate_pandas_df(pandas_df: pandas.DataFrame, min_value: int, max_value: 
         )
 
 
-def _pre_process_from_pandas(pandas_df: pandas.DataFrame) -> numpy.ndarray:
+def _pre_process_from_pandas(pandas_dataframe: pandas.DataFrame) -> numpy.ndarray:
     """Pre-process the Pandas data-frame."""
     # Make sure the given data-frame only contains integer values between the allowed min and max
     # Additionally, forbid 0 values as they are then used to represent encrypted NaN values
     min, max = _get_min_max_allowed()
-    _validate_pandas_df(pandas_df, min, max)
+    _validate_pandas_dataframe(pandas_dataframe, min, max)
 
     # Replace NaN values with 0
-    pandas_df.fillna(0, inplace=True)
+    pandas_dataframe.fillna(0, inplace=True)
 
-    pandas_array = pandas_df.to_numpy()
+    pandas_array = pandas_dataframe.to_numpy()
 
     return pandas_array
 
@@ -188,28 +190,28 @@ class EncryptedDataFrame:
         return joined_df
 
     @classmethod
-    def encrypt_from_pandas(cls, pandas_df, client, evaluation_keys):
-        pandas_array = _pre_process_from_pandas(pandas_df)
+    def encrypt_from_pandas(cls, pandas_dataframe, client, evaluation_keys):
+        pandas_array = _pre_process_from_pandas(pandas_dataframe)
 
         # TODO: how to provide encrypt configuration
         encrypted_values = encrypt_elementwise(pandas_array, client, **_get_encrypt_config())
         encrypted_nan = encrypt_value(0, client, **_get_encrypt_config())
 
-        return cls(encrypted_values, encrypted_nan, evaluation_keys, pandas_df.columns)
+        return cls(encrypted_values, encrypted_nan, evaluation_keys, pandas_dataframe.columns)
 
     @classmethod
     def encrypt_from_csv(cls, file_path, client, evaluation_keys, **pandas_kwargs):
-        pandas_df = pandas.read_csv(file_path, **pandas_kwargs)
-        return cls.encrypt_from_pandas(pandas_df, client, evaluation_keys)
+        pandas_dataframe = pandas.read_csv(file_path, **pandas_kwargs)
+        return cls.encrypt_from_pandas(pandas_dataframe, client, evaluation_keys)
 
     def decrypt_to_pandas(self, client):
         clear_array = decrypt_elementwise(self.encrypted_values, client)
-        pandas_df = _post_process_to_pandas(clear_array, self.column_names)
-        return pandas_df
+        pandas_dataframe = _post_process_to_pandas(clear_array, self.column_names)
+        return pandas_dataframe
 
     def decrypt_to_csv(self, file_path, **pandas_kwargs):
-        pandas_df = self.decrypt_to_pandas()
-        return pandas_df.to_csv(file_path, **pandas_kwargs)
+        pandas_dataframe = self.decrypt_to_pandas()
+        return pandas_dataframe.to_csv(file_path, **pandas_kwargs)
 
     def to_dict(self):
         """Serialize the instance to a dictionary."""
