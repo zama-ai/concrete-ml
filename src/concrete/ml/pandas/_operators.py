@@ -3,6 +3,33 @@ import pandas
 from pandas.core.reshape.merge import _MergeOperation
 
 
+def check_coherence_selected_column_for_merge(df_left, df_right, on):
+    on_left, on_right = df_left.dtype_mappings[on], df_right.dtype_mappings[on]
+    dtype_left, dtype_right = numpy.dtype(on_left["dtype"]), numpy.dtype(on_right["dtype"])
+
+    if dtype_left == dtype_right:
+        if numpy.issubdtype(dtype_left, numpy.floating):
+            raise ValueError(
+                f"Column '{on}' cannot be selected for merging both data-frames because it has a "
+                f"floating dtype ({dtype_left})"
+            )
+        elif dtype_left == "object":
+            str_mapping_left = on_left["str_to_int"]
+            str_mapping_right = on_right["str_to_int"]
+
+            # TODO: add hash
+            if str_mapping_left != str_mapping_right:
+                raise ValueError(
+                    f"Mappings for string values in both data-frames' common column '{on}' do not "
+                    "match."
+                )
+    else:
+        raise ValueError(
+            f"Dtype of both data-frames' common column '{on}' do not match. Got {dtype_left} "
+            f"(left) and {dtype_right} (right)."
+        )
+
+
 def encrypted_left_join(
     df_left,
     df_right,
@@ -157,8 +184,6 @@ def encrypted_merge(
     if validate not in ("1:1", "one-to-one"):
         raise ValueError("Indices must be unique in both data-frames.")
 
-    joined_dtype_mappings = {**df_left.dtype_mappings, **df_right.dtype_mappings}
-
     # Retrieve the input column names and build empty data-frames based on them
     # Insert
     empty_df_left = pandas.DataFrame(index=range(1), columns=df_left.column_names)
@@ -183,6 +208,10 @@ def encrypted_merge(
     # Compute the expected joined columns
     empty_df_joined = empty_merge_op.get_result()
     joined_column_names = list(empty_df_joined.columns)
+
+    check_coherence_selected_column_for_merge(df_left, df_right, on)
+
+    joined_dtype_mappings = {**df_left.dtype_mappings, **df_right.dtype_mappings}
 
     if len(empty_merge_op.join_names) != 1:
         raise ValueError("Merging on 0 or several columns is not currently available.")
