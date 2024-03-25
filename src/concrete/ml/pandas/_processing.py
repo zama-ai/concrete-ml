@@ -11,7 +11,11 @@ from concrete.ml.pandas.client_server import _get_min_max_allowed
 def compute_scale_zero_point(column, q_min, q_max):
     values_min, values_max = column.min(), column.max()
     scale = (q_max - q_min) / (values_max - values_min)
-    zero_point = numpy.round(values_min * scale - q_min)
+
+    # TODO: add round for ZP when changing management of NaN values
+    # This is because rounding ZP + rounding of quant can make values reach 0, which is not allowed
+    # as it's used for representing NaN values
+    zero_point = values_min * scale - q_min
     return scale, zero_point
 
 

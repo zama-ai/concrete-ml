@@ -1,4 +1,4 @@
-id,feat_right_1,feat_right_2,feat_right_3,feat_right_4,feat_right_5
-4,4,2.82,4,4,56.712
-5,1,9.71,9,14,3.1838
-6,4,-3.9,2,4,133.1
+index,day,time,size
+2,Thur,Lunch,2
+5,Sat,Dinner,3
+9,Sun,Dinner,2
