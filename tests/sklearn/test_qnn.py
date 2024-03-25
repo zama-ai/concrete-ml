@@ -304,7 +304,7 @@ def test_failure_bad_data_types(model_classes, container, bad_types, expected_er
 @pytest.mark.parametrize("model_class", _get_sklearn_neural_net_models())
 @pytest.mark.parametrize("accum_bits", [5, 8])
 def test_structured_pruning(
-    activation_function, model_class, accum_bits, load_data, default_configuration
+    activation_function, model_class, accum_bits, load_data, simulation_configuration
 ):
     """Test whether the sklearn quantized NN wrappers compile to FHE and execute well on encrypted
     inputs"""
@@ -405,7 +405,7 @@ def test_structured_pruning(
     # Compile the model
     model.compile(
         x_train,
-        configuration=default_configuration,
+        configuration=simulation_configuration,
     )
 
     pruned_model = model.prune(x_train, y_train, 0.5)
@@ -414,7 +414,7 @@ def test_structured_pruning(
     # Compile the pruned model, this will also perform ONNX export and calibration
     pruned_model.compile(
         x_train,
-        configuration=default_configuration,
+        configuration=simulation_configuration,
     )
 
     with pytest.raises(
@@ -511,7 +511,7 @@ def test_power_of_two_scaling(
     num_layers,
     load_data,
     use_power_of_two_scaling,
-    default_configuration,
+    simulation_configuration,
 ):
     """Check that built-in neural networks can use roundPBS optimization."""
 
@@ -598,7 +598,7 @@ def test_power_of_two_scaling(
         # in compilation
         model.compile(
             x_train,
-            configuration=default_configuration,
+            configuration=simulation_configuration,
         )
 
         # Compute the results with simulation, which uses the actual

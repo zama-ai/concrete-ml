@@ -110,16 +110,20 @@ def test_compile_keras_networks(
     model,
     input_output_feature,
     default_configuration,
+    simulation_configuration,
     simulate,
     check_is_good_execution_for_cml_vs_circuit,
 ):
     """Test the different model architecture from Keras."""
 
+    # Use the simulation configuration if simulate = True
+    configuration = simulation_configuration if simulate else default_configuration
+
     compile_and_test_keras(
         input_output_feature,
         model,
         OPSET_VERSION_FOR_ONNX_EXPORT,
-        default_configuration,
+        configuration,
         simulate,
         check_is_good_execution_for_cml_vs_circuit,
     )

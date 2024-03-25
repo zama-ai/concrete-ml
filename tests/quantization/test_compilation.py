@@ -51,6 +51,7 @@ def test_quantized_module_compilation(
     model,
     activation,
     default_configuration,
+    simulation_configuration,
     n_bits,
     simulate,
     check_graph_input_has_no_tlu,
@@ -58,6 +59,9 @@ def test_quantized_module_compilation(
     check_is_good_execution_for_cml_vs_circuit,
 ):
     """Test a neural network compilation for FHE inference."""
+
+    # Use simulation_configuration if simulate = True
+    configuration = simulation_configuration if simulate else default_configuration
 
     # Define an input shape (n_examples, n_features)
     input_shape = (5, input_output_feature)
@@ -80,7 +84,7 @@ def test_quantized_module_compilation(
     # Compile
     quantized_model.compile(
         numpy_input,
-        default_configuration,
+        configuration,
         verbose=verbose,
     )
 
@@ -109,6 +113,7 @@ def test_quantized_cnn_compilation(
     model,
     activation,
     default_configuration,
+    simulation_configuration,
     check_graph_input_has_no_tlu,
     simulate,
     verbose,
@@ -117,6 +122,9 @@ def test_quantized_cnn_compilation(
     """Test a convolutional neural network compilation for FHE inference."""
 
     n_bits = 2
+
+    # Use simulation_configuration if simulate = True
+    configuration = simulation_configuration if simulate else default_configuration
 
     # Define an input shape (n_examples, n_features)
     input_shape, n_classes = input_output_feature
@@ -140,7 +148,7 @@ def test_quantized_cnn_compilation(
     # Compile
     quantized_model.compile(
         numpy_input,
-        default_configuration,
+        configuration,
         verbose=verbose,
     )
     check_is_good_execution_for_cml_vs_circuit(numpy_input, quantized_model, simulate=simulate)
@@ -299,7 +307,7 @@ def test_post_training_quantization_constant_folding():
 
 @pytest.mark.parametrize("can_remove_tlu", [True, False])
 def test_compile_multi_input_nn_with_input_tlus(
-    default_configuration,
+    simulation_configuration,
     check_graph_input_has_no_tlu,
     check_is_good_execution_for_cml_vs_circuit,
     can_remove_tlu,
@@ -319,7 +327,7 @@ def test_compile_multi_input_nn_with_input_tlus(
     # Compile
     quantized_model.compile(
         numpy_input,
-        default_configuration,
+        simulation_configuration,
     )
     check_is_good_execution_for_cml_vs_circuit(numpy_input, quantized_model, simulate=True)
 

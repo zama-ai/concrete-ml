@@ -220,7 +220,7 @@ def test_intermediary_values(n_bits, model_class, input_shape, activation_functi
         pytest.param(nn.ReLU, id="ReLU"),
     ],
 )
-def test_bitwidth_report(model_class, input_shape, activation_function, default_configuration):
+def test_bitwidth_report(model_class, input_shape, activation_function, simulation_configuration):
     """Check that the quantized module bit-width report executes without error."""
     torch.manual_seed(42)
     torch.use_deterministic_algorithms(True)
@@ -246,7 +246,7 @@ def test_bitwidth_report(model_class, input_shape, activation_function, default_
         torch_fc_model,
         torch_input,
         False,
-        default_configuration,
+        simulation_configuration,
         n_bits=2,
         p_error=0.01,
     )
@@ -358,7 +358,7 @@ def test_quantized_module_rounding_fhe(model_class, input_shape, default_configu
 # Extend this test with multi-input encryption status
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4011
 @pytest.mark.parametrize("model_class, input_shape", [pytest.param(FC, (100, 32 * 32 * 3))])
-def test_inputs_encryption_status(model_class, input_shape, default_configuration):
+def test_inputs_encryption_status(model_class, input_shape, simulation_configuration):
     """Check that giving inputs_encryption_status work properly."""
 
     torch_fc_model = model_class(activation_function=nn.ReLU)
@@ -377,7 +377,7 @@ def test_inputs_encryption_status(model_class, input_shape, default_configuratio
             torch_fc_model,
             torch_input,
             False,
-            default_configuration,
+            simulation_configuration,
             n_bits=2,
             p_error=0.01,
             rounding_threshold_bits=6,
@@ -392,7 +392,7 @@ def test_inputs_encryption_status(model_class, input_shape, default_configuratio
             torch_fc_model,
             torch_input,
             False,
-            default_configuration,
+            simulation_configuration,
             n_bits=2,
             p_error=0.01,
             rounding_threshold_bits=6,
@@ -405,7 +405,7 @@ def test_inputs_encryption_status(model_class, input_shape, default_configuratio
             torch_fc_model,
             torch_input,
             False,
-            default_configuration,
+            simulation_configuration,
             n_bits=2,
             p_error=0.01,
             rounding_threshold_bits=6,
@@ -421,7 +421,7 @@ def test_inputs_encryption_status(model_class, input_shape, default_configuratio
             torch_fc_model,
             torch_input,
             False,
-            default_configuration,
+            simulation_configuration,
             n_bits=2,
             p_error=0.01,
             rounding_threshold_bits=6,
@@ -433,7 +433,7 @@ def test_inputs_encryption_status(model_class, input_shape, default_configuratio
         torch_fc_model,
         torch_input,
         False,
-        default_configuration,
+        simulation_configuration,
         n_bits=2,
         p_error=0.01,
         rounding_threshold_bits=6,
@@ -445,7 +445,7 @@ def test_inputs_encryption_status(model_class, input_shape, default_configuratio
         torch_fc_model,
         torch_input,
         False,
-        default_configuration,
+        simulation_configuration,
         n_bits=2,
         p_error=0.01,
         rounding_threshold_bits=6,

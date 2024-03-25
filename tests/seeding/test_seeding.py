@@ -80,7 +80,7 @@ def test_seed_needing_randomly_seed_arg_3(random_inputs_1, random_inputs_2, rand
 
 
 @pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
-def test_seed_sklearn(model_class, parameters, load_data, default_configuration):
+def test_seed_sklearn(model_class, parameters, load_data, simulation_configuration):
     """Test seeding of sklearn models"""
 
     x, y = load_data(model_class, **parameters)
@@ -106,7 +106,7 @@ def test_seed_sklearn(model_class, parameters, load_data, default_configuration)
 
     # Test the determinism of our package (even if the bit-width may be too large)
     try:
-        model.compile(x, configuration=default_configuration, show_mlir=True)
+        model.compile(x, configuration=simulation_configuration, show_mlir=True)
     except RuntimeError as err:
         print(err)
     except AssertionError as err:

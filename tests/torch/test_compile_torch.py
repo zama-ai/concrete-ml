@@ -470,6 +470,7 @@ def test_compile_torch_or_onnx_networks(
     model,
     activation_function,
     default_configuration,
+    simulation_configuration,
     simulate,
     is_onnx,
     get_and_compile,
@@ -486,12 +487,15 @@ def test_compile_torch_or_onnx_networks(
     # The QAT bits is set to 0 in order to signal that the network is not using QAT
     qat_bits = 0
 
+    # Use simulation_configuration if simulate = True
+    configuration = simulation_configuration if simulate else default_configuration
+
     compile_and_test_torch_or_onnx(
         input_output_feature=input_output_feature,
         model_class=model,
         activation_function=activation_function,
         qat_bits=qat_bits,
-        default_configuration=default_configuration,
+        default_configuration=configuration,
         simulate=simulate,
         is_onnx=is_onnx,
         check_is_good_execution_for_cml_vs_circuit=check_is_good_execution_for_cml_vs_circuit,
@@ -524,6 +528,7 @@ def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
     is_1d,
     activation_function,
     default_configuration,
+    simulation_configuration,
     simulate,
     is_onnx,
     check_graph_input_has_no_tlu,
@@ -531,6 +536,9 @@ def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
     check_is_good_execution_for_cml_vs_circuit,
 ):
     """Test the different model architecture from torch numpy."""
+
+    # Use simulation_configuration if simulate = True
+    configuration = simulation_configuration if simulate else default_configuration
 
     # The QAT bits is set to 0 in order to signal that the network is not using QAT
     qat_bits = 0
@@ -543,7 +551,7 @@ def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
         model_class=model,
         activation_function=activation_function,
         qat_bits=qat_bits,
-        default_configuration=default_configuration,
+        default_configuration=configuration,
         simulate=simulate,
         is_onnx=is_onnx,
         check_is_good_execution_for_cml_vs_circuit=check_is_good_execution_for_cml_vs_circuit,
@@ -605,6 +613,7 @@ def test_compile_torch_or_onnx_activations(
     model,
     activation_function,
     default_configuration,
+    simulation_configuration,
     simulate,
     is_onnx,
     check_is_good_execution_for_cml_vs_circuit,
@@ -614,12 +623,15 @@ def test_compile_torch_or_onnx_activations(
     # The QAT bits is set to 0 in order to signal that the network is not using QAT
     qat_bits = 0
 
+    # Use simulation_configuration if simulate = True
+    configuration = simulation_configuration if simulate else default_configuration
+
     compile_and_test_torch_or_onnx(
         input_output_feature,
         model,
         activation_function,
         qat_bits,
-        default_configuration,
+        configuration,
         simulate,
         is_onnx,
         check_is_good_execution_for_cml_vs_circuit,
@@ -647,12 +659,16 @@ def test_compile_torch_qat(
     model,
     n_bits,
     default_configuration,
+    simulation_configuration,
     simulate,
     check_is_good_execution_for_cml_vs_circuit,
 ):
     """Test the different model architecture from torch numpy."""
 
     model = partial(model, n_bits=n_bits)
+
+    # Use simulation_configuration if simulate = True
+    configuration = simulation_configuration if simulate else default_configuration
 
     # Import these networks from torch directly
     is_onnx = False
@@ -663,7 +679,7 @@ def test_compile_torch_qat(
         model,
         nn.Sigmoid,
         qat_bits,
-        default_configuration,
+        configuration,
         simulate,
         is_onnx,
         check_is_good_execution_for_cml_vs_circuit,
@@ -687,11 +703,15 @@ def test_compile_brevitas_qat(
     n_bits,
     simulate,
     default_configuration,
+    simulation_configuration,
     check_is_good_execution_for_cml_vs_circuit,
 ):
     """Test compile_brevitas_qat_model."""
 
     model_class = partial(model_class, n_bits=n_bits)
+
+    # Use simulation_configuration if simulate = True
+    configuration = simulation_configuration if simulate else default_configuration
 
     # If this is a Brevitas QAT model, use n_bits for QAT bits
     if is_brevitas_qat:
@@ -706,7 +726,7 @@ def test_compile_brevitas_qat(
         model_class=model_class,
         activation_function=None,
         qat_bits=qat_bits,
-        default_configuration=default_configuration,
+        default_configuration=configuration,
         simulate=simulate,
         is_onnx=False,
         check_is_good_execution_for_cml_vs_circuit=check_is_good_execution_for_cml_vs_circuit,
@@ -764,7 +784,7 @@ def test_dump_torch_network(
     model_class,
     expected_onnx_str,
     activation_function,
-    default_configuration,
+    simulation_configuration,
     check_is_good_execution_for_cml_vs_circuit,
 ):
     """This is a test which is equivalent to tests in test_dump_onnx.py, but for torch modules."""
@@ -778,7 +798,7 @@ def test_dump_torch_network(
         model_class,
         activation_function,
         qat_bits,
-        default_configuration,
+        simulation_configuration,
         simulate,
         is_onnx,
         check_is_good_execution_for_cml_vs_circuit,
@@ -791,7 +811,7 @@ def test_dump_torch_network(
 @pytest.mark.parametrize("verbose", [True, False], ids=["with_verbose", "without_verbose"])
 # pylint: disable-next=too-many-locals
 def test_pretrained_mnist_qat(
-    default_configuration,
+    simulation_configuration,
     check_accuracy,
     verbose,
     check_graph_output_has_no_tlu,
@@ -844,7 +864,7 @@ def test_pretrained_mnist_qat(
         onnx_model,
         inputset,
         import_qat=True,
-        configuration=default_configuration,
+        configuration=simulation_configuration,
         n_bits=n_bits,
         verbose=verbose,
     )
@@ -883,7 +903,7 @@ def test_pretrained_mnist_qat(
         onnx_model,
         inputset,
         import_qat=True,
-        configuration=default_configuration,
+        configuration=simulation_configuration,
         n_bits=n_bits,
         verbose=verbose,
     )
@@ -895,7 +915,7 @@ def test_pretrained_mnist_qat(
     assert quantized_numpy_module.fhe_circuit.graph.maximum_integer_bit_width() <= 8
 
 
-def test_qat_import_bits_check(default_configuration):
+def test_qat_import_bits_check(simulation_configuration):
     """Test that compile_brevitas_qat_model does not need an n_bits config."""
 
     input_features = 10
@@ -921,7 +941,7 @@ def test_qat_import_bits_check(default_configuration):
     quantized_numpy_module = compile_brevitas_qat_model(
         model,
         inputset,
-        configuration=default_configuration,
+        configuration=simulation_configuration,
     )
 
     n_percent_inputset_examples_test = 0.1
@@ -939,7 +959,7 @@ def test_qat_import_bits_check(default_configuration):
             model,
             inputset,
             n_bits=n_bits,
-            configuration=default_configuration,
+            configuration=simulation_configuration,
         )
 
         new_predictions = quantized_numpy_module.forward(*x_test, fhe="disable")
@@ -960,11 +980,11 @@ def test_qat_import_bits_check(default_configuration):
                 model,
                 inputset,
                 n_bits=n_bits,
-                configuration=default_configuration,
+                configuration=simulation_configuration,
             )
 
 
-def test_qat_import_check(default_configuration, check_is_good_execution_for_cml_vs_circuit):
+def test_qat_import_check(simulation_configuration, check_is_good_execution_for_cml_vs_circuit):
     """Test two cases of custom (non brevitas) NNs where importing as QAT networks should fail."""
     qat_bits = 4
 
@@ -982,7 +1002,7 @@ def test_qat_import_check(default_configuration, check_is_good_execution_for_cml
             partial(SimpleQAT, n_bits=6, disable_bit_check=True),
             nn.ReLU,
             qat_bits,
-            default_configuration,
+            simulation_configuration,
             simulate,
             False,
             check_is_good_execution_for_cml_vs_circuit,
@@ -998,7 +1018,7 @@ def test_qat_import_check(default_configuration, check_is_good_execution_for_cml
             CNNOther,
             nn.ReLU,
             qat_bits,
-            default_configuration,
+            simulation_configuration,
             simulate,
             False,
             check_is_good_execution_for_cml_vs_circuit,
@@ -1030,7 +1050,7 @@ def test_qat_import_check(default_configuration, check_is_good_execution_for_cml
             AllZeroCNN,
             nn.ReLU,
             qat_bits,
-            default_configuration,
+            simulation_configuration,
             simulate,
             False,
             check_is_good_execution_for_cml_vs_circuit,
@@ -1061,7 +1081,7 @@ def test_net_has_no_tlu(
     use_qat,
     force_tlu,
     n_bits,
-    default_configuration,
+    simulation_configuration,
     check_graph_output_has_no_tlu,
 ):
     """Tests that there is no TLU in nets with a single conv/linear."""
@@ -1110,7 +1130,7 @@ def test_net_has_no_tlu(
         quantized_numpy_module = compile_brevitas_qat_model(
             net,
             inputset,
-            configuration=default_configuration,
+            configuration=simulation_configuration,
         )
     else:
         # Compile with PTQ. Note that this will have zero-point>0
@@ -1118,7 +1138,7 @@ def test_net_has_no_tlu(
             net,
             inputset,
             import_qat=False,
-            configuration=default_configuration,
+            configuration=simulation_configuration,
             n_bits=n_bits,
         )
 
@@ -1150,11 +1170,15 @@ def test_shape_operations_net(
     n_channels,
     is_qat,
     default_configuration,
+    simulation_configuration,
     check_graph_output_has_no_tlu,
     check_float_array_equal,
 ):
     """Test a pattern of reshaping, concatenation, chunk extraction."""
     model = model_class(is_qat)
+
+    # Use simulation_configuration if simulate
+    configuration = simulation_configuration if simulate else default_configuration
 
     # Shape transformation do not support >1 example in the inputset
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3871
@@ -1164,14 +1188,14 @@ def test_shape_operations_net(
         quantized_module = compile_brevitas_qat_model(
             model,
             inputset,
-            configuration=default_configuration,
+            configuration=configuration,
             p_error=0.01,
         )
     else:
         quantized_module = compile_torch_model(
             model,
             inputset,
-            configuration=default_configuration,
+            configuration=configuration,
             n_bits=3,
             p_error=0.01,
         )
@@ -1204,7 +1228,7 @@ def test_shape_operations_net(
             assert "lookup_table" not in quantized_module.fhe_circuit.mlir
 
 
-def test_torch_padding(default_configuration, check_circuit_has_no_tlu):
+def test_torch_padding(simulation_configuration, check_circuit_has_no_tlu):
     """Test padding in PyTorch using ONNX pad operators."""
     net = PaddingNet()
 
@@ -1214,7 +1238,7 @@ def test_torch_padding(default_configuration, check_circuit_has_no_tlu):
     quant_model = compile_brevitas_qat_model(
         net,
         inputset,
-        configuration=default_configuration,
+        configuration=simulation_configuration,
         p_error=0.01,
     )
 
@@ -1233,7 +1257,7 @@ def test_torch_padding(default_configuration, check_circuit_has_no_tlu):
     check_circuit_has_no_tlu(quant_model.fhe_circuit)
 
 
-def test_compilation_functions_check_model_types(default_configuration):
+def test_compilation_functions_check_model_types(simulation_configuration):
     """Check that the compile functions validate the input model types."""
 
     input_output_feature = 5
@@ -1251,7 +1275,7 @@ def test_compilation_functions_check_model_types(default_configuration):
         compile_brevitas_qat_model(
             torch_model,
             inputset,
-            configuration=default_configuration,
+            configuration=simulation_configuration,
         )
 
     torch_model_qat = TinyQATCNN(5, 4, 10, True, False, False)
@@ -1261,7 +1285,7 @@ def test_compilation_functions_check_model_types(default_configuration):
         compile_torch_model(
             torch_model_qat,
             inputset,
-            configuration=default_configuration,
+            configuration=simulation_configuration,
         )
 
 
@@ -1271,11 +1295,11 @@ def test_compilation_functions_check_model_types(default_configuration):
         pytest.param(ConcatFancyIndexing),
     ],
 )
-def test_fancy_indexing_torch(model_object, default_configuration):
+def test_fancy_indexing_torch(model_object, simulation_configuration):
     """Test fancy indexing torch."""
     model = model_object(10, 10, 2, 4, 3)
     x = numpy.random.randint(0, 2, size=(100, 3, 10)).astype(numpy.float64)
-    compile_brevitas_qat_model(model, x, n_bits=4, configuration=default_configuration)
+    compile_brevitas_qat_model(model, x, n_bits=4, configuration=simulation_configuration)
 
 
 @pytest.mark.parametrize(
@@ -1284,7 +1308,7 @@ def test_fancy_indexing_torch(model_object, default_configuration):
         pytest.param(MultiOutputModel),
     ],
 )
-def test_multi_output(model_object, default_configuration):
+def test_multi_output(model_object, simulation_configuration):
     """Test torch compilation with multi-output models."""
     # Create model and random dataset
     model = model_object()
@@ -1296,7 +1320,7 @@ def test_multi_output(model_object, default_configuration):
 
     # Compile with low bit width
     quantized_module = compile_torch_model(
-        model, (x, y), n_bits=4, configuration=default_configuration
+        model, (x, y), n_bits=4, configuration=simulation_configuration
     )
     qm_result = quantized_module.forward(x[[0]], y[[0]])
     simulation_result = quantized_module.forward(x[[0]], y[[0]], fhe="simulate")
@@ -1350,7 +1374,7 @@ def test_multi_output(model_object, default_configuration):
 def test_mono_parameter_rounding_warning(
     input_output_feature,
     model,
-    default_configuration,
+    simulation_configuration,
     is_onnx,
     check_is_good_execution_for_cml_vs_circuit,
 ):
@@ -1360,7 +1384,7 @@ def test_mono_parameter_rounding_warning(
     qat_bits = 0
 
     # Set the parameter strategy to mono-parameter
-    default_configuration.parameter_selection_strategy = ParameterSelectionStrategy.MONO
+    simulation_configuration.parameter_selection_strategy = ParameterSelectionStrategy.MONO
 
     with pytest.warns(
         UserWarning,
@@ -1371,7 +1395,7 @@ def test_mono_parameter_rounding_warning(
             model_class=model,
             activation_function=nn.ReLU,
             qat_bits=qat_bits,
-            default_configuration=default_configuration,
+            default_configuration=simulation_configuration,
             simulate=True,
             is_onnx=is_onnx,
             check_is_good_execution_for_cml_vs_circuit=check_is_good_execution_for_cml_vs_circuit,

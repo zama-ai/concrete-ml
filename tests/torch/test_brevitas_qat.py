@@ -175,7 +175,7 @@ def test_brevitas_tinymnist_cnn(
     qat_bits,
     signed,
     narrow,
-    default_configuration,
+    simulation_configuration,
     check_graph_input_has_no_tlu,
     check_graph_output_has_no_tlu,
     check_is_good_execution_for_cml_vs_circuit,
@@ -222,7 +222,7 @@ def test_brevitas_tinymnist_cnn(
     q_module_simulated = compile_brevitas_qat_model(
         net,
         x_all,
-        configuration=default_configuration,
+        configuration=simulation_configuration,
     )
 
     fhe_s_correct = test_with_concrete(
@@ -470,7 +470,7 @@ def test_brevitas_intermediary_values(
     torch.set_default_dtype(torch.float32)
 
 
-def test_brevitas_constant_folding(default_configuration):
+def test_brevitas_constant_folding(simulation_configuration):
     """Test that a network that does not quantize its inputs raises the right exception.
 
     The network tested is not a valid QAT network for Concrete ML as it does not
@@ -491,7 +491,7 @@ def test_brevitas_constant_folding(default_configuration):
         compile_brevitas_qat_model(
             model.to("cpu"),
             torch_inputset=data,
-            configuration=default_configuration,
+            configuration=simulation_configuration,
         )
 
 
@@ -500,7 +500,7 @@ def test_brevitas_constant_folding(default_configuration):
 @pytest.mark.parametrize("n_bits", [4])
 @pytest.mark.parametrize("is_cnn", [True, False])
 def test_brevitas_power_of_two(
-    default_configuration,
+    simulation_configuration,
     manual_rounding: Optional[int],
     power_of_two: bool,
     n_bits: int,
@@ -522,7 +522,7 @@ def test_brevitas_power_of_two(
     quantized_module = compile_brevitas_qat_model(
         net.to("cpu"),
         torch_inputset=x_all,
-        configuration=default_configuration,
+        configuration=simulation_configuration,
         rounding_threshold_bits=manual_rounding,
     )
 

@@ -20,7 +20,7 @@ from concrete.ml.sklearn.qnn import NeuralNetClassifier, NeuralNetRegressor
 
 
 def check_onnx_file_dump(
-    model_class, parameters, load_data, default_configuration, use_fhe_sum=False
+    model_class, parameters, load_data, simulation_configuration, use_fhe_sum=False
 ):
     """Fit the model and dump the corresponding ONNX."""
 
@@ -428,7 +428,7 @@ def check_onnx_file_dump(
 
     with warnings.catch_warnings():
         # Use FHE simulation to not have issues with precision
-        model.compile(x, default_configuration)
+        model.compile(x, simulation_configuration)
 
     # Get ONNX model
     onnx_model = model.onnx_model
@@ -468,7 +468,7 @@ def test_dump(
     model_class,
     parameters,
     load_data,
-    default_configuration,
+    simulation_configuration,
 ):
     """Tests dump."""
 
@@ -501,10 +501,10 @@ def test_dump(
             callbacks="disable",
         )
 
-    check_onnx_file_dump(model_class, parameters, load_data, default_configuration)
+    check_onnx_file_dump(model_class, parameters, load_data, simulation_configuration)
 
     # Additional tests exclusively dedicated for tree ensemble models.
     if model_class in _get_sklearn_tree_models():
         check_onnx_file_dump(
-            model_class, parameters, load_data, default_configuration, use_fhe_sum=True
+            model_class, parameters, load_data, simulation_configuration, use_fhe_sum=True
         )
