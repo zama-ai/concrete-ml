@@ -4,7 +4,7 @@ from concrete.fhe.compilation.circuit import Circuit
 from concrete.fhe.compilation.compiler import Compiler
 
 
-def test_torch_matmul_fhe_simulation(default_configuration):
+def test_torch_matmul_fhe_simulation(simulation_configuration):
     """Test special cases of matmul compilation with FHE simulation"""
 
     def f(x, weights):
@@ -18,7 +18,7 @@ def test_torch_matmul_fhe_simulation(default_configuration):
     inputset = [thousand_ones]
     fhe_simulation_circuit = matmul_thousand_ones_compiler.compile(
         inputset,
-        default_configuration,
+        simulation_configuration,
     )
 
     assert isinstance(fhe_simulation_circuit, Circuit)
@@ -40,7 +40,7 @@ def test_torch_matmul_fhe_simulation(default_configuration):
     inputset = [numpy.ones((3000,), dtype=numpy.int64)]
     fhe_simulation_circuit = matmul_three_thousand_plus_minus_ones_compiler.compile(
         inputset,
-        default_configuration,
+        simulation_configuration,
     )
 
     assert isinstance(fhe_simulation_circuit, Circuit)
@@ -62,7 +62,7 @@ def test_torch_matmul_fhe_simulation(default_configuration):
     inputset = [numpy.ones((3000,), dtype=numpy.int64)]
     fhe_simulation_circuit = sin_matmul_three_thousand_plus_minus_ones_compiler.compile(
         inputset,
-        default_configuration,
+        simulation_configuration,
     )
 
     assert isinstance(fhe_simulation_circuit, Circuit)

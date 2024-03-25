@@ -62,12 +62,16 @@ def test_sum(
     with_pbs,
     data_generator,
     default_configuration,
+    simulation_configuration,
     check_circuit_has_no_tlu,
     check_circuit_precision,
     check_r2_score,
     is_weekly_option,
 ):
     """Tests ReduceSum ONNX operator on a torch model."""
+
+    # Use the simulation configuration if the model is expected to be simulated
+    configuration = simulation_configuration if simulate else default_configuration
 
     if with_pbs and not is_weekly_option:
         pytest.skip("Tests on model with some PBS take too long for regular CIs")
@@ -82,7 +86,7 @@ def test_sum(
     quantized_module = compile_torch_model(
         torch_model,
         inputset,
-        configuration=default_configuration,
+        configuration=configuration,
         n_bits=n_bits,
     )
 

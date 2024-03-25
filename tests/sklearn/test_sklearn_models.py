@@ -658,7 +658,7 @@ def check_separated_inference(model, fhe_circuit, x, check_float_array_equal):
         check_float_array_equal(y_pred, y_pred_class)
 
 
-def check_input_support(model_class, n_bits, default_configuration, x, y, input_type):
+def check_input_support(model_class, n_bits, simulation_configuration, x, y, input_type):
     """Test all models with Pandas, List or Torch inputs."""
 
     def cast_input(x, y, input_type):
@@ -703,7 +703,7 @@ def check_input_support(model_class, n_bits, default_configuration, x, y, input_
     ):
         model.predict_proba(x)
 
-    model.compile(x, default_configuration)
+    model.compile(x, simulation_configuration)
 
     # Make sure `predict` is working when FHE is disabled
     model.predict(x, fhe="simulate")
@@ -1394,7 +1394,7 @@ def test_serialization(
     use_dump_method,
     load_data,
     is_weekly_option,
-    default_configuration,
+    simulation_configuration,
     verbose=True,
 ):
     """Test Serialization."""
@@ -1403,7 +1403,7 @@ def test_serialization(
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     # Compile the model to make sure we consider all possible attributes during the serialization
-    model.compile(x, default_configuration)
+    model.compile(x, simulation_configuration)
 
     if verbose:
         print("Run check_serialization")
@@ -1476,7 +1476,7 @@ def test_input_support(
     parameters,
     load_data,
     input_type,
-    default_configuration,
+    simulation_configuration,
     is_weekly_option,
     verbose=True,
 ):
@@ -1488,7 +1488,7 @@ def test_input_support(
     if verbose:
         print("Run input_support")
 
-    check_input_support(model_class, n_bits, default_configuration, x, y, input_type)
+    check_input_support(model_class, n_bits, simulation_configuration, x, y, input_type)
 
 
 @pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
@@ -1498,7 +1498,7 @@ def test_inference_methods(
     load_data,
     is_weekly_option,
     check_float_array_equal,
-    default_configuration,
+    simulation_configuration,
     verbose=True,
 ):
     """Test inference methods."""
@@ -1506,7 +1506,7 @@ def test_inference_methods(
 
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
-    model.compile(x, default_configuration)
+    model.compile(x, simulation_configuration)
 
     if verbose:
         print("Run check_inference_methods")
@@ -1570,14 +1570,16 @@ def test_predict_correctness(
     n_bits,
     load_data,
     default_configuration,
+    simulation_configuration,
     check_is_good_execution_for_cml_vs_circuit,
     is_weekly_option,
     verbose=True,
 ):
     """Test prediction correctness between clear quantized and FHE simulation or execution."""
 
-    # KNN can only be compiled with small quantization bit numbers for now
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
+    # Use simulation_configuration if simulate = True
+    configuration = simulation_configuration if simulate else default_configuration
+
     if n_bits > 5 and get_model_name(model_class) == "KNeighborsClassifier":
         pytest.skip("KNeighborsClassifier models can only run with 5 bits at most.")
 
@@ -1591,7 +1593,7 @@ def test_predict_correctness(
     if verbose:
         print("Compile the model")
 
-    model.compile(x, default_configuration)
+    model.compile(x, configuration)
 
     if verbose:
         print(f"Check prediction correctness for {fhe_samples} samples.")
@@ -1857,7 +1859,7 @@ def test_linear_models_have_no_tlu(
     load_data,
     is_weekly_option,
     check_circuit_has_no_tlu,
-    default_configuration,
+    simulation_configuration,
     verbose=True,
 ):
     """Test that circuits from linear models have no TLUs."""
@@ -1869,7 +1871,7 @@ def test_linear_models_have_no_tlu(
     if verbose:
         print("Compile the model")
 
-    fhe_circuit = model.compile(x, default_configuration)
+    fhe_circuit = model.compile(x, simulation_configuration)
 
     if verbose:
         print("Run check_circuit_has_no_tlu")
