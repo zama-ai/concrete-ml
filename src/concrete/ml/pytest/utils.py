@@ -388,6 +388,11 @@ def instantiate_model_generic(model_class, n_bits, **parameters):
         model_name (str): The type of the model as a string.
         model (object): The model instance.
     """
+    # Force multi threaded models to be single threaded as it's not working
+    # properly with pytest multi-threading
+    if "n_jobs" in model_class().get_params():
+        parameters["n_jobs"] = 1
+
     # If the model is a QNN, set the model using appropriate bit-widths
     if is_model_class_in_a_list(model_class, _get_sklearn_neural_net_models()):
         extra_kwargs = {}
