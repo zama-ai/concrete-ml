@@ -74,3 +74,9 @@ def deserialize_elementwise(array: numpy.ndarray):
 def deserialize_evaluation_keys(evaluation_keys: bytes):
     """Deserialize evaluation keys represented as a byte string."""
     return fhe.EvaluationKeys.deserialize(bytes.fromhex(evaluation_keys))
+
+
+def slice_byte_str(byte_str, n=10):
+    start_index = len(byte_str) // 2
+    assert start_index + n < len(byte_str)
+    return ".." + byte_str[start_index : start_index + n] + ".."
