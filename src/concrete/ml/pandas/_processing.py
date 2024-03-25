@@ -68,7 +68,7 @@ def pre_process_dtypes(pandas_dataframe):
                 str_to_int = {
                     str_value: i + 1
                     for i, str_value in enumerate(column.unique())
-                    if not numpy.isnan(str_value)
+                    if isinstance(str_value, str)
                 }
 
                 n_unique_values = max(str_to_int.values())
@@ -108,36 +108,44 @@ def post_process_dtypes(pandas_dataframe, dtype_mappings):
         q_column = pandas_dataframe[column_name]
         initial_column_dtype = numpy.dtype(dtype_mappings[column_name]["dtype"])
 
-        if not q_column.isna().any():
-            if numpy.issubdtype(initial_column_dtype, numpy.integer):
+        if numpy.issubdtype(initial_column_dtype, numpy.integer):
+            if not q_column.isna().any():
                 pandas_dataframe[column_name] = q_column.astype(initial_column_dtype)
 
-            elif numpy.issubdtype(initial_column_dtype, numpy.floating):
-                scale = dtype_mappings[column_name]["scale"]
-                zero_point = dtype_mappings[column_name]["scale"]
-                column = dequant(q_column, scale, zero_point, dtype=initial_column_dtype)
+        elif numpy.issubdtype(initial_column_dtype, numpy.floating):
+            scale = dtype_mappings[column_name]["scale"]
+            zero_point = dtype_mappings[column_name]["zero_point"]
+            column = dequant(q_column, scale, zero_point, dtype=initial_column_dtype)
 
-                pandas_dataframe[column_name] = column
+            pandas_dataframe[column_name] = column
 
-            elif initial_column_dtype == "object":
-                string_to_int = dtype_mappings[column_name]["string_to_int"]
-                int_to_string = {v: k for k, v in string_to_int.items()}
+        elif initial_column_dtype == "object":
+            string_to_int = dtype_mappings[column_name]["str_to_int"]
+            int_to_string = {v: k for k, v in string_to_int.items()}
 
-                column = q_column.map(int_to_string)
+            column = q_column.map(int_to_string)
 
-                pandas_dataframe[column_name] = column
+            pandas_dataframe[column_name] = column
 
-            else:
-                raise ValueError(
-                    f"Column '{column_name}' has expected dtype '{initial_column_dtype}', which is "
-                    f"unexpected."
-                )
+        else:
+            raise ValueError(
+                f"Column '{column_name}' has expected dtype '{initial_column_dtype}', which is "
+                f"unexpected."
+            )
 
     return pandas_dataframe
 
 
 def pre_process_from_pandas(pandas_dataframe: pandas.DataFrame) -> numpy.ndarray:
     """Pre-process the Pandas data-frame."""
+    # TODO: better handle indexes
+    if not isinstance(pandas_dataframe.index, pandas.RangeIndex):
+        raise ValueError(
+            "The data-frame's index has not been reset. Please make sure to not put relevant data "
+            "in the index and instead store it in a dedicated column. Encrypted data-frames do not "
+            "currently support any index-based operations."
+        )
+
     pandas_dataframe, dtype_mappings = pre_process_dtypes(pandas_dataframe)
 
     # Replace NaN values with 0

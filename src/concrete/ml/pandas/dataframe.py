@@ -4,6 +4,7 @@ from typing import Dict, List
 
 import numpy
 import pandas
+from pandas.io.formats.format import get_dataframe_repr_params
 
 from concrete import fhe
 from concrete.ml.pandas._operators import encrypted_merge
@@ -18,6 +19,7 @@ from concrete.ml.pandas._utils import (
     serialize_elementwise,
     serialize_evaluation_keys,
     serialize_value,
+    slice_byte_str,
 )
 from concrete.ml.pandas.client_server import _SERVER_PATH, _get_encrypt_config
 
@@ -43,6 +45,8 @@ class EncryptedDataFrame:
         self._column_names_to_index = {name: index for index, name in enumerate(column_names)}
         self._dtype_mappings = dtype_mappings
 
+        self._pandas_repr = self._get_pandas_repr()
+
     @property
     def encrypted_values(self):
         return self._encrypted_values
@@ -66,6 +70,26 @@ class EncryptedDataFrame:
     @property
     def dtype_mappings(self):
         return self._dtype_mappings
+
+    def _get_pandas_repr(self):
+        encrypted_values = serialize_elementwise(self._encrypted_values)
+
+        encrypted_values_repr = numpy.vectorize(slice_byte_str)(encrypted_values)
+
+        pandas_repr = pandas.DataFrame(encrypted_values_repr, columns=self._column_names)
+
+        return pandas_repr
+
+    def print_scheme(self):
+        pandas_repr = pandas.DataFrame(self._dtype_mappings, columns=self._column_names)
+        return pandas_repr
+
+    def __repr__(self):
+        repr_params = get_dataframe_repr_params()
+        return self._pandas_repr.to_string(index=False, **repr_params)
+
+    def _repr_html_(self):
+        return self._pandas_repr.to_html(index=False)
 
     def join(
         self,
