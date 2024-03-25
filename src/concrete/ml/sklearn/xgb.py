@@ -243,7 +243,7 @@ class XGBRegressor(BaseTreeRegressorMixin):
         objective: Optional[str] = "reg:squarederror",
         booster: Optional[str] = None,
         tree_method: Optional[str] = None,
-        n_jobs: Optional[int] = None,
+        n_jobs: Optional[int] = 1,
         gamma: Optional[float] = None,
         min_child_weight: Optional[float] = None,
         max_delta_step: Optional[float] = None,
