@@ -570,7 +570,7 @@ class BaseEstimator:
             global_p_error=global_p_error,
             verbose=verbose,
             single_precision=False,
-            fhe_simulation=True,
+            fhe_simulation=False,
             fhe_execution=True,
         )
 
