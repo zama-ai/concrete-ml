@@ -181,7 +181,7 @@ class EncryptedDataFrame:
         return joined_df
 
     @classmethod
-    def encrypt_from_pandas(cls, pandas_dataframe, client, evaluation_keys):
+    def encrypt_from_pandas(cls, pandas_dataframe, client):
         pandas_array, dtype_mappings = pre_process_from_pandas(pandas_dataframe)
 
         # TODO: how to provide encrypt configuration
@@ -191,15 +191,10 @@ class EncryptedDataFrame:
         return cls(
             encrypted_values,
             encrypted_nan,
-            evaluation_keys,
+            client.evaluation_keys,
             pandas_dataframe.columns,
             dtype_mappings,
         )
-
-    @classmethod
-    def encrypt_from_csv(cls, file_path, client, evaluation_keys, **pandas_kwargs):
-        pandas_dataframe = pandas.read_csv(file_path, **pandas_kwargs)
-        return cls.encrypt_from_pandas(pandas_dataframe, client, evaluation_keys)
 
     def decrypt_to_pandas(self, client):
         clear_array = decrypt_elementwise(self._encrypted_values, client)
@@ -208,11 +203,7 @@ class EncryptedDataFrame:
         )
         return pandas_dataframe
 
-    def decrypt_to_csv(self, file_path, **pandas_kwargs):
-        pandas_dataframe = self.decrypt_to_pandas()
-        return pandas_dataframe.to_csv(file_path, **pandas_kwargs)
-
-    def to_dict(self):
+    def _to_dict(self):
         """Serialize the instance to a dictionary."""
         encrypted_values = serialize_elementwise(self._encrypted_values)
         encrypted_nan = serialize_value(self._encrypted_nan)
@@ -230,7 +221,7 @@ class EncryptedDataFrame:
         return output_dict
 
     @classmethod
-    def from_dict(cls, dict_to_load: Dict):
+    def _from_dict(cls, dict_to_load: Dict):
         """Load an instance from a dictionary."""
         encrypted_values = deserialize_elementwise(dict_to_load["encrypted_values"])
         encrypted_nan = deserialize_value(dict_to_load["encrypted_nan"])
@@ -240,18 +231,24 @@ class EncryptedDataFrame:
 
         return cls(encrypted_values, encrypted_nan, evaluation_keys, column_names, dtype_mappings)
 
-    def to_json(self, file_path):
+    def save(self, file_path):
         file_path = Path(file_path)
 
-        encrypted_df_dict = self.to_dict()
+        if file_path.suffix == "":
+            file_path.with_suffix(".json")
+
+        encrypted_df_dict = self._to_dict()
         with file_path.open("w") as file:
             json.dump(encrypted_df_dict, file)
 
     @classmethod
-    def from_json(cls, file_path):
+    def load(cls, file_path):
         file_path = Path(file_path)
+
+        if file_path.suffix == "":
+            file_path.with_suffix(".json")
 
         with file_path.open("r") as file:
             encrypted_df_dict = json.load(file)
 
-        return cls.from_dict(encrypted_df_dict)
+        return cls._from_dict(encrypted_df_dict)
