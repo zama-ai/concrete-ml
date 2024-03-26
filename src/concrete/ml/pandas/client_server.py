@@ -105,18 +105,13 @@ def _save_client_server(config, force_save=True):
         merge_circuit.client.save(_CLIENT_PATH)
 
 
-def load_client(keys_path=None):
+def load_client(keygen=True, keys_path=None):
     client = fhe.Client.load(_CLIENT_PATH)
 
-    if keys_path is not None:
-        client.keys.load_if_exists_generate_and_save_otherwise(keys_path)
-    else:
-        client.keygen(True)
+    if keygen:
+        if keys_path is not None:
+            client.keys.load_if_exists_generate_and_save_otherwise(keys_path)
+        else:
+            client.keygen(True)
 
     return client
-
-
-def get_client_and_eval_keys(keys_path=None):
-    client = load_client(keys_path=keys_path)
-
-    return client, client.evaluation_keys

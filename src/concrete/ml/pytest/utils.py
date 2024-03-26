@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Type, Union
 
 import numpy
+import pandas
 import pytest
 import torch
 from numpy.random import RandomState
@@ -689,3 +690,66 @@ def get_random_samples(x: numpy.ndarray, n_sample: int) -> numpy.ndarray:
 
     random_rows_indices = numpy.random.choice(x.shape[0], size=n_sample, replace=False)
     return x[random_rows_indices]
+
+
+def pandas_dataframe_are_equal(
+    df_1: pandas.DataFrame,
+    df_2: pandas.DataFrame,
+    float_rtol: float = 1.0e-5,
+    float_atol: float = 1.0e-8,
+    equal_nan: bool = False,
+):
+    """Determines if both data-frames are identical.
+
+    Args:
+        df_1 (pandas.DataFrame): The first data-frame to consider.
+        df_2 (pandas.DataFrame): The second data-frame to consider.
+        float_rtol (float): Numpy's relative tolerance parameter to use when comparing columns with
+            floating point values. Default to 1.e-5.
+        float_atol (float): Numpy's absolute tolerance parameter to use when comparing columns with
+            floating point values. Default to 1.e-8.
+        equal_nan (bool):  Whether to compare NaN values as equal. Default to False.
+
+    Returns:
+        Bool: Wether both data-frames are equal.
+    """
+    # Check that both data-frames have the same columns
+    if set(df_1.columns) != set(df_2.columns):
+        return False
+
+    # Select columns with floating point values
+    float_columns = df_1.select_dtypes(include="float").columns
+
+    # Check if the float columns contain the same values
+    float_equal = numpy.isclose(
+        df_1[float_columns],
+        df_2[float_columns],
+        rtol=float_rtol,
+        atol=float_atol,
+        equal_nan=equal_nan,
+    ).all()
+
+    # Select other columns (integers, objects, ...)
+    non_float_columns = df_1.select_dtypes(exclude="float").columns
+
+    # In case NaN values must be considered equal, replace them by a custom placeholder before
+    # comparing the data-frames
+    if equal_nan:
+        placeholder = "<NA>"
+
+        # Make sure this placeholder does not already exist in the data-frames
+        assert (
+            not df_1[non_float_columns].isin([placeholder]).any().any()
+            or not df_2[non_float_columns].isin([placeholder]).any().any()
+        ), (
+            f"The placeholder value '{placeholder}' already exists in the string columns and thus "
+            "cannot be used for comparing the data-frames."
+        )
+
+        df_1_no_nan = df_1[non_float_columns].fillna(placeholder)
+        df_2_no_nan = df_2[non_float_columns].fillna(placeholder)
+
+    # Check if non-float columns contain the same values
+    string_equal = df_1_no_nan.eq(df_2_no_nan).all().all()
+
+    return float_equal and string_equal

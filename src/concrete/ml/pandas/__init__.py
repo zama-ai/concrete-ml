@@ -1,17 +1,17 @@
-from .client_server import get_client_and_eval_keys, load_client
+from .client_server import load_client
 from .dataframe import EncryptedDataFrame
 
 
-def encrypt_from_pandas(pandas_dataframe, client, evaluation_keys):
-    return EncryptedDataFrame.encrypt_from_pandas(pandas_dataframe, client, evaluation_keys)
-
-
-def encrypt_from_csv(file_path, client, evaluation_keys, **pandas_kwargs):
-    return EncryptedDataFrame.encrypt_from_csv(file_path, client, evaluation_keys, **pandas_kwargs)
+def encrypt_from_pandas(pandas_dataframe, client):
+    return EncryptedDataFrame.encrypt_from_pandas(pandas_dataframe, client)
 
 
 def load_encrypted_dataframe(file_path):
-    return EncryptedDataFrame.from_json(file_path)
+    return EncryptedDataFrame.load(file_path)
+
+
+def save_encrypted_dataframe(encrypted_dataframe: EncryptedDataFrame, file_path):
+    return encrypted_dataframe.save(file_path)
 
 
 def join(
