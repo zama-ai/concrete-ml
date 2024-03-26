@@ -1,4 +1,5 @@
 """Common functions or lists for test files, which can't be put in fixtures."""
+import copy
 import io
 from functools import partial
 from pathlib import Path
@@ -717,6 +718,9 @@ def pandas_dataframe_are_equal(
     if set(df_1.columns) != set(df_2.columns):
         return False
 
+    df_1 = copy.copy(df_1)
+    df_2 = copy.copy(df_2)
+
     # Select columns with floating point values
     float_columns = df_1.select_dtypes(include="float").columns
 
@@ -746,10 +750,10 @@ def pandas_dataframe_are_equal(
             "cannot be used for comparing the data-frames."
         )
 
-        df_1_no_nan = df_1[non_float_columns].fillna(placeholder)
-        df_2_no_nan = df_2[non_float_columns].fillna(placeholder)
+        df_1 = df_1[non_float_columns].fillna(placeholder)
+        df_2 = df_2[non_float_columns].fillna(placeholder)
 
     # Check if non-float columns contain the same values
-    string_equal = df_1_no_nan.eq(df_2_no_nan).all().all()
+    string_equal = df_1.eq(df_2).all().all()
 
     return float_equal and string_equal

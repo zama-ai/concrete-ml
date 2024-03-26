@@ -7,6 +7,7 @@ import pandas
 from pandas.io.formats.format import get_dataframe_repr_params
 
 from concrete import fhe
+from concrete.ml.pandas._client_server import SERVER_PATH, get_encrypt_config
 from concrete.ml.pandas._operators import encrypted_merge
 from concrete.ml.pandas._processing import post_process_to_pandas, pre_process_from_pandas
 from concrete.ml.pandas._utils import (
@@ -21,9 +22,8 @@ from concrete.ml.pandas._utils import (
     serialize_value,
     slice_byte_str,
 )
-from concrete.ml.pandas.client_server import _SERVER_PATH, _get_encrypt_config
 
-_SERVER = fhe.Server.load(_SERVER_PATH)
+_SERVER = fhe.Server.load(SERVER_PATH)
 
 
 class EncryptedDataFrame:
@@ -91,45 +91,6 @@ class EncryptedDataFrame:
     def _repr_html_(self):
         return self._pandas_repr.to_html(index=False)
 
-    def join(
-        self,
-        other,
-        on=None,
-        how="left",
-        lsuffix="",
-        rsuffix="",
-        sort=False,
-        validate="1:1",
-    ):
-        """Execute a Pandas join operator using encrypted data-frames.
-
-        Pandas documentation for version 2.0 can be found here:
-        https://pandas.pydata.org/pandas-docs/version/2.0/reference/api/pandas.DataFrame.join.html
-
-        For now, only a left and right join merge is supported. Additionally, default values for
-        parameter 'validate' is different than in Pandas.
-        """
-        # Similar to pandas/core/frame.py
-        if how == "cross":
-            return self.merge(
-                other,
-                how=how,
-                on=on,
-                suffixes=(lsuffix, rsuffix),
-                sort=sort,
-                validate=validate,
-            )
-        return self.merge(
-            other,
-            left_on=on,
-            how=how,
-            left_index=on is None,
-            right_index=True,
-            suffixes=(lsuffix, rsuffix),
-            sort=sort,
-            validate=validate,
-        )
-
     def merge(
         self,
         other,
@@ -143,15 +104,15 @@ class EncryptedDataFrame:
         suffixes=("_x", "_y"),
         copy=None,
         indicator=False,
-        validate="1:1",
+        validate=None,
     ):
         """Execute a merge using encrypted data-frames with Pandas kwargs.
 
         Pandas documentation for version 2.0 can be found here:
         https://pandas.pydata.org/pandas-docs/version/2.0/reference/api/pandas.DataFrame.merge.html
 
-        For now, only a left and right join merge is supported. Additionally, default values for
-        parameters 'how' and 'validate' are different than in Pandas.
+        For now, only a left and right join is supported. Additionally, default value for
+        parameter 'how' is different than in Pandas.
         """
         joined_array, joined_column_names, joined_dtype_mappings = encrypted_merge(
             self,
@@ -185,8 +146,8 @@ class EncryptedDataFrame:
         pandas_array, dtype_mappings = pre_process_from_pandas(pandas_dataframe)
 
         # TODO: how to provide encrypt configuration
-        encrypted_values = encrypt_elementwise(pandas_array, client, **_get_encrypt_config())
-        encrypted_nan = encrypt_value(0, client, **_get_encrypt_config())
+        encrypted_values = encrypt_elementwise(pandas_array, client, **get_encrypt_config())
+        encrypted_nan = encrypt_value(0, client, **get_encrypt_config())
 
         return cls(
             encrypted_values,
