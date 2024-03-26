@@ -1,0 +1,347 @@
+import re
+import tempfile
+from pathlib import Path
+
+import numpy
+import pandas
+import pytest
+
+from concrete.ml.pandas import encrypt_from_pandas, load_client, load_encrypted_dataframe
+from concrete.ml.pandas import merge as concrete_merge
+from concrete.ml.pandas._client_server import get_min_max_allowed
+from concrete.ml.pytest.utils import pandas_dataframe_are_equal
+
+
+def generate_pandas_dataframe(
+    dtype="mixed",
+    feat_name="feat",
+    n_features=1,
+    index_name=None,
+    indexes=None,
+    index_position=0,
+    include_nan=True,
+):
+    if indexes is None:
+        indexes = 5
+
+    allowed_dtype = ["int", "float", "str", "mixed"]
+    assert dtype in allowed_dtype, f"Parameter 'dtype' must be in {allowed_dtype}. Got {dtype}."
+    assert isinstance(
+        indexes, (int, list)
+    ), f"Parameter 'indexes' must either be an int or a list. Got {type(indexes)}"
+    assert not (
+        include_nan and dtype == "int"
+    ), "NaN values cannot be included when testing integers values"
+
+    if isinstance(indexes, int):
+        indexes = list(range(1, indexes + 1))
+
+    if index_name is None:
+        index_name = "index"
+
+    columns = {}
+
+    if dtype in ["int", "mixed"]:
+        min, max = get_min_max_allowed()
+
+        for i in range(1, n_features + 1):
+            columns[f"{feat_name}_int_{i}"] = list(
+                numpy.random.randint(low=min, high=max, size=(len(indexes),))
+            )
+
+    if dtype in ["float", "mixed"]:
+        for i in range(1, n_features + 1):
+            column_name = f"{feat_name}_float_{i}"
+            columns[column_name] = list(
+                numpy.random.uniform(low=-10, high=10, size=(len(indexes),))
+            )
+
+            if include_nan:
+                columns[column_name][0] = numpy.nan
+
+    if dtype in ["str", "mixed"]:
+        str_values = ["apple", "orange", "watermelon", "cherry", "banana"]
+
+        for i in range(1, n_features + 1):
+            column_name = f"{feat_name}_str_{i}"
+            columns[column_name] = list(numpy.random.choice(str_values, size=(len(indexes),)))
+
+            if include_nan:
+                columns[column_name][0] = numpy.nan
+
+    pandas_dataframe = pandas.DataFrame(columns)
+
+    assert index_position < len(pandas_dataframe.columns), (
+        "Parameter 'index_position' should not be greater than the number of features. Got "
+        f"{index_position=} for {len(pandas_dataframe.columns)} features."
+    )
+
+    pandas_dataframe.insert(index_position, index_name, indexes)
+
+    return pandas_dataframe
+
+
+def get_two_encrypted_dataframes(
+    feat_names=None, indexes_left=None, indexes_right=None, **data_kwargs
+):
+    with tempfile.TemporaryDirectory() as temp_file:
+        keys_path = Path(temp_file) / "keys"
+
+        client_1 = load_client(keys_path=keys_path)
+        client_2 = load_client(keys_path=keys_path)
+
+    if feat_names is None:
+        feat_names = ("left", "right")
+
+    pandas_df_left = generate_pandas_dataframe(
+        feat_name=feat_names[0], indexes=indexes_left, **data_kwargs
+    )
+    pandas_df_right = generate_pandas_dataframe(
+        feat_name=feat_names[1], indexes=indexes_right, **data_kwargs
+    )
+
+    encrypted_df_left = encrypt_from_pandas(pandas_df_left, client_1)
+    encrypted_df_right = encrypt_from_pandas(pandas_df_right, client_2)
+
+    return encrypted_df_left, encrypted_df_right
+
+
+@pytest.mark.parametrize("as_method", [True, False])
+@pytest.mark.parametrize("how", ["left", "right"])
+@pytest.mark.parametrize("on", ["index", None])
+def test_merge(as_method, how, on):
+
+    pandas_kwargs = {"how": how, "on": on}
+
+    with tempfile.TemporaryDirectory() as temp_file:
+        keys_path = Path(temp_file) / "keys"
+
+        client_1 = load_client(keys_path=keys_path)
+        client_2 = load_client(keys_path=keys_path)
+
+    pandas_df_left = generate_pandas_dataframe(
+        feat_name="left", index_name=on, indexes=[1, 2, 3, 4], index_position=2
+    )
+    pandas_df_right = generate_pandas_dataframe(
+        feat_name="right", index_name=on, indexes=[2, 3], index_position=1
+    )
+
+    encrypted_df_left = encrypt_from_pandas(pandas_df_left, client_1)
+    encrypted_df_right = encrypt_from_pandas(pandas_df_right, client_2)
+
+    if as_method:
+        pandas_joined_df = pandas_df_left.merge(pandas_df_right, **pandas_kwargs)
+        encrypted_df_joined = encrypted_df_left.merge(encrypted_df_right, **pandas_kwargs)
+
+    else:
+        pandas_joined_df = pandas.merge(pandas_df_left, pandas_df_right, **pandas_kwargs)
+        encrypted_df_joined = concrete_merge(encrypted_df_left, encrypted_df_right, **pandas_kwargs)
+
+    clear_df_joined_1 = encrypted_df_joined.decrypt_to_pandas(client_1)
+    clear_df_joined_2 = encrypted_df_joined.decrypt_to_pandas(client_2)
+
+    assert pandas_dataframe_are_equal(clear_df_joined_1, clear_df_joined_2, equal_nan=True)
+
+    # TODO: better test for float (?)
+    assert pandas_dataframe_are_equal(
+        clear_df_joined_1, pandas_joined_df, float_atol=1, equal_nan=True
+    )
+
+
+@pytest.mark.parametrize("dtype", ["int", "float", "str", "mixed"])
+def test_pre_post_processing(dtype):
+    include_nan = dtype != "int"
+
+    client = load_client()
+
+    pandas_df = generate_pandas_dataframe(dtype=dtype, include_nan=include_nan)
+
+    encrypted_df = encrypt_from_pandas(pandas_df, client)
+
+    clear_df = encrypted_df.decrypt_to_pandas(client)
+
+    # TODO: better test for float (?)
+    assert pandas_dataframe_are_equal(pandas_df, clear_df, float_atol=1, equal_nan=include_nan)
+
+
+def test_load_save():
+    client = load_client()
+
+    pandas_df = generate_pandas_dataframe()
+
+    encrypted_df = encrypt_from_pandas(pandas_df, client)
+
+    with tempfile.TemporaryDirectory() as temp_file:
+        enc_df_path = Path(temp_file) / "encrypted_dataframe"
+
+        encrypted_df.save(enc_df_path)
+
+        loaded_encrypted_df = load_encrypted_dataframe(enc_df_path)
+
+    loaded_clear_df = loaded_encrypted_df.decrypt_to_pandas(client)
+
+    # TODO: better test for float (?)
+    assert pandas_dataframe_are_equal(loaded_clear_df, pandas_df, float_atol=1, equal_nan=True)
+
+
+def check_invalid_merge_parameters():
+    encrypted_df_left, encrypted_df_right = get_two_encrypted_dataframes()
+
+    unsupported_pandas_parameters_and_values = [
+        ("left_on", "index"),
+        ("right_on", "index"),
+        ("left_index", True),
+        ("right_index", True),
+        ("sort", True),
+        ("copy", True),
+        ("indicator", True),
+        ("validate", "1:1"),
+    ]
+
+    for parameter, unsupported_value in unsupported_pandas_parameters_and_values:
+        with pytest.raises(
+            ValueError,
+            match=f"Parameter '{parameter}' is not currently supported. Got {unsupported_value}.",
+        ):
+            encrypted_df_left.merge(
+                encrypted_df_right,
+                **{parameter: unsupported_value},
+            )
+
+
+def check_no_multi_index_merge():
+    encrypted_df_left, encrypted_df_right = get_two_encrypted_dataframes(feat_names=("", ""))
+
+    with pytest.raises(
+        ValueError,
+        match="Merging on 0 or several columns is not currently available.",
+    ):
+        encrypted_df_left.merge(encrypted_df_right)
+
+
+def check_column_coherence():
+    on = "index"
+
+    # Test when a selected column has a different dtype than the other one
+    encrypted_df_left, encrypted_df_right = get_two_encrypted_dataframes(
+        index_name=on, indexes_left=[1, 2], indexes_right=[1.3, 7.3]
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            f"Dtypes of both common column '{on}' do not match. Got int64 (left) and float64 "
+            "(right)."
+        ),
+    ):
+        encrypted_df_left.merge(encrypted_df_right)
+
+    # Test when both selected columns have a float dtype
+    encrypted_df_left, encrypted_df_right = get_two_encrypted_dataframes(
+        index_name=on, indexes_left=[1.3, 7.3], indexes_right=[1.3, 7.3]
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            f"Column '{on}' cannot be selected for merging both data-frames because it has a "
+            f"floating dtype (float64)"
+        ),
+    ):
+        encrypted_df_left.merge(encrypted_df_right)
+
+    # Test when both selected columns have a object dtype (string) but with different string
+    # mappings
+    encrypted_df_left, encrypted_df_right = get_two_encrypted_dataframes(
+        index_name=on, indexes_left=["cherry", "watermelon"], indexes_right=["orange", "watermelon"]
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(f"Mappings for string values in both common column '{on}' do not match."),
+    ):
+        encrypted_df_left.merge(encrypted_df_right)
+
+
+def check_unsupported_input_values():
+    client = load_client()
+
+    # Test with values that are out of bound
+    indexes_high_integers = [73, 100]
+    pandas_df = generate_pandas_dataframe(indexes=indexes_high_integers)
+
+    with pytest.raises(
+        ValueError,
+        match=".* contains values that are out of bounds. Expected values to be in interval.*",
+    ):
+        encrypt_from_pandas(pandas_df, client)
+
+    indexes_str = list(map(str, list(range(100))))
+    pandas_df = generate_pandas_dataframe(indexes=indexes_str)
+
+    with pytest.raises(ValueError, match=".* contains too many unique values.*"):
+        encrypt_from_pandas(pandas_df, client)
+
+    indexes_object_non_str = [object(), object()]
+    pandas_df = generate_pandas_dataframe(indexes=indexes_object_non_str)
+
+    with pytest.raises(
+        ValueError,
+        match=".* contains non-string values, which is not currently supported.*",
+    ):
+        encrypt_from_pandas(pandas_df, client)
+
+    indexes_unsupported_dtype = [1 + 2j, -3 - 4j]
+    pandas_df = generate_pandas_dataframe(indexes=indexes_unsupported_dtype)
+
+    with pytest.raises(
+        ValueError,
+        match=".* has dtype 'complex128', which is not currently supported.",
+    ):
+        encrypt_from_pandas(pandas_df, client)
+
+    indexes_not_range = [1, 3]
+    pandas_df = generate_pandas_dataframe(indexes=indexes_not_range)
+    pandas_df.set_index("index", inplace=True)
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "The data-frame's index has not been reset. Please make sure to not put relevant data "
+            "in the index and instead store it in a dedicated column. Encrypted data-frames do not "
+            "currently support any index-based operations."
+        ),
+    ):
+        encrypt_from_pandas(pandas_df, client)
+
+
+def check_post_processing_coherence():
+    on = "index"
+
+    client = load_client()
+
+    pandas_df = generate_pandas_dataframe(index_name=on)
+
+    encrypted_df = encrypt_from_pandas(pandas_df, client)
+
+    wrong_dtype = "complex128"
+    encrypted_df.dtype_mappings[on]["dtype"] = wrong_dtype
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            f"Column '{on}' has dtype '{wrong_dtype}', which is unexpected and thus not supported."
+        ),
+    ):
+        encrypted_df.decrypt_to_pandas(client)
+
+
+def test_error_raises():
+    check_invalid_merge_parameters()
+    check_no_multi_index_merge()
+    check_column_coherence()
+    check_unsupported_input_values()
+    check_post_processing_coherence()
+
+
+# TODO: Check the crypto params between current client/server and new generated ones

@@ -1,4 +1,4 @@
-from .client_server import load_client
+from ._client_server import load_client
 from .dataframe import EncryptedDataFrame
 
 
@@ -14,19 +14,5 @@ def save_encrypted_dataframe(encrypted_dataframe: EncryptedDataFrame, file_path)
     return encrypted_dataframe.save(file_path)
 
 
-def join(
-    left_encrypted: EncryptedDataFrame,
-    right_encrypted: EncryptedDataFrame,
-    evaluation_keys,
-    **pandas_kwargs
-):
-    return left_encrypted.join(right_encrypted, evaluation_keys, **pandas_kwargs)
-
-
-def merge(
-    left_encrypted: EncryptedDataFrame,
-    right_encrypted: EncryptedDataFrame,
-    evaluation_keys,
-    **pandas_kwargs
-):
-    return left_encrypted.merge(right_encrypted, evaluation_keys, **pandas_kwargs)
+def merge(left_encrypted: EncryptedDataFrame, right_encrypted: EncryptedDataFrame, **pandas_kwargs):
+    return left_encrypted.merge(right_encrypted, **pandas_kwargs)

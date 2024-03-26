@@ -2,6 +2,24 @@ import numpy
 import pandas
 from pandas.core.reshape.merge import _MergeOperation
 
+UNSUPPORTED_PANDAS_PARAMETERS = {
+    "merge": [
+        "left_on",
+        "right_on",
+        "left_index",
+        "right_index",
+        "sort",
+        "copy",
+        "indicator",
+        "validate",
+    ],
+}
+
+
+def check_parameter_is_supported(param, param_name, condition, operator):
+    if param_name in UNSUPPORTED_PANDAS_PARAMETERS[operator] and not condition:
+        raise ValueError(f"Parameter '{param_name}' is not currently supported. Got {param}.")
+
 
 def check_coherence_selected_column_for_merge(df_left, df_right, on):
     on_left, on_right = df_left.dtype_mappings[on], df_right.dtype_mappings[on]
@@ -20,55 +38,32 @@ def check_coherence_selected_column_for_merge(df_left, df_right, on):
             # TODO: add hash
             if str_mapping_left != str_mapping_right:
                 raise ValueError(
-                    f"Mappings for string values in both data-frames' common column '{on}' do not "
-                    "match."
+                    f"Mappings for string values in both common column '{on}' do not match."
                 )
     else:
         raise ValueError(
-            f"Dtype of both data-frames' common column '{on}' do not match. Got {dtype_left} "
-            f"(left) and {dtype_right} (right)."
+            f"Dtypes of both common column '{on}' do not match. Got {dtype_left} (left) and "
+            f"{dtype_right} (right)."
         )
 
 
-def encrypted_left_join(
+def encrypted_left_right_join(
     df_left,
     df_right,
     server,
-    on=None,
-    left_on=None,
-    right_on=None,
-    left_index=False,
-    right_index=False,
-    sort=False,
-    copy=None,
-    indicator=False,
-    validate="1:1",
+    how,
+    on,
 ):
     """Execute a left join using encrypted data-frames with Pandas kwargs.
 
-    For now, only a left and right join merge is supported. Additionally, default values for
-    parameter 'validate' is different than in Pandas.
+    For now, only a left and right join merge is supported.
     """
-    # Raise errors for unsupported parameters
-    if left_on is not None or right_on is not None or left_index or right_index:
-        raise ValueError(
-            "The following parameters are currently not supported, please use 'how' instead : "
-            f"{left_on=}," * left_on
-            is not None + f"{right_on=}," * right_on
-            is not None + f"{left_index=}," * left_index + f"{right_index=}," * right_index
-        )
 
-    if sort:
-        raise ValueError("Sorting by the join key is not currently supported.")
+    allowed_how = ["left", "right"]
+    assert how in allowed_how, f"Parameter 'how' must be in {allowed_how}. Got {how}."
 
-    if copy is not None:
-        raise ValueError("Parameter 'copy' is not currently supported.")
-
-    if indicator:
-        raise ValueError("Parameter 'indicator' is not currently supported.")
-
-    if validate not in ("1:1", "one-to-one"):
-        raise ValueError("Indices must be unique in both data-frames.")
+    if how == "right":
+        df_left, df_right = df_right, df_left
 
     array_joined = []
 
@@ -88,7 +83,12 @@ def encrypted_left_join(
     for i_left in range(n_rows_left):
 
         # For left merge, all left values are exactly equal to the left data frame
-        array_joined_i_left = df_left.encrypted_values[i_left, :].tolist()
+        array_joined_i_left = df_left.encrypted_values[i_left, :]
+
+        if how == "right":
+            array_joined_i_left = numpy.delete(array_joined_i_left, left_key_column_index, axis=0)
+
+        left_row_to_join = array_joined_i_left.tolist()
 
         # Retrieve the left data frame's key to merge on
         left_key = df_left.encrypted_values[i_left, left_key_column_index]
@@ -131,13 +131,26 @@ def encrypted_left_join(
                 )
 
             right_row_to_join.append(right_value_to_join)
-        array_joined.append(array_joined_i_left)
 
         # For left merge, the remaining right values are either 0 (NaN) or the right data-frame's
         # values for which the associated key matched with the left key
-        array_joined_i_left.extend(right_row_to_join)
+        if how == "left":
+            joined_row = left_row_to_join + right_row_to_join
+        else:
+            joined_row = right_row_to_join + left_row_to_join
+
+        array_joined.append(joined_row)
 
     array_joined = numpy.array(array_joined)
+
+    if how == "right":
+        array_joined = numpy.hstack(
+            (
+                array_joined[:, :right_key_column_index],
+                df_left.encrypted_values[:, left_key_column_index : left_key_column_index + 1],
+                array_joined[:, right_key_column_index:],
+            ),
+        )
 
     return array_joined
 
@@ -156,33 +169,25 @@ def encrypted_merge(
     suffixes=("_x", "_y"),
     copy=None,
     indicator=False,
-    validate="1:1",
+    validate=None,
 ):
     """Execute a merge using encrypted data-frames with Pandas kwargs.
 
-    For now, only a left and right join merge is supported. Additionally, default values for
-    parameters 'how' and 'validate' are different than in Pandas.
+    For now, only a left and right join merge is supported. Additionally, default value for
+    parameter 'how' is different than in Pandas.
     """
     # Raise errors for unsupported parameters
-    if left_on is not None or right_on is not None or left_index or right_index:
-        raise ValueError(
-            "The following parameters are currently not supported, please use 'how' instead : "
-            f"{left_on=}," * left_on
-            is not None + f"{right_on=}," * right_on
-            is not None + f"{left_index=}," * left_index + f"{right_index=}," * right_index
-        )
-
-    if sort:
-        raise ValueError("Sorting by the join key is not currently supported.")
-
-    if copy is not None:
-        raise ValueError("Parameter 'copy' is not currently supported.")
-
-    if indicator:
-        raise ValueError("Parameter 'indicator' is not currently supported.")
-
-    if validate not in ("1:1", "one-to-one"):
-        raise ValueError("Indices must be unique in both data-frames.")
+    for param, param_name, condition in [
+        (left_on, "left_on", left_on is None),
+        (right_on, "right_on", right_on is None),
+        (left_index, "left_index", left_index == False),
+        (right_index, "right_index", right_index == False),
+        (sort, "sort", sort == False),
+        (copy, "copy", copy is None),
+        (indicator, "indicator", indicator == False),
+        (validate, "validate", validate is None),
+    ]:
+        check_parameter_is_supported(param, param_name, condition, "merge")
 
     # Retrieve the input column names and build empty data-frames based on them
     # Insert
@@ -209,32 +214,18 @@ def encrypted_merge(
     empty_df_joined = empty_merge_op.get_result()
     joined_column_names = list(empty_df_joined.columns)
 
+    if len(empty_merge_op.join_names) != 1:
+        raise ValueError("Merging on 0 or several columns is not currently available.")
+
+    on = empty_merge_op.join_names[0]
+
     check_coherence_selected_column_for_merge(df_left, df_right, on)
 
     joined_dtype_mappings = {**df_left.dtype_mappings, **df_right.dtype_mappings}
 
-    if len(empty_merge_op.join_names) != 1:
-        raise ValueError("Merging on 0 or several columns is not currently available.")
-
     if how in ["left", "right"]:
-        if how == "right":
-            # TODO: check if left_on/right_on and left_index/right_index need to be swapped as well
-            df_left, df_right = df_right, df_left
 
-        joined_array = encrypted_left_join(
-            df_left,
-            df_right,
-            server,
-            on=on,
-            left_on=left_on,
-            right_on=right_on,
-            left_index=left_index,
-            right_index=right_index,
-            sort=sort,
-            copy=copy,
-            indicator=indicator,
-            validate=validate,
-        )
+        joined_array = encrypted_left_right_join(df_left, df_right, server, how, on)
 
         return joined_array, joined_column_names, joined_dtype_mappings
 

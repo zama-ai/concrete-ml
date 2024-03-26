@@ -5,22 +5,34 @@ from typing import List
 import numpy
 import pandas
 
-from concrete.ml.pandas.client_server import _get_min_max_allowed
+from concrete.ml.pandas._client_server import get_min_max_allowed
+from concrete.ml.quantization.quantizers import STABILITY_CONST
 
 
 def compute_scale_zero_point(column, q_min, q_max):
     values_min, values_max = column.min(), column.max()
-    scale = (q_max - q_min) / (values_max - values_min)
 
-    # TODO: add round for ZP when changing management of NaN values
-    # This is because rounding ZP + rounding of quant can make values reach 0, which is not allowed
-    # as it's used for representing NaN values
-    zero_point = values_min * scale - q_min
+    if values_max - values_min < STABILITY_CONST:
+        if numpy.abs(values_max) < STABILITY_CONST:
+            scale = 1.0
+            zero_point = -q_min
+        else:
+            scale = 1 / values_max
+            zero_point = 0
+
+    else:
+        scale = (q_max - q_min) / (values_max - values_min)
+
+        # TODO: add round for ZP when changing management of NaN values
+        # This is because rounding ZP + rounding of quant can make values reach 0, which is not allowed
+        # as it's used for representing NaN values
+        zero_point = values_min * scale - q_min
+
     return scale, zero_point
 
 
 def quant(x, scale, zero_point):
-    return numpy.round(scale * x - zero_point).astype(numpy.int64)
+    return numpy.round(scale * x - zero_point)
 
 
 def dequant(q_x, scale, zero_point, dtype=None):
@@ -37,7 +49,7 @@ def pre_process_dtypes(pandas_dataframe):
 
     dtype_mappings = defaultdict(dict)
 
-    q_min, q_max = _get_min_max_allowed()
+    q_min, q_max = get_min_max_allowed()
 
     for column_name in pandas_dataframe.columns:
         column = pandas_dataframe[column_name]
@@ -66,13 +78,11 @@ def pre_process_dtypes(pandas_dataframe):
             dtype_mappings[column_name]["zero_point"] = zero_point
 
         elif column_dtype == "object":
-            is_str = column.apply(lambda x: isinstance(x, str) or numpy.isnan(x)).all()
+            is_str = column.apply(lambda x: isinstance(x, str) or not pandas.notna(x)).all()
 
             if is_str:
                 str_to_int = {
-                    str_value: i + 1
-                    for i, str_value in enumerate(column.unique())
-                    if isinstance(str_value, str)
+                    str_value: i + 1 for i, str_value in enumerate(column.dropna().unique())
                 }
 
                 n_unique_values = max(str_to_int.values())
@@ -98,7 +108,7 @@ def pre_process_dtypes(pandas_dataframe):
 
         else:
             raise ValueError(
-                f"Column '{column_name}' has dtype '{column_dtype})', which is not currently "
+                f"Column '{column_name}' has dtype '{column_dtype}', which is not currently "
                 "supported."
             )
 
@@ -133,8 +143,8 @@ def post_process_dtypes(pandas_dataframe, dtype_mappings):
 
         else:
             raise ValueError(
-                f"Column '{column_name}' has expected dtype '{initial_column_dtype}', which is "
-                f"unexpected."
+                f"Column '{column_name}' has dtype '{initial_column_dtype}', which is unexpected "
+                "and thus not supported."
             )
 
     return pandas_dataframe
@@ -150,14 +160,14 @@ def pre_process_from_pandas(pandas_dataframe: pandas.DataFrame) -> numpy.ndarray
             "currently support any index-based operations."
         )
 
-    pandas_dataframe, dtype_mappings = pre_process_dtypes(pandas_dataframe)
+    q_pandas_dataframe, dtype_mappings = pre_process_dtypes(pandas_dataframe)
 
     # Replace NaN values with 0
-    pandas_dataframe.fillna(0, inplace=True)
+    q_pandas_dataframe.fillna(0, inplace=True)
 
-    pandas_array = pandas_dataframe.to_numpy()
+    q_array = q_pandas_dataframe.to_numpy(dtype=numpy.int64)
 
-    return pandas_array, dtype_mappings
+    return q_array, dtype_mappings
 
 
 def post_process_to_pandas(
