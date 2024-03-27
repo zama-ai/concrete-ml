@@ -217,6 +217,16 @@ def check_invalid_merge_parameters():
                 **{parameter: unsupported_value},
             )
 
+    for how in ["outer", "inner", "cross"]:
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape(f"Merge type '{how}' is not currently implemented."),
+        ):
+            encrypted_df_left.merge(
+                encrypted_df_right,
+                how=how,
+            )
+
 
 def check_no_multi_index_merge():
     encrypted_df_left, encrypted_df_right = get_two_encrypted_dataframes(feat_names=("", ""))
@@ -354,14 +364,15 @@ def test_error_raises():
 
 
 def load_client_file(client_path):
-    output_dir_path = client_path.parent
+    with tempfile.TemporaryDirectory() as temp_dir:
+        output_dir_path = Path(temp_dir)
 
-    shutil.unpack_archive(client_path, output_dir_path, "zip")
+        shutil.unpack_archive(client_path, output_dir_path, "zip")
 
-    with (output_dir_path / "client.specs.json").open("rb") as f:
-        client_specs = ClientSpecs.deserialize(f.read())
+        with (output_dir_path / "client.specs.json").open("rb") as f:
+            client_specs = ClientSpecs.deserialize(f.read())
 
-    return client_specs
+        return client_specs
 
 
 def concrete_client_files_are_equal(client_path_1, client_path_2):
@@ -377,20 +388,21 @@ def concrete_client_files_are_equal(client_path_1, client_path_2):
 
 
 def load_server_file(server_path):
-    output_dir_path = server_path.parent
+    with tempfile.TemporaryDirectory() as temp_dir:
+        output_dir_path = Path(temp_dir)
 
-    shutil.unpack_archive(server_path, output_dir_path, "zip")
+        shutil.unpack_archive(server_path, output_dir_path, "zip")
 
-    with (output_dir_path / "is_simulated").open("r", encoding="utf-8") as f:
-        is_simulated = f.read() == "1"
+        with (output_dir_path / "is_simulated").open("r", encoding="utf-8") as f:
+            is_simulated = f.read() == "1"
 
-    with (output_dir_path / "circuit.mlir").open("r", encoding="utf-8") as f:
-        mlir = f.read()
+        with (output_dir_path / "circuit.mlir").open("r", encoding="utf-8") as f:
+            mlir = f.read()
 
-    with (output_dir_path / "configuration.json").open("r", encoding="utf-8") as f:
-        configuration = json.load(f)
+        with (output_dir_path / "configuration.json").open("r", encoding="utf-8") as f:
+            configuration = json.load(f)
 
-    return is_simulated, mlir, configuration
+        return is_simulated, mlir, configuration
 
 
 def concrete_server_files_are_equal(server_path_1, server_path_2):

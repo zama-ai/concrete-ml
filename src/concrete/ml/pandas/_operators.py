@@ -1,27 +1,56 @@
+from typing import Any, Dict, Hashable, List, Optional, Sequence, Tuple, Union
+
 import numpy
 import pandas
+from concrete.fhe import Server
 from pandas.core.reshape.merge import _MergeOperation
 
 UNSUPPORTED_PANDAS_PARAMETERS = {
-    "merge": [
-        "left_on",
-        "right_on",
-        "left_index",
-        "right_index",
-        "sort",
-        "copy",
-        "indicator",
-        "validate",
-    ],
+    "merge": {
+        "left_on": lambda x: x is None,
+        "right_on": lambda x: x is None,
+        "left_index": lambda x: x == False,
+        "right_index": lambda x: x == False,
+        "sort": lambda x: x == False,
+        "copy": lambda x: x is None,
+        "indicator": lambda x: x == False,
+        "validate": lambda x: x is None,
+    },
 }
 
 
-def check_parameter_is_supported(param, param_name, condition, operator):
-    if param_name in UNSUPPORTED_PANDAS_PARAMETERS[operator] and not condition:
-        raise ValueError(f"Parameter '{param_name}' is not currently supported. Got {param}.")
+def check_parameter_is_supported(parameter: Any, parameter_name: str, operator: str):
+    """Check that the given Pandas parameter is supported by the Concrete ML operator.
+
+    Args:
+        parameter (Any): The Pandas parameter to consider.
+        parameter_name (str): The Pandas parameter's name.
+        operator (str): The Concrete ML operator to check.
+
+    Raises:
+        ValueError: If the parameter is not supported by the operator.
+    """
+    condition_func = UNSUPPORTED_PANDAS_PARAMETERS[operator].get(parameter_name, None)
+
+    if condition_func is not None and not condition_func(parameter):
+        raise ValueError(
+            f"Parameter '{parameter_name}' is not currently supported. Got {parameter}."
+        )
 
 
-def check_coherence_selected_column_for_merge(df_left, df_right, on):
+def check_dtype_of_selected_column_for_merge(df_left, df_right, on: str):
+    """Check that the selected column dtype matches between the two encrypted data-frames.
+
+    Args:
+        df_left (EncryptedDataFrame): The left encrypted data-frame.
+        df_right (EncryptedDataFrame): The right encrypted data-frame.
+        on (str): The selected column name, common to both encrypted data-frames.
+
+    Raises:
+        ValueError: If both dtypes do not match.
+        ValueError: If both dtypes represent floating point values.
+        ValueError: If both dtypes represent string values but the mappings do not match.
+    """
     on_left, on_right = df_left.dtype_mappings[on], df_right.dtype_mappings[on]
     dtype_left, dtype_right = numpy.dtype(on_left["dtype"]), numpy.dtype(on_right["dtype"])
 
@@ -50,15 +79,30 @@ def check_coherence_selected_column_for_merge(df_left, df_right, on):
 def encrypted_left_right_join(
     df_left,
     df_right,
-    server,
-    how,
-    on,
-):
-    """Execute a left join using encrypted data-frames with Pandas kwargs.
+    server: Server,
+    how: str,
+    on: Optional[str],
+) -> numpy.ndarray:
+    """Compute a left/right join in FHE between two encrypted data-frames using Pandas parameters.
 
-    For now, only a left and right join merge is supported.
+    Note that for now, only a left and right join is implemented. Additionally, only some Pandas
+    parameters are supported, and joining on multiple columns is not available.
+
+    Args:
+        df_left (EncryptedDataFrame): The left encrypted data-frame.
+        df_right (EncryptedDataFrame): The right encrypted data-frame.
+        server (Server): The Concrete server to use for running the computations in FHE.
+        how (str): Type of merge to be performed, one of {'left', 'right'}.
+            * left: use only keys from left frame, similar to a SQL left outer join;
+            preserve key order.
+            * right: use only keys from right frame, similar to a SQL right outer join;
+            preserve key order.
+        on (Optional[str]): Column name to join on. These must be found in both DataFrames. If it is
+            None then this defaults to the intersection of the columns in both DataFrames.
+
+    Returns:
+        numpy.ndarray: The values representing the joined encrypted data-frame.
     """
-
     allowed_how = ["left", "right"]
     assert how in allowed_how, f"Parameter 'how' must be in {allowed_how}. Got {how}."
 
@@ -158,36 +202,85 @@ def encrypted_left_right_join(
 def encrypted_merge(
     df_left,
     df_right,
-    server,
-    how="left",
-    on=None,
-    left_on=None,
-    right_on=None,
-    left_index=False,
-    right_index=False,
-    sort=False,
-    suffixes=("_x", "_y"),
-    copy=None,
-    indicator=False,
-    validate=None,
-):
-    """Execute a merge using encrypted data-frames with Pandas kwargs.
+    server: Server,
+    how: str = "left",
+    on: Optional[str] = None,
+    left_on: Optional[Union[Hashable, Sequence[Hashable]]] = None,
+    right_on: Optional[Union[Hashable, Sequence[Hashable]]] = None,
+    left_index: bool = False,
+    right_index: bool = False,
+    sort: bool = False,
+    suffixes: Tuple[Optional[str], Optional[str]] = ("_x", "_y"),
+    copy: Optional[bool] = None,
+    indicator: Union[bool, str] = False,
+    validate: Optional[str] = None,
+) -> Tuple[numpy.ndarray, List[str], Dict]:
+    """Merge two encrypted data-frames in FHE using Pandas parameters.
 
-    For now, only a left and right join merge is supported. Additionally, default value for
-    parameter 'how' is different than in Pandas.
+    Note that for now, only a left and right join is implemented. Additionally, only some Pandas
+    parameters are supported, and joining on multiple columns is not available.
+
+    Pandas documentation for version 2.0 can be found here:
+    https://pandas.pydata.org/pandas-docs/version/2.0/reference/api/pandas.DataFrame.merge.html
+
+    Args:
+        df_left (EncryptedDataFrame): The left encrypted data-frame.
+        df_right (EncryptedDataFrame): The right encrypted data-frame.
+        server (Server): _description_
+        server (Server): The Concrete server to use for running the computations in FHE.
+        how (str): Type of merge to be performed, one of {'left', 'right'}.
+            * left: use only keys from left frame, similar to a SQL left outer join;
+            preserve key order.
+            * right: use only keys from right frame, similar to a SQL right outer join;
+            preserve key order.
+        on (Optional[str]): Column name to join on. These must be found in both DataFrames. If it is
+            None then this defaults to the intersection of the columns in both DataFrames. Default
+            to None.
+        left_on (Optional[Union[Hashable, Sequence[Hashable]]]): Currently not supported, please
+            keep the default value. Default to None.
+        right_on (Optional[Union[Hashable, Sequence[Hashable]]]): Currently not supported, please
+            keep the default value. Default to None.
+        left_index (bool): Currently not supported, please keep the default value. Default to False.
+        right_index (bool): Currently not supported, please keep the default value. Default
+            to False.
+        sort (bool): Currently not supported, please keep the default value. Default to False.
+        suffixes (Tuple[Optional[str], Optional[str]]): A length-2 sequence where each element is
+            optionally a string indicating the suffix to add to overlapping column names in `left`
+            and `right` respectively. Pass a value of `None` instead of a string to indicate that
+            the column name from `left` or `right` should be left as-is, with no suffix. At least
+            one of the values must not be None.. Default to ("_x", "_y").
+        copy (Optional[bool]): Currently not supported, please keep the default value. Default to
+            None.
+        indicator (Union[bool, str]): Currently not supported, please keep the default value.
+            Default to False.
+        validate (Optional[str]): Currently not supported, please keep the default value. Default
+            to None.
+
+    Raises:
+        ValueError: If the merge is expected to be done on multiple columns.
+        NotImplementedError: If parameter 'how' is set to anything else than one
+            of {'left', 'right'}.
+
+    Returns:
+        Tuple[numpy.ndarray, List[str], Dict]: The values representing the joined encrypted
+            data-frame, the associated columns as well as the mappings needed for mapping the
+            integers back to their initial string values.
     """
     # Raise errors for unsupported parameters
-    for param, param_name, condition in [
-        (left_on, "left_on", left_on is None),
-        (right_on, "right_on", right_on is None),
-        (left_index, "left_index", left_index == False),
-        (right_index, "right_index", right_index == False),
-        (sort, "sort", sort == False),
-        (copy, "copy", copy is None),
-        (indicator, "indicator", indicator == False),
-        (validate, "validate", validate is None),
+    if how not in ["left", "right"]:
+        raise NotImplementedError(f"Merge type '{how}' is not currently implemented.")
+
+    for parameter, parameter_name in [
+        (left_on, "left_on"),
+        (right_on, "right_on"),
+        (left_index, "left_index"),
+        (right_index, "right_index"),
+        (sort, "sort"),
+        (copy, "copy"),
+        (indicator, "indicator"),
+        (validate, "validate"),
     ]:
-        check_parameter_is_supported(param, param_name, condition, "merge")
+        check_parameter_is_supported(parameter, parameter_name, "merge")
 
     # Retrieve the input column names and build empty data-frames based on them
     # Insert
@@ -219,14 +312,10 @@ def encrypted_merge(
 
     on = empty_merge_op.join_names[0]
 
-    check_coherence_selected_column_for_merge(df_left, df_right, on)
+    check_dtype_of_selected_column_for_merge(df_left, df_right, on)
 
     joined_dtype_mappings = {**df_left.dtype_mappings, **df_right.dtype_mappings}
 
-    if how in ["left", "right"]:
+    joined_array = encrypted_left_right_join(df_left, df_right, server, how, on)
 
-        joined_array = encrypted_left_right_join(df_left, df_right, server, how, on)
-
-        return joined_array, joined_column_names, joined_dtype_mappings
-
-    raise NotImplemented(f"Merge type '{how}' is not currently implemented.")
+    return joined_array, joined_column_names, joined_dtype_mappings
