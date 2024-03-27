@@ -212,10 +212,10 @@ class ONNXConverter:
             of the network's inputs. "op_inputs" and "op_weights" both control the quantization for
             inputs and weights of all layers.
         numpy_model (NumpyModule): Model in numpy.
-        rounding_threshold_bits (Union[None, int, Dict[str, Union[str, int]]]): if not None, every
-            accumulators in the model are rounded down to the given bits of precision. Can be an int
-            or a dictionary with keys 'method' and 'n_bits', where 'method' is either
-            fhe.Exactness.EXACT or fhe.Exactness.APPROXIMATE, and 'n_bits' is either 'auto' or an int.
+        rounding_threshold_bits (Union[None, int, Dict[str, Union[str, int]]]): Defines precision
+            rounding for model accumulators. Accepts None, an int, or a dict.
+            The dict can specify 'method' (fhe.Exactness.EXACT or fhe.Exactness.APPROXIMATE)
+            and 'n_bits' ('auto' or int)
     """
 
     quant_ops_dict: Dict[str, Tuple[Tuple[str, ...], QuantizedOp]]
@@ -228,7 +228,7 @@ class ONNXConverter:
         self,
         n_bits: Union[int, Dict],
         numpy_model: NumpyModule,
-        rounding_threshold_bits: Union[None, int, Dict[str, Union[str, int]]],
+        rounding_threshold_bits: Union[None, int, Dict[str, Union[str, int]]] = None,
     ):
         self.quant_ops_dict = {}
 

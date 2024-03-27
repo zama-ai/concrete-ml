@@ -20,6 +20,8 @@ from .quantizers import (
     UniformQuantizationParameters,
 )
 
+# pylint: disable=too-many-lines
+
 ONNXOpInputOutputType = Union[
     numpy.ndarray,
     QuantizedArray,
@@ -968,22 +970,25 @@ class QuantizedMixingOp(QuantizedOp, is_utility=True):
         Returns:
             numpy.ndarray: The rounded array.
         """
-
         # Ensure lsbs_to_remove is initialized as a dictionary
         if not hasattr(self, "lsbs_to_remove") or not isinstance(self.lsbs_to_remove, dict):
             self.lsbs_to_remove = {}
 
-        exactness = fhe.Exactness.EXACT
         n_bits = None
-        if isinstance(self.rounding_threshold_bits, int):
-            n_bits = self.rounding_threshold_bits
-        elif isinstance(self.rounding_threshold_bits, dict):
+        exactness = fhe.Exactness.EXACT
+
+        if self.rounding_threshold_bits is not None:
+            # mypy
+            assert isinstance(self.rounding_threshold_bits, dict)
             n_bits = self.rounding_threshold_bits.get("n_bits")
             exactness = self.rounding_threshold_bits.get("method", exactness)
 
         if n_bits is not None and calibrate_rounding:
             # Compute lsbs_to_remove only when calibration is True
             current_n_bits_accumulator = compute_bits_precision(x)
+
+            # mypy
+            assert isinstance(n_bits, int)
             computed_lsbs_to_remove = current_n_bits_accumulator - n_bits
 
             assert_true(
@@ -1004,6 +1009,6 @@ class QuantizedMixingOp(QuantizedOp, is_utility=True):
         assert isinstance(lsbs_value, int)
 
         if lsbs_value > 0:
-            x = fhe.round_bit_pattern(x, lsbs_to_remove=lsbs_value, exact=exactness)
+            x = fhe.round_bit_pattern(x, lsbs_to_remove=lsbs_value, exactness=exactness)
 
         return x

@@ -11,7 +11,7 @@ import torch
 from brevitas.export.onnx.qonnx.manager import QONNXManager as BrevitasONNXManager
 from brevitas.nn.quant_layer import QuantInputOutputLayer as QNNMixingLayer
 from brevitas.nn.quant_layer import QuantNonLinearActLayer as QNNUnivariateLayer
-from concrete.fhe import ParameterSelectionStrategy
+from concrete.fhe import Exactness, ParameterSelectionStrategy
 from concrete.fhe.compilation.artifacts import DebugArtifacts
 from concrete.fhe.compilation.configuration import Configuration
 
@@ -88,10 +88,10 @@ def build_quantized_module(
         import_qat (bool): Flag to signal that the network being imported contains quantizers in
             in its computation graph and that Concrete ML should not re-quantize it
         n_bits: the number of bits for the quantization
-        rounding_threshold_bits (Union[None, int, Dict[str, Union[str, int]]]): if not None, every
-            accumulators in the model are rounded down to the given bits of precision. Can be an int
-            or a dictionary with keys 'method' and 'n_bits', where 'method' is either
-            fhe.Exactness.EXACT or fhe.Exactness.APPROXIMATE, and 'n_bits' is either 'auto' or an int.
+        rounding_threshold_bits (Union[None, int, Dict[str, Union[str, int]]]): Defines precision
+            rounding for model accumulators. Accepts None, an int, or a dict.
+            The dict can specify 'method' (fhe.Exactness.EXACT or fhe.Exactness.APPROXIMATE)
+            and 'n_bits' ('auto' or int)
         reduce_sum_copy (bool): if the inputs of QuantizedReduceSum should be copied to avoid
             bit-width propagation
 
@@ -166,10 +166,10 @@ def _compile_torch_or_onnx_model(
             - "model_inputs" and "model_outputs" (optional, default to 5 bits).
             When using a single integer for n_bits, its value is assigned to "op_inputs" and
             "op_weights" bits. Default is 8 bits.
-        rounding_threshold_bits (Union[None, int, Dict[str, Union[str, int]]]): if not None, every
-            accumulators in the model are rounded down to the given bits of precision. Can be an int
-            or a dictionary with keys 'method' and 'n_bits', where 'method' is either
-            fhe.Exactness.EXACT or fhe.Exactness.APPROXIMATE, and 'n_bits' is either 'auto' or an int.
+        rounding_threshold_bits (Union[None, int, Dict[str, Union[str, int]]]): Defines precision
+            rounding for model accumulators. Accepts None, an int, or a dict.
+            The dict can specify 'method' (fhe.Exactness.EXACT or fhe.Exactness.APPROXIMATE)
+            and 'n_bits' ('auto' or int)
         p_error (Optional[float]): probability of error of a single PBS
         global_p_error (Optional[float]): probability of error of the full circuit. In FHE
             simulation `global_p_error` is set to 0
@@ -181,7 +181,38 @@ def _compile_torch_or_onnx_model(
 
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
+
+    Raises:
+        NotImplementedError: If 'auto' rounding is specified but not implemented.
+        ValueError: If an invalid type or value is provided for rounding_threshold_bits.
     """
+    n_bits_rounding: Union[None, str, int] = None
+    method: Exactness = Exactness.EXACT
+
+    # Only process if rounding_threshold_bits is not None
+    if rounding_threshold_bits is not None:
+        if isinstance(rounding_threshold_bits, int):
+            n_bits_rounding = rounding_threshold_bits
+        elif isinstance(rounding_threshold_bits, dict):
+            n_bits_rounding = rounding_threshold_bits.get("n_bits", None)
+            if n_bits_rounding == "auto":
+                raise NotImplementedError("Automatic rounding is not implemented yet.")
+            method = rounding_threshold_bits.get("method", Exactness.EXACT)
+            if isinstance(method, str):
+                method = Exactness[method.upper()]
+            elif not isinstance(method, Exactness):
+                raise ValueError(
+                    "Method must be an instance of Exactness enum or its string representation."
+                )
+        else:
+            raise ValueError(
+                "Invalid type for rounding_threshold_bits. "
+                "Must be int, dict, or 'auto' as a string."
+            )
+
+        # mypy
+        assert not isinstance(n_bits_rounding, str) and n_bits_rounding is not None
+        rounding_threshold_bits = {"n_bits": n_bits_rounding, "method": method}
 
     inputset_as_numpy_tuple = tuple(
         convert_torch_tensor_or_numpy_array_to_numpy_array(val) for val in to_tuple(torch_inputset)
@@ -268,10 +299,10 @@ def compile_torch_model(
             - "model_inputs" and "model_outputs" (optional, default to 5 bits).
             When using a single integer for n_bits, its value is assigned to "op_inputs" and
             "op_weights" bits. Default is 8 bits.
-        rounding_threshold_bits (Union[None, int, Dict[str, Union[str, int]]]): if not None, every
-            accumulators in the model are rounded down to the given bits of precision. Can be an int
-            or a dictionary with keys 'method' and 'n_bits', where 'method' is either
-            fhe.Exactness.EXACT or fhe.Exactness.APPROXIMATE, and 'n_bits' is either 'auto' or an int.
+        rounding_threshold_bits (Union[None, int, Dict[str, Union[str, int]]]): Defines precision
+            rounding for model accumulators. Accepts None, an int, or a dict.
+            The dict can specify 'method' (fhe.Exactness.EXACT or fhe.Exactness.APPROXIMATE)
+            and 'n_bits' ('auto' or int)
         p_error (Optional[float]): probability of error of a single PBS
         global_p_error (Optional[float]): probability of error of the full circuit. In FHE
             simulation `global_p_error` is set to 0
@@ -352,10 +383,10 @@ def compile_onnx_model(
             - "model_inputs" and "model_outputs" (optional, default to 5 bits).
             When using a single integer for n_bits, its value is assigned to "op_inputs" and
             "op_weights" bits. Default is 8 bits.
-        rounding_threshold_bits (Union[None, int, Dict[str, Union[str, int]]]): if not None, every
-            accumulators in the model are rounded down to the given bits of precision. Can be an int
-            or a dictionary with keys 'method' and 'n_bits', where 'method' is either
-            fhe.Exactness.EXACT or fhe.Exactness.APPROXIMATE, and 'n_bits' is either 'auto' or an int.
+        rounding_threshold_bits (Union[None, int, Dict[str, Union[str, int]]]): Defines precision
+            rounding for model accumulators. Accepts None, an int, or a dict.
+            The dict can specify 'method' (fhe.Exactness.EXACT or fhe.Exactness.APPROXIMATE)
+            and 'n_bits' ('auto' or int)
         p_error (Optional[float]): probability of error of a single PBS
         global_p_error (Optional[float]): probability of error of the full circuit. In FHE
             simulation `global_p_error` is set to 0
@@ -432,10 +463,10 @@ def compile_brevitas_qat_model(
             during compilation
         show_mlir (bool): if set, the MLIR produced by the converter and which is going
             to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
-        rounding_threshold_bits (Union[None, int, Dict[str, Union[str, int]]]): if not None, every
-            accumulators in the model are rounded down to the given bits of precision. Can be an int
-            or a dictionary with keys 'method' and 'n_bits', where 'method' is either
-            fhe.Exactness.EXACT or fhe.Exactness.APPROXIMATE, and 'n_bits' is either 'auto' or an int.
+        rounding_threshold_bits (Union[None, int, Dict[str, Union[str, int]]]): Defines precision
+            rounding for model accumulators. Accepts None, an int, or a dict.
+            The dict can specify 'method' (fhe.Exactness.EXACT or fhe.Exactness.APPROXIMATE)
+            and 'n_bits' ('auto' or int)
         p_error (Optional[float]): probability of error of a single PBS
         global_p_error (Optional[float]): probability of error of the full circuit. In FHE
             simulation `global_p_error` is set to 0
