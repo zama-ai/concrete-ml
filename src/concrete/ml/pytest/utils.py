@@ -388,7 +388,7 @@ def instantiate_model_generic(model_class, n_bits, **parameters):
         model_name (str): The type of the model as a string.
         model (object): The model instance.
     """
-    # Force multi threaded models to be single threaded as it's not working
+    # Force multi threaded models to be single threaded as it is not working
     # properly with pytest multi-threading
     if "n_jobs" in model_class().get_params():
         parameters["n_jobs"] = 1
