@@ -1,12 +1,15 @@
 import itertools
 from functools import partial
 from pathlib import Path
+from typing import Dict, List, Optional, Tuple, Union
+
+from concrete.fhe.tracing import Tracer
 
 from concrete import fhe
-from concrete.ml.pandas._utils import deserialize_evaluation_keys, serialize_evaluation_keys
 
 script_dir = Path(__file__).parent
 
+# The paths where to find or save the client and server files
 CLIENT_SERVER_DIR = script_dir / "_client_server_files"
 CLIENT_PATH = CLIENT_SERVER_DIR / "client.zip"
 SERVER_PATH = CLIENT_SERVER_DIR / "server.zip"
@@ -14,25 +17,39 @@ SERVER_PATH = CLIENT_SERVER_DIR / "server.zip"
 N_BITS_PANDAS = 4
 
 
-def identity_pbs(a):
-    """Define an identity TLU."""
-    return fhe.univariate(lambda x: x)(a)
+def identity_pbs(value: Union[Tracer, int]) -> Union[Tracer, int]:
+    """Define an identity TLU.
+
+    Args:
+        value (Union[Tracer, int]): The value on which to apply the identity.
+
+    Returns:
+        Union[Tracer, int]: The input value.
+    """
+    return fhe.univariate(lambda x: x)(value)
 
 
 @fhe.compiler(
     {"val_1": "encrypted", "val_2": "encrypted", "left_key": "encrypted", "right_key": "encrypted"}
 )
-def left_right_join_to_compile(val_1, val_2, left_key, right_key):
-    """Atomic function to compose during the left join.
+def left_right_join_to_compile(
+    val_1: Union[Tracer, int],
+    val_2: Union[Tracer, int],
+    left_key: Union[Tracer, int],
+    right_key: Union[Tracer, int],
+) -> Union[Tracer, int]:
+    """Define the atomic function to consider for running a left/right join in FHE.
+
+    TODO: explain algo
 
     Args:
-        val_1 (int): Value 1 to sum
-        val_2 (int): Value 2 to sum
-        left_key (int): Left key to match
-        right_key (int): Right key to match
+        val_1 (Union[Tracer, int]): The value used for accumulating the sum.
+        val_2 (Union[Tracer, int]): The value to add if the keys match.
+        left_key (Union[Tracer, int]): The left data-frame's encrypted key to consider.
+        right_key (Union[Tracer, int]): The right data-frame's encrypted key to consider.
 
     Returns:
-        int: Summed value
+        Union[Tracer, int]): The new accumulated sum.
     """
     condition = left_key == right_key
 
@@ -43,12 +60,27 @@ def left_right_join_to_compile(val_1, val_2, left_key, right_key):
     return sum_with_tlu
 
 
-def get_left_right_join_max_value(n_bits: int):
+def get_left_right_join_max_value(n_bits: int) -> int:
+    """Get the maximum value allowed in the data-frames for the left/right join operator.
+
+    Args:
+        n_bits (int): The maximum number of bits allowed.
+
+    Returns:
+        int: The maximum value allowed.
+    """
     return 2**n_bits - 1
 
 
-def get_left_right_join_inputset(n_bits: int):
-    """Define the inputset to use for the merge operator."""
+def get_left_right_join_inputset(n_bits: int) -> List:
+    """Generate the input-set to use for compiling the left/right join operator.
+
+    Args:
+        n_bits (int): The maximum number of bits allowed for generating the input-set's values.
+
+    Returns:
+        List: The input-set.
+    """
     # Build the circuit using at most `n_bits` bits, which defines :
     # - the input's unsigned integer dtype allowed (at most)
     # - the maximum number of rows allowed in an input (assuming the merge is done on a column of
@@ -81,15 +113,37 @@ PANDAS_OPS_TO_CIRCUIT_CONFIG = {
 }
 
 
-def get_encrypt_config():
+def get_encrypt_config() -> Dict:
+    """Get the configuration parameters to use when encrypting the input values.
+
+    Configuration parameters for encryption include the total number of inputs used in the FHE
+    circuit as well as the input position to consider when encrypting.
+
+    Returns:
+        Dict: The configuration parameters for encryption.
+    """
     return PANDAS_OPS_TO_CIRCUIT_CONFIG["left_right_join"]["encrypt_config"]
 
 
-def get_min_max_allowed():
+def get_min_max_allowed() -> Tuple[int, int]:
+    """Get the minimum and maximum value allowed in the data-frames.
+
+    Returns:
+        Tuple[int, int]: The minimum and maximum value allowed.
+    """
     return (1, get_left_right_join_max_value(N_BITS_PANDAS))
 
 
-def save_client_server(client_path=CLIENT_PATH, server_path=SERVER_PATH):
+def save_client_server(client_path: Path = CLIENT_PATH, server_path: Path = SERVER_PATH):
+    """Build the FHE circuit for all supported operators and save the client/server files.
+
+    Note that this function is not made public as the files are built and saved only once directly
+    in the source.
+
+    Args:
+        client_path (Path): The path where to save the client file. Default to CLIENT_PATH.
+        server_path (Path): The path where to save the client file. Default to SERVER_PATH.
+    """
     client_path, server_path = Path(client_path), Path(server_path)
 
     if not client_path.is_file() or not server_path.is_file():
@@ -109,11 +163,27 @@ def save_client_server(client_path=CLIENT_PATH, server_path=SERVER_PATH):
         merge_circuit.server.save(server_path, via_mlir=True)
 
 
-def load_server():
+def load_server() -> fhe.Server:
+    """Load the server to use for executing operators on encrypted data-frames.
+
+    Returns:
+        fhe.Server: The loaded server.
+    """
     return fhe.Server.load(SERVER_PATH)
 
 
-def load_client(keygen=True, keys_path=None):
+def load_client(keygen: bool = True, keys_path: Optional[Union[Path, str]] = None) -> fhe.Client:
+    """Load the client to use for generating keys and encrypting data-frames.
+
+    Args:
+        keygen (bool): If keys should be generated as well. Default to True.
+        keys_path (Optional[Union[Path, str]]): The path where to save the keys if generated. Note
+            that if some keys already exist in that path, the client will use them instead of
+            generating new ones. Default to None.
+
+    Returns:
+        fhe.Client: The loaded client.
+    """
     client = fhe.Client.load(CLIENT_PATH)
 
     if keygen:

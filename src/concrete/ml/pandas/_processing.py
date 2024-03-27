@@ -1,6 +1,6 @@
 import copy
 from collections import defaultdict
-from typing import List
+from typing import Dict, List, Optional, Tuple
 
 import numpy
 import pandas
@@ -9,7 +9,20 @@ from concrete.ml.pandas._client_server import get_min_max_allowed
 from concrete.ml.quantization.quantizers import STABILITY_CONST
 
 
-def compute_scale_zero_point(column, q_min, q_max):
+def compute_scale_zero_point(column: pandas.Series, q_min: int, q_max: int) -> Tuple[float, float]:
+    """Compute the scale and zero point to use for quantizing / de-quantizing the given column.
+
+    Note that the scale and zero point are computed so that values are quantized uniformly from
+    range [column.min(), column.max()] (float) to range [q_min, q_max] (int).
+
+    Args:
+        column (pandas.Series): The column to consider.
+        q_min (int): The minimum quantized value to consider.
+        q_max (int): The maximum quantized value to consider.
+
+    Returns:
+        Tuple[float, float]: The scale and zero-point.
+    """
     values_min, values_max = column.min(), column.max()
 
     if values_max - values_min < STABILITY_CONST:
@@ -31,11 +44,35 @@ def compute_scale_zero_point(column, q_min, q_max):
     return scale, zero_point
 
 
-def quant(x, scale, zero_point):
+def quant(x: pandas.Series, scale: float, zero_point: float) -> pandas.Series:
+    """Quantize the column.
+
+    Args:
+        x (pandas.Series): The column to quantize.
+        scale (float): The scale to consider.
+        zero_point (float): The zero-point to consider.
+
+    Returns:
+        pandas.Series: The quantized column.
+    """
     return numpy.round(scale * x - zero_point)
 
 
-def dequant(q_x, scale, zero_point, dtype=None):
+def dequant(
+    q_x: pandas.Series, scale: float, zero_point: float, dtype: Optional[numpy.dtype] = None
+) -> pandas.Series:
+    """De-quantize the column.
+
+    Args:
+        q_x (pandas.Series): The column to de-quantize.
+        scale (float): The scale to consider.
+        zero_point (float): The zero-point to consider.
+        dtype (Optional[numpy.dtype]): The dtype to use for casting the de-quantized value. Default
+            to None, which represents a 'float32' dtype.
+
+    Returns:
+        pandas.Series: The de-quantized column.
+    """
     x = (q_x + zero_point) / scale
 
     if dtype is None:
@@ -44,7 +81,28 @@ def dequant(q_x, scale, zero_point, dtype=None):
     return x.astype(dtype)
 
 
-def pre_process_dtypes(pandas_dataframe):
+# TODO: provide a way to input string mapping from user
+def pre_process_dtypes(pandas_dataframe: pandas.DataFrame) -> Tuple[pandas.DataFrame, Dict]:
+    """Pre-process the Pandas data-frame and check that input dtypes and ranges are supported.
+
+    Currently, three input dtypes are supported : integers (within a specific range), floating
+    points and objects (strings only, with a maximum amount of unique values). Additionally, NaN
+    values are supported.
+
+    Args:
+        pandas_dataframe (pandas.DataFrame): The Pandas data-frame to pre-process.
+
+    Raises:
+        ValueError: If the values of a column with an integer dtype are out of bounds.
+        ValueError: If the amount of unique values found in a column with strings exceeds the
+            maximum allowed.
+        ValueError: If a column with an 'object' dtype contains other values than strings and NaNs.
+        ValueError: If a column has a dtype that is not supported.
+
+    Returns:
+        Tuple[pandas.DataFrame, Dict]: The pre-processed Pandas data-frame, as well as the mappings
+            to use for recovering float and string values in post-processing.
+    """
     pandas_dataframe = copy.copy(pandas_dataframe)
 
     dtype_mappings = defaultdict(dict)
@@ -115,7 +173,54 @@ def pre_process_dtypes(pandas_dataframe):
     return pandas_dataframe, dtype_mappings
 
 
-def post_process_dtypes(pandas_dataframe, dtype_mappings):
+def pre_process_from_pandas(pandas_dataframe: pandas.DataFrame) -> Tuple[numpy.ndarray, Dict]:
+    """Pre-process the Pandas data-frame.
+
+    Args:
+        pandas_dataframe (pandas.DataFrame): The Pandas data-frame to pre-process.
+
+    Raises:
+        ValueError: If the data-frame's index has not been reset (meaning the index is not a
+            RangeIndex object).
+
+    Returns:
+        Tuple[numpy.ndarray, Dict]: The pre-processed values that can be encrypted, as well as the
+            mappings to use for recovering float and string values in post-processing.
+
+    """
+    # TODO: better handle indexes
+    if not isinstance(pandas_dataframe.index, pandas.RangeIndex):
+        raise ValueError(
+            "The data-frame's index has not been reset. Please make sure to not put relevant data "
+            "in the index and instead store it in a dedicated column. Encrypted data-frames do not "
+            "currently support any index-based operations."
+        )
+
+    q_pandas_dataframe, dtype_mappings = pre_process_dtypes(pandas_dataframe)
+
+    # Replace NaN values with 0
+    q_pandas_dataframe.fillna(0, inplace=True)
+
+    q_array = q_pandas_dataframe.to_numpy(dtype=numpy.int64)
+
+    return q_array, dtype_mappings
+
+
+def post_process_dtypes(
+    pandas_dataframe: pandas.DataFrame, dtype_mappings: Dict
+) -> pandas.DataFrame:
+    """Post-process the pandas data-frame.
+
+    Args:
+        pandas_dataframe (pandas.DataFrame): The Pandas data-frame to post-process.
+        dtype_mappings (Dict): The mappings to consider for recovering float and string values.
+
+    Raises:
+        ValueError: If one of the column has an unsupported dtype.
+
+    Returns:
+        pandas.DataFrame: The post-processed data-frame.
+    """
     pandas_dataframe = copy.copy(pandas_dataframe)
 
     for column_name in pandas_dataframe.columns:
@@ -150,30 +255,20 @@ def post_process_dtypes(pandas_dataframe, dtype_mappings):
     return pandas_dataframe
 
 
-def pre_process_from_pandas(pandas_dataframe: pandas.DataFrame) -> numpy.ndarray:
-    """Pre-process the Pandas data-frame."""
-    # TODO: better handle indexes
-    if not isinstance(pandas_dataframe.index, pandas.RangeIndex):
-        raise ValueError(
-            "The data-frame's index has not been reset. Please make sure to not put relevant data "
-            "in the index and instead store it in a dedicated column. Encrypted data-frames do not "
-            "currently support any index-based operations."
-        )
-
-    q_pandas_dataframe, dtype_mappings = pre_process_dtypes(pandas_dataframe)
-
-    # Replace NaN values with 0
-    q_pandas_dataframe.fillna(0, inplace=True)
-
-    q_array = q_pandas_dataframe.to_numpy(dtype=numpy.int64)
-
-    return q_array, dtype_mappings
-
-
 def post_process_to_pandas(
-    clear_array: numpy.ndarray, output_column_names: List[str], dtype_mappings
-):
-    """Post-process the server's outputs and build a Pandas data-frame from them."""
+    clear_array: numpy.ndarray, output_column_names: List[str], dtype_mappings: Dict
+) -> pandas.DataFrame:
+    """Post-process the decrypted values and use them to build a Pandas data-frame.
+
+    Args:
+        clear_array (numpy.ndarray): The values to consider.
+        output_column_names (List[str]): The column names to consider when building the Pandas
+            data-frame.
+        dtype_mappings (Dict): The mapping to use for recovering float and string values.
+
+    Returns:
+        pandas.DataFrame: The output Pandas data-frame.
+    """
     # Replace 0 values by NaN
     clear_array_0_to_nan = numpy.where(clear_array == 0, numpy.nan, clear_array)
 

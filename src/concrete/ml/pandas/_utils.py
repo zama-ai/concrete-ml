@@ -1,82 +1,168 @@
 import functools
+from typing import Optional, Tuple, Union
 
 import numpy
 
 from concrete import fhe
 
 
-def encrypt_value(value: int, client: fhe.Client, n: int, pos: int = None):
-    """Encrypt a value given a circuit and its configuration.
+def encrypt_value(
+    value: int, client: fhe.Client, n: int, pos: int
+) -> Optional[Union[fhe.Value, Tuple[Optional[fhe.Value], ...]]]:
+    """Encrypt a value using a Concrete client and the given configuration parameters.
 
-    Arguments:
-        value: The value to encrypt.
-        client: The client to use for encrypting.
-        n: The total number of inputs the circuit asks for.
-        pos: The circuit's input position to consider for encrypting the value.
+    Args:
+        value (int): The value to encrypt.
+        client (fhe.Client): The client to use for encryption.
+        n (int): The total number of inputs the client's circuit considers.
+        pos (int): The input's position to consider when encrypting it.
+
+    Returns:
+        Optional[Union[fhe.Value, Tuple[Optional[fhe.Value], ...]]]: A 'n'-tuple containing the
+            encrypted value at position 'pos' and None elsewhere.
     """
-    if pos is None:
-        encrypted_output = client.encrypt(value)
-    else:
-        clear_inputs = [None] * n
-        clear_inputs[pos] = value
+    clear_inputs = [None] * n
+    clear_inputs[pos] = value
 
-        encrypted_outputs = client.encrypt(*clear_inputs)
+    encrypted_outputs = client.encrypt(*clear_inputs)
 
-        encrypted_output = encrypted_outputs[pos]
+    encrypted_output = encrypted_outputs[pos]
 
     return encrypted_output
 
 
-def encrypt_elementwise(array: numpy.ndarray, client: fhe.Client, n: int, pos: int = None):
+def encrypt_elementwise(
+    array: numpy.ndarray, client: fhe.Client, n: int, pos: int
+) -> numpy.ndarray:
     """Encrypt an array element-wise.
 
     Arguments:
-        array: The array whose values to encrypt.
-        client: The client to use for encrypting.
-        n: The total number of inputs the circuit asks for.
-        pos: The circuit's input position to consider for encrypting the value.
+        array (numpy.ndarray): The array whose values to encrypt.
+        client (fhe.Client): The client to use for encryption.
+        n (int): The total number of inputs the client's circuit considers.
+        pos (int): The input's position to consider when encrypting it.
+
+    Returns:
+        numpy.ndarray: An array containing encrypted values only.
     """
     encrypt_func = functools.partial(encrypt_value, client=client, n=n, pos=pos)
     return numpy.vectorize(encrypt_func)(array)
 
 
-def decrypt_elementwise(array: numpy.ndarray, client: fhe.Client):
-    """Decrypt an array element-wise."""
+def decrypt_elementwise(array: numpy.ndarray, client: fhe.Client) -> numpy.ndarray:
+    """Decrypt an array element-wise.
+
+    Args:
+        array (numpy.ndarray): The array whose values to decrypt.
+        client (fhe.Client): The client to use for decryption.
+
+    Returns:
+        numpy.ndarray: An array containing decrypted values only.
+    """
     decrypt_func = lambda x: client.decrypt(x)
     return numpy.vectorize(decrypt_func)(array)
 
 
-def serialize_value(value: fhe.Value):
-    """Serialize an FHE value into a byte string."""
-    return value.serialize().hex()
+def serialize_value(encrypted_value: fhe.Value) -> str:
+    """Serialize an FHE value into a string of hexadecimal numbers.
+
+    Args:
+        encrypted_value (fhe.Value): The FHE value to serialize.
+
+    Returns:
+        str: The serialized FHE value as a string of hexadecimal numbers.
+    """
+    return encrypted_value.serialize().hex()
 
 
-def serialize_evaluation_keys(evaluation_keys: fhe.EvaluationKeys):
-    """Serialize evaluation keys into a byte string."""
-    return serialize_value(evaluation_keys)
+def deserialize_value(serialized_value: str) -> fhe.Value:
+    """Deserialize a string of hexadecimal numbers into an FHE value.
+
+    Args:
+        serialized_value (str): The string to deserialize.
+
+    Returns:
+        str: The deserialized FHE value.
+    """
+
+    return fhe.Value.deserialize(bytes.fromhex(serialized_value))
 
 
-def serialize_elementwise(array: numpy.ndarray):
-    """Serialize an array element-wise."""
+def serialize_elementwise(array: numpy.ndarray) -> numpy.ndarray:
+    """Serialize an array made of encrypted values element-wise.
+
+    Args:
+        array (numpy.ndarray): The array to serialize.
+
+    Returns:
+        numpy.ndarray: An array containing serialized encrypted values only.
+    """
     return numpy.vectorize(serialize_value, otypes=[object])(array)
 
 
-def deserialize_value(value: str):
-    """Deserialize an FHE value represented as a byte string."""
-    return fhe.Value.deserialize(bytes.fromhex(value))
+def deserialize_elementwise(array: numpy.ndarray) -> numpy.ndarray:
+    """Deserialize an array made of serialized encrypted values element-wise.
 
+    Args:
+        array (numpy.ndarray): The array to deserialize.
 
-def deserialize_elementwise(array: numpy.ndarray):
-    """Deserialize an array element-wise."""
+    Returns:
+        numpy.ndarray: An array containing deserialized encrypted values only.
+    """
     return numpy.vectorize(deserialize_value)(array)
 
 
-def deserialize_evaluation_keys(evaluation_keys: bytes):
-    """Deserialize evaluation keys represented as a byte string."""
-    return fhe.EvaluationKeys.deserialize(bytes.fromhex(evaluation_keys))
+def serialize_evaluation_keys(evaluation_keys: fhe.EvaluationKeys) -> str:
+    """Serialize the evaluation keys into a string of hexadecimal numbers.
+
+    Args:
+        evaluation_keys (fhe.EvaluationKeys): The evaluation keys to serialize.
+
+    Returns:
+        str: The serialized evaluation keys as a string of hexadecimal numbers.
+    """
+    return serialize_value(evaluation_keys)
 
 
-def slice_byte_str(byte_str, n=10):
-    start_index = len(byte_str) // 2
-    assert start_index + n < len(byte_str)
-    return ".." + byte_str[start_index : start_index + n] + ".."
+def deserialize_evaluation_keys(serialized_evaluation_keys: str) -> fhe.EvaluationKeys:
+    """Deserialize the evaluation keys.
+
+    Args:
+        serialized_evaluation_keys (str): The evaluation keys to deserialize.
+
+    Returns:
+        fhe.EvaluationKeys: The deserialized evaluation keys.
+    """
+    return fhe.EvaluationKeys.deserialize(bytes.fromhex(serialized_evaluation_keys))
+
+
+def slice_hex_str(hex_str: str, n: int = 10) -> str:
+    """Extract the n hexadecimal numbers found in the middle of the given string.
+
+    This method is used for printing a small part of encrypted values, serialized as
+    hexadecimal numbers. Dots are added before and after the sliced string.
+
+    Args:
+        hex_str (str): A string made of hexadecimal numbers.
+        n (int): The amount of characters to extract. Default to 10.
+
+    Returns:
+        str: The extracted numbers, with dots before and after.
+    """
+    start_index = len(hex_str) // 2
+    assert start_index + n < len(hex_str)
+
+    return ".." + hex_str[start_index : start_index + n] + ".."
+
+
+def get_serialized_representation_elementwise(array: numpy.ndarray) -> numpy.ndarray:
+    """Get a representation of serialized values stored in an array.
+
+    Args:
+        array (numpy.ndarray): The array to consider, made of serialized values represented as a
+            string of hexadecimal numbers.
+
+    Returns:
+        numpy.ndarray: An array containing the serialized values' representations.
+    """
+    return numpy.vectorize(slice_hex_str)(array)
