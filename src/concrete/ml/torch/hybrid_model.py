@@ -37,6 +37,7 @@ class HybridFHEMode(enum.Enum):
     REMOTE = "remote"  # Use remote FHE server
     SIMULATE = "simulate"  # Use FHE simulation
     CALIBRATE = "calibrate"  # Use calibration (to run before FHE compilation)
+    EXECUTE = "execute"  # Use FHE execution
 
 
 def tuple_to_underscore_str(tup: Tuple) -> str:
