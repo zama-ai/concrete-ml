@@ -7,7 +7,7 @@ import pandas
 from pandas.io.formats.format import get_dataframe_repr_params
 
 from concrete import fhe
-from concrete.ml.pandas._client_server import SERVER_PATH, get_encrypt_config
+from concrete.ml.pandas._client_server import get_encrypt_config, load_server
 from concrete.ml.pandas._operators import encrypted_merge
 from concrete.ml.pandas._processing import post_process_to_pandas, pre_process_from_pandas
 from concrete.ml.pandas._utils import (
@@ -23,7 +23,9 @@ from concrete.ml.pandas._utils import (
     slice_byte_str,
 )
 
-_SERVER = fhe.Server.load(SERVER_PATH)
+_SERVER = load_server()
+
+CURRENT_API_VERSION = 1
 
 
 class EncryptedDataFrame:
@@ -36,6 +38,7 @@ class EncryptedDataFrame:
         evaluation_keys: fhe.EvaluationKeys,
         column_names: List[str],
         dtype_mappings: Dict,
+        api_version: int,
     ):
         self._encrypted_values = encrypted_values
         self._encrypted_nan = encrypted_nan
@@ -44,6 +47,7 @@ class EncryptedDataFrame:
         self._column_names = list(column_names)
         self._column_names_to_index = {name: index for index, name in enumerate(column_names)}
         self._dtype_mappings = dtype_mappings
+        self._api_version = api_version
 
         self._pandas_repr = self._get_pandas_repr()
 
@@ -70,6 +74,10 @@ class EncryptedDataFrame:
     @property
     def dtype_mappings(self):
         return self._dtype_mappings
+
+    @property
+    def api_version(self):
+        return self._api_version
 
     def _get_pandas_repr(self):
         encrypted_values = serialize_elementwise(self._encrypted_values)
@@ -131,12 +139,14 @@ class EncryptedDataFrame:
             validate=validate,
         )
 
+        # TODO: better chose which enc nan / eval keys / api version to use
         joined_df = EncryptedDataFrame(
             joined_array,
             self._encrypted_nan,
             self._evaluation_keys,
             joined_column_names,
             joined_dtype_mappings,
+            self._api_version,
         )
 
         return joined_df
@@ -155,6 +165,7 @@ class EncryptedDataFrame:
             client.evaluation_keys,
             pandas_dataframe.columns,
             dtype_mappings,
+            CURRENT_API_VERSION,
         )
 
     def decrypt_to_pandas(self, client):
@@ -177,6 +188,7 @@ class EncryptedDataFrame:
             "evaluation_keys": evaluation_keys,
             "column_names": self._column_names,
             "dtype_mappings": self._dtype_mappings,
+            "api_version": self._api_version,
         }
 
         return output_dict
@@ -189,8 +201,16 @@ class EncryptedDataFrame:
         evaluation_keys = deserialize_evaluation_keys(dict_to_load["evaluation_keys"])
         column_names = dict_to_load["column_names"]
         dtype_mappings = dict_to_load["dtype_mappings"]
+        api_version = dict_to_load["api_version"]
 
-        return cls(encrypted_values, encrypted_nan, evaluation_keys, column_names, dtype_mappings)
+        return cls(
+            encrypted_values,
+            encrypted_nan,
+            evaluation_keys,
+            column_names,
+            dtype_mappings,
+            api_version,
+        )
 
     def save(self, file_path):
         file_path = Path(file_path)
