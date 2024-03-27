@@ -2,24 +2,8 @@
 from pathlib import Path
 from typing import Union
 
-from concrete.fhe import Client
-from pandas import DataFrame
-
-from ._client_server import load_client
+from .client_engine import EncryptedDataFrameClientEngine
 from .dataframe import EncryptedDataFrame
-
-
-def encrypt_from_pandas(pandas_dataframe: DataFrame, client: Client) -> EncryptedDataFrame:
-    """Encrypt a Pandas data-frame.
-
-    Args:
-        pandas_dataframe (DataFrame): The Pandas data-frame to encrypt.
-        client (Client): The Concrete client to use for encrypting the data-frame.
-
-    Returns:
-        EncryptedDataFrame: The encrypted data-frame.
-    """
-    return EncryptedDataFrame.encrypt_from_pandas(pandas_dataframe, client)
 
 
 def save_encrypted_dataframe(encrypted_dataframe: EncryptedDataFrame, path: Union[Path, str]):
