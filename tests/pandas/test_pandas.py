@@ -10,7 +10,7 @@ import pytest
 from concrete.fhe import Configuration
 from concrete.fhe.compilation.specs import ClientSpecs
 
-from concrete.ml.pandas import encrypt_from_pandas, load_client, load_encrypted_dataframe
+from concrete.ml.pandas import EncryptedDataFrameClientEngine, load_encrypted_dataframe
 from concrete.ml.pandas import merge as concrete_merge
 from concrete.ml.pandas._client_server import (
     CLIENT_PATH,
@@ -96,8 +96,8 @@ def get_two_encrypted_dataframes(
     with tempfile.TemporaryDirectory() as temp_dir:
         keys_path = Path(temp_dir) / "keys"
 
-        client_1 = load_client(keys_path=keys_path)
-        client_2 = load_client(keys_path=keys_path)
+        client_1 = EncryptedDataFrameClientEngine(keys_path=keys_path)
+        client_2 = EncryptedDataFrameClientEngine(keys_path=keys_path)
 
     if feat_names is None:
         feat_names = ("left", "right")
@@ -109,8 +109,8 @@ def get_two_encrypted_dataframes(
         feat_name=feat_names[1], indexes=indexes_right, **data_kwargs
     )
 
-    encrypted_df_left = encrypt_from_pandas(pandas_df_left, client_1)
-    encrypted_df_right = encrypt_from_pandas(pandas_df_right, client_2)
+    encrypted_df_left = client_1.encrypt_from_pandas(pandas_df_left)
+    encrypted_df_right = client_2.encrypt_from_pandas(pandas_df_right)
 
     return encrypted_df_left, encrypted_df_right
 
@@ -125,8 +125,8 @@ def test_merge(as_method, how, on):
     with tempfile.TemporaryDirectory() as temp_dir:
         keys_path = Path(temp_dir) / "keys"
 
-        client_1 = load_client(keys_path=keys_path)
-        client_2 = load_client(keys_path=keys_path)
+        client_1 = EncryptedDataFrameClientEngine(keys_path=keys_path)
+        client_2 = EncryptedDataFrameClientEngine(keys_path=keys_path)
 
     pandas_df_left = generate_pandas_dataframe(
         feat_name="left", index_name=on, indexes=[1, 2, 3, 4], index_position=2
@@ -135,8 +135,8 @@ def test_merge(as_method, how, on):
         feat_name="right", index_name=on, indexes=[2, 3], index_position=1
     )
 
-    encrypted_df_left = encrypt_from_pandas(pandas_df_left, client_1)
-    encrypted_df_right = encrypt_from_pandas(pandas_df_right, client_2)
+    encrypted_df_left = client_1.encrypt_from_pandas(pandas_df_left)
+    encrypted_df_right = client_2.encrypt_from_pandas(pandas_df_right)
 
     if as_method:
         pandas_joined_df = pandas_df_left.merge(pandas_df_right, **pandas_kwargs)
@@ -146,8 +146,8 @@ def test_merge(as_method, how, on):
         pandas_joined_df = pandas.merge(pandas_df_left, pandas_df_right, **pandas_kwargs)
         encrypted_df_joined = concrete_merge(encrypted_df_left, encrypted_df_right, **pandas_kwargs)
 
-    clear_df_joined_1 = encrypted_df_joined.decrypt_to_pandas(client_1)
-    clear_df_joined_2 = encrypted_df_joined.decrypt_to_pandas(client_2)
+    clear_df_joined_1 = client_1.decrypt_to_pandas(encrypted_df_joined)
+    clear_df_joined_2 = client_2.decrypt_to_pandas(encrypted_df_joined)
 
     assert pandas_dataframe_are_equal(clear_df_joined_1, clear_df_joined_2, equal_nan=True)
 
@@ -161,24 +161,24 @@ def test_merge(as_method, how, on):
 def test_pre_post_processing(dtype):
     include_nan = dtype != "int"
 
-    client = load_client()
+    client = EncryptedDataFrameClientEngine()
 
     pandas_df = generate_pandas_dataframe(dtype=dtype, include_nan=include_nan)
 
-    encrypted_df = encrypt_from_pandas(pandas_df, client)
+    encrypted_df = client.encrypt_from_pandas(pandas_df)
 
-    clear_df = encrypted_df.decrypt_to_pandas(client)
+    clear_df = client.decrypt_to_pandas(encrypted_df)
 
     # TODO: better test for float (?)
     assert pandas_dataframe_are_equal(pandas_df, clear_df, float_atol=1, equal_nan=include_nan)
 
 
 def test_load_save():
-    client = load_client()
+    client = EncryptedDataFrameClientEngine()
 
     pandas_df = generate_pandas_dataframe()
 
-    encrypted_df = encrypt_from_pandas(pandas_df, client)
+    encrypted_df = client.encrypt_from_pandas(pandas_df)
 
     with tempfile.TemporaryDirectory() as temp_dir:
         enc_df_path = Path(temp_dir) / "encrypted_dataframe"
@@ -187,7 +187,7 @@ def test_load_save():
 
         loaded_encrypted_df = load_encrypted_dataframe(enc_df_path)
 
-    loaded_clear_df = loaded_encrypted_df.decrypt_to_pandas(client)
+    loaded_clear_df = client.decrypt_to_pandas(loaded_encrypted_df)
 
     # TODO: better test for float (?)
     assert pandas_dataframe_are_equal(loaded_clear_df, pandas_df, float_atol=1, equal_nan=True)
@@ -283,7 +283,7 @@ def check_column_coherence():
 
 
 def check_unsupported_input_values():
-    client = load_client()
+    client = EncryptedDataFrameClientEngine()
 
     # Test with values that are out of bound
     indexes_high_integers = [73, 100]
@@ -293,13 +293,13 @@ def check_unsupported_input_values():
         ValueError,
         match=".* contains values that are out of bounds. Expected values to be in interval.*",
     ):
-        encrypt_from_pandas(pandas_df, client)
+        client.encrypt_from_pandas(pandas_df)
 
     indexes_str = list(map(str, list(range(100))))
     pandas_df = generate_pandas_dataframe(indexes=indexes_str)
 
     with pytest.raises(ValueError, match=".* contains too many unique values.*"):
-        encrypt_from_pandas(pandas_df, client)
+        client.encrypt_from_pandas(pandas_df)
 
     indexes_object_non_str = [object(), object()]
     pandas_df = generate_pandas_dataframe(indexes=indexes_object_non_str)
@@ -308,7 +308,7 @@ def check_unsupported_input_values():
         ValueError,
         match=".* contains non-string values, which is not currently supported.*",
     ):
-        encrypt_from_pandas(pandas_df, client)
+        client.encrypt_from_pandas(pandas_df)
 
     indexes_unsupported_dtype = [1 + 2j, -3 - 4j]
     pandas_df = generate_pandas_dataframe(indexes=indexes_unsupported_dtype)
@@ -317,7 +317,7 @@ def check_unsupported_input_values():
         ValueError,
         match=".* has dtype 'complex128', which is not currently supported.",
     ):
-        encrypt_from_pandas(pandas_df, client)
+        client.encrypt_from_pandas(pandas_df)
 
     indexes_not_range = [1, 3]
     pandas_df = generate_pandas_dataframe(indexes=indexes_not_range)
@@ -331,17 +331,17 @@ def check_unsupported_input_values():
             "currently support any index-based operations."
         ),
     ):
-        encrypt_from_pandas(pandas_df, client)
+        client.encrypt_from_pandas(pandas_df)
 
 
 def check_post_processing_coherence():
     on = "index"
 
-    client = load_client()
+    client = EncryptedDataFrameClientEngine()
 
     pandas_df = generate_pandas_dataframe(index_name=on)
 
-    encrypted_df = encrypt_from_pandas(pandas_df, client)
+    encrypted_df = client.encrypt_from_pandas(pandas_df)
 
     wrong_dtype = "complex128"
     encrypted_df.dtype_mappings[on]["dtype"] = wrong_dtype
@@ -352,7 +352,7 @@ def check_post_processing_coherence():
             f"Column '{on}' has dtype '{wrong_dtype}', which is unexpected and thus not supported."
         ),
     ):
-        encrypted_df.decrypt_to_pandas(client)
+        client.decrypt_to_pandas(encrypted_df)
 
 
 def test_error_raises():

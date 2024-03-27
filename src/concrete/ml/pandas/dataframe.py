@@ -25,8 +25,6 @@ from concrete.ml.pandas._utils import (
 
 _SERVER = load_server()
 
-CURRENT_API_VERSION = 1
-
 
 class EncryptedDataFrame:
     """Define an encrypted data-frame framework that supports Pandas operators and parameters."""
@@ -251,47 +249,6 @@ class EncryptedDataFrame:
         )
 
         return joined_df
-
-    @classmethod
-    def encrypt_from_pandas(cls, pandas_dataframe: pandas.DataFrame, client: fhe.Client):
-        """Encrypt a Pandas data-frame.
-
-        Args:
-            pandas_dataframe (pandas.DataFrame): The Pandas data-frame to encrypt.
-            client (fhe.Client): The Concrete client to use for encryption.
-
-        Returns:
-            EncryptedDataFrame: The encrypted data-frame.
-        """
-        pandas_array, dtype_mappings = pre_process_from_pandas(pandas_dataframe)
-
-        # TODO: how to provide encrypt configuration
-        encrypted_values = encrypt_elementwise(pandas_array, client, **get_encrypt_config())
-        encrypted_nan = encrypt_value(0, client, **get_encrypt_config())
-
-        return cls(
-            encrypted_values,
-            encrypted_nan,
-            client.evaluation_keys,
-            pandas_dataframe.columns,
-            dtype_mappings,
-            CURRENT_API_VERSION,
-        )
-
-    def decrypt_to_pandas(self, client: fhe.Client) -> pandas.DataFrame:
-        """Decrypt the data-frame and return a Pandas data-frame.
-
-        Args:
-            client (fhe.Client): The Concrete client to use for decryption.
-
-        Returns:
-            pandas.DataFrame: The Pandas data-frame built on the decrypted values..
-        """
-        clear_array = decrypt_elementwise(self._encrypted_values, client)
-        pandas_dataframe = post_process_to_pandas(
-            clear_array, self._column_names, self._dtype_mappings
-        )
-        return pandas_dataframe
 
     def _to_dict(self) -> Dict:
         """Serialize the encrypted data-frame as a dictionary.

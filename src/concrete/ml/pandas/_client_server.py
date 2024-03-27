@@ -170,26 +170,3 @@ def load_server() -> fhe.Server:
         fhe.Server: The loaded server.
     """
     return fhe.Server.load(SERVER_PATH)
-
-
-def load_client(keygen: bool = True, keys_path: Optional[Union[Path, str]] = None) -> fhe.Client:
-    """Load the client to use for generating keys and encrypting data-frames.
-
-    Args:
-        keygen (bool): If keys should be generated as well. Default to True.
-        keys_path (Optional[Union[Path, str]]): The path where to save the keys if generated. Note
-            that if some keys already exist in that path, the client will use them instead of
-            generating new ones. Default to None.
-
-    Returns:
-        fhe.Client: The loaded client.
-    """
-    client = fhe.Client.load(CLIENT_PATH)
-
-    if keygen:
-        if keys_path is not None:
-            client.keys.load_if_exists_generate_and_save_otherwise(keys_path)
-        else:
-            client.keygen(True)
-
-    return client
