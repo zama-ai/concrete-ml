@@ -873,13 +873,22 @@ class QuantizedMixingOp(QuantizedOp, is_utility=True):
     """
 
     lsbs_to_remove: Optional[Union[int, dict]] = None
-    rounding_threshold_bits: Optional[int] = None
+    rounding_threshold_bits: Union[None, int, Dict[str, Union[str, int]]] = None
 
-    def __init__(self, *args, rounding_threshold_bits: Optional[int] = None, **kwargs) -> None:
+    def __init__(
+        self,
+        *args,
+        rounding_threshold_bits: Union[None, int, Dict[str, Union[str, int]]] = None,
+        **kwargs,
+    ) -> None:
         """Initialize quantized ops parameters plus specific parameters.
 
         Args:
-            rounding_threshold_bits (Optional[int]): Number of bits to round to.
+            rounding_threshold_bits (Union[None, int, Dict[str, Union[str, int]]]): if not None,
+                every accumulators in the model are rounded down to the given bits of precision.
+                Can be an int or a dictionary with keys 'method' and 'n_bits', where 'method' is
+                either fhe.Exactness.EXACT or fhe.Exactness.APPROXIMATE, and 'n_bits' is either
+                'auto' or an int.
             *args: positional argument to pass to the parent class.
             **kwargs: named argument to pass to the parent class.
         """
@@ -964,10 +973,18 @@ class QuantizedMixingOp(QuantizedOp, is_utility=True):
         if not hasattr(self, "lsbs_to_remove") or not isinstance(self.lsbs_to_remove, dict):
             self.lsbs_to_remove = {}
 
-        if self.rounding_threshold_bits is not None and calibrate_rounding:
+        exactness = fhe.Exactness.EXACT
+        n_bits = None
+        if isinstance(self.rounding_threshold_bits, int):
+            n_bits = self.rounding_threshold_bits
+        elif isinstance(self.rounding_threshold_bits, dict):
+            n_bits = self.rounding_threshold_bits.get("n_bits")
+            exactness = self.rounding_threshold_bits.get("method", exactness)
+
+        if n_bits is not None and calibrate_rounding:
             # Compute lsbs_to_remove only when calibration is True
             current_n_bits_accumulator = compute_bits_precision(x)
-            computed_lsbs_to_remove = current_n_bits_accumulator - self.rounding_threshold_bits
+            computed_lsbs_to_remove = current_n_bits_accumulator - n_bits
 
             assert_true(
                 not isinstance(x, fhe.tracing.Tracer),
@@ -987,6 +1004,6 @@ class QuantizedMixingOp(QuantizedOp, is_utility=True):
         assert isinstance(lsbs_value, int)
 
         if lsbs_value > 0:
-            x = fhe.round_bit_pattern(x, lsbs_to_remove=lsbs_value)
+            x = fhe.round_bit_pattern(x, lsbs_to_remove=lsbs_value, exact=exactness)
 
         return x

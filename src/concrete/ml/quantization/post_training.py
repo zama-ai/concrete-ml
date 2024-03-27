@@ -212,21 +212,23 @@ class ONNXConverter:
             of the network's inputs. "op_inputs" and "op_weights" both control the quantization for
             inputs and weights of all layers.
         numpy_model (NumpyModule): Model in numpy.
-        rounding_threshold_bits (int): if not None, every accumulators in the model are rounded down
-            to the given bits of precision
+        rounding_threshold_bits (Union[None, int, Dict[str, Union[str, int]]]): if not None, every
+            accumulators in the model are rounded down to the given bits of precision. Can be an int
+            or a dictionary with keys 'method' and 'n_bits', where 'method' is either
+            fhe.Exactness.EXACT or fhe.Exactness.APPROXIMATE, and 'n_bits' is either 'auto' or an int.
     """
 
     quant_ops_dict: Dict[str, Tuple[Tuple[str, ...], QuantizedOp]]
     n_bits: Dict[str, int]
     quant_params: Dict[str, numpy.ndarray]
     numpy_model: NumpyModule
-    rounding_threshold_bits: Optional[int]
+    rounding_threshold_bits: Union[None, int, Dict[str, Union[str, int]]]
 
     def __init__(
         self,
         n_bits: Union[int, Dict],
         numpy_model: NumpyModule,
-        rounding_threshold_bits: Optional[int] = None,
+        rounding_threshold_bits: Union[None, int, Dict[str, Union[str, int]]],
     ):
         self.quant_ops_dict = {}
 
@@ -834,8 +836,12 @@ class PostTrainingAffineQuantization(ONNXConverter):
                                         - op_weights: learned parameters or constants in the network
                                         - model_outputs: final model output quantization bits
         numpy_model (NumpyModule):      Model in numpy.
-        rounding_threshold_bits (int): if not None, every accumulators in the model are rounded down
-            to the given bits of precision
+        rounding_threshold_bits (Union[None, int, Dict[str, Union[str, int]]]): if not None, every
+                                        accumulators in the model are rounded down to the given
+                                        bits of precision. Can be an int or a dictionary with keys
+                                        'method' and 'n_bits', where 'method' is either
+                                        fhe.Exactness.EXACT or fhe.Exactness.APPROXIMATE, and
+                                        'n_bits' is either 'auto' or an int.
         is_signed:                      Whether the weights of the layers can be signed.
                                         Currently, only the weights can be signed.
 
