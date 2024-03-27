@@ -1,14 +1,23 @@
+import json
 import re
+import shutil
 import tempfile
 from pathlib import Path
 
 import numpy
 import pandas
 import pytest
+from concrete.fhe import Configuration
+from concrete.fhe.compilation.specs import ClientSpecs
 
 from concrete.ml.pandas import encrypt_from_pandas, load_client, load_encrypted_dataframe
 from concrete.ml.pandas import merge as concrete_merge
-from concrete.ml.pandas._client_server import get_min_max_allowed
+from concrete.ml.pandas._client_server import (
+    CLIENT_PATH,
+    SERVER_PATH,
+    get_min_max_allowed,
+    save_client_server,
+)
 from concrete.ml.pytest.utils import pandas_dataframe_are_equal
 
 
@@ -84,8 +93,8 @@ def generate_pandas_dataframe(
 def get_two_encrypted_dataframes(
     feat_names=None, indexes_left=None, indexes_right=None, **data_kwargs
 ):
-    with tempfile.TemporaryDirectory() as temp_file:
-        keys_path = Path(temp_file) / "keys"
+    with tempfile.TemporaryDirectory() as temp_dir:
+        keys_path = Path(temp_dir) / "keys"
 
         client_1 = load_client(keys_path=keys_path)
         client_2 = load_client(keys_path=keys_path)
@@ -113,8 +122,8 @@ def test_merge(as_method, how, on):
 
     pandas_kwargs = {"how": how, "on": on}
 
-    with tempfile.TemporaryDirectory() as temp_file:
-        keys_path = Path(temp_file) / "keys"
+    with tempfile.TemporaryDirectory() as temp_dir:
+        keys_path = Path(temp_dir) / "keys"
 
         client_1 = load_client(keys_path=keys_path)
         client_2 = load_client(keys_path=keys_path)
@@ -171,8 +180,8 @@ def test_load_save():
 
     encrypted_df = encrypt_from_pandas(pandas_df, client)
 
-    with tempfile.TemporaryDirectory() as temp_file:
-        enc_df_path = Path(temp_file) / "encrypted_dataframe"
+    with tempfile.TemporaryDirectory() as temp_dir:
+        enc_df_path = Path(temp_dir) / "encrypted_dataframe"
 
         encrypted_df.save(enc_df_path)
 
@@ -344,4 +353,64 @@ def test_error_raises():
     check_post_processing_coherence()
 
 
-# TODO: Check the crypto params between current client/server and new generated ones
+def load_client_file(client_path):
+    output_dir_path = client_path.parent
+
+    shutil.unpack_archive(client_path, output_dir_path, "zip")
+
+    with (output_dir_path / "client.specs.json").open("rb") as f:
+        client_specs = ClientSpecs.deserialize(f.read())
+
+    return client_specs
+
+
+def concrete_client_files_are_equal(client_path_1, client_path_2):
+    client_path_1, client_path_2 = Path(client_path_1), Path(client_path_2)
+
+    assert client_path_1.is_file(), f"Path '{client_path_1}' is not a file."
+    assert client_path_2.is_file(), f"Path '{client_path_2}' is not a file."
+
+    client_specs_1 = load_client_file(client_path_1)
+    client_specs_2 = load_client_file(client_path_2)
+
+    return client_specs_1 == client_specs_2
+
+
+def load_server_file(server_path):
+    output_dir_path = server_path.parent
+
+    shutil.unpack_archive(server_path, output_dir_path, "zip")
+
+    with (output_dir_path / "is_simulated").open("r", encoding="utf-8") as f:
+        is_simulated = f.read() == "1"
+
+    with (output_dir_path / "circuit.mlir").open("r", encoding="utf-8") as f:
+        mlir = f.read()
+
+    with (output_dir_path / "configuration.json").open("r", encoding="utf-8") as f:
+        configuration = json.load(f)
+
+    return is_simulated, mlir, configuration
+
+
+def concrete_server_files_are_equal(server_path_1, server_path_2):
+    server_path_1, server_path_2 = Path(server_path_1), Path(server_path_2)
+
+    assert server_path_1.is_file(), f"Path '{server_path_1}' is not a file."
+    assert server_path_2.is_file(), f"Path '{server_path_2}' is not a file."
+
+    server_specs_1 = load_server_file(server_path_1)
+    server_specs_2 = load_server_file(server_path_2)
+
+    return server_specs_1 == server_specs_2
+
+
+def test_client_server_files():
+    with tempfile.TemporaryDirectory() as temp_dir:
+        client_path = Path(temp_dir) / "client.zip"
+        server_path = Path(temp_dir) / "server.zip"
+
+        save_client_server(client_path=client_path, server_path=server_path)
+
+        assert concrete_client_files_are_equal(client_path, CLIENT_PATH)
+        assert concrete_server_files_are_equal(server_path, SERVER_PATH)

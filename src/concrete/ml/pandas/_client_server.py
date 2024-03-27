@@ -89,10 +89,14 @@ def get_min_max_allowed():
     return (1, get_left_right_join_max_value(N_BITS_PANDAS))
 
 
-def save_client_server(config, force_save=True):
-    if force_save or not CLIENT_PATH.is_file() or not SERVER_PATH.is_file():
-        CLIENT_PATH.parent.mkdir(parents=True, exist_ok=True)
-        SERVER_PATH.parent.mkdir(parents=True, exist_ok=True)
+def save_client_server(client_path=CLIENT_PATH, server_path=SERVER_PATH):
+    client_path, server_path = Path(client_path), Path(server_path)
+
+    if not client_path.is_file() or not server_path.is_file():
+        client_path.parent.mkdir(parents=True, exist_ok=True)
+        server_path.parent.mkdir(parents=True, exist_ok=True)
+
+        config = PANDAS_OPS_TO_CIRCUIT_CONFIG["left_right_join"]
 
         inputset = config["get_inputset"]()
         cp_func = config["to_compile"]
@@ -101,8 +105,12 @@ def save_client_server(config, force_save=True):
         merge_circuit = cp_func.compile(inputset, composable=True)
 
         # Save the client and server files
-        merge_circuit.server.save(SERVER_PATH, via_mlir=True)
-        merge_circuit.client.save(CLIENT_PATH)
+        merge_circuit.client.save(client_path)
+        merge_circuit.server.save(server_path, via_mlir=True)
+
+
+def load_server():
+    return fhe.Server.load(SERVER_PATH)
 
 
 def load_client(keygen=True, keys_path=None):
