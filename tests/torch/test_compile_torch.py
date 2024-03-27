@@ -355,14 +355,13 @@ def accuracy_test_rounding(
 
     # Make sure the modules have the same quantization result
     qtest = to_tuple(quantized_numpy_module.quantize_input(*x_test))
-    for key, module in compiled_modules.items():
+    for _, module in compiled_modules.items():
         qtest_rounded = to_tuple(module.quantize_input(*x_test))
         assert all(
             numpy.array_equal(qtest_i, qtest_rounded_i)
             for (qtest_i, qtest_rounded_i) in zip(qtest, qtest_rounded)
         )
-
-    results = {key: [] for key in compiled_modules}
+    results: dict = {key: [] for key in compiled_modules}
     for i in range(x_test[0].shape[0]):
         q_x = tuple(q[[i]] for q in to_tuple(qtest))
         for key, module in compiled_modules.items():
@@ -385,8 +384,10 @@ def accuracy_test_rounding(
     #     key: numpy.mean(numpy.square(numpy.subtract(results['original'], result_list)))
     #     for key, result_list in results.items()
     # }
-    # assert mse_results['high_exact'] <= mse_results['low_exact'], "Rounding is not working as expected."
-    # assert mse_results['high_approximate'] <= mse_results['low_approximate'], "Rounding is not working as expected."
+    # assert (mse_results['high_exact'] <= mse_results['low_exact'],
+    #   "Rounding is not working as expected.")
+    # assert (mse_results['high_approximate'] <= mse_results['low_approximate'],
+    #   "Rounding is not working as expected.")
 
 
 # This test is a known flaky
@@ -1392,3 +1393,62 @@ def test_onnx_no_input():
         AssertionError, match="Input 'x' is missing in the ONNX graph after export."
     ):
         compile_torch_model(model, torch_input, rounding_threshold_bits=3)
+
+
+@pytest.mark.parametrize(
+    "rounding_threshold_bits, expected_exception, match_message",
+    [
+        ({"n_bits": "auto"}, NotImplementedError, "Automatic rounding is not implemented yet."),
+        (
+            "invalid_type",
+            ValueError,
+            "Invalid type for rounding_threshold_bits. Must be int, dict, or 'auto' as a string.",
+        ),
+    ],
+)
+def test_compile_torch_model_rounding_threshold_bits_errors(
+    rounding_threshold_bits, expected_exception, match_message, default_configuration
+):
+    """Test that compile_torch_model raises errors for invalid rounding_threshold_bits."""
+    model = FCSmall(input_output=5, activation_function=nn.ReLU)
+    torch_inputset = torch.randn(10, 5)
+
+    with pytest.raises(expected_exception, match=match_message):
+        compile_torch_model(
+            torch_model=model,
+            torch_inputset=torch_inputset,
+            rounding_threshold_bits=rounding_threshold_bits,
+            configuration=default_configuration,
+        )
+
+
+@pytest.mark.parametrize(
+    "rounding_method, expected_reinterpret",
+    [
+        ("APPROXIMATE", True),
+        ("EXACT", False),
+    ],
+)
+def test_rounding_mode(rounding_method, expected_reinterpret, default_configuration):
+    """Test that the underlying FHE circuit uses the right rounding method."""
+    model = FCSmall(input_output=5, activation_function=nn.ReLU)
+    torch_inputset = torch.randn(10, 5)
+    configuration = default_configuration
+
+    compiled_module = compile_torch_model(
+        torch_model=model,
+        torch_inputset=torch_inputset,
+        rounding_threshold_bits={"method": rounding_method, "n_bits": 4},
+        configuration=configuration,
+    )
+
+    # Convert compiled module to string to search for patterns
+    mlir = compiled_module.fhe_circuit.mlir
+    if expected_reinterpret:
+        assert (
+            "FHE.reinterpret_precision" in mlir and "FHE.round" not in mlir
+        ), "Expected 'FHE.reinterpret_precision' found but 'FHE.round' should not be present."
+    else:
+        assert (
+            "FHE.reinterpret_precision" not in mlir
+        ), "Unexpected 'FHE.reinterpret_precision' found."
