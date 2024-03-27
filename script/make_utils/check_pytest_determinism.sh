@@ -70,4 +70,37 @@ echo ""
 echo "diff:"
 echo ""
 diff -u "${OUTPUT_DIRECTORY}/one.modified.txt" "${OUTPUT_DIRECTORY}/three.txt" --ignore-all-space --ignore-blank-lines --ignore-space-change
+
+# Run an execution and then check that the sub_seeds depends on the file name and the function name and parameters
+RANDOMLY_SEED=$RANDOMLY_SEED TEST=tests/seeding/test_seeding_system_file_a.py make pytest_one_single_cpu > "${OUTPUT_DIRECTORY}/seeds.txt"
+
+# This would not be readable
+# SC2181: Check exit code directly with e.g., 'if mycmd;', not indirectly with $?.
+# shellcheck disable=SC2181
+if [ $? -ne 0 ]
+then
+    echo "The commandline failed with:"
+    cat  "${OUTPUT_DIRECTORY}/seeds.txt"
+    exit 255
+fi
+
+RANDOMLY_SEED=$RANDOMLY_SEED TEST=tests/seeding/test_seeding_system_file_b.py make pytest_one_single_cpu >> "${OUTPUT_DIRECTORY}/seeds.txt"
+
+# This would not be readable
+# SC2181: Check exit code directly with e.g., 'if mycmd;', not indirectly with $?.
+# shellcheck disable=SC2181
+if [ $? -ne 0 ]
+then
+    echo "The commandline failed with:"
+    cat  "${OUTPUT_DIRECTORY}/seeds.txt"
+    exit 255
+fi
+
+
+grep "Output" "${OUTPUT_DIRECTORY}/seeds.txt" > "${OUTPUT_DIRECTORY}/seeds_outputs.txt"
+grep "sub_seed" "${OUTPUT_DIRECTORY}/seeds.txt" > "${OUTPUT_DIRECTORY}/seeds_sub_seed.txt"
+
+python script/make_utils/check_first_line_is_different_from_other_lines.py --file "${OUTPUT_DIRECTORY}/seeds_outputs.txt"
+python script/make_utils/check_first_line_is_different_from_other_lines.py --file "${OUTPUT_DIRECTORY}/seeds_sub_seed.txt"
+
 echo "Successful final check"
