@@ -6,6 +6,7 @@ from importlib.metadata import version
 from pathlib import Path
 
 import torch
+from concrete.fhe import Exactness
 from concrete.fhe.compilation.configuration import Configuration
 from models import cnv_2w2a
 from torch.utils.data import DataLoader
@@ -90,7 +91,7 @@ quantized_numpy_module, compilation_execution_time = measure_execution_time(
     torch_model,
     x,
     configuration=configuration,
-    rounding_threshold_bits=6,
+    rounding_threshold_bits={"method": Exactness.APPROXIMATE, "n_bits": 6},
     p_error=P_ERROR,
 )
 assert isinstance(quantized_numpy_module, QuantizedModule)
@@ -137,9 +138,8 @@ for image_index in range(NUM_SAMPLES):
     print(f"Quantization of a single input (image) took {quantization_execution_time} seconds")
     print(f"Size of CLEAR input is {q_x_numpy.nbytes} bytes\n")
 
-    p_error = quantized_numpy_module.fhe_circuit.p_error
     expected_quantized_prediction, clear_inference_time = measure_execution_time(
-        partial(quantized_numpy_module.fhe_circuit.simulate, p_error=p_error)
+        partial(quantized_numpy_module.fhe_circuit.simulate)
     )(q_x_numpy)
 
     # Encrypt the input
