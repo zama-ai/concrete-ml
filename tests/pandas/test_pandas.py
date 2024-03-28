@@ -10,7 +10,7 @@ import pytest
 from concrete.fhe import Configuration
 from concrete.fhe.compilation.specs import ClientSpecs
 
-from concrete.ml.pandas import EncryptedDataFrameClientEngine, load_encrypted_dataframe
+from concrete.ml.pandas import ClientEngine, load_encrypted_dataframe
 from concrete.ml.pandas import merge as concrete_merge
 from concrete.ml.pandas._client_server import (
     CLIENT_PATH,
@@ -96,8 +96,8 @@ def get_two_encrypted_dataframes(
     with tempfile.TemporaryDirectory() as temp_dir:
         keys_path = Path(temp_dir) / "keys"
 
-        client_1 = EncryptedDataFrameClientEngine(keys_path=keys_path)
-        client_2 = EncryptedDataFrameClientEngine(keys_path=keys_path)
+        client_1 = ClientEngine(keys_path=keys_path)
+        client_2 = ClientEngine(keys_path=keys_path)
 
     if feat_names is None:
         feat_names = ("left", "right")
@@ -125,8 +125,8 @@ def test_merge(as_method, how, on):
     with tempfile.TemporaryDirectory() as temp_dir:
         keys_path = Path(temp_dir) / "keys"
 
-        client_1 = EncryptedDataFrameClientEngine(keys_path=keys_path)
-        client_2 = EncryptedDataFrameClientEngine(keys_path=keys_path)
+        client_1 = ClientEngine(keys_path=keys_path)
+        client_2 = ClientEngine(keys_path=keys_path)
 
     pandas_df_left = generate_pandas_dataframe(
         feat_name="left", index_name=on, indexes=[1, 2, 3, 4], index_position=2
@@ -161,7 +161,7 @@ def test_merge(as_method, how, on):
 def test_pre_post_processing(dtype):
     include_nan = dtype != "int"
 
-    client = EncryptedDataFrameClientEngine()
+    client = ClientEngine()
 
     pandas_df = generate_pandas_dataframe(dtype=dtype, include_nan=include_nan)
 
@@ -174,7 +174,7 @@ def test_pre_post_processing(dtype):
 
 
 def test_load_save():
-    client = EncryptedDataFrameClientEngine()
+    client = ClientEngine()
 
     pandas_df = generate_pandas_dataframe()
 
@@ -283,7 +283,7 @@ def check_column_coherence():
 
 
 def check_unsupported_input_values():
-    client = EncryptedDataFrameClientEngine()
+    client = ClientEngine()
 
     # Test with values that are out of bound
     indexes_high_integers = [73, 100]
@@ -337,7 +337,7 @@ def check_unsupported_input_values():
 def check_post_processing_coherence():
     on = "index"
 
-    client = EncryptedDataFrameClientEngine()
+    client = ClientEngine()
 
     pandas_df = generate_pandas_dataframe(index_name=on)
 
