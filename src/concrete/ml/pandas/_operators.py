@@ -1,3 +1,4 @@
+"""Implement Pandas operators in FHE using encrypted data-frames."""
 from typing import Any, Dict, Hashable, List, Optional, Sequence, Tuple, Union
 
 import numpy
@@ -7,14 +8,14 @@ from pandas.core.reshape.merge import _MergeOperation
 
 UNSUPPORTED_PANDAS_PARAMETERS = {
     "merge": {
-        "left_on": lambda x: x is None,
-        "right_on": lambda x: x is None,
-        "left_index": lambda x: x == False,
-        "right_index": lambda x: x == False,
-        "sort": lambda x: x == False,
-        "copy": lambda x: x is None,
-        "indicator": lambda x: x == False,
-        "validate": lambda x: x is None,
+        "left_on": None,
+        "right_on": None,
+        "left_index": False,
+        "right_index": False,
+        "sort": False,
+        "copy": None,
+        "indicator": False,
+        "validate": None,
     },
 }
 
@@ -30,55 +31,62 @@ def check_parameter_is_supported(parameter: Any, parameter_name: str, operator: 
     Raises:
         ValueError: If the parameter is not supported by the operator.
     """
-    condition_func = UNSUPPORTED_PANDAS_PARAMETERS[operator].get(parameter_name, None)
+    default_parameter = UNSUPPORTED_PANDAS_PARAMETERS[operator].get(parameter_name, None)
 
-    if condition_func is not None and not condition_func(parameter):
+    if parameter is not default_parameter:
         raise ValueError(
             f"Parameter '{parameter_name}' is not currently supported. Got {parameter}."
         )
 
 
-def check_dtype_of_selected_column_for_merge(df_left, df_right, on: str):
+def check_dtype_of_selected_column_for_merge(left_encrypted, right_encrypted, selected_column: str):
     """Check that the selected column dtype matches between the two encrypted data-frames.
 
     Args:
-        df_left (EncryptedDataFrame): The left encrypted data-frame.
-        df_right (EncryptedDataFrame): The right encrypted data-frame.
-        on (str): The selected column name, common to both encrypted data-frames.
+        left_encrypted (EncryptedDataFrame): The left encrypted data-frame.
+        right_encrypted (EncryptedDataFrame): The right encrypted data-frame.
+        selected_column (str): The selected column name, common to both encrypted data-frames.
 
     Raises:
         ValueError: If both dtypes do not match.
         ValueError: If both dtypes represent floating point values.
         ValueError: If both dtypes represent string values but the mappings do not match.
     """
-    on_left, on_right = df_left.dtype_mappings[on], df_right.dtype_mappings[on]
-    dtype_left, dtype_right = numpy.dtype(on_left["dtype"]), numpy.dtype(on_right["dtype"])
+    selected_column_left, selected_column_right = (
+        left_encrypted.dtype_mappings[selected_column],
+        right_encrypted.dtype_mappings[selected_column],
+    )
+    dtype_left, dtype_right = numpy.dtype(selected_column_left["dtype"]), numpy.dtype(
+        selected_column_right["dtype"]
+    )
 
     if dtype_left == dtype_right:
         if numpy.issubdtype(dtype_left, numpy.floating):
             raise ValueError(
-                f"Column '{on}' cannot be selected for merging both data-frames because it has a "
-                f"floating dtype ({dtype_left})"
+                f"Column '{selected_column}' cannot be selected for merging both data-frames "
+                f"because it has a floating dtype ({dtype_left})"
             )
-        elif dtype_left == "object":
-            str_mapping_left = on_left["str_to_int"]
-            str_mapping_right = on_right["str_to_int"]
+        if dtype_left == "object":
+            str_mapping_left = selected_column_left["str_to_int"]
+            str_mapping_right = selected_column_right["str_to_int"]
 
             # TODO: add hash
             if str_mapping_left != str_mapping_right:
                 raise ValueError(
-                    f"Mappings for string values in both common column '{on}' do not match."
+                    f"Mappings for string values in both common column '{selected_column}' do "
+                    "not match."
                 )
     else:
         raise ValueError(
-            f"Dtypes of both common column '{on}' do not match. Got {dtype_left} (left) and "
-            f"{dtype_right} (right)."
+            f"Dtypes of both common column '{selected_column}' do not match. Got {dtype_left} "
+            f"(left) and {dtype_right} (right)."
         )
 
 
+# pylint: disable-next=invalid-name
 def encrypted_left_right_join(
-    df_left,
-    df_right,
+    left_encrypted,
+    right_encrypted,
     server: Server,
     how: str,
     on: Optional[str],
@@ -89,8 +97,8 @@ def encrypted_left_right_join(
     parameters are supported, and joining on multiple columns is not available.
 
     Args:
-        df_left (EncryptedDataFrame): The left encrypted data-frame.
-        df_right (EncryptedDataFrame): The right encrypted data-frame.
+        left_encrypted (EncryptedDataFrame): The left encrypted data-frame.
+        right_encrypted (EncryptedDataFrame): The right encrypted data-frame.
         server (Server): The Concrete server to use for running the computations in FHE.
         how (str): Type of merge to be performed, one of {'left', 'right'}.
             * left: use only keys from left frame, similar to a SQL left outer join;
@@ -107,27 +115,27 @@ def encrypted_left_right_join(
     assert how in allowed_how, f"Parameter 'how' must be in {allowed_how}. Got {how}."
 
     if how == "right":
-        df_left, df_right = df_right, df_left
+        left_encrypted, right_encrypted = right_encrypted, left_encrypted
 
-    array_joined = []
+    joined_rows = []
 
     # _df_clear won't be accessible on the server's side, so two options :
     # - we define an empty data-frame of the same shape when loading
     # - we store and save/load the shapes using new class attributes
-    n_rows_left = df_left.encrypted_values.shape[0]
-    n_columns_right = df_right.encrypted_values.shape[1]
+    n_rows_left = left_encrypted.encrypted_values.shape[0]
+    n_columns_right = right_encrypted.encrypted_values.shape[1]
 
     # Retrieve the left and right column's index on which keys to merge
-    left_key_column_index = df_left.column_names_to_index[on]
-    right_key_column_index = df_right.column_names_to_index[on]
+    left_key_column_index = left_encrypted.column_names_to_index[on]
+    right_key_column_index = right_encrypted.column_names_to_index[on]
 
     # Loop over the left data frame's number of rows (which will become the joined data frame's
     # number of rows)
-    n_rows_right = df_right.encrypted_values.shape[0]
+    n_rows_right = right_encrypted.encrypted_values.shape[0]
     for i_left in range(n_rows_left):
 
         # For left merge, all left values are exactly equal to the left data frame
-        array_joined_i_left = df_left.encrypted_values[i_left, :]
+        array_joined_i_left = left_encrypted.encrypted_values[i_left, :]
 
         if how == "right":
             array_joined_i_left = numpy.delete(array_joined_i_left, left_key_column_index, axis=0)
@@ -135,7 +143,7 @@ def encrypted_left_right_join(
         left_row_to_join = array_joined_i_left.tolist()
 
         # Retrieve the left data frame's key to merge on
-        left_key = df_left.encrypted_values[i_left, left_key_column_index]
+        left_key = left_encrypted.encrypted_values[i_left, left_key_column_index]
 
         right_row_to_join = []
 
@@ -147,31 +155,32 @@ def encrypted_left_right_join(
                 continue
 
             # Default value is NaN
-            right_value_to_join = df_right.encrypted_nan
+            right_value_to_join = right_encrypted.encrypted_nan
 
             # Loop over the right data-frame's number of rows in order to check if one row's key
             # matches the on-going left key
             for i_right in range(n_rows_right):
 
                 # Retrieve the right data-frame's value to sum if both keys match
-                value_to_put_right = df_right.encrypted_values[i_right, j_right]
+                value_to_put_right = right_encrypted.encrypted_values[i_right, j_right]
 
                 # Retrieve the right data frame's key to merge on
-                right_key = df_right.encrypted_values[i_right, right_key_column_index]
+                right_key = right_encrypted.encrypted_values[i_right, right_key_column_index]
 
                 # Sum the values:
-                # - on the first iteration, this sums a 0 (representing a NaN) with the right data-frame's
+                # - on the first iteration, this sums a 0 (representing a NaN) with the right
+                #   data-frame's
                 # - on the following iterations, the sum is applied between the previous sum's
                 # value. If both keys match, this results in this value, else in 0
                 # result and the new selected value.
                 # At the end of the loop, since keys are unique in the right data-frame, the overall
-                # sum was applied on at most a single non-zero value (ie, both keys matched during
-                # an iteration only)
+                # sum was applied on at most a single non-zero value (meaning both keys matched
+                # during an iteration only)
                 merge_inputs = (right_value_to_join, value_to_put_right, left_key, right_key)
 
                 # TODO: how to use evaluation_keys ?
                 right_value_to_join = server.run(
-                    *merge_inputs, evaluation_keys=df_left.evaluation_keys
+                    *merge_inputs, evaluation_keys=left_encrypted.evaluation_keys
                 )
 
             right_row_to_join.append(right_value_to_join)
@@ -183,15 +192,17 @@ def encrypted_left_right_join(
         else:
             joined_row = right_row_to_join + left_row_to_join
 
-        array_joined.append(joined_row)
+        joined_rows.append(joined_row)
 
-    array_joined = numpy.array(array_joined)
+    array_joined = numpy.array(joined_rows)
 
     if how == "right":
         array_joined = numpy.hstack(
             (
                 array_joined[:, :right_key_column_index],
-                df_left.encrypted_values[:, left_key_column_index : left_key_column_index + 1],
+                left_encrypted.encrypted_values[
+                    :, left_key_column_index : left_key_column_index + 1
+                ],
                 array_joined[:, right_key_column_index:],
             ),
         )
@@ -199,9 +210,10 @@ def encrypted_left_right_join(
     return array_joined
 
 
+# pylint: disable-next=too-many-arguments, invalid-name
 def encrypted_merge(
-    df_left,
-    df_right,
+    left_encrypted,
+    right_encrypted,
     server: Server,
     how: str = "left",
     on: Optional[str] = None,
@@ -224,9 +236,8 @@ def encrypted_merge(
     https://pandas.pydata.org/pandas-docs/version/2.0/reference/api/pandas.DataFrame.merge.html
 
     Args:
-        df_left (EncryptedDataFrame): The left encrypted data-frame.
-        df_right (EncryptedDataFrame): The right encrypted data-frame.
-        server (Server): _description_
+        left_encrypted (EncryptedDataFrame): The left encrypted data-frame.
+        right_encrypted (EncryptedDataFrame): The right encrypted data-frame.
         server (Server): The Concrete server to use for running the computations in FHE.
         how (str): Type of merge to be performed, one of {'left', 'right'}.
             * left: use only keys from left frame, similar to a SQL left outer join;
@@ -284,8 +295,8 @@ def encrypted_merge(
 
     # Retrieve the input column names and build empty data-frames based on them
     # Insert
-    empty_df_left = pandas.DataFrame(index=range(1), columns=df_left.column_names)
-    empty_df_right = pandas.DataFrame(index=range(1), columns=df_right.column_names)
+    empty_df_left = pandas.DataFrame(index=range(1), columns=left_encrypted.column_names)
+    empty_df_right = pandas.DataFrame(index=range(1), columns=right_encrypted.column_names)
 
     # Check input validation
     empty_merge_op = _MergeOperation(
@@ -310,12 +321,14 @@ def encrypted_merge(
     if len(empty_merge_op.join_names) != 1:
         raise ValueError("Merging on 0 or several columns is not currently available.")
 
-    on = empty_merge_op.join_names[0]
+    selected_column = empty_merge_op.join_names[0]
 
-    check_dtype_of_selected_column_for_merge(df_left, df_right, on)
+    check_dtype_of_selected_column_for_merge(left_encrypted, right_encrypted, selected_column)
 
-    joined_dtype_mappings = {**df_left.dtype_mappings, **df_right.dtype_mappings}
+    joined_dtype_mappings = {**left_encrypted.dtype_mappings, **right_encrypted.dtype_mappings}
 
-    joined_array = encrypted_left_right_join(df_left, df_right, server, how, on)
+    joined_array = encrypted_left_right_join(
+        left_encrypted, right_encrypted, server, how, selected_column
+    )
 
     return joined_array, joined_column_names, joined_dtype_mappings

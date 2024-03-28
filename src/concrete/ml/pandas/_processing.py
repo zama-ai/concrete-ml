@@ -1,6 +1,7 @@
+"""Define pre-processing and post-processing steps for encrypted data-frames."""
 import copy
 from collections import defaultdict
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, cast
 
 import numpy
 import pandas
@@ -37,8 +38,8 @@ def compute_scale_zero_point(column: pandas.Series, q_min: int, q_max: int) -> T
         scale = (q_max - q_min) / (values_max - values_min)
 
         # TODO: add round for ZP when changing management of NaN values
-        # This is because rounding ZP + rounding of quant can make values reach 0, which is not allowed
-        # as it's used for representing NaN values
+        # This is because rounding ZP + rounding of quant can make values reach 0, which is not
+        # allowed as it is used for representing NaN values
         zero_point = values_min * scale - q_min
 
     return scale, zero_point
@@ -76,7 +77,7 @@ def dequant(
     x = (q_x + zero_point) / scale
 
     if dtype is None:
-        dtype = numpy.float32
+        dtype = cast(numpy.dtype, numpy.float32)
 
     return x.astype(dtype)
 
@@ -105,7 +106,7 @@ def pre_process_dtypes(pandas_dataframe: pandas.DataFrame) -> Tuple[pandas.DataF
     """
     pandas_dataframe = copy.copy(pandas_dataframe)
 
-    dtype_mappings = defaultdict(dict)
+    dtype_mappings: Dict[str, Dict] = defaultdict(dict)
 
     q_min, q_max = get_min_max_allowed()
 

@@ -1,3 +1,4 @@
+"""Define the framework used for managing keys (encrypt, decrypt) for encrypted data-frames."""
 from pathlib import Path
 from typing import Optional, Union
 
@@ -15,9 +16,7 @@ CURRENT_API_VERSION = 1
 class ClientEngine:
     """Define a framework that manages keys."""
 
-    def __init__(
-        self, keygen: bool = True, keys_path: Optional[Union[Path, str]] = None
-    ) -> fhe.Client:
+    def __init__(self, keygen: bool = True, keys_path: Optional[Union[Path, str]] = None):
         self.client = fhe.Client.load(CLIENT_PATH)
 
         if keygen:
@@ -69,8 +68,8 @@ class ClientEngine:
         Returns:
             pandas.DataFrame: The Pandas data-frame built on the decrypted values.
         """
-        clear_array = decrypt_elementwise(encrypted_dataframe._encrypted_values, self.client)
+        clear_array = decrypt_elementwise(encrypted_dataframe.encrypted_values, self.client)
         pandas_dataframe = post_process_to_pandas(
-            clear_array, encrypted_dataframe._column_names, encrypted_dataframe._dtype_mappings
+            clear_array, encrypted_dataframe.column_names, encrypted_dataframe.dtype_mappings
         )
         return pandas_dataframe

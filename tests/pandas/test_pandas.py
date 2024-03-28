@@ -1,13 +1,14 @@
+"""Tests the encrypted data-frame API abd its coherence with Pandas"""
 import json
 import re
 import shutil
 import tempfile
 from pathlib import Path
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy
 import pandas
 import pytest
-from concrete.fhe import Configuration
 from concrete.fhe.compilation.specs import ClientSpecs
 
 from concrete.ml.pandas import ClientEngine, load_encrypted_dataframe
@@ -22,14 +23,38 @@ from concrete.ml.pytest.utils import pandas_dataframe_are_equal
 
 
 def generate_pandas_dataframe(
-    dtype="mixed",
-    feat_name="feat",
-    n_features=1,
-    index_name=None,
-    indexes=None,
-    index_position=0,
-    include_nan=True,
-):
+    dtype: str = "mixed",
+    feat_name: str = "feat",
+    n_features: int = 1,
+    index_name: Optional[str] = None,
+    indexes: Optional[Union[int, List]] = None,
+    index_position: int = 0,
+    include_nan: bool = True,
+) -> pandas.DataFrame:
+    """Generate a Pandas data-frame.
+
+    Note that in this case, the index is not the Pandas' index but rather a dedicated column.
+
+    Args:
+        dtype (str): The dtype to consider when generating the data-frame, one of
+            ["int", "float", "str", "mixed"]:
+            * "int": generates n_features feature(s) made of integers in the allowed range
+            * "float": generates n_features feature(s) made of floating points
+            * "str": generates n_features feature(s) made of strings picked from a fixed list
+            * "mixed": generates 3*n_features features, n_features for each of the above dtypes
+            Default to "mixed".
+        feat_name (str): The features' base name to consider. Default to "feat".
+        n_features (int): The number of features to use per dtype. Default to 1.
+        index_name (Optional[str]): The index's name. Default to None ("index").
+        indexes (Optional[Union[int, List]]): Custom indexes to consider. Default to None (5 rows,
+            indexed from 1 to 5).
+        index_position (int): The index's column position in the data-frame. Default to 0.
+        include_nan (bool): If NaN values should be put in the data-frame. If True, they are
+            inserted in the first row. Default to True.
+
+    Returns:
+        pandas.DataFrame: The generated Pandas data-frame.
+    """
     if indexes is None:
         indexes = 5
 
@@ -51,11 +76,11 @@ def generate_pandas_dataframe(
     columns = {}
 
     if dtype in ["int", "mixed"]:
-        min, max = get_min_max_allowed()
+        low, high = get_min_max_allowed()
 
         for i in range(1, n_features + 1):
             columns[f"{feat_name}_int_{i}"] = list(
-                numpy.random.randint(low=min, high=max, size=(len(indexes),))
+                numpy.random.randint(low=low, high=high, size=(len(indexes),))
             )
 
     if dtype in ["float", "mixed"]:
@@ -91,8 +116,24 @@ def generate_pandas_dataframe(
 
 
 def get_two_encrypted_dataframes(
-    feat_names=None, indexes_left=None, indexes_right=None, **data_kwargs
-):
+    feat_names: Optional[Sequence] = None,
+    indexes_left: Optional[Union[int, List]] = None,
+    indexes_right: Optional[Union[int, List]] = None,
+    **data_kwargs,
+) -> Tuple[pandas.DataFrame, pandas.DataFrame]:
+    """Generated two Pandas data-frame.
+
+    Args:
+        feat_names (Optional[Sequence]): The features' base name to consider for both data-frame.
+            Default to None (("left", "right")).
+        indexes_left (Optional[Union[int, List]]): Custom indexes to consider for the first
+            data-frame. Default to None.
+        indexes_right (Optional[Union[int, List]]): Custom indexes to consider for the second
+            data-frame. Default to None.
+
+    Returns:
+        Tuple[pandas.DataFrame, pandas.DataFrame]: The two generated Pandas data-frame.
+    """
     with tempfile.TemporaryDirectory() as temp_dir:
         keys_path = Path(temp_dir) / "keys"
 
@@ -117,10 +158,10 @@ def get_two_encrypted_dataframes(
 
 @pytest.mark.parametrize("as_method", [True, False])
 @pytest.mark.parametrize("how", ["left", "right"])
-@pytest.mark.parametrize("on", ["index", None])
-def test_merge(as_method, how, on):
-
-    pandas_kwargs = {"how": how, "on": on}
+@pytest.mark.parametrize("selected_column", ["index", None])
+def test_merge(as_method, how, selected_column):
+    """Test that the encrypted merge operator is equivalent to Pandas' merge."""
+    pandas_kwargs = {"how": how, "on": selected_column}
 
     with tempfile.TemporaryDirectory() as temp_dir:
         keys_path = Path(temp_dir) / "keys"
@@ -129,10 +170,10 @@ def test_merge(as_method, how, on):
         client_2 = ClientEngine(keys_path=keys_path)
 
     pandas_df_left = generate_pandas_dataframe(
-        feat_name="left", index_name=on, indexes=[1, 2, 3, 4], index_position=2
+        feat_name="left", index_name=selected_column, indexes=[1, 2, 3, 4], index_position=2
     )
     pandas_df_right = generate_pandas_dataframe(
-        feat_name="right", index_name=on, indexes=[2, 3], index_position=1
+        feat_name="right", index_name=selected_column, indexes=[2, 3], index_position=1
     )
 
     encrypted_df_left = client_1.encrypt_from_pandas(pandas_df_left)
@@ -159,6 +200,7 @@ def test_merge(as_method, how, on):
 
 @pytest.mark.parametrize("dtype", ["int", "float", "str", "mixed"])
 def test_pre_post_processing(dtype):
+    """Test pre-processing and post-processing steps."""
     include_nan = dtype != "int"
 
     client = ClientEngine()
@@ -173,7 +215,8 @@ def test_pre_post_processing(dtype):
     assert pandas_dataframe_are_equal(pandas_df, clear_df, float_atol=1, equal_nan=include_nan)
 
 
-def test_load_save():
+def test_save_load():
+    """Test saving and loading an encrypted data-frame."""
     client = ClientEngine()
 
     pandas_df = generate_pandas_dataframe()
@@ -194,6 +237,7 @@ def test_load_save():
 
 
 def check_invalid_merge_parameters():
+    """Check that unsupported or invalid parameters for merge raise the correct errors."""
     encrypted_df_left, encrypted_df_right = get_two_encrypted_dataframes()
 
     unsupported_pandas_parameters_and_values = [
@@ -228,7 +272,8 @@ def check_invalid_merge_parameters():
             )
 
 
-def check_no_multi_index_merge():
+def check_no_multi_columns_merge():
+    """Check that trying to merge on several columns raise the correct error."""
     encrypted_df_left, encrypted_df_right = get_two_encrypted_dataframes(feat_names=("", ""))
 
     with pytest.raises(
@@ -239,32 +284,33 @@ def check_no_multi_index_merge():
 
 
 def check_column_coherence():
-    on = "index"
+    """Check that merging data-frames with unsupported scheme raise the correct errors."""
+    index_name = "index"
 
     # Test when a selected column has a different dtype than the other one
     encrypted_df_left, encrypted_df_right = get_two_encrypted_dataframes(
-        index_name=on, indexes_left=[1, 2], indexes_right=[1.3, 7.3]
+        index_name=index_name, indexes_left=[1, 2], indexes_right=[1.3, 7.3]
     )
 
     with pytest.raises(
         ValueError,
         match=re.escape(
-            f"Dtypes of both common column '{on}' do not match. Got int64 (left) and float64 "
-            "(right)."
+            f"Dtypes of both common column '{index_name}' do not match. Got int64 (left) and "
+            "float64 (right)."
         ),
     ):
         encrypted_df_left.merge(encrypted_df_right)
 
     # Test when both selected columns have a float dtype
     encrypted_df_left, encrypted_df_right = get_two_encrypted_dataframes(
-        index_name=on, indexes_left=[1.3, 7.3], indexes_right=[1.3, 7.3]
+        index_name=index_name, indexes_left=[1.3, 7.3], indexes_right=[1.3, 7.3]
     )
 
     with pytest.raises(
         ValueError,
         match=re.escape(
-            f"Column '{on}' cannot be selected for merging both data-frames because it has a "
-            f"floating dtype (float64)"
+            f"Column '{index_name}' cannot be selected for merging both data-frames because it has "
+            f"a floating dtype (float64)"
         ),
     ):
         encrypted_df_left.merge(encrypted_df_right)
@@ -272,17 +318,22 @@ def check_column_coherence():
     # Test when both selected columns have a object dtype (string) but with different string
     # mappings
     encrypted_df_left, encrypted_df_right = get_two_encrypted_dataframes(
-        index_name=on, indexes_left=["cherry", "watermelon"], indexes_right=["orange", "watermelon"]
+        index_name=index_name,
+        indexes_left=["cherry", "watermelon"],
+        indexes_right=["orange", "watermelon"],
     )
 
     with pytest.raises(
         ValueError,
-        match=re.escape(f"Mappings for string values in both common column '{on}' do not match."),
+        match=re.escape(
+            f"Mappings for string values in both common column '{index_name}' do not match."
+        ),
     ):
         encrypted_df_left.merge(encrypted_df_right)
 
 
 def check_unsupported_input_values():
+    """Check that initializing a data-frame with unsupported inputs raise the correct errors."""
     client = ClientEngine()
 
     # Test with values that are out of bound
@@ -335,35 +386,46 @@ def check_unsupported_input_values():
 
 
 def check_post_processing_coherence():
-    on = "index"
+    """Check post-processing a data-frame with unsupported scheme raise the correct errors."""
+    index_name = "index"
 
     client = ClientEngine()
 
-    pandas_df = generate_pandas_dataframe(index_name=on)
+    pandas_df = generate_pandas_dataframe(index_name=index_name)
 
     encrypted_df = client.encrypt_from_pandas(pandas_df)
 
     wrong_dtype = "complex128"
-    encrypted_df.dtype_mappings[on]["dtype"] = wrong_dtype
+    encrypted_df.dtype_mappings[index_name]["dtype"] = wrong_dtype
 
     with pytest.raises(
         ValueError,
         match=re.escape(
-            f"Column '{on}' has dtype '{wrong_dtype}', which is unexpected and thus not supported."
+            f"Column '{index_name}' has dtype '{wrong_dtype}', which is unexpected and thus not "
+            "supported."
         ),
     ):
         client.decrypt_to_pandas(encrypted_df)
 
 
 def test_error_raises():
+    """Check that expected errors are properly raised."""
     check_invalid_merge_parameters()
-    check_no_multi_index_merge()
+    check_no_multi_columns_merge()
     check_column_coherence()
     check_unsupported_input_values()
     check_post_processing_coherence()
 
 
-def load_client_file(client_path):
+def deserialize_client_file(client_path: Union[Path, str]) -> ClientSpecs:
+    """Deserialize a Concrete client file.
+
+    Args:
+        client_path (Union[Path, str]): The path to the client file.
+
+    Returns:
+        ClientSpecs: The ClientSpecs object used for instantiating a Client object.
+    """
     with tempfile.TemporaryDirectory() as temp_dir:
         output_dir_path = Path(temp_dir)
 
@@ -375,19 +437,38 @@ def load_client_file(client_path):
         return client_specs
 
 
-def concrete_client_files_are_equal(client_path_1, client_path_2):
+def concrete_client_files_are_equal(
+    client_path_1: Union[Path, str], client_path_2: Union[Path, str]
+) -> bool:
+    """Deserialize and compare two Concrete client files.
+
+    Args:
+        client_path_1 (Union[Path, str]): The path to the first client file.
+        client_path_2 (Union[Path, str]): The path to the second client file.
+
+    Returns:
+        bool: If both client files are equal.
+    """
     client_path_1, client_path_2 = Path(client_path_1), Path(client_path_2)
 
     assert client_path_1.is_file(), f"Path '{client_path_1}' is not a file."
     assert client_path_2.is_file(), f"Path '{client_path_2}' is not a file."
 
-    client_specs_1 = load_client_file(client_path_1)
-    client_specs_2 = load_client_file(client_path_2)
+    client_specs_1 = deserialize_client_file(client_path_1)
+    client_specs_2 = deserialize_client_file(client_path_2)
 
     return client_specs_1 == client_specs_2
 
 
-def load_server_file(server_path):
+def deserialize_server_file(server_path: Union[Path, str]) -> Tuple[bool, str, Dict]:
+    """Deserialize a Concrete server file.
+
+    Args:
+        server_path (Union[Path, str]): The path to the server file.
+
+    Returns:
+        Tuple[bool, str, Dict]: The objects used for instantiating a Server object.
+    """
     with tempfile.TemporaryDirectory() as temp_dir:
         output_dir_path = Path(temp_dir)
 
@@ -405,24 +486,40 @@ def load_server_file(server_path):
         return is_simulated, mlir, configuration
 
 
-def concrete_server_files_are_equal(server_path_1, server_path_2):
+def concrete_server_files_are_equal(
+    server_path_1: Union[Path, str], server_path_2: Union[Path, str]
+) -> bool:
+    """Deserialize and compare two Concrete server files.
+
+    Args:
+        server_path_1 (Union[Path, str]): The path to the first server file.
+        server_path_2 (Union[Path, str]): The path to the first server file.
+
+    Returns:
+        bool: If the server files are equal.
+    """
     server_path_1, server_path_2 = Path(server_path_1), Path(server_path_2)
 
     assert server_path_1.is_file(), f"Path '{server_path_1}' is not a file."
     assert server_path_2.is_file(), f"Path '{server_path_2}' is not a file."
 
-    server_specs_1 = load_server_file(server_path_1)
-    server_specs_2 = load_server_file(server_path_2)
+    server_specs_1 = deserialize_server_file(server_path_1)
+    server_specs_2 = deserialize_server_file(server_path_2)
 
     return server_specs_1 == server_specs_2
 
 
 def test_client_server_files():
+    """Test if new generated client/server files are equal to the ones stored in source."""
     with tempfile.TemporaryDirectory() as temp_dir:
         client_path = Path(temp_dir) / "client.zip"
         server_path = Path(temp_dir) / "server.zip"
 
         save_client_server(client_path=client_path, server_path=server_path)
 
-        assert concrete_client_files_are_equal(client_path, CLIENT_PATH)
-        assert concrete_server_files_are_equal(server_path, SERVER_PATH)
+        assert concrete_client_files_are_equal(
+            client_path, CLIENT_PATH
+        ), "The new generated client file is not equal to the one stored in source."
+        assert concrete_server_files_are_equal(
+            server_path, SERVER_PATH
+        ), "The new generated server file is not equal to the one stored in source."

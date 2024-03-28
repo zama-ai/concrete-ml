@@ -1,3 +1,4 @@
+"""Define the encrypted data-frame framework."""
 import json
 from pathlib import Path
 from typing import Dict, Hashable, List, Optional, Sequence, Tuple, Union
@@ -7,16 +8,12 @@ import pandas
 from pandas.io.formats.format import get_dataframe_repr_params
 
 from concrete import fhe
-from concrete.ml.pandas._client_server import get_encrypt_config, load_server
+from concrete.ml.pandas._client_server import load_server
 from concrete.ml.pandas._operators import encrypted_merge
-from concrete.ml.pandas._processing import post_process_to_pandas, pre_process_from_pandas
 from concrete.ml.pandas._utils import (
-    decrypt_elementwise,
     deserialize_elementwise,
     deserialize_evaluation_keys,
     deserialize_value,
-    encrypt_elementwise,
-    encrypt_value,
     get_serialized_representation_elementwise,
     serialize_elementwise,
     serialize_evaluation_keys,
@@ -137,6 +134,7 @@ class EncryptedDataFrame:
         pandas_repr = pandas.DataFrame(self._dtype_mappings, columns=self._column_names)
         return pandas_repr
 
+    # pylint: disable-next=invalid-repr-returned
     def __repr__(self) -> str:
         """Represent the encrypted data-frame as a string.
 
@@ -144,7 +142,10 @@ class EncryptedDataFrame:
             str: The encrypted data-frame's string representation.
         """
         repr_params = get_dataframe_repr_params()
-        return self._pandas_repr.to_string(index=False, **repr_params)
+        pandas_repr_str = self._pandas_repr.to_string(index=False, **repr_params)
+
+        assert isinstance(pandas_repr_str, str)
+        return pandas_repr_str
 
     def _repr_html_(self) -> str:
         """Represent the encrypted data-frame as a string for HTML.
@@ -156,6 +157,7 @@ class EncryptedDataFrame:
         """
         return self._pandas_repr.to_html(index=False)
 
+    # pylint: disable-next=too-many-arguments, invalid-name
     def merge(
         self,
         other,
@@ -170,7 +172,7 @@ class EncryptedDataFrame:
         copy: Optional[bool] = None,
         indicator: Union[bool, str] = False,
         validate: Optional[str] = None,
-    ) -> Tuple[numpy.ndarray, List[str], Dict]:
+    ):
         """Merge two encrypted data-frames in FHE using Pandas parameters.
 
         Note that for now, only a left and right join is implemented. Additionally, only some Pandas
@@ -181,45 +183,37 @@ class EncryptedDataFrame:
 
         Args:
             other (EncryptedDataFrame): The other encrypted data-frame.
-            server (Server): _description_
-            server (Server): The Concrete server to use for running the computations in FHE.
             how (str): Type of merge to be performed, one of {'left', 'right'}.
                 * left: use only keys from left frame, similar to a SQL left outer join;
                 preserve key order.
                 * right: use only keys from right frame, similar to a SQL right outer join;
                 preserve key order.
-            on (Optional[str]): Column name to join on. These must be found in both DataFrames. If it is
-                None then this defaults to the intersection of the columns in both DataFrames. Default
-                to None.
+            on (Optional[str]): Column name to join on. These must be found in both DataFrames. If
+                it is None then this defaults to the intersection of the columns in both DataFrames.
+                Default to None.
             left_on (Optional[Union[Hashable, Sequence[Hashable]]]): Currently not supported, please
                 keep the default value. Default to None.
-            right_on (Optional[Union[Hashable, Sequence[Hashable]]]): Currently not supported, please
-                keep the default value. Default to None.
-            left_index (bool): Currently not supported, please keep the default value. Default to False.
+            right_on (Optional[Union[Hashable, Sequence[Hashable]]]): Currently not supported,
+                please keep the default value. Default to None.
+            left_index (bool): Currently not supported, please keep the default value. Default to
+                False.
             right_index (bool): Currently not supported, please keep the default value. Default
                 to False.
             sort (bool): Currently not supported, please keep the default value. Default to False.
-            suffixes (Tuple[Optional[str], Optional[str]]): A length-2 sequence where each element is
-                optionally a string indicating the suffix to add to overlapping column names in `left`
-                and `right` respectively. Pass a value of `None` instead of a string to indicate that
-                the column name from `left` or `right` should be left as-is, with no suffix. At least
-                one of the values must not be None.. Default to ("_x", "_y").
-            copy (Optional[bool]): Currently not supported, please keep the default value. Default to
-                None.
+            suffixes (Tuple[Optional[str], Optional[str]]): A length-2 sequence where each element
+                is optionally a string indicating the suffix to add to overlapping column names in
+                `left` and `right` respectively. Pass a value of `None` instead of a string to
+                indicate that the column name from `left` or `right` should be left as-is, with no
+                suffix. At least one of the values must not be None.. Default to ("_x", "_y").
+            copy (Optional[bool]): Currently not supported, please keep the default value. Default
+                to None.
             indicator (Union[bool, str]): Currently not supported, please keep the default value.
                 Default to False.
-            validate (Optional[str]): Currently not supported, please keep the default value. Default
-                to None.
-
-        Raises:
-            ValueError: If the merge is expected to be done on multiple columns.
-            NotImplementedError: If parameter 'how' is set to anything else than one
-                of {'left', 'right'}.
+            validate (Optional[str]): Currently not supported, please keep the default value.
+                Default to None.
 
         Returns:
-            Tuple[numpy.ndarray, List[str], Dict]: The values representing the joined encrypted
-                data-frame, the associated columns as well as the mappings needed for mapping the
-                integers back to their initial string values.
+            EncryptedDataFrame: The joined encrypted data-frame.
         """
         joined_array, joined_column_names, joined_dtype_mappings = encrypted_merge(
             self,
@@ -307,7 +301,7 @@ class EncryptedDataFrame:
         path = Path(path)
 
         encrypted_df_dict = self._to_dict()
-        with path.open("w") as file:
+        with path.open("w", encoding="utf-8") as file:
             json.dump(encrypted_df_dict, file)
 
     @classmethod
@@ -322,7 +316,7 @@ class EncryptedDataFrame:
         """
         path = Path(path)
 
-        with path.open("r") as file:
+        with path.open("r", encoding="utf-8") as file:
             encrypted_df_dict = json.load(file)
 
         return cls._from_dict(encrypted_df_dict)
