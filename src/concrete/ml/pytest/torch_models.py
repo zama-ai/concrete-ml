@@ -1632,8 +1632,6 @@ class TorchAutoRoundingTLUTester(nn.Module):
                 self.bias = torch.FloatTensor(numpy.random.uniform(size=(1, self.n_neurons, 1, 1)))
             else:
                 self.bias = torch.FloatTensor(numpy.random.uniform(size=self.input_shape))
-        else:
-            raise AssertionError("Invalid value for tlu_unique_mode: " + tlu_unique_mode)
 
         self.bias = torch.FloatTensor(self.bias * bias_scale)
 
