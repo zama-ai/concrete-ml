@@ -123,8 +123,8 @@ class EncryptedDataFrame:
 
         return pandas_repr
 
-    def print_scheme(self) -> pandas.DataFrame:
-        """Print the encrypted data-frame's scheme.
+    def get_scheme(self) -> pandas.DataFrame:
+        """Get the encrypted data-frame's scheme.
 
         The scheme can include column names, dtypes or dtype mappings.
 

@@ -714,10 +714,6 @@ def pandas_dataframe_are_equal(
     Returns:
         Bool: Wether both data-frames are equal.
     """
-    # Check that both data-frames have the same columns
-    if set(df_1.columns) != set(df_2.columns):
-        return False
-
     df_1 = copy.copy(df_1)
     df_2 = copy.copy(df_2)
 

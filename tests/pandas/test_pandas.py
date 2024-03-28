@@ -30,6 +30,8 @@ def generate_pandas_dataframe(
     indexes: Optional[Union[int, List]] = None,
     index_position: int = 0,
     include_nan: bool = True,
+    float_min: float = -10.0,
+    float_max: float = 10.0,
 ) -> pandas.DataFrame:
     """Generate a Pandas data-frame.
 
@@ -51,6 +53,10 @@ def generate_pandas_dataframe(
         index_position (int): The index's column position in the data-frame. Default to 0.
         include_nan (bool): If NaN values should be put in the data-frame. If True, they are
             inserted in the first row. Default to True.
+        float_min (float): The minimum float value to use for defining the range of values allowed
+            when generating the float column.
+        float_max (float): The maximum float value to use for defining the range of values allowed
+            when generating the float column.
 
     Returns:
         pandas.DataFrame: The generated Pandas data-frame.
@@ -87,7 +93,7 @@ def generate_pandas_dataframe(
         for i in range(1, n_features + 1):
             column_name = f"{feat_name}_float_{i}"
             columns[column_name] = list(
-                numpy.random.uniform(low=-10, high=10, size=(len(indexes),))
+                numpy.random.uniform(low=float_min, high=float_max, size=(len(indexes),))
             )
 
             if include_nan:
@@ -221,6 +227,31 @@ def test_pre_post_processing(dtype):
     ), "Processed encrypted data-frame does not match Pandas' initial data-frame."
 
 
+@pytest.mark.parametrize("float_min_max", [0.0, 1.0])
+def test_quantization_corner_cases(float_min_max):
+    """Test quantization process for corner cases.
+
+    This test makes sure that the pre-process and post-process steps properly handle columns with
+    single float values (0 or else), as the quantization process handle these differently.
+    """
+
+    client = ClientEngine()
+
+    pandas_df = generate_pandas_dataframe(
+        dtype="float", float_min=float_min_max, float_max=float_min_max
+    )
+
+    encrypted_df = client.encrypt_from_pandas(pandas_df)
+
+    clear_df = client.decrypt_to_pandas(encrypted_df)
+
+    # Improve the test to avoid risk of flaky
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4342
+    assert pandas_dataframe_are_equal(
+        pandas_df, clear_df, float_atol=1, equal_nan=True
+    ), "Processed encrypted data-frame does not match Pandas' initial data-frame."
+
+
 def test_save_load():
     """Test saving and loading an encrypted data-frame."""
     client = ClientEngine()
@@ -235,6 +266,22 @@ def test_save_load():
         encrypted_df.save(enc_df_path)
 
         loaded_encrypted_df = load_encrypted_dataframe(enc_df_path)
+
+    assert (
+        encrypted_df.api_version == loaded_encrypted_df.api_version
+    ), "API versions between initial and loaded encrypted data-frame do not match."
+
+    assert (
+        encrypted_df.column_names == loaded_encrypted_df.column_names
+    ), "Column names between initial and loaded encrypted data-frame do not match."
+
+    assert (
+        encrypted_df.column_names_to_index == loaded_encrypted_df.column_names_to_index
+    ), "Column name mappings between initial and loaded encrypted data-frame do not match."
+
+    assert (
+        encrypted_df.dtype_mappings == loaded_encrypted_df.dtype_mappings
+    ), "Dtype mappings between initial and loaded encrypted data-frame do not match."
 
     loaded_clear_df = client.decrypt_to_pandas(loaded_encrypted_df)
 
@@ -534,3 +581,35 @@ def test_client_server_files():
         assert concrete_server_files_are_equal(
             server_path, SERVER_PATH
         ), "The new generated server file is not equal to the one stored in source."
+
+
+def test_print_and_repr():
+    """Test that print, repr and get_scheme properly work."""
+    pandas_df = pandas.DataFrame(
+        {"index": [1, 2], "A": [9, 3], "B": [-5.2, 2.9], "C": ["orange", "watermelon"]}
+    )
+
+    client = ClientEngine()
+
+    encrypted_df = client.encrypt_from_pandas(pandas_df)
+
+    # Because values are encrypted and this cannot be seeded, we are currently not able to make sure
+    # the print and repr are matching an expected result
+    print(encrypted_df)
+    repr(encrypted_df)
+
+    expected_scheme = pandas.DataFrame(
+        {
+            "index": ["int64", numpy.nan, numpy.nan, numpy.nan],
+            "A": ["int64", numpy.nan, numpy.nan, numpy.nan],
+            "B": ["float64", 1.7283950617283952, -9.987654320987655, numpy.nan],
+            "C": ["object", numpy.nan, numpy.nan, {"orange": 1, "watermelon": 2}],
+        },
+        index=["dtype", "scale", "zero_point", "str_to_int"],
+    )
+
+    scheme = encrypted_df.get_scheme()
+
+    assert pandas_dataframe_are_equal(
+        expected_scheme, scheme, equal_nan=True
+    ), "Expected and retrieved schemes do not match."
