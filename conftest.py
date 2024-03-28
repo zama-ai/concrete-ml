@@ -223,7 +223,10 @@ def autoseeding_of_everything(request):
     relative_file_path = absolute_path[test_dir_index + 1 :]
 
     # Derive the sub_seed from the randomly_seed and the test name
-    derivation_string = f"{relative_file_path} # {str(request.node.name)} # {randomly_seed}"
+    derivation_string = (
+        f"{relative_file_path} # {str(request.node.name)} "
+        f"# {randomly_seed} # {str(request.node.own_markers)}"
+    )
 
     hash_object = hashlib.sha256()
     hash_object.update(derivation_string.encode("utf-8"))

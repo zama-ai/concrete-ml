@@ -9,6 +9,7 @@ SRC_DIR:=src
 TEST?=tests
 N_CPU?=4
 CONCRETE_PACKAGE_PATH=$(SRC_DIR)/concrete
+SPHINX_APIDOC_EXCLUDE=$(SRC_DIR)/concrete/ml/common/preprocessors.py
 COUNT?=1
 RANDOMLY_SEED?=$$RANDOM
 PYTEST_OPTIONS:=
@@ -415,7 +416,7 @@ docs_no_links: clean_docs check_docs_dollars
 	mkdir -p docs/_static/
 	@# Generate the auto summary of documentations
 	@# Cannot do without specifying top module currently with sphinx-apidoc
-	poetry run sphinx-apidoc --implicit-namespaces -o docs/_apidoc $(CONCRETE_PACKAGE_PATH)
+	poetry run sphinx-apidoc --implicit-namespaces -o docs/_apidoc $(CONCRETE_PACKAGE_PATH) $(SPHINX_APIDOC_EXCLUDE)
 	@# Doing a copy of docs, where we modify files
 	rm -rf docs-copy
 	cp -r docs docs-copy
