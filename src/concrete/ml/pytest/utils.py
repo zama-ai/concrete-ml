@@ -700,7 +700,7 @@ def pandas_dataframe_are_equal(
     float_atol: float = 1.0e-8,
     equal_nan: bool = False,
 ):
-    """Determines if both data-frames are identical.
+    """Determine if both data-frames are identical.
 
     Args:
         df_1 (pandas.DataFrame): The first data-frame to consider.

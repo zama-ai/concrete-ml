@@ -1,5 +1,6 @@
+"""Define utility functions for encrypted data-frames."""
 import functools
-from typing import Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import numpy
 
@@ -7,12 +8,12 @@ from concrete import fhe
 
 
 def encrypt_value(
-    value: int, client: fhe.Client, n: int, pos: int
+    value: Optional[Union[int, numpy.ndarray, List]], client: fhe.Client, n: int, pos: int
 ) -> Optional[Union[fhe.Value, Tuple[Optional[fhe.Value], ...]]]:
     """Encrypt a value using a Concrete client and the given configuration parameters.
 
     Args:
-        value (int): The value to encrypt.
+        value (Optional[Union[int, numpy.ndarray, List]]): The value(s) to encrypt.
         client (fhe.Client): The client to use for encryption.
         n (int): The total number of inputs the client's circuit considers.
         pos (int): The input's position to consider when encrypting it.
@@ -22,13 +23,29 @@ def encrypt_value(
             encrypted value at position 'pos' and None elsewhere.
     """
     clear_inputs = [None] * n
-    clear_inputs[pos] = value
+    clear_inputs[pos] = value  # type: ignore[assignment]
 
     encrypted_outputs = client.encrypt(*clear_inputs)
 
     encrypted_output = encrypted_outputs[pos]
 
     return encrypted_output
+
+
+def decrypt_value(
+    value: fhe.Value, client: fhe.Client
+) -> Optional[Union[int, numpy.ndarray, Tuple[Optional[Union[int, numpy.ndarray]], ...]]]:
+    """Decrypt an FHE value using a Concrete client.
+
+    Args:
+        value (fhe.Value): The FHE value(s) to decrypt.
+        client (fhe.Client): The client to use for decryption.
+
+    Returns:
+        Optional[Union[int, numpy.ndarray, Tuple[Optional[Union[int, numpy.ndarray]], ...]]]: The
+            decrypted value(s).
+    """
+    return client.decrypt(value)
 
 
 def encrypt_elementwise(
@@ -59,7 +76,7 @@ def decrypt_elementwise(array: numpy.ndarray, client: fhe.Client) -> numpy.ndarr
     Returns:
         numpy.ndarray: An array containing decrypted values only.
     """
-    decrypt_func = lambda x: client.decrypt(x)
+    decrypt_func = functools.partial(decrypt_value, client=client)
     return numpy.vectorize(decrypt_func)(array)
 
 
