@@ -46,7 +46,6 @@ from torch import nn
 from concrete.ml.common.serialization.dumpers import dump, dumps
 from concrete.ml.common.serialization.loaders import load, loads
 from concrete.ml.common.utils import (
-    USE_OLD_VL,
     array_allclose_and_same_shape,
     get_model_class,
     get_model_name,
@@ -1690,8 +1689,8 @@ def test_fitted_compiled_error_raises(
 @pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
 @pytest.mark.parametrize(
     "error_param",
-    [{"p_error": 0.9999999999990905}],  # 1 - 2**-40
-    ids=["p_error"],
+    [{"p_error": 1 - 2**-40}, {"p_error": 2**-40}],
+    ids=["p_error_high", "p_error_low"],
 )
 def test_p_error_simulation(
     model_class,
@@ -1713,10 +1712,6 @@ def test_p_error_simulation(
 
     # Check if model is linear
     is_linear_model = is_model_class_in_a_list(model_class, _get_sklearn_linear_models())
-
-    # Do not run the test for linear models since there is no PBS (i.e. p_error has no impact)
-    if is_linear_model:
-        pytest.skip("Linear models do not have PBS")
 
     # Compile with a large p_error to be sure the result is random.
     model.compile(x, **error_param)
@@ -1744,17 +1739,14 @@ def test_p_error_simulation(
     fhe_diff_found = check_for_divergent_predictions(x, model, fhe="execute")
 
     # Check for differences in predictions
-    # Remark that, with the old VL, linear models (or, more generally, circuits without PBS) were
-    # badly simulated. It has been fixed in the new simulation.
-    if is_linear_model and USE_OLD_VL:
+    if is_linear_model:
 
-        # In FHE, high p_error affect the crypto parameters which
-        # makes the predictions slightly different
-        assert fhe_diff_found, "FHE predictions should be different for linear models"
+        # Linear models should give the same results whatever the p_error
+        assert fhe_diff_found
 
-        # linear models p_error is not simulated
-        assert not simulation_diff_found, "SIMULATE predictions not the same for linear models"
-
+        # Simulation and FHE differs with very high p_error on leveled circuit
+        # FIXME https://github.com/zama-ai/concrete-ml-internal/issues/4343
+        assert not simulation_diff_found
     else:
         assert fhe_diff_found and simulation_diff_found, (
             f"Predictions not different in at least one run.\n"

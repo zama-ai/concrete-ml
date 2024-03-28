@@ -1446,9 +1446,7 @@ def test_rounding_mode(rounding_method, expected_reinterpret, default_configurat
     mlir = compiled_module.fhe_circuit.mlir
     if expected_reinterpret:
         assert (
-            "FHE.reinterpret_precision" in mlir and "FHE.round" not in mlir
-        ), "Expected 'FHE.reinterpret_precision' found but 'FHE.round' should not be present."
+            "reinterpret_precision" in mlir and "round" not in mlir
+        ), "Expected 'reinterpret_precision' found but 'round' should not be present."
     else:
-        assert (
-            "FHE.reinterpret_precision" not in mlir
-        ), "Unexpected 'FHE.reinterpret_precision' found."
+        assert "reinterpret_precision" not in mlir, "Unexpected 'reinterpret_precision' found."
