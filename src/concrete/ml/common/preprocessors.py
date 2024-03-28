@@ -2,7 +2,7 @@
 
 from copy import deepcopy
 from itertools import product
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Tuple, Union
 
 import networkx as nx
 import numpy as np
@@ -111,7 +111,7 @@ class CycleDetector(GraphProcessor):
 def vectorized_graph_eval(
     graph: Graph,
     *inputs: np.ndarray,
-    sorted_nodes: Optional[List] = None,
+    sorted_nodes: List,
     input_indices: np.ndarray = None,
 ) -> Union[Any, np.ndarray]:
     """Compute the output of a subgraph on a tensor input.
@@ -119,8 +119,7 @@ def vectorized_graph_eval(
     Args:
         graph (Graph): the computation graph to evaluate
         inputs (Tuple[np.ndarray,...]): list of inputs to the graph
-        sorted_nodes (Optional[List]): the graph nodes in sorted order. If not given,
-            this list will be computed
+        sorted_nodes (List): the graph nodes in sorted order
         input_indices (np.ndarray): indices that map the input list to the graph inputs
 
     Returns:
@@ -131,8 +130,6 @@ def vectorized_graph_eval(
     """
 
     node_results: Dict[Node, Union[np.bool_, np.integer, np.floating, np.ndarray]] = {}
-    if sorted_nodes is None:
-        sorted_nodes = list(nx.topological_sort(graph.graph))
 
     for node in sorted_nodes:
         if node.operation == Operation.Input:
@@ -142,16 +139,8 @@ def vectorized_graph_eval(
             continue
 
         pred_results = [deepcopy(node_results[pred]) for pred in graph.ordered_preds_of(node)]
-        try:
-            node_results[node] = node.evaluator(*pred_results)
-        except Exception as error:
-            raise RuntimeError(
-                "Evaluation of the graph failed\n\n"
-                + graph.format(
-                    highlighted_nodes={node: ["evaluation of this node failed"]},
-                    show_bounds=False,
-                )
-            ) from error
+
+        node_results[node] = node.evaluator(*pred_results)
 
     result = tuple(node_results[node] for node in graph.ordered_outputs())
     return result if len(result) > 1 else result[0]
@@ -253,7 +242,7 @@ def add_rounding_node(
 
 def add_leveled_op_with_cst(
     a_node: Node,
-    b: Union[int, np.ndarray],
+    b: Union[np.number, np.ndarray],
     function: Callable[[np.ndarray, np.ndarray], np.ndarray],
     graph: nx.DiGraph,
 ) -> Node:
@@ -278,7 +267,10 @@ def add_leveled_op_with_cst(
     # When processing a single subgraph b is a float scalar, but when
     # we're processing the main graph, b is an int or an array corresponding
     # to a broadcasted value
-    assert isinstance(b, (np.float64, np.int64, np.ndarray))
+    assert isinstance(b, (np.float64, np.int64)) or (
+        isinstance(b, np.ndarray) and b.dtype in (np.float64, np.int64)
+    ), f"Constant {b} should be of dtype np.int64 or np.float64, not {b.dtype}"
+
     assert isinstance(a_node.output.dtype, (Float, Integer))
 
     constant_node = Node.constant(b)
@@ -297,15 +289,13 @@ def add_leveled_op_with_cst(
         some_inputs = np.zeros((2,) + a_node.output.shape)
         some_inputs[0] = a_node.bounds[0]  # min
         some_inputs[1] = a_node.bounds[1]  # max
-        results = function(np.array(some_inputs), b[np.newaxis, ...])
+        results = function(np.array(some_inputs), np.asarray(b)[np.newaxis, ...])
         bounds = (
             results.min(),
             results.max(),
         )
         constant_dtype = Integer.that_can_represent(b)
         result_dtype = Integer.that_can_represent(results.astype(np.int64))
-    else:
-        raise ValueError(f"Constant {b} should be of dtype np.int64 or np.float64, not {b.dtype}")
 
     constant_node.output = ValueDescription(
         dtype=constant_dtype,
@@ -451,8 +441,9 @@ def delta_optimize(
         ValueError: if the rounding function is not supported
     """
 
-    if rounding_function.__name__ != "round_bit_pattern":
-        raise ValueError()
+    assert (
+        rounding_function.__name__ == "round_bit_pattern"
+    ), "Only round is supported for TLU adjustment"
 
     x_min, x_max = bounds
     bitwidth_input = Integer.that_can_represent([x_min, x_max]).bit_width
@@ -669,16 +660,8 @@ def get_subgraph_input(subgraph: Graph) -> Node:
         if "name" in node.properties and node.properties["name"] == "input":
             assert input_node is None, "More than one astype float node detected"
             input_node = node
-    if input_node is None:
-        # TODO: figure out how to insert right in the beginning of the graph
-        for first_node in nx.topological_sort(subgraph.graph):
-            # Only constants allowed
-            if "constant" in first_node.properties:
-                continue
-            if first_node.properties["name"] == "astype":
-                return first_node
 
-        raise ValueError(f"Couldn't detect input node in:\n{subgraph.format()}")
+    assert input_node is not None, f"Couldn't detect input node in:\n{subgraph.format()}"
     return input_node
 
 
@@ -733,13 +716,12 @@ def make_subgraph_input_tensor(
     subgraph_input_shape = tuple([len(subgraph_inputs), *orig_shape_[1:]])
 
     if len(expected_shape) > 1:
-        assert expected_shape[0] == 1
         subgraph_inputs = np.tile(
             subgraph_inputs[
                 tuple(
                     [
                         slice(0, len(subgraph_inputs), 1),
-                        *[np.newaxis for _ in range(len(expected_shape) - 1)],
+                        *[np.newaxis for _ in range(len(expected_shape))],
                     ]
                 )
             ],
@@ -820,12 +802,10 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
 
     def __init__(
         self,
-        verbose: bool = False,
         exactness: Exactness = Exactness.APPROXIMATE,
         overflow_protection: bool = True,
         internal_bit_width_target: int = 24,
     ):
-        self.verbose = verbose
         self.exactness = exactness
         self.overflow_protection = overflow_protection
         self.rounding_function = round_bit_pattern
@@ -844,7 +824,7 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
             ordered=True,  # Not strictly necessary but easier to debug
         )
 
-        for tlu_index, tlu_node in enumerate(tlu_nodes):
+        for tlu_node in tlu_nodes:
             # On each tlu we do:
             # 1. Optimize a and b for the subgraph
             # 2. Insert a and b in the graph
@@ -855,12 +835,6 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
             if "subgraph" not in tlu_node.evaluator.properties["kwargs"]:
                 continue
             tlu_subgraph: Graph = tlu_node.evaluator.properties["kwargs"]["subgraph"]
-
-            if self.verbose:
-                print(f"TLU-{tlu_index} before optimization")
-                print("#" * 20)
-                print(tlu_subgraph.format())
-                print("#" * 20)
 
             # TLU input node (multiple inputs using the same subgraph is not supported)
             variable_input_node = get_tlu_node_subgraph_input_node(graph, tlu_node)
@@ -936,10 +910,6 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
             tlu_node.properties["attributes"]["lsbs_to_remove"] = n_round
 
             modify_subgraph_for_rounded_inputs(tlu_subgraph, best_a, best_b)
-
-        if self.verbose:
-            print("TLU optimization done:")
-            print(graph.format())
 
     def modify_graph_to_round_subgraph_inputs(
         self,

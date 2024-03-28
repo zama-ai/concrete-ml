@@ -1,6 +1,6 @@
 """Unit tests for TLU optimization preprocessors."""
 
-from typing import List
+from typing import List, Tuple
 
 import numpy
 import pytest
@@ -67,6 +67,15 @@ def make_random_function(x_min, x_max):
     return f
 
 
+def make_division():
+    """Make a division function that generates a stair-case style TLU."""
+
+    def f(x):
+        return (x / 4.0).astype(numpy.int64) + 1
+
+    return f
+
+
 def make_tlu_optimizer_function(execution_number: int, function_name: str):
     """Make a function to be tested by the TLU optimizer."""
 
@@ -99,15 +108,20 @@ def make_tlu_optimizer_function(execution_number: int, function_name: str):
         n_bits_from = execution_number + 1
         x_min, x_max = -(2**n_bits_from), (2**n_bits_from) - 1
         f = make_random_function(x_min, x_max)
+    elif function_name == "division":
+        f = make_division()
     else:
         raise AssertionError(f"Invalid function to test for TLU optimization {function_name}")
 
     return f, x_min, x_max
 
 
-@pytest.mark.parametrize("execution_number", range(1, 7))
-@pytest.mark.parametrize("function_name", ["staircase_pot", "staircase", "identity", "random"])
-def test_tlu_optimizer(execution_number: int, function_name: str):
+@pytest.mark.parametrize("execution_number", [1, 2, 4])
+@pytest.mark.parametrize(
+    "function_name", ["staircase_pot", "staircase", "identity", "random", "division"]
+)
+@pytest.mark.parametrize("shape", [(1,), (2, 2), (2, 2, 2), (2, 3, 1, 4)])
+def test_tlu_optimizer(execution_number: int, function_name: str, shape: Tuple[int, ...]): # pylint: disable=too-many-locals
     """Tests the tlu optimizer with various functions."""
 
     curr_seed = numpy.random.randint(0, 2**32)
@@ -115,14 +129,14 @@ def test_tlu_optimizer(execution_number: int, function_name: str):
 
     f, x_min, x_max = make_tlu_optimizer_function(execution_number, function_name)
 
+    tile_shape = (*shape, 1)
     # Function definition bounds
-    input_set = numpy.arange(x_min, x_max + 1, 1, dtype=numpy.int64)
+    vals = numpy.arange(x_min, x_max + 1, 1, dtype=numpy.int64)
+    input_set = numpy.moveaxis(numpy.tile(vals, tile_shape), -1, 0)
     input_set_as_list_of_array = [numpy.array([elt]) for elt in input_set]
 
     # Optim, Rounding
-    tlu_optimizer = TLUDeltaBasedOptimizer(
-        verbose=False, exactness=Exactness.EXACT, overflow_protection=False
-    )
+    tlu_optimizer = TLUDeltaBasedOptimizer(exactness=Exactness.EXACT, overflow_protection=False)
     cycle_detector = CycleDetector()
     additional_pre_processors: List[GraphProcessor] = [tlu_optimizer]
     additional_post_processors: List[GraphProcessor] = [cycle_detector]

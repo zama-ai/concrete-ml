@@ -66,7 +66,7 @@ def test_tlu_analysis_granularity(is_conv, tlu_test_mode):
     # Verify that this TLU was optimized
     if tlu_node in tlu_optimizer.statistics:
         assert (
-            set("shape", "size", "original_bitwidth", "optimized_bitwidth")
+            set(["shape", "size", "original_bitwidth", "optimized_bitwidth"])
             == tlu_optimizer.statistics[tlu_node].keys()
         )
 
