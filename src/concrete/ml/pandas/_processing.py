@@ -1,7 +1,7 @@
 """Define pre-processing and post-processing steps for encrypted data-frames."""
 import copy
 from collections import defaultdict
-from typing import Dict, List, Optional, Tuple, cast
+from typing import Dict, List, Tuple
 
 import numpy
 import pandas
@@ -61,7 +61,7 @@ def quant(x: pandas.Series, scale: float, zero_point: float) -> pandas.Series:
 
 
 def dequant(
-    q_x: pandas.Series, scale: float, zero_point: float, dtype: Optional[numpy.dtype] = None
+    q_x: pandas.Series, scale: float, zero_point: float, dtype: numpy.dtype
 ) -> pandas.Series:
     """De-quantize the column.
 
@@ -69,16 +69,12 @@ def dequant(
         q_x (pandas.Series): The column to de-quantize.
         scale (float): The scale to consider.
         zero_point (float): The zero-point to consider.
-        dtype (Optional[numpy.dtype]): The dtype to use for casting the de-quantized value. Default
-            to None, which represents a 'float32' dtype.
+        dtype (numpy.dtype): The dtype to use for casting the de-quantized value.
 
     Returns:
         pandas.Series: The de-quantized column.
     """
     x = (q_x + zero_point) / scale
-
-    if dtype is None:
-        dtype = cast(numpy.dtype, numpy.float32)
 
     return x.astype(dtype)
 
