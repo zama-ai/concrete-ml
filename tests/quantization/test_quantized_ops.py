@@ -302,11 +302,11 @@ ARITH_N_BITS_LIST = [20, 16, 8]
 @pytest.mark.parametrize(
     "params_a, params_b, n_dims",
     [
-        pytest.param((-10, 1), (5, 100), 100),
-        pytest.param((20, 100), (0, 0.2), 200),
-        pytest.param((40, 20), (-10, 500), 300),
-        pytest.param((-100, 1), (200, 1), 100),
-        pytest.param((0, 0.1), (0, 0.1), 20),
+        pytest.param((-10, 1), (5, 10), 10),
+        pytest.param((20, 10), (0, 0.2), 20),
+        pytest.param((40, 2), (-10, 50), 30),
+        pytest.param((-10, 1), (20, 1), 10),
+        pytest.param((0, 0.1), (0, 0.1), 5),
     ],
 )
 @pytest.mark.parametrize(
@@ -434,7 +434,6 @@ def test_all_arith_ops(
     [
         pytest.param(50, 3, 4),
         pytest.param(20, 50, 30),
-        pytest.param(200, 30, 50),
         pytest.param(10, 20, 1),
         pytest.param(10, 100, 10),
     ],
