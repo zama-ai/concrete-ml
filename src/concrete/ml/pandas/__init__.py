@@ -2,7 +2,7 @@
 from pathlib import Path
 from typing import Union
 
-from .client_engine import EncryptedDataFrameClientEngine
+from .client_engine import ClientEngine
 from .dataframe import EncryptedDataFrame
 
 

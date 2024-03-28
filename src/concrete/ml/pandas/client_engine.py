@@ -12,7 +12,7 @@ from concrete.ml.pandas.dataframe import EncryptedDataFrame
 CURRENT_API_VERSION = 1
 
 
-class EncryptedDataFrameClientEngine:
+class ClientEngine:
     """Define a framework that manages keys."""
 
     def __init__(
