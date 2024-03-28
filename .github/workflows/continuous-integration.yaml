@@ -388,7 +388,7 @@ jobs:
       # benchmarks and use cases 
       - name: Pull LFS test files
         run: |
-          git lfs pull --include "tests/data" --include "src/concrete/ml/pandas/_client_server_files" --exclude  ""
+          git lfs pull --include "tests/data/**, src/concrete/ml/pandas/_client_server_files/**" --exclude  ""
 
       - name: Set up Python ${{ matrix.python_version }}
         uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c
@@ -1036,7 +1036,7 @@ jobs:
       # benchmarks and use cases 
       - name: Pull LFS test files
         run: |
-          git lfs pull --include "tests/data" --include "src/concrete/ml/pandas/_client_server_files" --exclude  ""
+          git lfs pull --include "tests/data/**, src/concrete/ml/pandas/_client_server_files/**" --exclude  ""
 
       - name: Set up Python ${{ matrix.python_version }}
         uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c
