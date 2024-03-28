@@ -37,9 +37,10 @@ def compute_scale_zero_point(column: pandas.Series, q_min: int, q_max: int) -> T
     else:
         scale = (q_max - q_min) / (values_max - values_min)
 
-        # TODO: add round for ZP when changing management of NaN values
-        # This is because rounding ZP + rounding of quant can make values reach 0, which is not
-        # allowed as it is used for representing NaN values
+        # Zero-point must be rounded once NaN values are not represented by 0 anymore
+        # The issue is that we currently need to avoid quantized values to reach 0, but having a
+        # round here + in the 'quant' method can make this happen.
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4342
         zero_point = values_min * scale - q_min
 
     return scale, zero_point
@@ -82,7 +83,8 @@ def dequant(
     return x.astype(dtype)
 
 
-# TODO: provide a way to input string mapping from user
+# Provide a way for users to pass string mappings
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4342
 def pre_process_dtypes(pandas_dataframe: pandas.DataFrame) -> Tuple[pandas.DataFrame, Dict]:
     """Pre-process the Pandas data-frame and check that input dtypes and ranges are supported.
 
@@ -110,6 +112,8 @@ def pre_process_dtypes(pandas_dataframe: pandas.DataFrame) -> Tuple[pandas.DataF
 
     q_min, q_max = get_min_max_allowed()
 
+    # Avoid sending column names to server, instead use hashes
+    # FIXME : https://github.com/zama-ai/concrete-ml-internal/issues/4342
     for column_name in pandas_dataframe.columns:
         column = pandas_dataframe[column_name]
         column_dtype = column.dtype
@@ -155,9 +159,9 @@ def pre_process_dtypes(pandas_dataframe: pandas.DataFrame) -> Tuple[pandas.DataF
 
                 pandas_dataframe[column_name] = q_column
 
+                # Avoid sending string mappings to server, instead use and check hashes
+                # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4342
                 dtype_mappings[column_name]["str_to_int"] = str_to_int
-
-                # TODO: add hash
 
             else:
                 raise ValueError(
@@ -189,7 +193,8 @@ def pre_process_from_pandas(pandas_dataframe: pandas.DataFrame) -> Tuple[numpy.n
             mappings to use for recovering float and string values in post-processing.
 
     """
-    # TODO: better handle indexes
+    # Support Index of Pandas data-frames
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4342
     if not isinstance(pandas_dataframe.index, pandas.RangeIndex):
         raise ValueError(
             "The data-frame's index has not been reset. Please make sure to not put relevant data "

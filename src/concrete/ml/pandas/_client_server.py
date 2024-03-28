@@ -41,8 +41,6 @@ def left_right_join_to_compile(
 ) -> Union[Tracer, int]:
     """Define the atomic function to consider for running a left/right join in FHE.
 
-    TODO: explain algo
-
     Args:
         val_1 (Union[Tracer, int]): The value used for accumulating the sum.
         val_2 (Union[Tracer, int]): The value to add if the keys match.
@@ -126,6 +124,8 @@ def get_encrypt_config() -> Dict:
     return PANDAS_OPS_TO_CIRCUIT_CONFIG["left_right_join"]["encrypt_config"]
 
 
+# Allow 0 values once NaN values are not represented by it anymore
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4342
 def get_min_max_allowed() -> Tuple[int, int]:
     """Get the minimum and maximum value allowed in the data-frames.
 

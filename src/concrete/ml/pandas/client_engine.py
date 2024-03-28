@@ -46,7 +46,8 @@ class ClientEngine:
         """
         pandas_array, dtype_mappings = pre_process_from_pandas(pandas_dataframe)
 
-        # TODO: how to provide encrypt configuration
+        # Once multi-operator is supported, better handle encryption configuration parameters
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4342
         encrypted_values = encrypt_elementwise(pandas_array, self.client, **get_encrypt_config())
         encrypted_nan = encrypt_value(0, self.client, **get_encrypt_config())
 
