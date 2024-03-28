@@ -892,7 +892,7 @@ def rounded_numpy_equal_for_trees(
     x: numpy.ndarray,
     y: numpy.ndarray,
     *,
-    lsbs_to_remove_for_trees: Optional[int] = None,
+    auto_truncate=None,
 ) -> Tuple[numpy.ndarray]:
     """Compute rounded equal in numpy according to ONNX spec for tree-based models only.
 
@@ -901,7 +901,7 @@ def rounded_numpy_equal_for_trees(
     Args:
         x (numpy.ndarray): Input tensor
         y (numpy.ndarray): Input tensor
-        lsbs_to_remove_for_trees (Optional[int]): Number of the least significant bits to remove
+        auto_truncate: Number of the least significant bits to remove
             for tree-based models only.
 
     Returns:
@@ -916,9 +916,9 @@ def rounded_numpy_equal_for_trees(
 
     # Option 2 is selected because it adheres to the established pattern in `rounded_comparison`
     # which does: (a - b) - half.
-    if lsbs_to_remove_for_trees is not None and lsbs_to_remove_for_trees > 0:
+    if auto_truncate is not None:
         return rounded_comparison(
-            y, x, lsbs_to_remove_for_trees, operation=lambda x: x >= 0
+            y, x, auto_truncate, operation=lambda x: x >= 0
         )  # pragma: no cover
 
     # Else, default numpy_equal operator
@@ -1076,7 +1076,7 @@ def rounded_numpy_less_for_trees(
     x: numpy.ndarray,
     y: numpy.ndarray,
     *,
-    lsbs_to_remove_for_trees: Optional[int] = None,
+    auto_truncate,
 ) -> Tuple[numpy.ndarray]:
     """Compute rounded less in numpy according to ONNX spec for tree-based models only.
 
@@ -1085,7 +1085,7 @@ def rounded_numpy_less_for_trees(
     Args:
         x (numpy.ndarray): Input tensor
         y (numpy.ndarray): Input tensor
-        lsbs_to_remove_for_trees (Optional[int]): Number of the least significant bits to remove
+        auto_truncate: Number of the least significant bits to remove
             for tree-based models only.
 
     Returns:
@@ -1094,8 +1094,8 @@ def rounded_numpy_less_for_trees(
 
     # numpy.less(x, y) is equivalent to :
     # x - y <= 0 => round_bit_pattern(x - y - half) < 0
-    if lsbs_to_remove_for_trees is not None and lsbs_to_remove_for_trees > 0:
-        return rounded_comparison(x, y, lsbs_to_remove_for_trees, operation=lambda x: x < 0)
+    if auto_truncate is not None:
+        return rounded_comparison(x, y, auto_truncate, operation=lambda x: x < 0)
 
     # Else, default numpy_less operator
     return numpy_less(x, y)
@@ -1143,7 +1143,7 @@ def rounded_numpy_less_or_equal_for_trees(
     x: numpy.ndarray,
     y: numpy.ndarray,
     *,
-    lsbs_to_remove_for_trees: Optional[int] = None,
+    auto_truncate=None,
 ) -> Tuple[numpy.ndarray]:
     """Compute rounded less or equal in numpy according to ONNX spec for tree-based models only.
 
@@ -1152,7 +1152,7 @@ def rounded_numpy_less_or_equal_for_trees(
     Args:
         x (numpy.ndarray): Input tensor
         y (numpy.ndarray): Input tensor
-        lsbs_to_remove_for_trees (Optional[int]): Number of the least significant bits to remove
+        auto_truncate: Number of the least significant bits to remove
             for tree-based models only.
 
     Returns:
@@ -1160,13 +1160,14 @@ def rounded_numpy_less_or_equal_for_trees(
     """
 
     # numpy.less_equal(x, y) <= y is equivalent to :
-    # option 1: x - y <= 0 => round_bit_pattern(x - y + half) <= 0 or
-    # option 2: y - x >= 0 => round_bit_pattern(y - x - half) >= 0
+    # option 1: x - y <= 0 => truncate_bit_pattern(x - y + half) <= 0 or
+    # option 2: y - x >= 0 => truncate_bit_pattern(y - x - half) >= 0
 
     # Option 2 is selected because it adheres to the established pattern in `rounded_comparison`
-    # which does: (a - b) - half.
-    if lsbs_to_remove_for_trees is not None and lsbs_to_remove_for_trees > 0:
-        return rounded_comparison(y, x, lsbs_to_remove_for_trees, operation=lambda x: x >= 0)
+    # which does: (a - b).
+
+    if auto_truncate is not None:
+        return rounded_comparison(y, x, auto_truncate, operation=lambda x: x >= 0)
 
     # Else, default numpy_less_or_equal operator
     return numpy_less_or_equal(x, y)

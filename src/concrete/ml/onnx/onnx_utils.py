@@ -213,7 +213,7 @@
 
 # Original file:
 # https://github.com/google/jax/blob/f6d329b2d9b5f83c6a59e5739aa1ca8d4d1ffa1c/examples/onnx2xla.py
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any, Callable, Dict, Tuple
 
 import numpy
 import onnx
@@ -415,7 +415,7 @@ ONNX_COMPARISON_OPS_TO_NUMPY_IMPL_BOOL: Dict[str, Callable[..., Tuple[numpy.ndar
 }
 # All numpy operators used for tree-based models that support auto rounding
 ONNX_COMPARISON_OPS_TO_ROUNDED_TREES_NUMPY_IMPL_BOOL = {
-    "Less": rounded_numpy_less_for_trees,
+    "Less": rounded_numpy_less_for_trees,  # type: ignore[dict-item]
     "Equal": rounded_numpy_equal_for_trees,
     "LessOrEqual": rounded_numpy_less_or_equal_for_trees,
 }
@@ -485,14 +485,14 @@ def execute_onnx_with_numpy(
 
 def execute_onnx_with_numpy_trees(
     graph: onnx.GraphProto,
-    lsbs_to_remove_for_trees: Optional[Tuple[int, int]],
+    auto_truncate,
     *inputs: numpy.ndarray,
 ) -> Tuple[numpy.ndarray, ...]:
     """Execute the provided ONNX graph on the given inputs for tree-based models only.
 
     Args:
         graph (onnx.GraphProto): The ONNX graph to execute.
-        lsbs_to_remove_for_trees (Optional[Tuple[int, int]]): This parameter is exclusively used for
+        auto_truncate: This parameter is exclusively used for
             optimizing tree-based models. It contains the values of the least significant bits to
             remove during the tree traversal, where the first value refers to the first comparison
             (either "less" or "less_or_equal"), while the second value refers to the "Equal"
@@ -507,7 +507,7 @@ def execute_onnx_with_numpy_trees(
     op_type: Callable[..., Tuple[numpy.ndarray[Any, Any], ...]]
 
     # If no tree-based optimization is specified, return standard execution
-    if lsbs_to_remove_for_trees is None:
+    if auto_truncate is None:
         return execute_onnx_with_numpy(graph, *inputs)
 
     node_results: Dict[str, numpy.ndarray] = dict(
@@ -523,11 +523,12 @@ def execute_onnx_with_numpy_trees(
         attributes = {attribute.name: get_attribute(attribute) for attribute in node.attribute}
 
         if node.op_type in ONNX_COMPARISON_OPS_TO_ROUNDED_TREES_NUMPY_IMPL_BOOL:
+            attributes["auto_truncate"] = auto_truncate
 
-            # The first LSB refers to `Less` or `LessOrEqual` comparisons
-            # The second LSB refers to `Equal` comparison
-            stage = 0 if node.op_type != "Equal" else 1
-            attributes["lsbs_to_remove_for_trees"] = lsbs_to_remove_for_trees[stage]
+            # # The first LSB refers to `Less` or `LessOrEqual` comparisons
+            # # The second LSB refers to `Equal` comparison
+            # stage = 0 if node.op_type != "Equal" else 1
+            # attributes["lsbs_to_remove_for_trees"] = lsbs_to_remove_for_trees[stage]
 
             # Use rounded numpy operation to relevant comparison nodes
             op_type = ONNX_COMPARISON_OPS_TO_ROUNDED_TREES_NUMPY_IMPL_BOOL[node.op_type]
