@@ -147,6 +147,25 @@ def default_configuration():
         enable_unsafe_features=True,
         use_insecure_key_cache=True,
         insecure_key_cache_location="ConcreteNumpyKeyCache",
+        fhe_simulation=False,  # Simulation compilation is done lazilly on circuit.simulate
+        fhe_execution=True,
+    )
+
+
+@pytest.fixture
+def simulation_configuration():
+    """Return the simulation test compilation configuration for simulation."""
+
+    # Parameter `enable_unsafe_features` and `use_insecure_key_cache` are needed in order to be
+    # able to cache generated keys through `insecure_key_cache_location`. As the name suggests,
+    # these parameters are unsafe and should only be used for debugging in development
+    return Configuration(
+        dump_artifacts_on_unexpected_failures=False,
+        enable_unsafe_features=True,
+        use_insecure_key_cache=True,
+        insecure_key_cache_location="ConcreteNumpyKeyCache",
+        fhe_simulation=True,
+        fhe_execution=False,
     )
 
 
