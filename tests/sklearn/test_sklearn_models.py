@@ -1137,6 +1137,7 @@ def check_load_fitted_sklearn_linear_models(model_class, n_bits, x, y, check_flo
         "from the loaded one.",
     )
 
+
 def check_rounding_consistency(
     model,
     x,
@@ -1921,9 +1922,9 @@ def test_rounding_consistency_for_regular_models(
         is_weekly_option,
     )
 
+
 @pytest.mark.parametrize("model_class, parameters", get_sklearn_tree_models_and_datasets())
 @pytest.mark.parametrize("n_bits", [2, 5, 10])
-@pytest.mark.parametrize("execution_mode", ["simulate", "fhe"])
 @pytest.mark.parametrize("execute_in_fhe", [True, False])
 def test_sum_for_tree_based_models(
     model_class,
@@ -1931,13 +1932,12 @@ def test_sum_for_tree_based_models(
     n_bits,
     load_data,
     is_weekly_option,
-    execution_mode,
     execute_in_fhe,
     verbose=True,
 ):
     """Test that the tree ensembles' output are the same with and without the sum in FHE."""
 
-    if execution_mode == "fhe" and not is_weekly_option:
+    if execute_in_fhe and not is_weekly_option:
         pytest.skip("Skipping FHE tests in non-weekly builds")
 
     if verbose:
@@ -1950,14 +1950,12 @@ def test_sum_for_tree_based_models(
     predict_method = (
         model.predict_proba if is_classifier_or_partial_classifier(model) else model.predict
     )
-
     check_sum_for_tree_based_models(
-        model,
-        x,
-        y,
-        predict_method,
-        execution_mode,
-        execute_in_fhe,
+        model=model,
+        x=x,
+        y=y,
+        predict_method=predict_method,
+        execute_in_fhe=execute_in_fhe,
     )
 
 
