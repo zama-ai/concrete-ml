@@ -232,7 +232,8 @@ class EncryptedDataFrame:
             validate=validate,
         )
 
-        # TODO: better chose which enc nan / eval keys / api version to use
+        # Once multi-operator is supported, make sure to provide relevant keys and objects
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4342
         joined_df = EncryptedDataFrame(
             joined_array,
             self._encrypted_nan,
@@ -254,7 +255,10 @@ class EncryptedDataFrame:
         encrypted_nan = serialize_value(self._encrypted_nan)
         evaluation_keys = serialize_evaluation_keys(self._evaluation_keys)
 
-        # A Numpy array is not serializable using JSON so we need to convert to a list
+        # Avoid sending column names and string mappings to server, instead use hashes
+        # FIXME : https://github.com/zama-ai/concrete-ml-internal/issues/4342
+        # Additionally, Numpy arrays are not serializable using JSON so we need to convert them
+        # to lists
         output_dict = {
             "encrypted_values": encrypted_values.tolist(),
             "encrypted_nan": encrypted_nan,

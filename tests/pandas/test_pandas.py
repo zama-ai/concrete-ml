@@ -190,12 +190,15 @@ def test_merge(as_method, how, selected_column):
     clear_df_joined_1 = client_1.decrypt_to_pandas(encrypted_df_joined)
     clear_df_joined_2 = client_2.decrypt_to_pandas(encrypted_df_joined)
 
-    assert pandas_dataframe_are_equal(clear_df_joined_1, clear_df_joined_2, equal_nan=True)
+    assert pandas_dataframe_are_equal(
+        clear_df_joined_1, clear_df_joined_2, equal_nan=True
+    ), "Joined encrypted data-frames decrypted by different clients are not equal."
 
-    # TODO: better test for float (?)
+    # Improve the test to avoid risk of flaky
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4342
     assert pandas_dataframe_are_equal(
         clear_df_joined_1, pandas_joined_df, float_atol=1, equal_nan=True
-    )
+    ), "Joined encrypted data-frame does not match Pandas' joined data-frame."
 
 
 @pytest.mark.parametrize("dtype", ["int", "float", "str", "mixed"])
@@ -211,8 +214,11 @@ def test_pre_post_processing(dtype):
 
     clear_df = client.decrypt_to_pandas(encrypted_df)
 
-    # TODO: better test for float (?)
-    assert pandas_dataframe_are_equal(pandas_df, clear_df, float_atol=1, equal_nan=include_nan)
+    # Improve the test to avoid risk of flaky
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4342
+    assert pandas_dataframe_are_equal(
+        pandas_df, clear_df, float_atol=1, equal_nan=include_nan
+    ), "Processed encrypted data-frame does not match Pandas' initial data-frame."
 
 
 def test_save_load():
@@ -232,8 +238,11 @@ def test_save_load():
 
     loaded_clear_df = client.decrypt_to_pandas(loaded_encrypted_df)
 
-    # TODO: better test for float (?)
-    assert pandas_dataframe_are_equal(loaded_clear_df, pandas_df, float_atol=1, equal_nan=True)
+    # Improve the test to avoid risk of flaky
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4342
+    assert pandas_dataframe_are_equal(
+        loaded_clear_df, pandas_df, float_atol=1, equal_nan=True
+    ), "Loaded encrypted data-frame does not match the initial encrypted data-frame."
 
 
 def check_invalid_merge_parameters():
@@ -509,6 +518,8 @@ def concrete_server_files_are_equal(
     return server_specs_1 == server_specs_2
 
 
+# Improve this test if Concrete Python provides an official way to check such compatibility
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4342
 def test_client_server_files():
     """Test if new generated client/server files are equal to the ones stored in source."""
     with tempfile.TemporaryDirectory() as temp_dir:

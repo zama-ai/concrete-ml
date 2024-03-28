@@ -70,7 +70,8 @@ def check_dtype_of_selected_column_for_merge(left_encrypted, right_encrypted, se
             str_mapping_left = selected_column_left["str_to_int"]
             str_mapping_right = selected_column_right["str_to_int"]
 
-            # TODO: add hash
+            # Avoid sending string mappings to server, instead use and check hashes
+            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4342
             if str_mapping_left != str_mapping_right:
                 raise ValueError(
                     f"Mappings for string values in both common column '{selected_column}' do "
@@ -178,7 +179,6 @@ def encrypted_left_right_join(
                 # during an iteration only)
                 merge_inputs = (right_value_to_join, value_to_put_right, left_key, right_key)
 
-                # TODO: how to use evaluation_keys ?
                 right_value_to_join = server.run(
                     *merge_inputs, evaluation_keys=left_encrypted.evaluation_keys
                 )
@@ -277,10 +277,13 @@ def encrypted_merge(
             data-frame, the associated columns as well as the mappings needed for mapping the
             integers back to their initial string values.
     """
-    # Raise errors for unsupported parameters
+    # Implement other merge types
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4342
     if how not in ["left", "right"]:
         raise NotImplementedError(f"Merge type '{how}' is not currently implemented.")
 
+    # Support relevant pandas parameters
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4342
     for parameter, parameter_name in [
         (left_on, "left_on"),
         (right_on, "right_on"),
@@ -294,7 +297,6 @@ def encrypted_merge(
         check_parameter_is_supported(parameter, parameter_name, "merge")
 
     # Retrieve the input column names and build empty data-frames based on them
-    # Insert
     empty_df_left = pandas.DataFrame(index=range(1), columns=left_encrypted.column_names)
     empty_df_right = pandas.DataFrame(index=range(1), columns=right_encrypted.column_names)
 
@@ -318,6 +320,8 @@ def encrypted_merge(
     empty_df_joined = empty_merge_op.get_result()
     joined_column_names = list(empty_df_joined.columns)
 
+    # Support multi-column merge
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4342
     if len(empty_merge_op.join_names) != 1:
         raise ValueError("Merging on 0 or several columns is not currently available.")
 
@@ -327,6 +331,8 @@ def encrypted_merge(
 
     joined_dtype_mappings = {**left_encrypted.dtype_mappings, **right_encrypted.dtype_mappings}
 
+    # Add a way to ensure that 'selected_column' only contains unique values in both data-frames
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4342
     joined_array = encrypted_left_right_join(
         left_encrypted, right_encrypted, server, how, selected_column
     )
