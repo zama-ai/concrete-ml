@@ -977,11 +977,12 @@ class QuantizedMixingOp(QuantizedOp, is_utility=True):
         n_bits = None
         exactness = fhe.Exactness.EXACT
 
-        if self.rounding_threshold_bits is not None:
-            # mypy
-            assert isinstance(self.rounding_threshold_bits, dict)
-            n_bits = self.rounding_threshold_bits.get("n_bits")
+        if isinstance(self.rounding_threshold_bits, dict):
+            n_bits = self.rounding_threshold_bits.get("n_bits", None)
             exactness = self.rounding_threshold_bits.get("method", exactness)
+        # PoT is replacing inplace the rounding_threshold_bits to an int
+        elif isinstance(self.rounding_threshold_bits, int):
+            n_bits = self.rounding_threshold_bits
 
         if n_bits is not None and calibrate_rounding:
             # Compute lsbs_to_remove only when calibration is True
