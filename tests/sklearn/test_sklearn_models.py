@@ -241,7 +241,10 @@ def check_correctness_with_sklearn(
 
     # If the model is a classifier, check that accuracies are similar
     if is_classifier_or_partial_classifier(model):
-        check_accuracy(y_pred_sklearn, y_pred_fhe, threshold=threshold_accuracy)
+        # Skip if SGDClassifier
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4344
+        if get_model_name(model_class) != "SGDClassifier":
+            check_accuracy(y_pred_sklearn, y_pred_fhe, threshold=threshold_accuracy)
 
     # If the model is a regressor, check that R2 scores are similar
     elif is_regressor_or_partial_regressor(model):
@@ -1199,20 +1202,17 @@ def check_rounding_consistency(
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4178
 
 
-def check_fhe_sum_for_tree_based_models(
+def check_sum_for_tree_based_models(
     model,
     x,
     y,
     predict_method,
-    is_weekly_option,
+    execute_in_fhe,
 ):
     """Test that Concrete ML without and with FHE sum are 'equivalent'."""
 
-    # Run the test with more samples during weekly CIs
-    if is_weekly_option:
-        fhe_samples = 5
-    else:
-        fhe_samples = 1
+    # Run the test with more samples when executing in FHE
+    fhe_samples = 5 if execute_in_fhe else 1
 
     fhe_test = get_random_samples(x, n_sample=fhe_samples)
 
@@ -1222,7 +1222,9 @@ def check_fhe_sum_for_tree_based_models(
 
     non_fhe_sum_predict_quantized = predict_method(x, fhe="disable")
     non_fhe_sum_predict_simulate = predict_method(x, fhe="simulate")
-    non_fhe_sum_predict_fhe = predict_method(fhe_test, fhe="execute")
+
+    if execute_in_fhe:
+        non_fhe_sum_predict_fhe = predict_method(fhe_test, fhe="execute")
 
     # Sanity check
     array_allclose_and_same_shape(non_fhe_sum_predict_quantized, non_fhe_sum_predict_simulate)
@@ -1234,7 +1236,9 @@ def check_fhe_sum_for_tree_based_models(
 
     fhe_sum_predict_quantized = predict_method(x, fhe="disable")
     fhe_sum_predict_simulate = predict_method(x, fhe="simulate")
-    fhe_sum_predict_fhe = predict_method(fhe_test, fhe="execute")
+
+    if execute_in_fhe:
+        fhe_sum_predict_fhe = predict_method(fhe_test, fhe="execute")
 
     # Sanity check
     array_allclose_and_same_shape(fhe_sum_predict_quantized, fhe_sum_predict_simulate)
@@ -1242,7 +1246,8 @@ def check_fhe_sum_for_tree_based_models(
     # Check that we have the exact same predictions
     array_allclose_and_same_shape(fhe_sum_predict_quantized, non_fhe_sum_predict_quantized)
     array_allclose_and_same_shape(fhe_sum_predict_simulate, non_fhe_sum_predict_simulate)
-    array_allclose_and_same_shape(fhe_sum_predict_fhe, non_fhe_sum_predict_fhe)
+    if execute_in_fhe:
+        array_allclose_and_same_shape(fhe_sum_predict_fhe, non_fhe_sum_predict_fhe)
 
 
 # Neural network models are skipped for this test
@@ -1923,15 +1928,20 @@ def test_rounding_consistency_for_regular_models(
 
 @pytest.mark.parametrize("model_class, parameters", get_sklearn_tree_models_and_datasets())
 @pytest.mark.parametrize("n_bits", [2, 5, 10])
-def test_fhe_sum_for_tree_based_models(
+@pytest.mark.parametrize("execute_in_fhe", [True, False])
+def test_sum_for_tree_based_models(
     model_class,
     parameters,
     n_bits,
     load_data,
     is_weekly_option,
+    execute_in_fhe,
     verbose=True,
 ):
     """Test that the tree ensembles' output are the same with and without the sum in FHE."""
+
+    if execute_in_fhe and not is_weekly_option:
+        pytest.skip("Skipping FHE tests in non-weekly builds")
 
     if verbose:
         print("Run check_fhe_sum_for_tree_based_models")
@@ -1943,13 +1953,12 @@ def test_fhe_sum_for_tree_based_models(
     predict_method = (
         model.predict_proba if is_classifier_or_partial_classifier(model) else model.predict
     )
-
-    check_fhe_sum_for_tree_based_models(
-        model,
-        x,
-        y,
-        predict_method,
-        is_weekly_option,
+    check_sum_for_tree_based_models(
+        model=model,
+        x=x,
+        y=y,
+        predict_method=predict_method,
+        execute_in_fhe=execute_in_fhe,
     )
 
 

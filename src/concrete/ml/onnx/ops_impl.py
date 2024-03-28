@@ -340,7 +340,7 @@ def numpy_sigmoid(
     Returns:
         Tuple[numpy.ndarray]: Output tensor
     """
-    return (1.0 / (1.0 + numpy.exp(-x)),)
+    return (numpy.exp(-numpy.logaddexp(0, -x)),)
 
 
 def numpy_softmax(x, axis=1, keepdims=True):
