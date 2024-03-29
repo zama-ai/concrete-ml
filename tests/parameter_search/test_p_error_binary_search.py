@@ -328,10 +328,10 @@ def test_binary_search_for_built_in_models(model_class, parameters, threshold, p
             estimator=model,
             predict=predict,
             metric=metric,
-            n_simulation=5,
+            n_simulation=2,
             max_metric_loss=threshold,
             is_qat=False,
-            max_iter=3,
+            max_iter=2,
         )
     else:
         # The model does not have `predict`

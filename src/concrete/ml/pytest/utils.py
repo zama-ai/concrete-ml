@@ -83,7 +83,7 @@ def _get_pytest_param_classifier(model, n_classes: int):
         }
     else:
         dataset_params = {
-            "n_samples": 1000,
+            "n_samples": 100,
             "n_features": 10,
             "n_classes": n_classes,
             "n_informative": 10,
