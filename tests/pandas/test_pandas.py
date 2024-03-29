@@ -10,9 +10,9 @@ import pandas
 import pytest
 from concrete.fhe.compilation.specs import ClientSpecs
 
+import concrete.ml.pandas
 from concrete.ml.pandas import ClientEngine, load_encrypted_dataframe
-from concrete.ml.pandas import merge as concrete_merge
-from concrete.ml.pandas._client_server import CLIENT_PATH, get_min_max_allowed, save_client_server
+from concrete.ml.pandas._development import CLIENT_PATH, get_min_max_allowed, save_client_server
 from concrete.ml.pytest.utils import pandas_dataframe_are_equal
 
 
@@ -67,6 +67,9 @@ def generate_pandas_dataframe(
         include_nan and dtype == "int"
     ), "NaN values cannot be included when testing integers values"
 
+    # Make sure 0 is not included in the index
+    # Remove this once NaN values are not represented by 0 anymore
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4342
     if isinstance(indexes, int):
         indexes = list(range(1, indexes + 1))
 
@@ -75,6 +78,7 @@ def generate_pandas_dataframe(
 
     columns = {}
 
+    # Add a column with integer values
     if dtype in ["int", "mixed"]:
         low, high = get_min_max_allowed()
 
@@ -83,6 +87,7 @@ def generate_pandas_dataframe(
                 numpy.random.randint(low=low, high=high, size=(len(indexes),))
             )
 
+    # Add a column with float values (including NaN or not)
     if dtype in ["float", "mixed"]:
         for i in range(1, n_features + 1):
             column_name = f"{feat_name}_float_{i}"
@@ -93,6 +98,7 @@ def generate_pandas_dataframe(
             if include_nan:
                 columns[column_name][0] = numpy.nan
 
+    # Add a column with string values (including NaN or not)
     if dtype in ["str", "mixed"]:
         str_values = ["apple", "orange", "watermelon", "cherry", "banana"]
 
@@ -110,6 +116,7 @@ def generate_pandas_dataframe(
         f"{index_position=} for {len(pandas_dataframe.columns)} features."
     )
 
+    # Insert the column on which to merge at the given position
     pandas_dataframe.insert(index_position, index_name, indexes)
 
     return pandas_dataframe
@@ -179,13 +186,16 @@ def test_merge(as_method, how, selected_column):
     encrypted_df_left = client_1.encrypt_from_pandas(pandas_df_left)
     encrypted_df_right = client_2.encrypt_from_pandas(pandas_df_right)
 
+    # If we test the '.merge' method
     if as_method:
         pandas_joined_df = pandas_df_left.merge(pandas_df_right, **pandas_kwargs)
         encrypted_df_joined = encrypted_df_left.merge(encrypted_df_right, **pandas_kwargs)
 
     else:
         pandas_joined_df = pandas.merge(pandas_df_left, pandas_df_right, **pandas_kwargs)
-        encrypted_df_joined = concrete_merge(encrypted_df_left, encrypted_df_right, **pandas_kwargs)
+        encrypted_df_joined = concrete.ml.pandas.merge(
+            encrypted_df_left, encrypted_df_right, **pandas_kwargs
+        )
 
     clear_df_joined_1 = client_1.decrypt_to_pandas(encrypted_df_joined)
     clear_df_joined_2 = client_2.decrypt_to_pandas(encrypted_df_joined)
@@ -270,7 +280,7 @@ def test_save_load():
     ), "Column names between initial and loaded encrypted data-frame do not match."
 
     assert (
-        encrypted_df.column_names_to_index == loaded_encrypted_df.column_names_to_index
+        encrypted_df.column_names_to_position == loaded_encrypted_df.column_names_to_position
     ), "Column name mappings between initial and loaded encrypted data-frame do not match."
 
     assert (
@@ -386,7 +396,7 @@ def check_unsupported_input_values():
     """Check that initializing a data-frame with unsupported inputs raise the correct errors."""
     client = ClientEngine()
 
-    # Test with values that are out of bound
+    # Test with integer values that are out of bound
     indexes_high_integers = [73, 100]
     pandas_df = generate_pandas_dataframe(indexes=indexes_high_integers)
 
@@ -396,12 +406,14 @@ def check_unsupported_input_values():
     ):
         client.encrypt_from_pandas(pandas_df)
 
+    # Test with string values that contains too many unique values
     indexes_str = list(map(str, list(range(100))))
     pandas_df = generate_pandas_dataframe(indexes=indexes_str)
 
     with pytest.raises(ValueError, match=".* contains too many unique values.*"):
         client.encrypt_from_pandas(pandas_df)
 
+    # Test with object dtype that contains non-string values
     indexes_object_non_str = [object(), object()]
     pandas_df = generate_pandas_dataframe(indexes=indexes_object_non_str)
 
@@ -411,6 +423,7 @@ def check_unsupported_input_values():
     ):
         client.encrypt_from_pandas(pandas_df)
 
+    # Test with values of unsupported dtype
     indexes_unsupported_dtype = [1 + 2j, -3 - 4j]
     pandas_df = generate_pandas_dataframe(indexes=indexes_unsupported_dtype)
 
@@ -420,6 +433,7 @@ def check_unsupported_input_values():
     ):
         client.encrypt_from_pandas(pandas_df)
 
+    # Test with a data-frame that contains an Pandas index with possible relevant information in it
     indexes_not_range = [1, 3]
     pandas_df = generate_pandas_dataframe(indexes=indexes_not_range)
     pandas_df.set_index("index", inplace=True)
@@ -526,7 +540,7 @@ def test_parameter_sets():
 
 
 def test_print_and_repr():
-    """Test that print, repr and get_scheme properly work."""
+    """Test that print, repr and get_schema properly work."""
     pandas_df = pandas.DataFrame(
         {"index": [1, 2], "A": [9, 3], "B": [-5.2, 2.9], "C": ["orange", "watermelon"]}
     )
@@ -541,7 +555,7 @@ def test_print_and_repr():
     repr(encrypted_df)
     encrypted_df._repr_html_()  # pylint: disable=protected-access
 
-    expected_scheme = pandas.DataFrame(
+    expected_schema = pandas.DataFrame(
         {
             "index": ["int64", numpy.nan, numpy.nan, numpy.nan],
             "A": ["int64", numpy.nan, numpy.nan, numpy.nan],
@@ -551,8 +565,8 @@ def test_print_and_repr():
         index=["dtype", "scale", "zero_point", "str_to_int"],
     )
 
-    scheme = encrypted_df.get_scheme()
+    schema = encrypted_df.get_schema()
 
     assert pandas_dataframe_are_equal(
-        expected_scheme, scheme, equal_nan=True
-    ), "Expected and retrieved schemes do not match."
+        expected_schema, schema, equal_nan=True
+    ), "Expected and retrieved schemas do not match."

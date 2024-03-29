@@ -8,7 +8,7 @@ import pandas
 from pandas.io.formats.format import get_dataframe_repr_params
 
 from concrete import fhe
-from concrete.ml.pandas._client_server import load_server
+from concrete.ml.pandas._development import load_server
 from concrete.ml.pandas._operators import encrypted_merge
 from concrete.ml.pandas._utils import (
     deserialize_elementwise,
@@ -40,10 +40,12 @@ class EncryptedDataFrame:
         self._evaluation_keys = evaluation_keys
 
         self._column_names = list(column_names)
-        self._column_names_to_index = {name: index for index, name in enumerate(column_names)}
+        self._column_names_to_position = {name: index for index, name in enumerate(column_names)}
         self._dtype_mappings = dtype_mappings
         self._api_version = api_version
 
+        # Generate and store the Pandas representation at initialization in order to avoid having
+        # to serialize values each time it is needed
         self._pandas_repr = self._get_pandas_repr()
 
     @property
@@ -83,13 +85,13 @@ class EncryptedDataFrame:
         return self._column_names
 
     @property
-    def column_names_to_index(self) -> Dict[str, int]:
+    def column_names_to_position(self) -> Dict[str, int]:
         """Get the mapping between each column's name and its index position.
 
         Returns:
             Dict[str, int]: Mapping between column names and their position.
         """
-        return self._column_names_to_index
+        return self._column_names_to_position
 
     @property
     def dtype_mappings(self) -> Dict:
@@ -115,18 +117,23 @@ class EncryptedDataFrame:
         Returns:
             pandas.DataFrame: The encrypted data-frame's Pandas representation.
         """
+
+        # Encrypted values needs to be serialized in order to be displayed
         encrypted_values = serialize_elementwise(self._encrypted_values)
 
+        # Serialized encrypted values are very long, so we need to only display part of it
         encrypted_values_repr = get_serialized_representation_elementwise(encrypted_values)
 
+        # Display the representation as a Pandas data-frame
         pandas_repr = pandas.DataFrame(encrypted_values_repr, columns=self._column_names)
 
         return pandas_repr
 
-    def get_scheme(self) -> pandas.DataFrame:
+    def get_schema(self) -> pandas.DataFrame:
         """Get the encrypted data-frame's scheme.
 
-        The scheme can include column names, dtypes or dtype mappings.
+        The scheme can include column names, dtypes or dtype mappings. It is displayed as a Pandas
+        data-frame for better readability.
 
         Returns:
             pandas.DataFrame: The encrypted data-frame's scheme.
@@ -141,6 +148,8 @@ class EncryptedDataFrame:
         Returns:
             str: The encrypted data-frame's string representation.
         """
+        # Retrieve Pandas' repr parameters and use them to convert the encrypted data-frame's repr
+        # to string
         repr_params = get_dataframe_repr_params()
         pandas_repr_str = self._pandas_repr.to_string(index=False, **repr_params)
 
@@ -251,8 +260,10 @@ class EncryptedDataFrame:
         Returns:
             Dict: The serialized data-frame.
         """
+        # Serialize encrypted values element-wise
         encrypted_values = serialize_elementwise(self._encrypted_values)
         encrypted_nan = serialize_value(self._encrypted_nan)
+
         evaluation_keys = serialize_evaluation_keys(self._evaluation_keys)
 
         # Avoid sending column names and string mappings to server, instead use hashes
@@ -280,9 +291,12 @@ class EncryptedDataFrame:
         Returns:
             EncryptedDataFrame: The loaded encrypted data-frame.
         """
+        # Deserialize encrypted values element-wise
         encrypted_values = deserialize_elementwise(dict_to_load["encrypted_values"])
         encrypted_nan = deserialize_value(dict_to_load["encrypted_nan"])
+
         evaluation_keys = deserialize_evaluation_keys(dict_to_load["evaluation_keys"])
+
         column_names = dict_to_load["column_names"]
         dtype_mappings = dict_to_load["dtype_mappings"]
         api_version = dict_to_load["api_version"]

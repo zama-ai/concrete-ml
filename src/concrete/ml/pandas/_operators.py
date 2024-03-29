@@ -6,6 +6,7 @@ import pandas
 from concrete.fhe import Server
 from pandas.core.reshape.merge import _MergeOperation
 
+# List of Pandas parameters per operator that are not currently supported
 UNSUPPORTED_PANDAS_PARAMETERS = {
     "merge": {
         "left_on": None,
@@ -52,20 +53,28 @@ def check_dtype_of_selected_column_for_merge(left_encrypted, right_encrypted, se
         ValueError: If both dtypes represent floating point values.
         ValueError: If both dtypes represent string values but the mappings do not match.
     """
+    # Get the column selected for the merge in both data-frames
     selected_column_left, selected_column_right = (
         left_encrypted.dtype_mappings[selected_column],
         right_encrypted.dtype_mappings[selected_column],
     )
+
+    # Get the columns' initial dtype
     dtype_left, dtype_right = numpy.dtype(selected_column_left["dtype"]), numpy.dtype(
         selected_column_right["dtype"]
     )
 
+    # If both columns' dtype match, check that they are supported
     if dtype_left == dtype_right:
+
+        # If the columns contain floating points, merging is not allowed
         if numpy.issubdtype(dtype_left, numpy.floating):
             raise ValueError(
                 f"Column '{selected_column}' cannot be selected for merging both data-frames "
                 f"because it has a floating dtype ({dtype_left})"
             )
+
+        # If the columns contain strings, make sure the mappings match
         if dtype_left == "object":
             str_mapping_left = selected_column_left["str_to_int"]
             str_mapping_right = selected_column_right["str_to_int"]
@@ -97,6 +106,17 @@ def encrypted_left_right_join(
     Note that for now, only a left and right join is implemented. Additionally, only some Pandas
     parameters are supported, and joining on multiple columns is not available.
 
+    The algorithm benefits from Concrete Python's composability feature. The idea is that for loops
+    are done in the clear, meaning positional indexes are not encrypte and only the data is. In the
+    case of a left merge, we need to select the encrypted value from the right data-frame for a
+    given (left) row and (right) column position. In order to do that, a for loop goes through
+    the right rows and runs the FHE circuit in a composable manner. The goal is to basically
+    multiply the right column values with a mask which contains a single 1 at the row position where
+    the left and right key matches, and then sum everything to retrieve the selected value. The
+    main benefit of using composability instead of a dict mult and sum is that it does not require
+    to know the number of columns and rows at compilation time. More details can be found in the
+    '_development.py' file.
+
     Args:
         left_encrypted (EncryptedDataFrame): The left encrypted data-frame.
         right_encrypted (EncryptedDataFrame): The right encrypted data-frame.
@@ -115,36 +135,42 @@ def encrypted_left_right_join(
     allowed_how = ["left", "right"]
     assert how in allowed_how, f"Parameter 'how' must be in {allowed_how}. Got {how}."
 
+    # In case of a right merge, swap the input data-frames
     if how == "right":
         left_encrypted, right_encrypted = right_encrypted, left_encrypted
 
     joined_rows = []
 
-    # _df_clear won't be accessible on the server's side, so two options :
-    # - we define an empty data-frame of the same shape when loading
-    # - we store and save/load the shapes using new class attributes
+    # Retrieve the left and right column's position on which keys to merge
+    left_key_column_position = left_encrypted.column_names_to_position[on]
+    right_key_column_position = right_encrypted.column_names_to_position[on]
+
+    # Retrieve the number of useful rows and columns
     n_rows_left = left_encrypted.encrypted_values.shape[0]
     n_columns_right = right_encrypted.encrypted_values.shape[1]
-
-    # Retrieve the left and right column's index on which keys to merge
-    left_key_column_index = left_encrypted.column_names_to_index[on]
-    right_key_column_index = right_encrypted.column_names_to_index[on]
+    n_rows_right = right_encrypted.encrypted_values.shape[0]
 
     # Loop over the left data frame's number of rows (which will become the joined data frame's
     # number of rows)
-    n_rows_right = right_encrypted.encrypted_values.shape[0]
     for i_left in range(n_rows_left):
 
-        # For left merge, all left values are exactly equal to the left data frame
+        # For left merge, all left values are exactly equal to the left data-frame
         array_joined_i_left = left_encrypted.encrypted_values[i_left, :]
 
+        # In case of a right merge, remove the column containing the keys on which to merge. This
+        # avoid unnecessary FHE computations as the output keys will exactly match the one contained
+        # in the (initial) left data-frame. The reason why this is needed only for the right merge
+        # is because, in Pandas, this selected column is always kept on the output data-frame's
+        # left side. The column is manually inserted back at the end of this function
         if how == "right":
-            array_joined_i_left = numpy.delete(array_joined_i_left, left_key_column_index, axis=0)
+            array_joined_i_left = numpy.delete(
+                array_joined_i_left, left_key_column_position, axis=0
+            )
 
         left_row_to_join = array_joined_i_left.tolist()
 
         # Retrieve the left data frame's key to merge on
-        left_key = left_encrypted.encrypted_values[i_left, left_key_column_index]
+        left_key = left_encrypted.encrypted_values[i_left, left_key_column_position]
 
         right_row_to_join = []
 
@@ -152,7 +178,7 @@ def encrypted_left_right_join(
         for j_right in range(n_columns_right):
 
             # Skip the right's index column
-            if j_right == right_key_column_index:
+            if j_right == right_key_column_position:
                 continue
 
             # Default value is NaN
@@ -166,44 +192,46 @@ def encrypted_left_right_join(
                 value_to_put_right = right_encrypted.encrypted_values[i_right, j_right]
 
                 # Retrieve the right data frame's key to merge on
-                right_key = right_encrypted.encrypted_values[i_right, right_key_column_index]
+                right_key = right_encrypted.encrypted_values[i_right, right_key_column_position]
 
-                # Sum the values:
-                # - on the first iteration, this sums a 0 (representing a NaN) with the right
-                #   data-frame's
-                # - on the following iterations, the sum is applied between the previous sum's
-                # value. If both keys match, this results in this value, else in 0
-                # result and the new selected value.
-                # At the end of the loop, since keys are unique in the right data-frame, the overall
-                # sum was applied on at most a single non-zero value (meaning both keys matched
-                # during an iteration only)
                 merge_inputs = (right_value_to_join, value_to_put_right, left_key, right_key)
 
+                # Run the FHE execution:
+                # - on the first iteration, this is applied on a 0 (representing a NaN) and the
+                #   right data-frame's value
+                # - on the following iterations, this is applied between the previous accumulated
+                # value and the right data-frame's value.
+                # Basically, if both keys match, the function adds the accumulated value with the
+                # right data-frame's value. If they don't, it just adds 0 to the accumulated value.
+                # In practice, keys only match once throughout this very loop as keys are assumed to
+                # be unique on both data-frames.
                 right_value_to_join = server.run(
                     *merge_inputs, evaluation_keys=left_encrypted.evaluation_keys
                 )
 
             right_row_to_join.append(right_value_to_join)
 
-        # For left merge, the remaining right values are either 0 (NaN) or the right data-frame's
-        # values for which the associated key matched with the left key
-        if how == "left":
-            joined_row = left_row_to_join + right_row_to_join
-        else:
+        # In case of a right merge, since data-frames wee initially swapped, swap back the values
+        # when re-building the joined data-frame
+        if how == "right":
             joined_row = right_row_to_join + left_row_to_join
+        else:
+            joined_row = left_row_to_join + right_row_to_join
 
         joined_rows.append(joined_row)
 
     array_joined = numpy.array(joined_rows)
 
+    # In case of a right merge, as mentioned above, the column containing the right keys needs to be
+    # manually re-inserted. This avoids unnecessary FHE computations
     if how == "right":
         array_joined = numpy.hstack(
             (
-                array_joined[:, :right_key_column_index],
+                array_joined[:, :right_key_column_position],
                 left_encrypted.encrypted_values[
-                    :, left_key_column_index : left_key_column_index + 1
+                    :, left_key_column_position : left_key_column_position + 1
                 ],
-                array_joined[:, right_key_column_index:],
+                array_joined[:, right_key_column_position:],
             ),
         )
 
@@ -296,11 +324,14 @@ def encrypted_merge(
     ]:
         check_parameter_is_supported(parameter, parameter_name, "merge")
 
-    # Retrieve the input column names and build empty data-frames based on them
+    # Build empty Pandas data-frames based on the encrypted data-frames' column names
     empty_df_left = pandas.DataFrame(index=range(1), columns=left_encrypted.column_names)
     empty_df_right = pandas.DataFrame(index=range(1), columns=right_encrypted.column_names)
 
-    # Check input validation
+    # Check that the merge is valid using Pandas' underlying merge operator. This step allows us not
+    # to re-implement validation steps for Pandas parameters
+    # Additionally, it has the benefit of being able to retrieve useful attributes, like the
+    # expected output column names or the column name(s) to merge on in case 'on=None'
     empty_merge_op = _MergeOperation(
         empty_df_left,
         empty_df_right,
@@ -316,7 +347,7 @@ def encrypted_merge(
         validate=validate,
     )
 
-    # Compute the expected joined columns
+    # Retrieve the expected joined column names
     empty_df_joined = empty_merge_op.get_result()
     joined_column_names = list(empty_df_joined.columns)
 
@@ -325,10 +356,13 @@ def encrypted_merge(
     if len(empty_merge_op.join_names) != 1:
         raise ValueError("Merging on 0 or several columns is not currently available.")
 
+    # Retrieve the common column name on which to merge
     selected_column = empty_merge_op.join_names[0]
 
+    # Check that the merge is allowed
     check_dtype_of_selected_column_for_merge(left_encrypted, right_encrypted, selected_column)
 
+    # Join the mappings in order to recover strings and floats in post-processing (client side)
     joined_dtype_mappings = {**left_encrypted.dtype_mappings, **right_encrypted.dtype_mappings}
 
     # Add a way to ensure that 'selected_column' only contains unique values in both data-frames

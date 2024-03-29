@@ -5,7 +5,7 @@ from typing import Optional, Union
 import pandas
 
 from concrete import fhe
-from concrete.ml.pandas._client_server import CLIENT_PATH, get_encrypt_config
+from concrete.ml.pandas._development import CLIENT_PATH, get_encrypt_config
 from concrete.ml.pandas._processing import post_process_to_pandas, pre_process_from_pandas
 from concrete.ml.pandas._utils import decrypt_elementwise, encrypt_elementwise, encrypt_value
 from concrete.ml.pandas.dataframe import EncryptedDataFrame
@@ -30,6 +30,7 @@ class ClientEngine:
                 some keys already exist in that path, the client will use them instead of generating
                 new ones. Default to None.
         """
+        # If a path is given and some keys are found in it, load them. Else, generate new keys
         if keys_path is not None:
             self.client.keys.load_if_exists_generate_and_save_otherwise(keys_path)
         else:
@@ -46,9 +47,14 @@ class ClientEngine:
         """
         pandas_array, dtype_mappings = pre_process_from_pandas(pandas_dataframe)
 
+        # Inputs need to be encrypted element-wise in order to be able to use a composable circuit
         # Once multi-operator is supported, better handle encryption configuration parameters
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4342
         encrypted_values = encrypt_elementwise(pandas_array, self.client, **get_encrypt_config())
+
+        # Encrypt a 0 in order to represent NaN values
+        # Remove this once NaN values are not represented by 0 anymore
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4342
         encrypted_nan = encrypt_value(0, self.client, **get_encrypt_config())
 
         return EncryptedDataFrame(
@@ -69,8 +75,11 @@ class ClientEngine:
         Returns:
             pandas.DataFrame: The Pandas data-frame built on the decrypted values.
         """
+        # Inputs need to be decrypted element-wise in order to be able to use a composable circuit
         clear_array = decrypt_elementwise(encrypted_dataframe.encrypted_values, self.client)
+
         pandas_dataframe = post_process_to_pandas(
             clear_array, encrypted_dataframe.column_names, encrypted_dataframe.dtype_mappings
         )
+
         return pandas_dataframe

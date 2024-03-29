@@ -22,11 +22,15 @@ def encrypt_value(
         Optional[Union[fhe.Value, Tuple[Optional[fhe.Value], ...]]]: A 'n'-tuple containing the
             encrypted value at position 'pos' and None elsewhere.
     """
+    # Build the input to use for encrypting the value
+    # In Concrete Python, if the underlying circuit asks for 4 inputs but we only want to encrypt
+    # a value using the 2nd input, we need to provide (None, value, None, None) to tne '.encrypt'
     clear_inputs = [None] * n
     clear_inputs[pos] = value  # type: ignore[assignment]
 
     encrypted_outputs = client.encrypt(*clear_inputs)
 
+    # Similarly, using the above example, the output becomes (None, encrypted_output, None, None)
     encrypted_output = encrypted_outputs[pos]
 
     return encrypted_output
@@ -166,6 +170,7 @@ def slice_hex_str(hex_str: str, n: int = 10) -> str:
     Returns:
         str: The extracted numbers, with dots before and after.
     """
+    # Get the string's middle index
     start_index = len(hex_str) // 2
     assert start_index + n < len(hex_str)
 

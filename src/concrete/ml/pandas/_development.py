@@ -10,7 +10,7 @@ from concrete import fhe
 
 script_dir = Path(__file__).parent
 
-# The paths where to find or save the client and server files
+# The paths where to find and save the client/server files
 CLIENT_SERVER_DIR = script_dir / "_client_server_files"
 CLIENT_PATH = CLIENT_SERVER_DIR / "client.zip"
 SERVER_PATH = CLIENT_SERVER_DIR / "server.zip"
@@ -41,6 +41,17 @@ def left_right_join_to_compile(
 ) -> Union[Tracer, int]:
     """Define the atomic function to consider for running a left/right join in FHE.
 
+    This function is going to be composed with itself as part of the encrypted merge algorithm,
+    which is explained in the '_operators.py' file. Here, the function takes two keys and two
+    values, all encrypted:
+        * left_key and right_key, one for each data-frame
+        * val_1, which will ultimately become the value to insert in the output data-frame once the
+            composition loop is done. It is therefore either representing a 0 (most of the time) or
+            a value from one of the input data-frame (only once during the composition loop).
+        * val_2, the value to add to val_1 if both keys match. As said just above, this value
+            should actually only be added once during the composition loop, as the keys are expected
+            to be unique in both data-frames
+
     Args:
         val_1 (Union[Tracer, int]): The value used for accumulating the sum.
         val_2 (Union[Tracer, int]): The value to add if the keys match.
@@ -54,6 +65,7 @@ def left_right_join_to_compile(
 
     sum_on_condition = val_1 + (val_2 * condition)
 
+    # Adding an identity TLU is necessary here, else the function won't compile in FHE
     sum_with_tlu = identity_pbs(sum_on_condition)
 
     return sum_with_tlu
@@ -80,26 +92,21 @@ def get_left_right_join_inputset(n_bits: int) -> List:
     Returns:
         List: The input-set.
     """
-    # Build the circuit using at most `n_bits` bits, which defines :
-    # - the input's unsigned integer dtype allowed (at most)
-    # - the maximum number of rows allowed in an input (assuming the merge is done on a column of
-    # unsigned integers starting at 1)
-    # Note that a 0 is used to represent a NaN (Not a Number) value
-    max_row_allowed = high = get_left_right_join_max_value(n_bits)
+    # Build the circuit using at most 'n_bits' bits. This value defines :
+    # - the maximum integer value allowed in the all data-frames
+    # - the maximum number of rows allowed in all data-frames, assuming that the column on which to
+    # merge contains unique integers that start at value 1
+    high = get_left_right_join_max_value(n_bits)
 
-    inputset = list(
-        itertools.product(
-            [0, high],
-            [0, high],
-            [1, max_row_allowed],
-            [1, max_row_allowed],
-        )
-    )
+    # Note that any column can include NaN values, which are currently represented by 0. This means
+    # the input-set needs to consider 0 although pre-processing requires data-frame to provide
+    # integers values greater or equal to 1
+    inputset = list(itertools.product([0, high], [0, high], [0, high], [0, high]))
 
     return inputset
 
 
-# Link the circuits and inputset generators to their operator's name
+# Store the configuration functions and parameters to their associated operator
 PANDAS_OPS_TO_CIRCUIT_CONFIG = {
     "left_right_join": {
         "get_inputset": partial(get_left_right_join_inputset, n_bits=N_BITS_PANDAS),
@@ -147,21 +154,21 @@ def save_client_server(client_path: Path = CLIENT_PATH, server_path: Path = SERV
     """
     client_path, server_path = Path(client_path), Path(server_path)
 
-    if not client_path.is_file() or not server_path.is_file():
-        client_path.parent.mkdir(parents=True, exist_ok=True)
-        server_path.parent.mkdir(parents=True, exist_ok=True)
+    client_path.parent.mkdir(parents=True, exist_ok=True)
+    server_path.parent.mkdir(parents=True, exist_ok=True)
 
-        config = PANDAS_OPS_TO_CIRCUIT_CONFIG["left_right_join"]
+    config = PANDAS_OPS_TO_CIRCUIT_CONFIG["left_right_join"]
 
-        inputset = config["get_inputset"]()
-        cp_func = config["to_compile"]
+    # Get the input-set and circuit generating functions
+    inputset = config["get_inputset"]()
+    cp_func = config["to_compile"]
 
-        # Compile with composability
-        merge_circuit = cp_func.compile(inputset, composable=True)
+    # Compile the circuit and allow it to be composable with itself
+    merge_circuit = cp_func.compile(inputset, composable=True)
 
-        # Save the client and server files
-        merge_circuit.client.save(client_path)
-        merge_circuit.server.save(server_path, via_mlir=True)
+    # Save the client and server files using the MLIR
+    merge_circuit.client.save(client_path)
+    merge_circuit.server.save(server_path, via_mlir=True)
 
 
 def load_server() -> fhe.Server:
