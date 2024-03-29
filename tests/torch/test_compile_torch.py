@@ -1402,12 +1402,12 @@ def test_onnx_no_input():
         (
             "invalid_type",
             ValueError,
-            "Invalid type for rounding_threshold_bits. Must be int, dict, or 'auto' as a string.",
+            "Invalid type for rounding_threshold_bits. Must be int or dict.",
         ),
         (
             {"method": "INVALID_METHOD"},
             ValueError,
-            "INVALID_METHOD is not a valid method. Must be one of \\['EXACT', 'APPROXIMATE'\\].",
+            "INVALID_METHOD is not a valid method. Must be one of EXACT, APPROXIMATE.",
         ),
     ],
 )

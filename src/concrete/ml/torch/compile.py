@@ -194,29 +194,20 @@ def _compile_torch_or_onnx_model(
         if isinstance(rounding_threshold_bits, int):
             n_bits_rounding = rounding_threshold_bits
         elif isinstance(rounding_threshold_bits, dict):
-            n_bits_rounding = rounding_threshold_bits.get("n_bits", None)
+            n_bits_rounding = rounding_threshold_bits.get("n_bits")
             if n_bits_rounding == "auto":
                 raise NotImplementedError("Automatic rounding is not implemented yet.")
-            method = rounding_threshold_bits.get("method", Exactness.EXACT)
-            if isinstance(method, str):
-                if method.upper() not in Exactness.__members__:
-                    raise ValueError(
-                        f"{method} is not a valid method. "
-                        f"Must be one of {list(Exactness.__members__.keys())}."
-                    )
-                method = Exactness[method.upper()]
-            elif not isinstance(method, Exactness):
+            method_str = rounding_threshold_bits.get("method", method).upper()
+            if method_str in ["EXACT", "APPROXIMATE"]:
+                method = Exactness[method_str]
+            else:
                 raise ValueError(
-                    "Method must be an instance of Exactness enum or its string representation."
+                    f"{method_str} is not a valid method. Must be one of EXACT, APPROXIMATE."
                 )
         else:
-            raise ValueError(
-                "Invalid type for rounding_threshold_bits. "
-                "Must be int, dict, or 'auto' as a string."
-            )
+            raise ValueError("Invalid type for rounding_threshold_bits. Must be int or dict.")
 
-        # mypy
-        assert not isinstance(n_bits_rounding, str) and n_bits_rounding is not None
+        assert n_bits_rounding is not None, "n_bits_rounding cannot be None"
         rounding_threshold_bits = {"n_bits": n_bits_rounding, "method": method}
 
     inputset_as_numpy_tuple = tuple(
