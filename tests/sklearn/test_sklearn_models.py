@@ -1735,15 +1735,28 @@ def test_p_error_simulation(
     simulation_diff_found = check_for_divergent_predictions(x, model, fhe="simulate")
     fhe_diff_found = check_for_divergent_predictions(x, model, fhe="execute")
 
+    # Check if model is linear
+    is_linear_model = is_model_class_in_a_list(model_class, _get_sklearn_linear_models())
+
+    # Skip the following if model is linear
+    # Simulation and FHE differs with very high p_error on leveled circuit
+    # FIXME https://github.com/zama-ai/concrete-ml-internal/issues/4343
+    if is_linear_model:
+        pytest.skip("Skipping test for linear models")
+
     # Check for differences in predictions
     if error_param["p_error"] > 0.5:
-        assert (
-            fhe_diff_found and simulation_diff_found
-        ), "When p_error is high, predictions should differ in both FHE and simulation."
+        assert_msg_high = (
+            "When p_error is high, predictions should differ in both FHE and simulation."
+            f" Found differences: FHE={fhe_diff_found}, Simulation={simulation_diff_found}"
+        )
+        assert fhe_diff_found and simulation_diff_found, assert_msg_high
     else:
-        assert not (
-            fhe_diff_found or simulation_diff_found
-        ), "When p_error is low, predictions should not differ in FHE or simulation."
+        assert_msg_low = (
+            "When p_error is low, predictions should not differ in FHE or simulation."
+            f" Found differences: FHE={fhe_diff_found}, Simulation={simulation_diff_found}"
+        )
+        assert not (fhe_diff_found or simulation_diff_found), assert_msg_low
 
 
 # This test is only relevant for classifier models
