@@ -593,7 +593,7 @@ check_version_coherence:
 
 .PHONY: changelog # Generate a changelog
 changelog: check_version_coherence
-	PROJECT_VER="$${poetry version --short}" && \
+	PROJECT_VER="${poetry version --short}" && \
 	poetry run python ./script/make_utils/changelog_helper.py > "CHANGELOG_$${PROJECT_VER}.md"
 
 .PHONY: show_commit_rules # Show the accepted rules for git conventional commits
