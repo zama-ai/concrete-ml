@@ -199,6 +199,11 @@ def _compile_torch_or_onnx_model(
                 raise NotImplementedError("Automatic rounding is not implemented yet.")
             method = rounding_threshold_bits.get("method", Exactness.EXACT)
             if isinstance(method, str):
+                if method.upper() not in Exactness.__members__:
+                    raise ValueError(
+                        f"{method} is not a valid method. "
+                        f"Must be one of {list(Exactness.__members__.keys())}."
+                    )
                 method = Exactness[method.upper()]
             elif not isinstance(method, Exactness):
                 raise ValueError(
