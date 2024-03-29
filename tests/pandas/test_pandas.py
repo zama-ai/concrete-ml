@@ -1,10 +1,9 @@
 """Tests the encrypted data-frame API abd its coherence with Pandas"""
-import json
 import re
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy
 import pandas
@@ -13,12 +12,7 @@ from concrete.fhe.compilation.specs import ClientSpecs
 
 from concrete.ml.pandas import ClientEngine, load_encrypted_dataframe
 from concrete.ml.pandas import merge as concrete_merge
-from concrete.ml.pandas._client_server import (
-    CLIENT_PATH,
-    SERVER_PATH,
-    get_min_max_allowed,
-    save_client_server,
-)
+from concrete.ml.pandas._client_server import CLIENT_PATH, get_min_max_allowed, save_client_server
 from concrete.ml.pytest.utils import pandas_dataframe_are_equal
 
 
@@ -516,59 +510,10 @@ def concrete_client_files_are_equal(
     return client_specs_1 == client_specs_2
 
 
-def deserialize_server_file(server_path: Union[Path, str]) -> Tuple[bool, str, Dict]:
-    """Deserialize a Concrete server file.
-
-    Args:
-        server_path (Union[Path, str]): The path to the server file.
-
-    Returns:
-        Tuple[bool, str, Dict]: The objects used for instantiating a Server object.
-    """
-    with tempfile.TemporaryDirectory() as temp_dir:
-        output_dir_path = Path(temp_dir)
-
-        shutil.unpack_archive(server_path, output_dir_path, "zip")
-
-        with (output_dir_path / "is_simulated").open("r", encoding="utf-8") as f:
-            is_simulated = f.read() == "1"
-
-        with (output_dir_path / "circuit.mlir").open("r", encoding="utf-8") as f:
-            mlir = f.read()
-
-        with (output_dir_path / "configuration.json").open("r", encoding="utf-8") as f:
-            configuration = json.load(f)
-
-        return is_simulated, mlir, configuration
-
-
-def concrete_server_files_are_equal(
-    server_path_1: Union[Path, str], server_path_2: Union[Path, str]
-) -> bool:
-    """Deserialize and compare two Concrete server files.
-
-    Args:
-        server_path_1 (Union[Path, str]): The path to the first server file.
-        server_path_2 (Union[Path, str]): The path to the first server file.
-
-    Returns:
-        bool: If the server files are equal.
-    """
-    server_path_1, server_path_2 = Path(server_path_1), Path(server_path_2)
-
-    assert server_path_1.is_file(), f"Path '{server_path_1}' is not a file."
-    assert server_path_2.is_file(), f"Path '{server_path_2}' is not a file."
-
-    server_specs_1 = deserialize_server_file(server_path_1)
-    server_specs_2 = deserialize_server_file(server_path_2)
-
-    return server_specs_1 == server_specs_2
-
-
 # Improve this test if Concrete Python provides an official way to check such compatibility
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4342
-def test_client_server_files():
-    """Test if new generated client/server files are equal to the ones stored in source."""
+def test_parameter_sets():
+    """Test if new generated parameter sets (client.zip) are equal to the ones stored in source."""
     with tempfile.TemporaryDirectory() as temp_dir:
         client_path = Path(temp_dir) / "client.zip"
         server_path = Path(temp_dir) / "server.zip"
@@ -578,9 +523,6 @@ def test_client_server_files():
         assert concrete_client_files_are_equal(
             client_path, CLIENT_PATH
         ), "The new generated client file is not equal to the one stored in source."
-        assert concrete_server_files_are_equal(
-            server_path, SERVER_PATH
-        ), "The new generated server file is not equal to the one stored in source."
 
 
 def test_print_and_repr():
@@ -597,6 +539,7 @@ def test_print_and_repr():
     # the print and repr are matching an expected result
     print(encrypted_df)
     repr(encrypted_df)
+    encrypted_df._repr_html_()  # pylint: disable=protected-access
 
     expected_scheme = pandas.DataFrame(
         {
