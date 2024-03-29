@@ -1,6 +1,10 @@
 <p align="center">
 <!-- product name logo -->
-  <img width=600 src="https://user-images.githubusercontent.com/5758427/231206363-a6639df8-2253-40d8-836e-e3c22d36d6ad.png">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/zama-ai/concrete-ml/assets/157474013/5ed658d7-0abd-4444-9063-99d8b76c2602">
+  <source media="(prefers-color-scheme: light)" srcset="https://github.com/zama-ai/concrete-ml/assets/157474013/7c67e594-5e2c-483e-858f-ce473a36e37f">
+  <img width=600 alt="Zama Concrete ML">
+</picture>
 </p>
 
 <hr>
@@ -254,11 +258,15 @@ This software is distributed under the **BSD-3-Clause-Clear** license. If you ha
 ## Support
 
 <a target="_blank" href="https://community.zama.ai">
-  <img src="https://github.com/zama-ai/concrete-ml/assets/157474013/0cb69022-fd02-4dbc-801b-51401f3bc07c">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/zama-ai/concrete-ml/assets/157474013/86502167-4ea4-49e9-a881-0cf97d141818">
+  <source media="(prefers-color-scheme: light)" srcset="https://github.com/zama-ai/concrete-ml/assets/157474013/3dcf41e2-1c00-471b-be53-2c804879b8cb">
+  <img alt="Support">
+</picture>
 </a>
 
 🌟 If you find this project helpful or interesting, please consider giving it a star on GitHub! Your support helps to grow the community and motivates further development.
 
 <p align="right">
-  <a href="#tabout" > ↑ Back to top </a> 
+  <a href="#about" > ↑ Back to top </a> 
 </p>
