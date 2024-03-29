@@ -110,7 +110,7 @@
   - [FHE Op-graph design](explanations/inner-workings/fhe-op-graphs.md)
   - [External libraries](explanations/inner-workings/external_libraries.md)
 
-## Developer
+## Developers
 
 - [Set up the project](developer/project_setup.md)
 - [Set up Docker](developer/docker_setup.md)
