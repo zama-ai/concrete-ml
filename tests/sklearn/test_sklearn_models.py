@@ -1713,7 +1713,7 @@ def test_p_error_simulation(
     # Compile with a large p_error to be sure the result is random.
     model.compile(x, **error_param)
 
-    def check_for_divergent_predictions(x, model, fhe, max_iterations=N_ALLOWED_FHE_RUN):
+    def check_for_divergent_predictions(x, model, fhe, max_iterations=N_ALLOWED_FHE_RUN, tolerance=1e-5):
         """Detect divergence between simulated/FHE execution and clear run."""
 
         # KNeighborsClassifier does not provide a predict_proba method for now
@@ -1728,10 +1728,9 @@ def test_p_error_simulation(
         y_expected = predict_function(x, fhe="disable")
         for i in range(max_iterations):
             y_pred = predict_function(x[i : i + 1], fhe=fhe).ravel()
-            if not numpy.array_equal(y_pred, y_expected[i : i + 1].ravel()):
+            if not numpy.allclose(y_pred, y_expected[i : i + 1].ravel(), atol=tolerance):
                 return True
         return False
-
     simulation_diff_found = check_for_divergent_predictions(x, model, fhe="simulate")
     fhe_diff_found = check_for_divergent_predictions(x, model, fhe="execute")
 
