@@ -1688,14 +1688,15 @@ def test_fitted_compiled_error_raises(
 @pytest.mark.flaky
 @pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
 @pytest.mark.parametrize(
-    "error_param",
-    [{"p_error": 1 - 2**-40}, {"p_error": 2**-40}],
+    "error_param, expected_diff",
+    [({"p_error": 1 - 2**-40}, True), ({"p_error": 2**-40}, False)],
     ids=["p_error_high", "p_error_low"],
 )
 def test_p_error_simulation(
     model_class,
     parameters,
     error_param,
+    expected_diff,
     load_data,
     is_weekly_option,
 ):
@@ -1710,7 +1711,7 @@ def test_p_error_simulation(
     # Get data-set, initialize and fit the model
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
-    # Compile with a large p_error to be sure the result is random.
+    # Compile with the specified p_error.
     model.compile(x, **error_param)
 
     def check_for_divergent_predictions(
@@ -1746,19 +1747,19 @@ def test_p_error_simulation(
     if is_linear_model:
         pytest.skip("Skipping test for linear models")
 
-    # Check for differences in predictions
-    if error_param["p_error"] > 0.5:
-        assert_msg_high = (
-            "When p_error is high, predictions should differ in both FHE and simulation."
+    # Check for differences in predictions based on expected_diff
+    if expected_diff:
+        assert_msg = (
+            "With high p_error, predictions should differ in both FHE and simulation."
             f" Found differences: FHE={fhe_diff_found}, Simulation={simulation_diff_found}"
         )
-        assert fhe_diff_found and simulation_diff_found, assert_msg_high
+        assert fhe_diff_found and simulation_diff_found, assert_msg
     else:
-        assert_msg_low = (
-            "When p_error is low, predictions should not differ in FHE or simulation."
+        assert_msg = (
+            "With low p_error, predictions should not differ in FHE or simulation."
             f" Found differences: FHE={fhe_diff_found}, Simulation={simulation_diff_found}"
         )
-        assert not (fhe_diff_found or simulation_diff_found), assert_msg_low
+        assert not (fhe_diff_found or simulation_diff_found), assert_msg
 
 
 # This test is only relevant for classifier models
