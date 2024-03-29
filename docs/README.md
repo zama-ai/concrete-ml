@@ -37,29 +37,29 @@ Access to additional resources and join the Zama community.
 
 Refer to the API, review product architecture, and access additional resources for in-depth explanations while working with Concrete ML.
 
-* [API](references/api/)
-* [Quantization](explanations/quantization.md)
-* [Pruning](explanations/pruning.md)
-* [Compilation](explanations/compilation.md)
-* [Advanced features](explanations/advanced\_features.md)
-* [Project architecture](explanations/inner-workings/)
+- [API](references/api/)
+- [Quantization](explanations/quantization.md)
+- [Pruning](explanations/pruning.md)
+- [Compilation](explanations/compilation.md)
+- [Advanced features](explanations/advanced_features.md)
+- [Project architecture](explanations/inner-workings/)
 
 ### Supports
 
 Ask technical questions and discuss with the community. Our team of experts usually answers within 24 hours in working days.
 
-* [Community forum](https://community.zama.ai/c/concrete-ml/8)
-* [Discord channel](https://discord.fhe.org/)
+- [Community forum](https://community.zama.ai/c/concrete-ml/8)
+- [Discord channel](https://discord.fhe.org/)
 
 ### Developers
 
 Collaborate with us to advance the FHE spaces and drive innovation together.
 
-* [Contribute to Concrete ML](developer/contributing.md)
-* [Check the latest release note](https://github.com/zama-ai/concrete-ml/releases)
-* [Request a feature](https://github.com/zama-ai/concrete-ml/issues/new?assignees=\&labels=feature\&projects=\&template=feature\_request.md)
-* [Report a bug](https://github.com/zama-ai/concrete-ml/issues/new?assignees=\&labels=bug\&projects=\&template=bug\_report.md)
+- [Contribute to Concrete ML](developer/contributing.md)
+- [Check the latest release note](https://github.com/zama-ai/concrete-ml/releases)
+- [Request a feature](https://github.com/zama-ai/concrete-ml/issues/new?assignees=&labels=feature&projects=&template=feature_request.md)
+- [Report a bug](https://github.com/zama-ai/concrete-ml/issues/new?assignees=&labels=bug&projects=&template=bug_report.md)
 
-***
+______________________________________________________________________
 
 We value your feedback! [Take a 5-question developer survey](https://zama-project.webflow.io/developer-survey) to improve the Concrete ML library and the documentation and help other developers use FHE.
