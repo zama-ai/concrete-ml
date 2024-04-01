@@ -190,6 +190,7 @@ def process_file(file_str: str, do_open_problematic_files=False):
         ("eg", [], []),  # use e.g.,
         ("eg,", [], []),  # use e.g.,
         ("eg., ", [], []),  # use e.g.,
+        ("dataframe", [], []), # use data-frame
     ]
     # For later
     #   "We" or "Our", or more generally, passive form

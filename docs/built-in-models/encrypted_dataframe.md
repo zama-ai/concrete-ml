@@ -3,16 +3,17 @@
 Concrete ML extends pandas functionality by introducing the capability to perform operations on encrypted data using Fully Homomorphic Encryption (FHE). This API ensures data scientists can leverage well-known pandas-like operations while maintaining privacy throughout the whole process.
 
 Potential applications include:
+
 - Conducting data analysis securely on data stored remotely
 - Joint data analysis efforts between multiple parties
 - Data preparation steps before machine learning tasks, such as inference or training
-
 
 ## Encrypt and Decrypt a DataFrame
 
 To encrypt a pandas DataFrame, the `encrypt_from_pandas` function is used. A client object must be obtained using `load_client`.
 
 <!--pytest-codeblocks:skip-->
+
 ```python
 from concrete.ml.pandas import encrypt_from_pandas, load_client
 
@@ -33,24 +34,22 @@ df_decrypted = df_encrypted.decrypt_to_pandas(client)
 
 Encrypted DataFrames support a subset of operations that are available for pandas DataFrames. The following operations are currently supported:
 
-
 <!--pytest-codeblocks:skip-->	
+
 ```python
 df_encrypted_merged = df_encrypted1.merge(df_encrypted2, how="left", on="common_column")
 ```
 
-
 > **Important**: The merge operation on Encrypted DataFrames can be **securely** performed on a third-party server. This means that the server can execute the merge without ever having access to the unencrypted data. The server only requires the encrypted DataFrames.
-
 
 ## Serialization of Encrypted DataFrames
 
 Encrypted DataFrames can be serialized to a file format for storage or transfer.
 
-
 ### Saving DataFrames
 
 <!--pytest-codeblocks:skip-->	
+
 ```python
 df_encrypted_merged.save("df_encrypted_merged")
 ```
@@ -60,10 +59,12 @@ df_encrypted_merged.save("df_encrypted_merged")
 To load an encrypted DataFrame from a file:
 
 <!--pytest-codeblocks:skip-->	
+
 ```python
 from concrete.ml.pandas import load_encrypted_dataframe
 df_encrypted_merged = load_encrypted_dataframe("df_encrypted_merged")
 ```
+
 ## Supported Data Types and Schema Definition
 
 Concrete ML's encrypted DataFrame operations support a specific set of data types:
@@ -75,14 +76,13 @@ Concrete ML's encrypted DataFrame operations support a specific set of data type
 ## Error Handling
 
 The library is designed to raise specific errors when encountering issues during the pre-processing and post-processing stages:
+
 - `ValueError`: Raised when a column contains values outside the allowed range for integers, when there are too many unique strings, or when encountering an unsupported data type.
 - `TypeError`: Raised when an operation is attempted on a data type that is not supported by the operation.
-
 
 ## Example Workflow
 
 An example workflow where two clients encrypt their respective DataFrames, perform a merge operation on the server side, and then decrypt the results is available in the notebook [encrypted_pandas.ipynb](concrete-ml/use_case_examples/dataframe/encrypted_pandas.ipynb).
-
 
 ## Current Limitations
 
