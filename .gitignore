@@ -168,8 +168,8 @@ docs/index.rst
 .artifacts 
 execution_time_of_individual_pytest_files.txt
 
-# Docs: Advance Examples data
-docs/advanced_examples/data/
+# Docs: Advance Examples MNIST data
+docs/advanced_examples/data/MNIST/
 
 
 # Hybrid model artifacts
