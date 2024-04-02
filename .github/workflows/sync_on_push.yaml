@@ -34,7 +34,7 @@ jobs:
       - name: Sync internal repository
         run: |
           git remote add destination "https://${{ secrets.BOT_USERNAME }}:${{ secrets.CONCRETE_ACTIONS_TOKEN }}@github.com/${{ secrets.SYNC_DEST_REPO }}"
-          git lfs push destination "main:main" --all
-          git push destination "main:main" -f
+          git lfs push destination --all
+          git push destination -f
 
 
