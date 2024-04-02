@@ -18,10 +18,10 @@ from concrete.fhe.compilation.configuration import Configuration
 from ..common.debugging import assert_false, assert_true
 from ..common.utils import (
     MAX_BITWIDTH_BACKWARD_COMPATIBLE,
-    process_rounding_threshold_bits,
     check_there_is_no_p_error_options_in_configuration,
     get_onnx_opset_version,
     manage_parameters_for_pbs_errors,
+    process_rounding_threshold_bits,
     to_tuple,
 )
 from ..onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
