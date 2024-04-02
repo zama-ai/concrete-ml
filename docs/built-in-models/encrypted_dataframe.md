@@ -43,7 +43,7 @@ Concrete ML's encrypted `DataFrame` operations support a specific set of data ty
 
 - **Integer**:  Integers are supported within a specific range determined by the encryption scheme's quantization parameters. Default range is 1 to 15. 0 being used for the `NaN`. Values outside this range will cause a `ValueError` to be raised during the pre-processing stage.
 - **Quantized Float**: Floating-point numbers are quantized to integers within the supported range. This is achieved by computing a scale and zero point for each column, which are used to map the floating-point numbers to the quantized integer space.
-- **String Enum**: String columns are mapped to integers starting from 1. This mapping is stored and later used for dequantization. If the number of unique strings exceeds 15, a `ValueError` is raised.
+- **String Enum**: String columns are mapped to integers starting from 1. This mapping is stored and later used for de-quantization. If the number of unique strings exceeds 15, a `ValueError` is raised.
 
 ## Supported Operations on Encrypted Data-frames
 
