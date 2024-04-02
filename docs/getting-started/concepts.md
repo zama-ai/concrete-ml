@@ -4,9 +4,13 @@ Concrete ML is built on top of Concrete, which enables NumPy programs to be conv
 
 ## Lifecycle of a Concrete ML model
 
+Concrete ML models can be trained on clear or encrypted data, then deployed to predict on encrypted inputs. During deployment
+data pre-processing can be done on encrypted data. Therefore, data can be encrypted during the entire lifecycle of the machine
+learning model, with some limitations.
+
 ### I. Model development
 
-1. **training:** A model is trained using plaintext, non-encrypted, training data.
+1. **training:** A model is trained either using plaintext, non-encrypted, training data, or encrypted training data.
 1. **quantization:** The model is converted into an integer equivalent using quantization. Concrete ML performs this step either during training (Quantization Aware Training) or after training (Post-training Quantization), depending on model type. Quantization converts inputs, model weights, and all intermediate values of the inference computation to integers. More information is available [here](../explanations/quantization.md).
 1. **simulation:** Testing FHE models on very large data-sets can take a long time. Furthermore, not all models are compatible with FHE constraints out of the box. Simulation allows you to execute a model that was quantized, to measure the accuracy it would have in FHE, but also to determine the modifications required to make it FHE compatible. Simulation is described in more detail [here](../explanations/compilation.md#fhe-simulation).
 1. **compilation:** Once the model is quantized, simulation can confirm it has good accuracy in FHE. The model then needs to be compiled using Concrete's FHE Compiler to produce an equivalent FHE circuit. This circuit is represented as an MLIR program consisting of low level cryptographic operations. You can read more about FHE compilation [here](../explanations/compilation.md), MLIR [here](https://mlir.llvm.org/), and about the low-level Concrete library [here](https://docs.zama.ai/concrete-core).
@@ -16,7 +20,11 @@ You can find examples of the model development workflow [here](../tutorials/ml_e
 
 ### II. Model deployment
 
-1. **client/server deployment:** In a client/server setting, the model can be exported in a way that:
+1. **pre-processing:** Data owners can encrypt data and store it in a [data-frame](../built-in-models/encrypted_dataframe.md) for
+   further processing on a server. The server can pre-process such data, to prepare it for encrypted training or inference. Clients
+   generate keys, encrypt and decrypt data-frames, while the Concrete ML-enabled server has pre-compiled circuits
+   that perform pre-processing.
+1. **client/server model deployment:** In a client/server setting, Concrete ML models can be exported in a way that:
    - allows the client to generate keys, encrypt, and decrypt.
    - provides a compiled model that can run on the server to perform inference on encrypted data.
 1. **key generation:** The data owner (client) needs to generate a set of keys: a private key (to encrypt/decrypt their data and results) and a public evaluation key (for the model's FHE evaluation on the server).

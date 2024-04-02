@@ -23,6 +23,7 @@
     built-in-models/tree.md
     built-in-models/neural-networks.md
     built-in-models/nearest-neighbors.md
+    built-in-models/encrypted_dataframe.md
     built-in-models/pandas.md
     built-in-models/training.md
 

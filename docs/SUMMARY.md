@@ -15,6 +15,7 @@
 - [Tree-based models](built-in-models/tree.md)
 - [Neural networks](built-in-models/neural-networks.md)
 - [Nearest neighbors](built-in-models/nearest-neighbors.md)
+- [Encrypted dataframe](built-in-models/encrypted_dataframe.md)
 - [Pandas](built-in-models/pandas.md)
 - [Encrypted training](built-in-models/training.md)
 
