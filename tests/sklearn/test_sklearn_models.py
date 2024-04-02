@@ -46,7 +46,6 @@ from torch import nn
 from concrete.ml.common.serialization.dumpers import dump, dumps
 from concrete.ml.common.serialization.loaders import load, loads
 from concrete.ml.common.utils import (
-    USE_OLD_VL,
     array_allclose_and_same_shape,
     get_model_class,
     get_model_name,
@@ -1689,14 +1688,15 @@ def test_fitted_compiled_error_raises(
 @pytest.mark.flaky
 @pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
 @pytest.mark.parametrize(
-    "error_param",
-    [{"p_error": 0.9999999999990905}],  # 1 - 2**-40
-    ids=["p_error"],
+    "error_param, expected_diff",
+    [({"p_error": 1 - 2**-40}, True), ({"p_error": 2**-40}, False)],
+    ids=["p_error_high", "p_error_low"],
 )
 def test_p_error_simulation(
     model_class,
     parameters,
     error_param,
+    expected_diff,
     load_data,
     is_weekly_option,
 ):
@@ -1711,17 +1711,12 @@ def test_p_error_simulation(
     # Get data-set, initialize and fit the model
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
-    # Check if model is linear
-    is_linear_model = is_model_class_in_a_list(model_class, _get_sklearn_linear_models())
-
-    # Do not run the test for linear models since there is no PBS (i.e. p_error has no impact)
-    if is_linear_model:
-        pytest.skip("Linear models do not have PBS")
-
-    # Compile with a large p_error to be sure the result is random.
+    # Compile with the specified p_error.
     model.compile(x, **error_param)
 
-    def check_for_divergent_predictions(x, model, fhe, max_iterations=N_ALLOWED_FHE_RUN):
+    def check_for_divergent_predictions(
+        x, model, fhe, max_iterations=N_ALLOWED_FHE_RUN, tolerance=1e-5
+    ):
         """Detect divergence between simulated/FHE execution and clear run."""
 
         # KNeighborsClassifier does not provide a predict_proba method for now
@@ -1736,31 +1731,35 @@ def test_p_error_simulation(
         y_expected = predict_function(x, fhe="disable")
         for i in range(max_iterations):
             y_pred = predict_function(x[i : i + 1], fhe=fhe).ravel()
-            if not numpy.array_equal(y_pred, y_expected[i : i + 1].ravel()):
+            if not numpy.allclose(y_pred, y_expected[i : i + 1].ravel(), atol=tolerance):
                 return True
         return False
 
     simulation_diff_found = check_for_divergent_predictions(x, model, fhe="simulate")
     fhe_diff_found = check_for_divergent_predictions(x, model, fhe="execute")
 
-    # Check for differences in predictions
-    # Remark that, with the old VL, linear models (or, more generally, circuits without PBS) were
-    # badly simulated. It has been fixed in the new simulation.
-    if is_linear_model and USE_OLD_VL:
+    # Check if model is linear
+    is_linear_model = is_model_class_in_a_list(model_class, _get_sklearn_linear_models())
 
-        # In FHE, high p_error affect the crypto parameters which
-        # makes the predictions slightly different
-        assert fhe_diff_found, "FHE predictions should be different for linear models"
+    # Skip the following if model is linear
+    # Simulation and FHE differs with very high p_error on leveled circuit
+    # FIXME https://github.com/zama-ai/concrete-ml-internal/issues/4343
+    if is_linear_model:
+        pytest.skip("Skipping test for linear models")
 
-        # linear models p_error is not simulated
-        assert not simulation_diff_found, "SIMULATE predictions not the same for linear models"
-
-    else:
-        assert fhe_diff_found and simulation_diff_found, (
-            f"Predictions not different in at least one run.\n"
-            f"FHE predictions differ: {fhe_diff_found}\n"
-            f"SIMULATE predictions differ: {simulation_diff_found}"
+    # Check for differences in predictions based on expected_diff
+    if expected_diff:
+        assert_msg = (
+            "With high p_error, predictions should differ in both FHE and simulation."
+            f" Found differences: FHE={fhe_diff_found}, Simulation={simulation_diff_found}"
         )
+        assert fhe_diff_found and simulation_diff_found, assert_msg
+    else:
+        assert_msg = (
+            "With low p_error, predictions should not differ in FHE or simulation."
+            f" Found differences: FHE={fhe_diff_found}, Simulation={simulation_diff_found}"
+        )
+        assert not (fhe_diff_found or simulation_diff_found), assert_msg
 
 
 # This test is only relevant for classifier models

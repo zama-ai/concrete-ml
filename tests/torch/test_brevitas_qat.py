@@ -542,7 +542,7 @@ def test_brevitas_power_of_two(
             elif manual_rounding:
                 # If manual rounding was set, LSBs_to_remove must be equal
                 # to the accumulator size minus the requested rounding_threshold_bits
-                assert node_op.rounding_threshold_bits == manual_rounding
+                assert node_op.rounding_threshold_bits.get("n_bits", None) == manual_rounding
                 assert node_op.produces_graph_output or node_op.lsbs_to_remove is not None
 
     # The power-of-two optimization will only work

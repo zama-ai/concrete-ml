@@ -300,13 +300,12 @@ def accuracy_test_rounding(
     check_is_good_execution_for_cml_vs_circuit,
     is_brevitas_qat=False,
 ):
-    """Check rounding behavior.
+    """Check rounding behavior with both EXACT and APPROXIMATE methods.
 
     The original quantized_numpy_module, compiled over the torch_model without rounding is
-    compared against quantized_numpy_module_round_low_precision, the torch_model compiled with
-    a rounding threshold of 2 bits, and quantized_numpy_module_round_high_precision,
-    the torch_model compiled with maximum bit-width computed with 8 bits (we can't go higher
-    as rounding does not work with CRT enconding).
+    compared against quantized_numpy_module_round_low_precision and
+    quantized_numpy_module_round_high_precision, the torch_model compiled with a rounding threshold
+    of 2 bits and 8 bits respectively, using both EXACT and APPROXIMATE methods.
 
     The final assertion tests whether the mean absolute error between
     quantized_numpy_module_round_high_precision and quantized_numpy_module is lower than
@@ -318,125 +317,77 @@ def accuracy_test_rounding(
     # feature with enough precision.
     assert quantized_numpy_module.fhe_circuit.graph.maximum_integer_bit_width() >= 4
 
-    # Compile with a rounding threshold equal to the maximum bit-width
-    # computed in the original quantized_numpy_module
-    if is_brevitas_qat:
-        # the q_result_high_precision should round to 8 bits as we can't round higher
-        quantized_numpy_module_round_high_precision = compile_brevitas_qat_model(
-            torch_model,
-            inputset,
-            n_bits=n_bits,
-            configuration=configuration,
-            rounding_threshold_bits=8,
-            verbose=verbose,
-        )
+    # Define rounding thresholds for high and low precision with both EXACT and APPROXIMATE methods
+    rounding_thresholds = {
+        "high_exact": {"method": "EXACT", "n_bits": 8},
+        "low_exact": {"method": "EXACT", "n_bits": 2},
+        "high_approximate": {"method": "APPROXIMATE", "n_bits": 8},
+        "low_approximate": {"method": "APPROXIMATE", "n_bits": 2},
+    }
 
-        # and another quantized module with a rounding threshold equal to 2 bits
-        quantized_numpy_module_round_low_precision = compile_brevitas_qat_model(
-            torch_model,
-            inputset,
-            n_bits=n_bits,
-            configuration=configuration,
-            rounding_threshold_bits=2,
-            verbose=verbose,
-        )
+    compiled_modules = {}
 
-    else:
-        # the q_result_high_precision should round to 8 bits as we can't round higher
-        quantized_numpy_module_round_high_precision = compile_torch_model(
-            torch_model,
-            inputset,
-            import_qat=import_qat,
-            configuration=configuration,
-            n_bits=n_bits,
-            rounding_threshold_bits=8,
-            verbose=verbose,
-        )
-
-        # and another quantized module with a rounding threshold equal to 2 bits
-        quantized_numpy_module_round_low_precision = compile_torch_model(
-            torch_model,
-            inputset,
-            import_qat=import_qat,
-            configuration=configuration,
-            n_bits=n_bits,
-            verbose=verbose,
-            rounding_threshold_bits=2,
-        )
+    # Compile models with different rounding thresholds and methods
+    for key, rounding_threshold in rounding_thresholds.items():
+        if is_brevitas_qat:
+            compiled_modules[key] = compile_brevitas_qat_model(
+                torch_model,
+                inputset,
+                n_bits=n_bits,
+                configuration=configuration,
+                rounding_threshold_bits=rounding_threshold,
+                verbose=verbose,
+            )
+        else:
+            compiled_modules[key] = compile_torch_model(
+                torch_model,
+                inputset,
+                import_qat=import_qat,
+                configuration=configuration,
+                n_bits=n_bits,
+                rounding_threshold_bits=rounding_threshold,
+                verbose=verbose,
+            )
 
     n_percent_inputset_examples_test = 0.1
     # Using the input-set allows to remove any chance of overflow.
     x_test = create_test_inputset(inputset, n_percent_inputset_examples_test)
 
-    # Make sure the two modules have the same quantization result
+    # Make sure the modules have the same quantization result
     qtest = to_tuple(quantized_numpy_module.quantize_input(*x_test))
-    qtest_high = to_tuple(quantized_numpy_module_round_high_precision.quantize_input(*x_test))
-    qtest_low = to_tuple(quantized_numpy_module_round_low_precision.quantize_input(*x_test))
-
-    assert all(
-        numpy.array_equal(qtest_i, qtest_high_i)
-        for (qtest_i, qtest_high_i) in zip(qtest, qtest_high)
-    )
-    assert all(
-        numpy.array_equal(qtest_i, qtest_low_i) for (qtest_i, qtest_low_i) in zip(qtest, qtest_low)
-    )
-
-    results = []
-    results_high_precision = []
-    results_low_precision = []
+    for _, module in compiled_modules.items():
+        qtest_rounded = to_tuple(module.quantize_input(*x_test))
+        assert all(
+            numpy.array_equal(qtest_i, qtest_rounded_i)
+            for (qtest_i, qtest_rounded_i) in zip(qtest, qtest_rounded)
+        )
+    results: dict = {key: [] for key in compiled_modules}
     for i in range(x_test[0].shape[0]):
-
-        # Extract example i for each tensor in the test tuple with quantized values while
-        # keeping the dimension of the original tensors (e.g., if it is a tuple of two (100, 10)
-        # tensors, then each quantized value becomes a tuple of two tensors of shape (1, 10).
         q_x = tuple(q[[i]] for q in to_tuple(qtest))
-
-        # encrypt, run, and decrypt with different precision modes
-        q_result = quantized_numpy_module.quantized_forward(*q_x, fhe="simulate")
-        q_result_high_precision = quantized_numpy_module_round_high_precision.quantized_forward(
-            *q_x,
-            fhe="simulate",
-        )
-        q_result_low_precision = quantized_numpy_module_round_low_precision.quantized_forward(
-            *q_x,
-            fhe="simulate",
-        )
-
-        # de-quantize the results to obtain the actual output values
-        result = quantized_numpy_module.dequantize_output(q_result)
-        result_high_precision = quantized_numpy_module_round_high_precision.dequantize_output(
-            q_result_high_precision
-        )
-        result_low_precision = quantized_numpy_module_round_low_precision.dequantize_output(
-            q_result_low_precision
-        )
-
-        # append the results to respective lists
-        results.append(result)
-        results_high_precision.append(result_high_precision)
-        results_low_precision.append(result_low_precision)
+        for key, module in compiled_modules.items():
+            q_result = module.quantized_forward(*q_x, fhe="simulate")
+            result = module.dequantize_output(q_result)
+            results[key].append(result)
 
     # Check modules predictions FHE simulation vs Concrete ML.
-    check_is_good_execution_for_cml_vs_circuit(x_test, quantized_numpy_module, simulate=simulate)
-    check_is_good_execution_for_cml_vs_circuit(
-        x_test, quantized_numpy_module_round_high_precision, simulate=simulate
-    )
-    # low bit-width rounding is not behaving as expected with new simulation
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4331
-    # check_is_good_execution_for_cml_vs_circuit(
-    #     x_test, quantized_numpy_module_round_low_precision, simulate=simulate
-    # )
+    for key, module in compiled_modules.items():
 
-    # Check that high precision gives a better match than low precision
-    # MSE is preferred over MAE here to spot a lack of diversity in the 2 bits rounded model
-    # e.g., results_low_precision = mean(results) should impact more MSE than MAE.
-    # mse_high_precision = numpy.mean(numpy.square(numpy.subtract(results, results_high_precision)))
-    # mse_low_precision = numpy.mean(numpy.square(numpy.subtract(results, results_low_precision)))
+        # low bit-width rounding is not behaving as expected with new simulation
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/433
+        if "low" not in key:
+            check_is_good_execution_for_cml_vs_circuit(x_test, module, simulate=simulate)
 
-    # This assert is too unstable and creates more and more flaky tests, we will investigate a
-    # better way to assess the rounding feature's performance
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3662
-    # assert mse_high_precision <= mse_low_precision, "Rounding is not working as expected."
+    # FIXME: The following MSE comparison is commented out due to instability issues.
+    # We will investigate a better way to assess the rounding feature's performance.
+    # https://github.com/zama-ai/concrete-ml-internal/issues/3662
+    # mse_results = {
+    #     key: numpy.mean(numpy.square(numpy.subtract(results['original'], result_list)))
+    #     for key, result_list in results.items()
+    # }
+    # assert (mse_results['high_exact'] <= mse_results['low_exact'],
+    #   "Rounding is not working as expected.")
+    # assert (mse_results['high_approximate'] <= mse_results['low_approximate'],
+    #   "Rounding is not working as expected.")
 
 
 # This test is a known flaky
@@ -1442,3 +1393,65 @@ def test_onnx_no_input():
         AssertionError, match="Input 'x' is missing in the ONNX graph after export."
     ):
         compile_torch_model(model, torch_input, rounding_threshold_bits=3)
+
+
+@pytest.mark.parametrize(
+    "rounding_threshold_bits, expected_exception, match_message",
+    [
+        ({"n_bits": "auto"}, NotImplementedError, "Automatic rounding is not implemented yet."),
+        (
+            "invalid_type",
+            ValueError,
+            "Invalid type for rounding_threshold_bits. Must be int or dict.",
+        ),
+        (
+            {"method": "INVALID_METHOD"},
+            ValueError,
+            "INVALID_METHOD is not a valid method. Must be one of EXACT, APPROXIMATE.",
+        ),
+    ],
+)
+def test_compile_torch_model_rounding_threshold_bits_errors(
+    rounding_threshold_bits, expected_exception, match_message, default_configuration
+):
+    """Test that compile_torch_model raises errors for invalid rounding_threshold_bits."""
+    model = FCSmall(input_output=5, activation_function=nn.ReLU)
+    torch_inputset = torch.randn(10, 5)
+
+    with pytest.raises(expected_exception, match=match_message):
+        compile_torch_model(
+            torch_model=model,
+            torch_inputset=torch_inputset,
+            rounding_threshold_bits=rounding_threshold_bits,
+            configuration=default_configuration,
+        )
+
+
+@pytest.mark.parametrize(
+    "rounding_method, expected_reinterpret",
+    [
+        ("APPROXIMATE", True),
+        ("EXACT", False),
+    ],
+)
+def test_rounding_mode(rounding_method, expected_reinterpret, default_configuration):
+    """Test that the underlying FHE circuit uses the right rounding method."""
+    model = FCSmall(input_output=5, activation_function=nn.ReLU)
+    torch_inputset = torch.randn(10, 5)
+    configuration = default_configuration
+
+    compiled_module = compile_torch_model(
+        torch_model=model,
+        torch_inputset=torch_inputset,
+        rounding_threshold_bits={"method": rounding_method, "n_bits": 4},
+        configuration=configuration,
+    )
+
+    # Convert compiled module to string to search for patterns
+    mlir = compiled_module.fhe_circuit.mlir
+    if expected_reinterpret:
+        assert (
+            "reinterpret_precision" in mlir and "round" not in mlir
+        ), "Expected 'reinterpret_precision' found but 'round' should not be present."
+    else:
+        assert "reinterpret_precision" not in mlir, "Unexpected 'reinterpret_precision' found."

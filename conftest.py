@@ -147,7 +147,8 @@ def default_configuration():
         enable_unsafe_features=True,
         use_insecure_key_cache=True,
         insecure_key_cache_location="ConcreteNumpyKeyCache",
-        fhe_simulation=False,  # Simulation compilation is done lazilly on circuit.simulate
+        # Simulation compilation is done lazily on circuit.simulate
+        fhe_simulation=False,
         fhe_execution=True,
     )
 
