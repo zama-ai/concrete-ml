@@ -67,7 +67,7 @@ build_quantized_module(
     torch_inputset: Union[Tensor, ndarray, Tuple[Union[Tensor, ndarray], ]],
     import_qat: bool = False,
     n_bits: Union[int, Dict[str, int]] = 8,
-    rounding_threshold_bits: Optional[int] = None,
+    rounding_threshold_bits: Union[NoneType, int, Dict[str, Union[str, int]]] = None,
     reduce_sum_copy=False
 ) → QuantizedModule
 ```
@@ -82,7 +82,7 @@ Take a model in torch or ONNX, turn it to numpy, quantize its inputs / weights /
 - <b>`torch_inputset`</b> (Dataset):  the calibration input-set, can contain either torch  tensors or numpy.ndarray
 - <b>`import_qat`</b> (bool):  Flag to signal that the network being imported contains quantizers in  in its computation graph and that Concrete ML should not re-quantize it
 - <b>`n_bits`</b>:  the number of bits for the quantization
-- <b>`rounding_threshold_bits`</b> (int):  if not None, every accumulators in the model are rounded down  to the given bits of precision
+- <b>`rounding_threshold_bits`</b> (Union\[None, int, Dict\[str, Union\[str, int\]\]\]):  Defines precision  rounding for model accumulators. Accepts None, an int, or a dict.  The dict can specify 'method' (fhe.Exactness.EXACT or fhe.Exactness.APPROXIMATE)  and 'n_bits' ('auto' or int)
 - <b>`reduce_sum_copy`</b> (bool):  if the inputs of QuantizedReduceSum should be copied to avoid  bit-width propagation
 
 **Returns:**
@@ -91,7 +91,7 @@ Take a model in torch or ONNX, turn it to numpy, quantize its inputs / weights /
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/compile.py#L229"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/compile.py#L260"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_torch_model`
 
@@ -104,7 +104,7 @@ compile_torch_model(
     artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
     n_bits: Union[int, Dict[str, int]] = 8,
-    rounding_threshold_bits: Optional[int] = None,
+    rounding_threshold_bits: Union[NoneType, int, Dict[str, Union[str, int]]] = None,
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
     verbose: bool = False,
@@ -128,7 +128,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 - <b>`n_bits`</b> (Union\[int, Dict\[str, int\]\]):  number of bits for quantization, can be a single value  or a dictionary with the following keys :
   \- "op_inputs" and "op_weights" (mandatory)
   \- "model_inputs" and "model_outputs" (optional, default to 5 bits).  When using a single integer for n_bits, its value is assigned to "op_inputs" and  "op_weights" bits. Default is 8 bits.
-- <b>`rounding_threshold_bits`</b> (int):  if not None, every accumulators in the model are rounded down  to the given bits of precision
+- <b>`rounding_threshold_bits`</b> (Union\[None, int, Dict\[str, Union\[str, int\]\]\]):  Defines precision  rounding for model accumulators. Accepts None, an int, or a dict.  The dict can specify 'method' (fhe.Exactness.EXACT or fhe.Exactness.APPROXIMATE)  and 'n_bits' ('auto' or int)
 - <b>`p_error`</b> (Optional\[float\]):  probability of error of a single PBS
 - <b>`global_p_error`</b> (Optional\[float\]):  probability of error of the full circuit. In FHE  simulation `global_p_error` is set to 0
 - <b>`verbose`</b> (bool):  whether to show compilation information
@@ -141,7 +141,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/compile.py#L311"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/compile.py#L344"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_onnx_model`
 
@@ -154,7 +154,7 @@ compile_onnx_model(
     artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
     n_bits: Union[int, Dict[str, int]] = 8,
-    rounding_threshold_bits: Optional[int] = None,
+    rounding_threshold_bits: Union[NoneType, int, Dict[str, Union[str, int]]] = None,
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
     verbose: bool = False,
@@ -178,7 +178,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 - <b>`n_bits`</b> (Union\[int, Dict\[str, int\]\]):  number of bits for quantization, can be a single value  or a dictionary with the following keys :
   \- "op_inputs" and "op_weights" (mandatory)
   \- "model_inputs" and "model_outputs" (optional, default to 5 bits).  When using a single integer for n_bits, its value is assigned to "op_inputs" and  "op_weights" bits. Default is 8 bits.
-- <b>`rounding_threshold_bits`</b> (int):  if not None, every accumulators in the model are rounded down  to the given bits of precision
+- <b>`rounding_threshold_bits`</b> (Union\[None, int, Dict\[str, Union\[str, int\]\]\]):  Defines precision  rounding for model accumulators. Accepts None, an int, or a dict.  The dict can specify 'method' (fhe.Exactness.EXACT or fhe.Exactness.APPROXIMATE)  and 'n_bits' ('auto' or int)
 - <b>`p_error`</b> (Optional\[float\]):  probability of error of a single PBS
 - <b>`global_p_error`</b> (Optional\[float\]):  probability of error of the full circuit. In FHE  simulation `global_p_error` is set to 0
 - <b>`verbose`</b> (bool):  whether to show compilation information
@@ -191,7 +191,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/compile.py#L389"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/compile.py#L424"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_brevitas_qat_model`
 
@@ -203,7 +203,7 @@ compile_brevitas_qat_model(
     configuration: Optional[Configuration] = None,
     artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
-    rounding_threshold_bits: Optional[int] = None,
+    rounding_threshold_bits: Union[NoneType, int, Dict[str, Union[str, int]]] = None,
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
     output_onnx_file: Union[NoneType, Path, str] = None,
@@ -225,7 +225,7 @@ The torch_model parameter is a subclass of torch.nn.Module that uses quantized o
 - <b>`configuration`</b> (Configuration):  Configuration object to use  during compilation
 - <b>`artifacts`</b> (DebugArtifacts):  Artifacts object to fill  during compilation
 - <b>`show_mlir`</b> (bool):  if set, the MLIR produced by the converter and which is going  to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
-- <b>`rounding_threshold_bits`</b> (int):  if not None, every accumulators in the model are rounded down  to the given bits of precision
+- <b>`rounding_threshold_bits`</b> (Union\[None, int, Dict\[str, Union\[str, int\]\]\]):  Defines precision  rounding for model accumulators. Accepts None, an int, or a dict.  The dict can specify 'method' (fhe.Exactness.EXACT or fhe.Exactness.APPROXIMATE)  and 'n_bits' ('auto' or int)
 - <b>`p_error`</b> (Optional\[float\]):  probability of error of a single PBS
 - <b>`global_p_error`</b> (Optional\[float\]):  probability of error of the full circuit. In FHE  simulation `global_p_error` is set to 0
 - <b>`output_onnx_file`</b> (str):  temporary file to store ONNX model. If None a temporary file  is generated

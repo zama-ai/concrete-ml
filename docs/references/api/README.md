@@ -26,6 +26,9 @@
 - [`concrete.ml.onnx.onnx_model_manipulations`](./concrete.ml.onnx.onnx_model_manipulations.md#module-concretemlonnxonnx_model_manipulations): Some code to manipulate models.
 - [`concrete.ml.onnx.onnx_utils`](./concrete.ml.onnx.onnx_utils.md#module-concretemlonnxonnx_utils): Utils to interpret an ONNX model with numpy.
 - [`concrete.ml.onnx.ops_impl`](./concrete.ml.onnx.ops_impl.md#module-concretemlonnxops_impl): ONNX ops implementation in Python + NumPy.
+- [`concrete.ml.pandas`](./concrete.ml.pandas.md#module-concretemlpandas): Public API for encrypted data-frames.
+- [`concrete.ml.pandas.client_engine`](./concrete.ml.pandas.client_engine.md#module-concretemlpandasclient_engine): Define the framework used for managing keys (encrypt, decrypt) for encrypted data-frames.
+- [`concrete.ml.pandas.dataframe`](./concrete.ml.pandas.dataframe.md#module-concretemlpandasdataframe): Define the encrypted data-frame framework.
 - [`concrete.ml.pytest`](./concrete.ml.pytest.md#module-concretemlpytest): Module which is used to contain common functions for pytest.
 - [`concrete.ml.pytest.torch_models`](./concrete.ml.pytest.torch_models.md#module-concretemlpytesttorch_models): Torch modules for our pytests.
 - [`concrete.ml.pytest.utils`](./concrete.ml.pytest.utils.md#module-concretemlpytestutils): Common functions or lists for test files, which can't be put in fixtures.
@@ -67,6 +70,8 @@
 - [`fhe_client_server.FHEModelServer`](./concrete.ml.deployment.fhe_client_server.md#class-fhemodelserver): Server API to load and run the FHE circuit.
 - [`ops_impl.ONNXMixedFunction`](./concrete.ml.onnx.ops_impl.md#class-onnxmixedfunction): A mixed quantized-raw valued onnx function.
 - [`ops_impl.RawOpOutput`](./concrete.ml.onnx.ops_impl.md#class-rawopoutput): Type construct that marks an ndarray as a raw output of a quantized op.
+- [`client_engine.ClientEngine`](./concrete.ml.pandas.client_engine.md#class-clientengine): Define a framework that manages keys.
+- [`dataframe.EncryptedDataFrame`](./concrete.ml.pandas.dataframe.md#class-encrypteddataframe): Define an encrypted data-frame framework that supports Pandas operators and parameters.
 - [`torch_models.AddNet`](./concrete.ml.pytest.torch_models.md#class-addnet): Torch model that performs a simple addition between two inputs.
 - [`torch_models.BranchingGemmModule`](./concrete.ml.pytest.torch_models.md#class-branchinggemmmodule): Torch model with some branching and skip connections.
 - [`torch_models.BranchingModule`](./concrete.ml.pytest.torch_models.md#class-branchingmodule): Torch model with some branching and skip connections.
@@ -364,6 +369,8 @@
 - [`ops_impl.rounded_numpy_equal_for_trees`](./concrete.ml.onnx.ops_impl.md#function-rounded_numpy_equal_for_trees): Compute rounded equal in numpy according to ONNX spec for tree-based models only.
 - [`ops_impl.rounded_numpy_less_for_trees`](./concrete.ml.onnx.ops_impl.md#function-rounded_numpy_less_for_trees): Compute rounded less in numpy according to ONNX spec for tree-based models only.
 - [`ops_impl.rounded_numpy_less_or_equal_for_trees`](./concrete.ml.onnx.ops_impl.md#function-rounded_numpy_less_or_equal_for_trees): Compute rounded less or equal in numpy according to ONNX spec for tree-based models only.
+- [`pandas.load_encrypted_dataframe`](./concrete.ml.pandas.md#function-load_encrypted_dataframe): Load a serialized encrypted data-frame.
+- [`pandas.merge`](./concrete.ml.pandas.md#function-merge): Merge two encrypted data-frames in FHE using Pandas parameters.
 - [`utils.check_serialization`](./concrete.ml.pytest.utils.md#function-check_serialization): Check that the given object can properly be serialized.
 - [`utils.data_calibration_processing`](./concrete.ml.pytest.utils.md#function-data_calibration_processing): Reduce size of the given data-set.
 - [`utils.get_random_samples`](./concrete.ml.pytest.utils.md#function-get_random_samples): Select `n_sample` random elements from a 2D NumPy array.
@@ -374,6 +381,7 @@
 - [`utils.get_sklearn_tree_models_and_datasets`](./concrete.ml.pytest.utils.md#function-get_sklearn_tree_models_and_datasets): Get the pytest parameters to use for testing tree-based models.
 - [`utils.instantiate_model_generic`](./concrete.ml.pytest.utils.md#function-instantiate_model_generic): Instantiate any Concrete ML model type.
 - [`utils.load_torch_model`](./concrete.ml.pytest.utils.md#function-load_torch_model): Load an object saved with torch.save() from a file or dict.
+- [`utils.pandas_dataframe_are_equal`](./concrete.ml.pytest.utils.md#function-pandas_dataframe_are_equal): Determine if both data-frames are identical.
 - [`utils.values_are_equal`](./concrete.ml.pytest.utils.md#function-values_are_equal): Indicate if two values are equal.
 - [`post_training.get_n_bits_dict`](./concrete.ml.quantization.post_training.md#function-get_n_bits_dict): Convert the n_bits parameter into a proper dictionary.
 - [`quantizers.fill_from_kwargs`](./concrete.ml.quantization.quantizers.md#function-fill_from_kwargs): Fill a parameter set structure from kwargs parameters.

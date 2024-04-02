@@ -52,9 +52,9 @@ This class should be sub-classed to provide specific calibration and quantizatio
   \- "op_inputs" and "op_weights" (mandatory)
   \- "model_inputs" and "model_outputs" (optional, default to 5 bits).  When using a single integer for n_bits, its value is assigned to "op_inputs" and  "op_weights" bits. The maximum between this value and a default value (5) is then  assigned to the number of "model_inputs" "model_outputs". This default value is a  compromise between model accuracy and runtime performance in FHE. "model_outputs" gives  the precision of the final network's outputs, while "model_inputs" gives the precision  of the network's inputs. "op_inputs" and "op_weights" both control the quantization for  inputs and weights of all layers.
 - <b>`numpy_model`</b> (NumpyModule):  Model in numpy.
-- <b>`rounding_threshold_bits`</b> (int):  if not None, every accumulators in the model are rounded down  to the given bits of precision
+- <b>`rounding_threshold_bits`</b> (Union\[None, int, Dict\[str, Union\[str, int\]\]\]):  Defines precision  rounding for model accumulators. Accepts None, an int, or a dict.  The dict can specify 'method' (fhe.Exactness.EXACT or fhe.Exactness.APPROXIMATE)  and 'n_bits' ('auto' or int)
 
-<a href="../../../src/concrete/ml/quantization/post_training.py#L225"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/post_training.py#L227"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -62,7 +62,7 @@ This class should be sub-classed to provide specific calibration and quantizatio
 __init__(
     n_bits: Union[int, Dict],
     numpy_model: NumpyModule,
-    rounding_threshold_bits: Optional[int] = None
+    rounding_threshold_bits: Union[NoneType, int, Dict[str, Union[str, int]]] = None
 )
 ```
 
@@ -108,7 +108,7 @@ Get the number of bits to use for the quantization of any constants (usually wei
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/post_training.py#L681"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/post_training.py#L683"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_module`
 
@@ -130,7 +130,7 @@ Following https://arxiv.org/abs/1712.05877 guidelines.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/post_training.py#L820"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/post_training.py#L822"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `PostTrainingAffineQuantization`
 
@@ -146,14 +146,14 @@ Create the quantized version of the passed numpy module.
   \- op_weights: learned parameters or constants in the network
   \- model_outputs: final model output quantization bits
 - <b>`numpy_model`</b> (NumpyModule):       Model in numpy.
-- <b>`rounding_threshold_bits`</b> (int):  if not None, every accumulators in the model are rounded down  to the given bits of precision
+- <b>`rounding_threshold_bits`</b> (Union\[None, int, Dict\[str, Union\[str, int\]\]\]):  if not None, every  accumulators in the model are rounded down to the given  bits of precision. Can be an int or a dictionary with keys  'method' and 'n_bits', where 'method' is either  fhe.Exactness.EXACT or fhe.Exactness.APPROXIMATE, and  'n_bits' is either 'auto' or an int.
 - <b>`is_signed`</b>:                       Whether the weights of the layers can be signed.  Currently, only the weights can be signed.
 
 **Returns:**
 
 - <b>`QuantizedModule`</b>:  A quantized version of the numpy model.
 
-<a href="../../../src/concrete/ml/quantization/post_training.py#L225"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/post_training.py#L227"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -161,7 +161,7 @@ Create the quantized version of the passed numpy module.
 __init__(
     n_bits: Union[int, Dict],
     numpy_model: NumpyModule,
-    rounding_threshold_bits: Optional[int] = None
+    rounding_threshold_bits: Union[NoneType, int, Dict[str, Union[str, int]]] = None
 )
 ```
 
@@ -207,7 +207,7 @@ Get the number of bits to use for the quantization of any constants (usually wei
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/post_training.py#L681"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/post_training.py#L683"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_module`
 
@@ -229,7 +229,7 @@ Following https://arxiv.org/abs/1712.05877 guidelines.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/post_training.py#L967"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/post_training.py#L973"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `PostTrainingQATImporter`
 
@@ -237,7 +237,7 @@ Converter of Quantization Aware Training networks.
 
 This class provides specific configuration for QAT networks during ONNX network conversion to Concrete ML computation graphs.
 
-<a href="../../../src/concrete/ml/quantization/post_training.py#L225"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/post_training.py#L227"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -245,7 +245,7 @@ This class provides specific configuration for QAT networks during ONNX network 
 __init__(
     n_bits: Union[int, Dict],
     numpy_model: NumpyModule,
-    rounding_threshold_bits: Optional[int] = None
+    rounding_threshold_bits: Union[NoneType, int, Dict[str, Union[str, int]]] = None
 )
 ```
 
@@ -291,7 +291,7 @@ Get the number of bits to use for the quantization of any constants (usually wei
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/post_training.py#L681"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/post_training.py#L683"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_module`
 
