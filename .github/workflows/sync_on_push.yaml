@@ -31,10 +31,17 @@ jobs:
           name: repo-archive
           path: '.'
 
+      # - name: Sync internal repository
+      #   run: |
+      #     git remote add destination "https://${{ secrets.BOT_USERNAME }}:${{ secrets.CONCRETE_ACTIONS_TOKEN }}@github.com/${{ secrets.SYNC_DEST_REPO }}"
+      #     # git lfs push destination --all
+      #     git push destination -f
+
       - name: Sync internal repository
-        run: |
-          git remote add destination "https://${{ secrets.BOT_USERNAME }}:${{ secrets.CONCRETE_ACTIONS_TOKEN }}@github.com/${{ secrets.SYNC_DEST_REPO }}.git"
-          # git lfs push destination --all
-          git push destination -f
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
+          repository: ${{ secrets.SYNC_DEST_REPO }}
+          force: true
 
 
