@@ -650,4 +650,6 @@ def check_rounding_threshold(rounding_threshold_bits):
         if n_bits_rounding is not None and not 2 <= n_bits_rounding <= 8:
             raise ValueError("n_bits_rounding must be between 2 and 8 inclusive.")
 
-    return {"n_bits": n_bits_rounding, "method": method}
+        rounding_threshold_bits = {"n_bits": n_bits_rounding, "method": method}
+
+    return rounding_threshold_bits
