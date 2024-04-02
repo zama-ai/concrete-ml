@@ -32,6 +32,49 @@ Tensor = Union[torch.Tensor, numpy.ndarray]
 Dataset = Union[Tensor, Tuple[Tensor, ...]]
 
 
+def check_rounding_threshold(rounding_threshold_bits):
+    """Check and process the rounding_threshold_bits parameter.
+
+    Args:
+        rounding_threshold_bits (Union[None, int, Dict[str, Union[str, int]]]): Defines precision
+            rounding for model accumulators. Accepts None, an int, or a dict.
+            The dict can specify 'method' (fhe.Exactness.EXACT or fhe.Exactness.APPROXIMATE)
+            and 'n_bits' ('auto' or int)
+
+    Returns:
+        Dict[str, Union[str, int]]: Processed rounding_threshold_bits dictionary.
+
+    Raises:
+        NotImplementedError: If 'auto' rounding is specified but not implemented.
+        ValueError: If an invalid type or value is provided for rounding_threshold_bits.
+    """
+    n_bits_rounding: Union[None, str, int] = None
+    method: Exactness = Exactness.EXACT
+
+    # Only process if rounding_threshold_bits is not None
+    if rounding_threshold_bits is not None:
+        if isinstance(rounding_threshold_bits, int):
+            n_bits_rounding = rounding_threshold_bits
+        elif isinstance(rounding_threshold_bits, dict):
+            n_bits_rounding = rounding_threshold_bits.get("n_bits")
+            if n_bits_rounding == "auto":
+                raise NotImplementedError("Automatic rounding is not implemented yet.")
+            method_str = rounding_threshold_bits.get("method", method).upper()
+            if method_str in ["EXACT", "APPROXIMATE"]:
+                method = Exactness[method_str]
+            else:
+                raise ValueError(
+                    f"{method_str} is not a valid method. Must be one of EXACT, APPROXIMATE."
+                )
+        else:
+            raise ValueError("Invalid type for rounding_threshold_bits. Must be int or dict.")
+
+        assert n_bits_rounding is not None, "n_bits_rounding cannot be None"
+        assert 2 <= n_bits_rounding <= 8, "n_bits_rounding must be between 2 and 8 inclusive"
+
+    return {"n_bits": n_bits_rounding, "method": method}
+
+
 def has_any_qnn_layers(torch_model: torch.nn.Module) -> bool:
     """Check if a torch model has QNN layers.
 
@@ -181,34 +224,8 @@ def _compile_torch_or_onnx_model(
 
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
-
-    Raises:
-        NotImplementedError: If 'auto' rounding is specified but not implemented.
-        ValueError: If an invalid type or value is provided for rounding_threshold_bits.
     """
-    n_bits_rounding: Union[None, str, int] = None
-    method: Exactness = Exactness.EXACT
-
-    # Only process if rounding_threshold_bits is not None
-    if rounding_threshold_bits is not None:
-        if isinstance(rounding_threshold_bits, int):
-            n_bits_rounding = rounding_threshold_bits
-        elif isinstance(rounding_threshold_bits, dict):
-            n_bits_rounding = rounding_threshold_bits.get("n_bits")
-            if n_bits_rounding == "auto":
-                raise NotImplementedError("Automatic rounding is not implemented yet.")
-            method_str = rounding_threshold_bits.get("method", method).upper()
-            if method_str in ["EXACT", "APPROXIMATE"]:
-                method = Exactness[method_str]
-            else:
-                raise ValueError(
-                    f"{method_str} is not a valid method. Must be one of EXACT, APPROXIMATE."
-                )
-        else:
-            raise ValueError("Invalid type for rounding_threshold_bits. Must be int or dict.")
-
-        assert n_bits_rounding is not None, "n_bits_rounding cannot be None"
-        rounding_threshold_bits = {"n_bits": n_bits_rounding, "method": method}
+    rounding_threshold_bits = check_rounding_threshold(rounding_threshold_bits)
 
     inputset_as_numpy_tuple = tuple(
         convert_torch_tensor_or_numpy_array_to_numpy_array(val) for val in to_tuple(torch_inputset)
