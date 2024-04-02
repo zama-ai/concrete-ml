@@ -59,13 +59,15 @@ def check_rounding_threshold(rounding_threshold_bits):
             n_bits_rounding = rounding_threshold_bits.get("n_bits")
             if n_bits_rounding == "auto":
                 raise NotImplementedError("Automatic rounding is not implemented yet.")
-            method_str = rounding_threshold_bits.get("method", method).upper()
-            if method_str in ["EXACT", "APPROXIMATE"]:
-                method = Exactness[method_str]
-            else:
-                raise ValueError(
-                    f"{method_str} is not a valid method. Must be one of EXACT, APPROXIMATE."
-                )
+            method = rounding_threshold_bits.get("method", method)
+            if not isinstance(method, Exactness):
+                method_str = method.upper()
+                if method_str in ["EXACT", "APPROXIMATE"]:
+                    method = Exactness[method_str]
+                else:
+                    raise ValueError(
+                        f"{method_str} is not a valid method. Must be one of EXACT, APPROXIMATE."
+                    )
         else:
             raise ValueError("Invalid type for rounding_threshold_bits. Must be int or dict.")
 
