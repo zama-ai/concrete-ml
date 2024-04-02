@@ -1409,6 +1409,16 @@ def test_onnx_no_input():
             ValueError,
             "INVALID_METHOD is not a valid method. Must be one of EXACT, APPROXIMATE.",
         ),
+        (
+            {"n_bits": 1},
+            ValueError,
+            "n_bits_rounding must be between 2 and 8 inclusive",
+        ),
+        (
+            {"n_bits": 9},
+            ValueError,
+            "n_bits_rounding must be between 2 and 8 inclusive",
+        ),
     ],
 )
 def test_compile_torch_model_rounding_threshold_bits_errors(

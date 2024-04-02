@@ -72,7 +72,8 @@ def check_rounding_threshold(rounding_threshold_bits):
             raise ValueError("Invalid type for rounding_threshold_bits. Must be int or dict.")
 
         assert n_bits_rounding is not None, "n_bits_rounding cannot be None"
-        assert 2 <= n_bits_rounding <= 8, "n_bits_rounding must be between 2 and 8 inclusive"
+        if not 2 <= n_bits_rounding <= 8:
+            raise ValueError("n_bits_rounding must be between 2 and 8 inclusive.")
 
     return {"n_bits": n_bits_rounding, "method": method}
 
