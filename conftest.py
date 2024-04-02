@@ -240,7 +240,7 @@ def autoseeding_of_everything(request):
     seed = sub_seed
 
     print(
-        f"\nRelaunch the tests with --randomly_seed {randomly_seed} "
+        f"\nRelaunch the tests with --randomly-seed {randomly_seed} "
         + "--randomly-dont-reset-seed to reproduce."
     )
     print(
