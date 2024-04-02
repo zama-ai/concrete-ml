@@ -16,7 +16,7 @@ on:
         - DecisionTreeClassifier \n
         - DecisionTreeRegressor \n
         - Deployment \n
-        - encrypted_pandas \n
+        - EncryptedPandas \n
         - ExperimentPrivacyTreePaper \n
         - FromImageNetToCifar \n
         - FullyConnectedNeuralNetwork \n
@@ -61,7 +61,7 @@ env:
   DecisionTreeClassifier: "docs/advanced_examples/DecisionTreeClassifier.ipynb" 
   DecisionTreeRegressor: "docs/advanced_examples/DecisionTreeRegressor.ipynb" 
   Deployment: "docs/advanced_examples/Deployment.ipynb" 
-  encrypted_pandas: "use_case_examples/dataframe/encrypted_pandas.ipynb" 
+  EncryptedPandas: "docs/advanced_examples/EncryptedPandas.ipynb" 
   ExperimentPrivacyTreePaper: "docs/advanced_examples/ExperimentPrivacyTreePaper.ipynb" 
   FromImageNetToCifar: "use_case_examples/cifar/cifar_brevitas_finetuning/FromImageNetToCifar.ipynb" 
   FullyConnectedNeuralNetwork: "docs/advanced_examples/FullyConnectedNeuralNetwork.ipynb" 
