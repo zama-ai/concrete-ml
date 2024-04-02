@@ -384,9 +384,8 @@ jobs:
         with:
           fetch-depth: 0
       
-      # Pull the only LFS files needed for regular tests, avoiding to download files stored for 
-      # benchmarks and use cases 
-      - name: Pull LFS test files
+      # Pull necessary LFS files (and thus avoid downloading files stored for benchmarks, use cases, ...) 
+      - name: Pull LFS files
         run: |
           git lfs pull --include "tests/data/**, src/concrete/ml/pandas/_client_server_files/**" --exclude  ""
 
@@ -1032,9 +1031,8 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
       
-      # Pull the only LFS files needed for regular tests, avoiding to download files stored for 
-      # benchmarks and use cases 
-      - name: Pull LFS test files
+      # Pull necessary LFS files (and thus avoid downloading files stored for benchmarks, use cases, ...) 
+      - name: Pull LFS files
         run: |
           git lfs pull --include "tests/data/**, src/concrete/ml/pandas/_client_server_files/**" --exclude  ""
 

@@ -16,11 +16,17 @@ jobs:
         uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
         with:
           fetch-depth: 0
+
+      - name: Pull LFS files
+        run: |
+          git lfs pull --include "tests/data/**, src/concrete/ml/pandas/_client_server_files/**" --exclude  ""
+
       - name: Save repo
         uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3
         with:
           name: repo-archive
           path: '.'
+
       - name: git-sync
         uses: wei/git-sync@55c6b63b4f21607da0e9877ca9b4d11a29fc6d83
         with:
