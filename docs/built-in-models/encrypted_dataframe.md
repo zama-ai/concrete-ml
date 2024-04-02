@@ -49,7 +49,7 @@ Concrete ML's encrypted `DataFrame` operations support a specific set of data ty
 
 Encrypted DataFrames support a subset of operations that are available for pandas DataFrames. The following operations are currently supported:
 
- * `merge`: left or right join two data-frames
+- `merge`: left or right join two data-frames
 
 <!--pytest-codeblocks:cont-->
 
@@ -101,7 +101,7 @@ An example workflow where two clients encrypt two `DataFrame` objects, perform a
 
 ## Current Limitations
 
-While this API offers a new secure way to work on remotely stored and encrypted data, it has some strong limitations at the moment: 
+While this API offers a new secure way to work on remotely stored and encrypted data, it has some strong limitations at the moment:
 
 - **Precision of Values**: The precision for numerical values is limited to 4 bits.
 - **Supported Operations**: The `merge` operation is the only one available.
