@@ -18,7 +18,7 @@ from concrete.fhe.compilation.configuration import Configuration
 from ..common.debugging import assert_false, assert_true
 from ..common.utils import (
     MAX_BITWIDTH_BACKWARD_COMPATIBLE,
-    check_rounding_threshold,
+    process_rounding_threshold_bits,
     check_there_is_no_p_error_options_in_configuration,
     get_onnx_opset_version,
     manage_parameters_for_pbs_errors,
@@ -99,7 +99,7 @@ def build_quantized_module(
     Returns:
         QuantizedModule: The resulting QuantizedModule.
     """
-    rounding_threshold_bits = check_rounding_threshold(rounding_threshold_bits)
+    rounding_threshold_bits = process_rounding_threshold_bits(rounding_threshold_bits)
 
     inputset_as_numpy_tuple = tuple(
         convert_torch_tensor_or_numpy_array_to_numpy_array(val) for val in to_tuple(torch_inputset)
@@ -185,7 +185,7 @@ def _compile_torch_or_onnx_model(
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
     """
-    rounding_threshold_bits = check_rounding_threshold(rounding_threshold_bits)
+    rounding_threshold_bits = process_rounding_threshold_bits(rounding_threshold_bits)
 
     inputset_as_numpy_tuple = tuple(
         convert_torch_tensor_or_numpy_array_to_numpy_array(val) for val in to_tuple(torch_inputset)

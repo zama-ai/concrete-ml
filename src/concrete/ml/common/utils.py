@@ -608,7 +608,7 @@ def array_allclose_and_same_shape(
     return a.shape == b.shape and numpy.allclose(a, b, rtol, atol, equal_nan)
 
 
-def check_rounding_threshold(rounding_threshold_bits):
+def process_rounding_threshold_bits(rounding_threshold_bits):
     """Check and process the rounding_threshold_bits parameter.
 
     Args:

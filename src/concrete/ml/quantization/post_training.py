@@ -9,7 +9,7 @@ from concrete.fhe.tracing import Tracer
 from onnx import numpy_helper
 
 from ..common.debugging import assert_true
-from ..common.utils import check_rounding_threshold
+from ..common.utils import process_rounding_threshold_bits
 from ..onnx.onnx_utils import ONNX_OPS_TO_NUMPY_IMPL, get_attribute, get_op_type
 from ..onnx.ops_impl import RawOpOutput
 from ..torch.numpy_module import NumpyModule
@@ -236,7 +236,7 @@ class ONNXConverter:
         self.n_bits = get_n_bits_dict(n_bits)
         self.quant_params = {}
         self.numpy_model = numpy_model
-        self.rounding_threshold_bits = check_rounding_threshold(rounding_threshold_bits)
+        self.rounding_threshold_bits = process_rounding_threshold_bits(rounding_threshold_bits)
 
     @property
     def n_bits_model_outputs(self):
