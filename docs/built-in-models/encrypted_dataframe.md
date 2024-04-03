@@ -2,6 +2,8 @@
 
 Concrete ML builds upon the pandas data-frame functionality by introducing the capability to construct and perform operations on encrypted data-frames using FHE. This API ensures data scientists can leverage well-known pandas-like operations while maintaining privacy throughout the whole process.
 
+Encrypted data-frames are a storage format for encrypted tabular data and they can be exchanged with third-parties without security risks.
+
 Potential applications include:
 
 - Encrypted storage of tabular datasets
@@ -11,10 +13,10 @@ Potential applications include:
 
 ## Encrypt and Decrypt a DataFrame
 
-To encrypt a pandas `DataFrame`, use the `encrypt_from_pandas` function. First, a client engine, which manages keys, must be constructed using `load_client`.
+To encrypt a pandas `DataFrame`, you must construct a `ClientEngine` which manages keys. Then call the `encrypt_from_pandas` function:
 
 ```python
-from concrete.ml.pandas import ClientEngine, load_encrypted_dataframe
+from concrete.ml.pandas import ClientEngine
 from io import StringIO
 import pandas
 
@@ -33,7 +35,7 @@ client = ClientEngine(keys_path="my_keys")
 # Encrypt the DataFrame
 df_encrypted = client.encrypt_from_pandas(df)
 
-# Decrypt the DataFrame
+# Decrypt the DataFrame to produce a pandas DataFrame
 df_decrypted = client.decrypt_to_pandas(df_encrypted)
 ```
 
@@ -46,6 +48,8 @@ Concrete ML's encrypted `DataFrame` operations support a specific set of data ty
 - **String Enum**: String columns are mapped to integers starting from 1. This mapping is stored and later used for de-quantization. If the number of unique strings exceeds 15, a `ValueError` is raised.
 
 ## Supported Operations on Encrypted Data-frames
+
+> **Outsourced execution**: The merge operation on Encrypted DataFrames can be **securely** performed on a third-party server. This means that the server can execute the merge without ever having access to the unencrypted data. The server only requires the encrypted DataFrames.
 
 Encrypted DataFrames support a subset of operations that are available for pandas DataFrames. The following operations are currently supported:
 
@@ -65,11 +69,11 @@ df_encrypted2 = client.encrypt_from_pandas(pandas.read_csv(StringIO(df_right)))
 df_encrypted_merged = df_encrypted.merge(df_encrypted2, how="left", on="index")
 ```
 
-> **Important**: The merge operation on Encrypted DataFrames can be **securely** performed on a third-party server. This means that the server can execute the merge without ever having access to the unencrypted data. The server only requires the encrypted DataFrames.
-
 ## Serialization of Encrypted Data-frames
 
 Encrypted `DataFrame` objects can be serialized to a file format for storage or transfer. When serialized, they contain the encrypted data and [evaluation keys](../getting-started/concepts.md#cryptography-concepts) necessary to perform computations.
+
+> **Security**: Serialized data-frames do not contain any secret keys. The data-frames can be exchanged with any third-party without any risk.
 
 ### Saving and loading Data-frames
 
@@ -78,6 +82,8 @@ To save or load an encrypted `DataFrame` from a file, use the following commands
 <!--pytest-codeblocks:cont-->
 
 ```python
+from concrete.ml.pandas import load_encrypted_dataframe
+
 # Save
 df_encrypted_merged.save("df_encrypted_merged")
 
@@ -92,8 +98,7 @@ df_decrypted = client.decrypt_to_pandas(df_encrypted)
 
 The library is designed to raise specific errors when encountering issues during the pre-processing and post-processing stages:
 
-- `ValueError`: Raised when a column contains values outside the allowed range for integers, when there are too many unique strings, or when encountering an unsupported data type.
-- `TypeError`: Raised when an operation is attempted on a data type that is not supported by the operation.
+- `ValueError`: Raised when a column contains values outside the allowed range for integers, when there are too many unique strings, or when encountering an unsupported data type. Raised also when an operation is attempted on a data type that is not supported by the operation.
 
 ## Example Workflow
 
@@ -107,5 +112,5 @@ While this API offers a new secure way to work on remotely stored and encrypted 
 - **Supported Operations**: The `merge` operation is the only one available.
 - **Index Handling**: Index values are not preserved; users should move any relevant data from the index to a dedicated new column before encrypting.
 - **Integer Range**: The range of integers that can be encrypted is between 1 and 15.
-- **Uniqueness for `merge`**: The `merge` operation requires that the columns to merge on contain unique values.
+- **Uniqueness for `merge`**: The `merge` operation requires that the columns to merge on contain unique values. Currently this means that data-frames are limited to 15 rows.
 - **Metadata Security**: Column names and the mapping of strings to integers are not encrypted and are sent to the server in clear text.
