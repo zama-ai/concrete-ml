@@ -453,9 +453,6 @@ remove_5c_docs:
 apidocs:
 	@# At release time, one needs to change --src-base-url (to be a public release/A.B.x branch)
 	./script/doc_utils/update_apidocs.sh "$(APIDOCS_OUTPUT)"
-
-	# Update our summary
-	./script/doc_utils/update_apidocs_files_in_SUMMARY.sh
 	"$(MAKE)" mdformat
 
 .PHONY: check_apidocs # Check that API docs are ok and
