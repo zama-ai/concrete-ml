@@ -118,7 +118,9 @@ def main(args):
             input_set,
             n_bits={"model_inputs": 8, "model_outputs": 8},
             configuration=cfg,
-            rounding_threshold_bits=rounding_threshold_bits,
+            rounding_threshold_bits={"n_bits": rounding_threshold_bits, "method": "EXACT"}
+            if rounding_threshold_bits is not None
+            else None,
         )
 
         # Print max bit-width in the circuit
