@@ -35,6 +35,6 @@ jobs:
       - name: Sync private repository
         uses: ad-m/github-push-action@master
         with:
-          github_token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
+          github_token: ${{ secrets.BOT_TOKEN }}
           repository: ${{ secrets.SYNC_DEST_REPO }}
           force: true
