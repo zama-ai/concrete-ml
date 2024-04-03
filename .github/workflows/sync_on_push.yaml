@@ -24,6 +24,9 @@ jobs:
           name: repo-archive
           path: '.'
 
+      # Initial action can be found here: https://github.com/wei/git-sync
+      # The issue is that it does not handle LFS files when pushing, so we had to fork it and 
+      # add the feature
       - name: git-sync
         uses: RomanBredehoft/git-sync@836de2d057c5bfae184bc4d45160463fe8653796
         with:
