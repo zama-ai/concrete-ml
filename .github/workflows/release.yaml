@@ -133,11 +133,13 @@ jobs:
           apt update && apt install git git-lfs -y
           apt -y install sudo
 
+      # We need to include LFS files as some are needed for checking the documentation
       - name: Checkout Code
         uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
         with:
           ref: ${{ github.ref }}
           token: ${{ secrets.BOT_TOKEN }}
+          lfs: true
 
       - name: Set up Python
         uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d
