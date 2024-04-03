@@ -254,27 +254,6 @@ class SGDClassifier(SklearnSGDClassifierMixin):
                     f"({fit_encrypted=}). Got {parameters_range=}"
                 )
 
-    def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
-        # If the prediction array is 1D, which happens with some models such as XGBCLassifier or
-        # LogisticRegression models, we have a binary classification problem
-        n_classes = y_preds.shape[1] if y_preds.ndim > 1 and y_preds.shape[1] > 1 else 2
-
-        # For binary classification problem, apply the sigmoid operator
-        if n_classes == 2:
-            y_preds = numpy_sigmoid(y_preds)[0]
-
-            # If the prediction array is 1D, transform the output into a 2D array [1-p, p],
-            # with p the initial output probabilities
-            if y_preds.ndim == 1 or y_preds.shape[1] == 1:
-                y_preds = numpy.concatenate((1 - y_preds, y_preds), axis=1)
-
-        # Else, apply the softmax operator
-        else:
-            y_preds = numpy_sigmoid(y_preds)[0]
-            y_preds = y_preds / y_preds.sum(axis=1)
-
-        return y_preds
-
     def get_sklearn_params(self, deep: bool = True) -> dict:
         # Here, the `get_params` method is the `BaseEstimator.get_params` method from scikit-learn
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3373

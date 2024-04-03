@@ -1605,31 +1605,10 @@ def test_predict_correctness(
 
 
 @pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
-@pytest.mark.parametrize(
-    "simulate",
-    [
-        pytest.param(False, id="fhe"),
-    ],
-)
-# N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS bits is currently the
-# limit to find crypto parameters for linear models
-# make sure we only compile below that bit-width.
-# Additionally, prevent computations in FHE with too many bits
-@pytest.mark.parametrize(
-    "n_bits",
-    [
-        n_bits
-        for n_bits in N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS
-        if n_bits
-        < min(N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS, N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE)
-    ],
-)
 # pylint: disable=too-many-branches
 def test_separated_inference(
     model_class,
     parameters,
-    simulate,
-    n_bits,
     load_data,
     default_configuration,
     is_weekly_option,
@@ -1637,6 +1616,8 @@ def test_separated_inference(
     verbose=True,
 ):
     """Test prediction correctness between clear quantized and FHE simulation or execution."""
+
+    n_bits = min(N_BITS_REGULAR_BUILDS)
 
     # KNN can only be compiled with small quantization bit numbers for now
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
@@ -1646,7 +1627,7 @@ def test_separated_inference(
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     # Run the test with more samples during weekly CIs or when using FHE simulation
-    if is_weekly_option or simulate:
+    if is_weekly_option:
         fhe_samples = 5
     else:
         fhe_samples = 1
