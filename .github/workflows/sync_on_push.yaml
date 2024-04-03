@@ -25,10 +25,10 @@ jobs:
           path: '.'
 
       - name: git-sync
-        uses: RomanBredehoft/git-sync@c6b1a2f2a5b9c43a0009434b0969d17dde73fcdf
+        uses: RomanBredehoft/git-sync@836de2d057c5bfae184bc4d45160463fe8653796
         with:
           source_repo: "zama-ai/concrete-ml"
           source_branch: "main"
           destination_repo: "https://${{ secrets.BOT_USERNAME }}:${{ secrets.CONCRETE_ACTIONS_TOKEN }}@github.com/${{ secrets.SYNC_DEST_REPO }}"
           destination_branch: "main"
-          push_lfs_all: true
+          push_lfs: true
