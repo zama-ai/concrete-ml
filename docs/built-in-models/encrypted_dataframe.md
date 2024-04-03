@@ -102,7 +102,7 @@ The library is designed to raise specific errors when encountering issues during
 
 ## Example Workflow
 
-An example workflow where two clients encrypt two `DataFrame` objects, perform a merge operation on the server side, and then decrypt the results is available in the notebook [encrypted_pandas.ipynb](concrete-ml/use_case_examples/dataframe/encrypted_pandas.ipynb).
+An example workflow where two clients encrypt two `DataFrame` objects, perform a merge operation on the server side, and then decrypt the results is available in the notebook [encrypted_pandas.ipynb](../advanced_examples/EncryptedPandas.ipynb).
 
 ## Current Limitations
 
