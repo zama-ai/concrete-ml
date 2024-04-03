@@ -259,6 +259,7 @@
 - [`utils.is_pandas_type`](./concrete.ml.common.utils.md#function-is_pandas_type): Indicate if the input container is a Pandas DataFrame or Series.
 - [`utils.is_regressor_or_partial_regressor`](./concrete.ml.common.utils.md#function-is_regressor_or_partial_regressor): Indicate if the model class represents a regressor.
 - [`utils.manage_parameters_for_pbs_errors`](./concrete.ml.common.utils.md#function-manage_parameters_for_pbs_errors): Return (p_error, global_p_error) that we want to give to Concrete.
+- [`utils.process_rounding_threshold_bits`](./concrete.ml.common.utils.md#function-process_rounding_threshold_bits): Check and process the rounding_threshold_bits parameter.
 - [`utils.replace_invalid_arg_name_chars`](./concrete.ml.common.utils.md#function-replace_invalid_arg_name_chars): Sanitize arg_name, replacing invalid chars by \_.
 - [`utils.to_tuple`](./concrete.ml.common.utils.md#function-to_tuple): Make the input a tuple if it is not already the case.
 - [`deploy_to_aws.create_instance`](./concrete.ml.deployment.deploy_to_aws.md#function-create_instance): Create a EC2 instance.

@@ -17,7 +17,7 @@ Utils that can be re-used by other pieces of code in the module.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/utils.py#L93"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/utils.py#L94"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `replace_invalid_arg_name_chars`
 
@@ -39,7 +39,7 @@ This does not check that the starting character of arg_name is valid.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/utils.py#L112"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/utils.py#L113"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `generate_proxy_function`
 
@@ -65,7 +65,7 @@ This returns a runtime compiled function with the sanitized argument names passe
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/utils.py#L153"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/utils.py#L154"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_onnx_opset_version`
 
@@ -85,7 +85,7 @@ Return the ONNX opset_version.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/utils.py#L168"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/utils.py#L169"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `manage_parameters_for_pbs_errors`
 
@@ -122,7 +122,7 @@ Note that global_p_error is currently set to 0 in the FHE simulation mode.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/utils.py#L213"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/utils.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_there_is_no_p_error_options_in_configuration`
 
@@ -140,7 +140,7 @@ It would be dangerous, since we set them in direct arguments in our calls to Con
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/utils.py#L234"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/utils.py#L235"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_model_class`
 
@@ -159,7 +159,7 @@ The model's class.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/utils.py#L256"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/utils.py#L257"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `is_model_class_in_a_list`
 
@@ -179,7 +179,7 @@ If the model's class is in the list or not.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/utils.py#L270"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/utils.py#L271"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_model_name`
 
@@ -198,7 +198,7 @@ the model's name.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/utils.py#L283"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/utils.py#L284"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `is_classifier_or_partial_classifier`
 
@@ -218,7 +218,7 @@ Indicate if the model class represents a classifier.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/utils.py#L295"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/utils.py#L296"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `is_regressor_or_partial_regressor`
 
@@ -238,7 +238,7 @@ Indicate if the model class represents a regressor.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/utils.py#L307"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/utils.py#L308"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `is_pandas_dataframe`
 
@@ -260,7 +260,7 @@ This function is inspired from Scikit-Learn's test validation tools and avoids t
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/utils.py#L323"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/utils.py#L324"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `is_pandas_series`
 
@@ -282,7 +282,7 @@ This function is inspired from Scikit-Learn's test validation tools and avoids t
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/utils.py#L339"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/utils.py#L340"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `is_pandas_type`
 
@@ -302,7 +302,7 @@ Indicate if the input container is a Pandas DataFrame or Series.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/utils.py#L434"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/utils.py#L435"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_dtype_and_cast`
 
@@ -334,7 +334,7 @@ If values types don't match with any supported type or the expected dtype, raise
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/utils.py#L486"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/utils.py#L487"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compute_bits_precision`
 
@@ -354,7 +354,7 @@ Compute the number of bits required to represent x.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/utils.py#L498"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/utils.py#L499"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `is_brevitas_model`
 
@@ -374,7 +374,7 @@ Check if a model is a Brevitas type.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/utils.py#L516"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/utils.py#L517"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `to_tuple`
 
@@ -394,7 +394,7 @@ Make the input a tuple if it is not already the case.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/utils.py#L532"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/utils.py#L533"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `all_values_are_integers`
 
@@ -414,7 +414,7 @@ Indicate if all unpacked values are of a supported integer dtype.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/utils.py#L545"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/utils.py#L546"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `all_values_are_floats`
 
@@ -434,7 +434,7 @@ Indicate if all unpacked values are of a supported float dtype.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/utils.py#L558"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/utils.py#L559"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `all_values_are_of_dtype`
 
@@ -455,7 +455,7 @@ Indicate if all unpacked values are of the specified dtype(s).
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/utils.py#L586"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/utils.py#L587"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `array_allclose_and_same_shape`
 
@@ -485,7 +485,32 @@ Check if two numpy arrays are equal within a tolerances and have the same shape.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/utils.py#L50"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/utils.py#L611"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `process_rounding_threshold_bits`
+
+```python
+process_rounding_threshold_bits(rounding_threshold_bits)
+```
+
+Check and process the rounding_threshold_bits parameter.
+
+**Args:**
+
+- <b>`rounding_threshold_bits`</b> (Union\[None, int, Dict\[str, Union\[str, int\]\]\]):  Defines precision  rounding for model accumulators. Accepts None, an int, or a dict.  The dict can specify 'method' (fhe.Exactness.EXACT or fhe.Exactness.APPROXIMATE)  and 'n_bits' ('auto' or int)
+
+**Returns:**
+
+- <b>`Dict[str, Union[str, int]]`</b>:  Processed rounding_threshold_bits dictionary.
+
+**Raises:**
+
+- <b>`NotImplementedError`</b>:  If 'auto' rounding is specified but not implemented.
+- <b>`ValueError`</b>:  If an invalid type or value is provided for rounding_threshold_bits.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/common/utils.py#L51"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `FheMode`
 
