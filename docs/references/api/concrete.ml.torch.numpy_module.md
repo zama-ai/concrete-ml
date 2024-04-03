@@ -32,7 +32,7 @@ General interface to transform a torch.nn.Module to numpy module.
 __init__(
     model: Union[Module, ModelProto],
     dummy_input: Optional[Tensor, Tuple[Tensor, ]] = None,
-    debug_onnx_output_file_path: Optional[str, Path] = None
+    debug_onnx_output_file_path: Optional[Path, str] = None
 )
 ```
 

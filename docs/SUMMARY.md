@@ -15,7 +15,7 @@
 - [Tree-based models](built-in-models/tree.md)
 - [Neural networks](built-in-models/neural-networks.md)
 - [Nearest neighbors](built-in-models/nearest-neighbors.md)
-- [Pandas](built-in-models/pandas.md)
+- [Encrypted dataframe](built-in-models/encrypted_dataframe.md)
 - [Encrypted training](built-in-models/training.md)
 
 ## Deep Learning
@@ -41,62 +41,8 @@
 
 ## References
 
-<!-- auto-created, do not edit, begin -->
-
 - [API](references/api/README.md)
-  - [concrete.ml.common.check_inputs.md](references/api/concrete.ml.common.check_inputs.md)
-  - [concrete.ml.common.debugging.custom_assert.md](references/api/concrete.ml.common.debugging.custom_assert.md)
-  - [concrete.ml.common.debugging.md](references/api/concrete.ml.common.debugging.md)
-  - [concrete.ml.common.md](references/api/concrete.ml.common.md)
-  - [concrete.ml.common.serialization.decoder.md](references/api/concrete.ml.common.serialization.decoder.md)
-  - [concrete.ml.common.serialization.dumpers.md](references/api/concrete.ml.common.serialization.dumpers.md)
-  - [concrete.ml.common.serialization.encoder.md](references/api/concrete.ml.common.serialization.encoder.md)
-  - [concrete.ml.common.serialization.loaders.md](references/api/concrete.ml.common.serialization.loaders.md)
-  - [concrete.ml.common.serialization.md](references/api/concrete.ml.common.serialization.md)
-  - [concrete.ml.common.utils.md](references/api/concrete.ml.common.utils.md)
-  - [concrete.ml.deployment.deploy_to_aws.md](references/api/concrete.ml.deployment.deploy_to_aws.md)
-  - [concrete.ml.deployment.deploy_to_docker.md](references/api/concrete.ml.deployment.deploy_to_docker.md)
-  - [concrete.ml.deployment.fhe_client_server.md](references/api/concrete.ml.deployment.fhe_client_server.md)
-  - [concrete.ml.deployment.md](references/api/concrete.ml.deployment.md)
-  - [concrete.ml.deployment.server.md](references/api/concrete.ml.deployment.server.md)
-  - [concrete.ml.deployment.utils.md](references/api/concrete.ml.deployment.utils.md)
-  - [concrete.ml.onnx.convert.md](references/api/concrete.ml.onnx.convert.md)
-  - [concrete.ml.onnx.md](references/api/concrete.ml.onnx.md)
-  - [concrete.ml.onnx.onnx_impl_utils.md](references/api/concrete.ml.onnx.onnx_impl_utils.md)
-  - [concrete.ml.onnx.onnx_model_manipulations.md](references/api/concrete.ml.onnx.onnx_model_manipulations.md)
-  - [concrete.ml.onnx.onnx_utils.md](references/api/concrete.ml.onnx.onnx_utils.md)
-  - [concrete.ml.onnx.ops_impl.md](references/api/concrete.ml.onnx.ops_impl.md)
-  - [concrete.ml.pytest.md](references/api/concrete.ml.pytest.md)
-  - [concrete.ml.pytest.torch_models.md](references/api/concrete.ml.pytest.torch_models.md)
-  - [concrete.ml.pytest.utils.md](references/api/concrete.ml.pytest.utils.md)
-  - [concrete.ml.quantization.base_quantized_op.md](references/api/concrete.ml.quantization.base_quantized_op.md)
-  - [concrete.ml.quantization.md](references/api/concrete.ml.quantization.md)
-  - [concrete.ml.quantization.post_training.md](references/api/concrete.ml.quantization.post_training.md)
-  - [concrete.ml.quantization.quantized_module.md](references/api/concrete.ml.quantization.quantized_module.md)
-  - [concrete.ml.quantization.quantized_module_passes.md](references/api/concrete.ml.quantization.quantized_module_passes.md)
-  - [concrete.ml.quantization.quantized_ops.md](references/api/concrete.ml.quantization.quantized_ops.md)
-  - [concrete.ml.quantization.quantizers.md](references/api/concrete.ml.quantization.quantizers.md)
-  - [concrete.ml.search_parameters.md](references/api/concrete.ml.search_parameters.md)
-  - [concrete.ml.search_parameters.p_error_search.md](references/api/concrete.ml.search_parameters.p_error_search.md)
-  - [concrete.ml.sklearn.base.md](references/api/concrete.ml.sklearn.base.md)
-  - [concrete.ml.sklearn.glm.md](references/api/concrete.ml.sklearn.glm.md)
-  - [concrete.ml.sklearn.linear_model.md](references/api/concrete.ml.sklearn.linear_model.md)
-  - [concrete.ml.sklearn.md](references/api/concrete.ml.sklearn.md)
-  - [concrete.ml.sklearn.neighbors.md](references/api/concrete.ml.sklearn.neighbors.md)
-  - [concrete.ml.sklearn.qnn.md](references/api/concrete.ml.sklearn.qnn.md)
-  - [concrete.ml.sklearn.qnn_module.md](references/api/concrete.ml.sklearn.qnn_module.md)
-  - [concrete.ml.sklearn.rf.md](references/api/concrete.ml.sklearn.rf.md)
-  - [concrete.ml.sklearn.svm.md](references/api/concrete.ml.sklearn.svm.md)
-  - [concrete.ml.sklearn.tree.md](references/api/concrete.ml.sklearn.tree.md)
-  - [concrete.ml.sklearn.tree_to_numpy.md](references/api/concrete.ml.sklearn.tree_to_numpy.md)
-  - [concrete.ml.sklearn.xgb.md](references/api/concrete.ml.sklearn.xgb.md)
-  - [concrete.ml.torch.compile.md](references/api/concrete.ml.torch.compile.md)
-  - [concrete.ml.torch.hybrid_model.md](references/api/concrete.ml.torch.hybrid_model.md)
-  - [concrete.ml.torch.md](references/api/concrete.ml.torch.md)
-  - [concrete.ml.torch.numpy_module.md](references/api/concrete.ml.torch.numpy_module.md)
-  - [concrete.ml.version.md](references/api/concrete.ml.version.md)
-
-<!-- auto-created, do not edit, end -->
+- [Pandas support](references/pandas.md)
 
 ## Explanations
 

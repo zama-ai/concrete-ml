@@ -2,7 +2,11 @@
 
 <figure><img src="../.gitbook/assets/doc_header_CML.png" alt=""><figcaption></figcaption></figure>
 
-Concrete ML is an open source, privacy-preserving, machine learning framework based on Fully Homomorphic Encryption (FHE). It enables data scientists without any prior knowledge of cryptography to automatically turn machine learning models into their FHE equivalent, using familiar APIs from scikit-learn and PyTorch (see how it looks for [linear models](../built-in-models/linear.md), [tree-based models](../built-in-models/tree.md), and [neural networks](../built-in-models/neural-networks.md)). Concrete ML supports converting models for inference with FHE but can also [train some models](../built-in-models/training.md) on encrypted data.
+Concrete ML is an open source, privacy-preserving, machine learning framework based on Fully Homomorphic Encryption (FHE). It enables data scientists without any prior knowledge of cryptography to:
+
+- automatically turn machine learning models into their FHE equivalent, using familiar APIs from scikit-learn and PyTorch (see how this works for [linear models](../built-in-models/linear.md), [tree-based models](../built-in-models/tree.md), and [neural networks](../built-in-models/neural-networks.md)).
+- [train models](../built-in-models/training.md) on encrypted data.
+- [pre-process encrypted data](../built-in-models/encrypted_dataframe.md) through a data-frame paradigm
 
 Fully Homomorphic Encryption is an encryption technique that allows computing directly on encrypted data, without needing to decrypt it. With FHE, you can build private-by-design applications without compromising on features. You can learn more about FHE in [this introduction](https://www.zama.ai/post/tfhe-deep-dive-part-1) or by joining the [FHE.org](https://fhe.org) community.
 

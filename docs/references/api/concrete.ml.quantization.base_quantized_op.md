@@ -15,7 +15,7 @@ Base Quantized Op class that implements quantization for a float numpy op.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L47"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L49"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedOp`
 
@@ -29,7 +29,7 @@ Base class for quantized ONNX ops implemented in numpy.
 - <b>`constant_inputs`</b> (Optional\[Union\[Dict\[str, Any\], Dict\[int, Any\]\]\]):  The constant tensors  that are inputs to this op
 - <b>`input_quant_opts`</b> (QuantizationOptions):  Input quantizer options, determine the quantization  that is applied to input tensors (that are not constants)
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L114"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L116"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -56,7 +56,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L698"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L700"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `calibrate`
 
@@ -76,7 +76,7 @@ Create corresponding QuantizedArray for the output of the activation function.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L752"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L754"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `call_impl`
 
@@ -97,7 +97,7 @@ Call self.impl to centralize mypy bug workaround.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L786"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L788"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `can_fuse`
 
@@ -115,7 +115,7 @@ This function shall be overloaded by inheriting classes to test self.\_int_input
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L329"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L331"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
@@ -131,7 +131,7 @@ Dump itself to a file.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L205"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L207"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -147,7 +147,7 @@ Dump itself to a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L321"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L323"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -163,7 +163,7 @@ Dump itself to a string.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L260"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L262"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `load_dict`
 
@@ -183,7 +183,7 @@ Load itself from a string.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L422"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L424"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `must_quantize_input`
 
@@ -205,7 +205,7 @@ Quantized ops and numpy onnx ops take inputs and attributes. Inputs can be eithe
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L337"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L339"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `op_type`
 
@@ -221,7 +221,7 @@ Get the type of this operation.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L725"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L727"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `prepare_output`
 
@@ -243,7 +243,7 @@ The calibrate method needs to be called with sample data before using this funct
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L443"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L445"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `q_impl`
 
@@ -267,7 +267,7 @@ Execute the quantized forward.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L816"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L818"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedOpUnivariateOfEncrypted`
 
@@ -275,7 +275,7 @@ An univariate operator of an encrypted value.
 
 This operation is not really operating as a quantized operation. It is useful when the computations get fused into a TLU, as in e.g., Act(x) = x || (x + 42)).
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L823"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L825"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -302,7 +302,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L698"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L700"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `calibrate`
 
@@ -322,7 +322,7 @@ Create corresponding QuantizedArray for the output of the activation function.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L752"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L754"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `call_impl`
 
@@ -343,7 +343,7 @@ Call self.impl to centralize mypy bug workaround.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L852"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L854"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `can_fuse`
 
@@ -361,7 +361,7 @@ This operation can be fused and computed in float when a single integer tensor g
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L329"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L331"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
@@ -377,7 +377,7 @@ Dump itself to a file.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L205"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L207"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -393,7 +393,7 @@ Dump itself to a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L321"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L323"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -409,7 +409,7 @@ Dump itself to a string.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L260"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L262"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `load_dict`
 
@@ -429,7 +429,7 @@ Load itself from a string.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L422"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L424"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `must_quantize_input`
 
@@ -451,7 +451,7 @@ Quantized ops and numpy onnx ops take inputs and attributes. Inputs can be eithe
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L337"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L339"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `op_type`
 
@@ -467,7 +467,7 @@ Get the type of this operation.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L725"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L727"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `prepare_output`
 
@@ -489,7 +489,7 @@ The calibrate method needs to be called with sample data before using this funct
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L443"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L445"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `q_impl`
 
@@ -513,7 +513,7 @@ Execute the quantized forward.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L869"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L871"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedMixingOp`
 
@@ -521,19 +521,23 @@ An operator that mixes (adds or multiplies) together encrypted inputs.
 
 Mixing operators cannot be fused to TLUs.
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L878"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L880"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
 ```python
-__init__(*args, rounding_threshold_bits: Optional[int] = None, **kwargs) → None
+__init__(
+    *args,
+    rounding_threshold_bits: Union[NoneType, int, Dict[str, Union[str, int]]] = None,
+    **kwargs
+) → None
 ```
 
 Initialize quantized ops parameters plus specific parameters.
 
 **Args:**
 
-- <b>`rounding_threshold_bits`</b> (Optional\[int\]):  Number of bits to round to.
+- <b>`rounding_threshold_bits`</b> (Union\[None, int, Dict\[str, Union\[str, int\]\]\]):  if not None,  every accumulators in the model are rounded down to the given bits of precision.  Can be an int or a dictionary with keys 'method' and 'n_bits', where 'method' is  either fhe.Exactness.EXACT or fhe.Exactness.APPROXIMATE, and 'n_bits' is either  'auto' or an int.
 - <b>`*args`</b>:  positional argument to pass to the parent class.
 - <b>`**kwargs`</b>:  named argument to pass to the parent class.
 
@@ -549,7 +553,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L698"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L700"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `calibrate`
 
@@ -569,7 +573,7 @@ Create corresponding QuantizedArray for the output of the activation function.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L752"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L754"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `call_impl`
 
@@ -590,7 +594,7 @@ Call self.impl to centralize mypy bug workaround.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L889"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L900"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `can_fuse`
 
@@ -608,7 +612,7 @@ Mixing operations cannot be fused since it must be performed over integer tensor
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L942"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L953"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `cnp_round`
 
@@ -634,7 +638,7 @@ Round the input array to the specified number of bits.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L329"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L331"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
@@ -650,7 +654,7 @@ Dump itself to a file.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L205"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L207"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -666,7 +670,7 @@ Dump itself to a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L321"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L323"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -682,7 +686,7 @@ Dump itself to a string.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L260"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L262"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `load_dict`
 
@@ -702,7 +706,7 @@ Load itself from a string.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L902"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L913"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `make_output_quant_parameters`
 
@@ -728,7 +732,7 @@ Build a quantized array from quantized integer results of the op and quantizatio
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L422"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L424"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `must_quantize_input`
 
@@ -750,7 +754,7 @@ Quantized ops and numpy onnx ops take inputs and attributes. Inputs can be eithe
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L337"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L339"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `op_type`
 
@@ -766,7 +770,7 @@ Get the type of this operation.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L725"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L727"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `prepare_output`
 
@@ -788,7 +792,7 @@ The calibrate method needs to be called with sample data before using this funct
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L443"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/base_quantized_op.py#L445"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `q_impl`
 
