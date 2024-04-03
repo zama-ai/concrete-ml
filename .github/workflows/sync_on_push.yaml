@@ -25,7 +25,7 @@ jobs:
           path: '.'
 
       - name: git-sync
-        uses: RomanBredehoft/git-sync@8932432f3bcf6543d4df3e9267eb74ffb9e2df13
+        uses: RomanBredehoft/git-sync@c3a834b8f207d9273466a7e6335593f3d5b4214a
         with:
           source_repo: "zama-ai/concrete-ml"
           source_branch: "main"
