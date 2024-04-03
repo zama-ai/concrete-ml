@@ -42,7 +42,7 @@
 ## References
 
 - [API](references/api/README.md)
-- [Pandas support](built-in-models/pandas.md)
+- [Pandas support](references/pandas.md)
 
 ## Explanations
 
