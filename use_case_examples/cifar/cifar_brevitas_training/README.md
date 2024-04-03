@@ -85,7 +85,7 @@ Here, an image from the CIFAR10 data-set is randomly chosen and preprocessed. Th
 
 ## Hardware Used for the Experiment
 
-Experiments were conducted on an m6i.metal machine offering 128 CPU cores and 512GB of memory. The choice of hardware can significantly influence the performance of the model.
+Experiments were conducted on an m6i.metal machine offering 128 CPU cores and 512GB of memory. The choice of hardware can significantly influence the execution time of the model.
 
 ## Accuracy and performance
 
