@@ -1,5 +1,6 @@
 """Define the encrypted data-frame framework."""
 import json
+import zipfile
 from pathlib import Path
 from typing import Dict, Hashable, List, Optional, Sequence, Tuple, Union
 
@@ -254,11 +255,12 @@ class EncryptedDataFrame:
 
         return joined_df
 
-    def _to_dict(self) -> Dict:
-        """Serialize the encrypted data-frame as a dictionary.
+    def _to_dict_and_eval_keys(self) -> Tuple[Dict, fhe.EvaluationKeys]:
+        """Serialize the encrypted data-frame as a dictionary and evaluations keys.
 
         Returns:
             Dict: The serialized data-frame.
+            fhe.EvaluationKeys: The serialized evaluations keys.
         """
         # Serialize encrypted values element-wise
         encrypted_values = serialize_elementwise(self._encrypted_values)
@@ -273,20 +275,20 @@ class EncryptedDataFrame:
         output_dict = {
             "encrypted_values": encrypted_values.tolist(),
             "encrypted_nan": encrypted_nan,
-            "evaluation_keys": evaluation_keys,
             "column_names": self._column_names,
             "dtype_mappings": self._dtype_mappings,
             "api_version": self._api_version,
         }
 
-        return output_dict
+        return output_dict, evaluation_keys
 
     @classmethod
-    def _from_dict(cls, dict_to_load: Dict):
-        """Load a serialized encrypted data-frame from a dictionary.
+    def _from_dict_and_eval_keys(cls, dict_to_load: Dict, evaluation_keys: fhe.EvaluationKeys):
+        """Load a serialized encrypted data-frame from a dictionary and evaluations keys.
 
         Args:
             dict_to_load (Dict): The serialized encrypted data-frame.
+            evaluation_keys (fhe.EvaluationKeys): The serialized evaluations keys.
 
         Returns:
             EncryptedDataFrame: The loaded encrypted data-frame.
@@ -295,7 +297,7 @@ class EncryptedDataFrame:
         encrypted_values = deserialize_elementwise(dict_to_load["encrypted_values"])
         encrypted_nan = deserialize_value(dict_to_load["encrypted_nan"])
 
-        evaluation_keys = deserialize_evaluation_keys(dict_to_load["evaluation_keys"])
+        evaluation_keys = deserialize_evaluation_keys(evaluation_keys)
 
         column_names = dict_to_load["column_names"]
         dtype_mappings = dict_to_load["dtype_mappings"]
@@ -318,9 +320,16 @@ class EncryptedDataFrame:
         """
         path = Path(path)
 
-        encrypted_df_dict = self._to_dict()
-        with path.open("w", encoding="utf-8") as file:
-            json.dump(encrypted_df_dict, file)
+        if path.suffix != ".zip":
+            path = path.with_suffix(".zip")
+
+        encrypted_df_dict, evaluation_keys = self._to_dict_and_eval_keys()
+
+        encrypted_df_json_bytes = json.dumps(encrypted_df_dict).encode(encoding="utf-8")
+
+        with zipfile.ZipFile(path, "w") as zip_file:
+            zip_file.writestr("encrypted_dataframe.json", encrypted_df_json_bytes)
+            zip_file.writestr("evaluation_keys", evaluation_keys)
 
     @classmethod
     def load(cls, path: Union[Path, str]):
@@ -334,7 +343,15 @@ class EncryptedDataFrame:
         """
         path = Path(path)
 
-        with path.open("r", encoding="utf-8") as file:
-            encrypted_df_dict = json.load(file)
+        if path.suffix != ".zip":
+            path = path.with_suffix(".zip")
 
-        return cls._from_dict(encrypted_df_dict)
+        with zipfile.ZipFile(path, "r") as zip_file:
+            with zip_file.open("encrypted_dataframe.json") as encrypted_df_json_file:
+                encrypted_df_json_bytes = encrypted_df_json_file.read()
+                encrypted_df_dict = json.loads(encrypted_df_json_bytes)
+
+            with zip_file.open("evaluation_keys") as evaluation_keys_file:
+                evaluation_keys = evaluation_keys_file.read()
+
+        return cls._from_dict_and_eval_keys(encrypted_df_dict, evaluation_keys)
