@@ -241,10 +241,7 @@ def check_correctness_with_sklearn(
 
     # If the model is a classifier, check that accuracies are similar
     if is_classifier_or_partial_classifier(model):
-        # Skip if SGDClassifier
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4344
-        if get_model_name(model_class) != "SGDClassifier":
-            check_accuracy(y_pred_sklearn, y_pred_fhe, threshold=threshold_accuracy)
+        check_accuracy(y_pred_sklearn, y_pred_fhe, threshold=threshold_accuracy)
 
     # If the model is a regressor, check that R2 scores are similar
     elif is_regressor_or_partial_regressor(model):
@@ -651,7 +648,11 @@ def check_separated_inference(model, fhe_circuit, x, check_float_array_equal):
         is_classifier_or_partial_classifier(model)
         and get_model_name(model) != "KNeighborsClassifier"
     ):
-        y_pred = numpy.argmax(y_pred, axis=-1)
+        # For linear classifiers, the argmax is done on the scores directly, not the probabilities
+        if is_model_class_in_a_list(model, _get_sklearn_linear_models()):
+            y_pred = numpy.argmax(y_scores, axis=-1)
+        else:
+            y_pred = numpy.argmax(y_pred, axis=-1)
 
         y_pred_class = model.predict(x, fhe="simulate")
 

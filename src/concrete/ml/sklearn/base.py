@@ -1735,38 +1735,6 @@ class SklearnLinearRegressorMixin(SklearnLinearModelMixin, sklearn.base.Regresso
     """
 
 
-class SklearnSGDRegressorMixin(SklearnLinearRegressorMixin):
-    """A Mixin class for sklearn SGD regressors with FHE.
-
-    This class is used to create a SGD regressor class what can be exported
-    to ONNX using Hummingbird.
-    """
-
-    # Remove once Hummingbird supports SGDRegressor
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4100
-    def _set_onnx_model(self, test_input: numpy.ndarray) -> None:
-        """Retrieve the model's ONNX graph using Hummingbird conversion.
-
-        Args:
-            test_input (numpy.ndarray): An input data used to trace the model execution.
-        """
-        # Check that the underlying sklearn model has been set and fit
-        assert self.sklearn_model is not None, self._sklearn_model_is_not_fitted_error_message()
-
-        model_for_onnx = LinearRegression()
-        model_for_onnx.coef_ = self.sklearn_model.coef_
-        model_for_onnx.intercept_ = self.sklearn_model.intercept_
-
-        self.onnx_model_ = hb_convert(
-            model_for_onnx,
-            backend="onnx",
-            test_input=test_input,
-            extra_config={"onnx_target_opset": OPSET_VERSION_FOR_ONNX_EXPORT},
-        ).model
-
-        self._clean_graph()
-
-
 class SklearnLinearClassifierMixin(
     BaseClassifier, SklearnLinearModelMixin, sklearn.base.ClassifierMixin, ABC
 ):
@@ -1815,6 +1783,48 @@ class SklearnLinearClassifierMixin(
         y_proba = self.post_processing(y_logits)
         return y_proba
 
+    # In scikit-learn, the argmax is done on the scores directly, not the probabilities
+    def predict(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
+        # Compute the predicted scores
+        y_proba = self.decision_function(X, fhe=fhe)
+
+        # Retrieve the class with the highest score
+        y_preds = numpy.argmax(y_proba, axis=1)
+
+        return self.classes_[y_preds]
+
+
+class SklearnSGDRegressorMixin(SklearnLinearRegressorMixin):
+    """A Mixin class for sklearn SGD regressors with FHE.
+
+    This class is used to create a SGD regressor class what can be exported
+    to ONNX using Hummingbird.
+    """
+
+    # Remove once Hummingbird supports SGDRegressor
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4100
+    def _set_onnx_model(self, test_input: numpy.ndarray) -> None:
+        """Retrieve the model's ONNX graph using Hummingbird conversion.
+
+        Args:
+            test_input (numpy.ndarray): An input data used to trace the model execution.
+        """
+        # Check that the underlying sklearn model has been set and fit
+        assert self.sklearn_model is not None, self._sklearn_model_is_not_fitted_error_message()
+
+        model_for_onnx = LinearRegression()
+        model_for_onnx.coef_ = self.sklearn_model.coef_
+        model_for_onnx.intercept_ = self.sklearn_model.intercept_
+
+        self.onnx_model_ = hb_convert(
+            model_for_onnx,
+            backend="onnx",
+            test_input=test_input,
+            extra_config={"onnx_target_opset": OPSET_VERSION_FOR_ONNX_EXPORT},
+        ).model
+
+        self._clean_graph()
+
 
 class SklearnSGDClassifierMixin(SklearnLinearClassifierMixin):
     """A Mixin class for sklearn SGD classifiers with FHE.
@@ -1823,7 +1833,7 @@ class SklearnSGDClassifierMixin(SklearnLinearClassifierMixin):
     to ONNX using Hummingbird.
     """
 
-    # Remove once Hummingbird supports SGDRegressor
+    # Remove once Hummingbird supports SGDClassifier
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4100
     def _set_onnx_model(self, test_input: numpy.ndarray) -> None:
         """Retrieve the model's ONNX graph using Hummingbird conversion.
