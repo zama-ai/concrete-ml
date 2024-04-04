@@ -2,14 +2,14 @@ Name, Version, License
 GitPython, 3.1.41, BSD License
 PyYAML, 6.0.1, MIT License
 anyio, 3.7.1, MIT License
-boto3, 1.34.75, Apache Software License
-botocore, 1.34.75, Apache Software License
+boto3, 1.34.72, Apache Software License
+botocore, 1.34.72, Apache Software License
 brevitas, 0.8.0, UNKNOWN
 certifi, 2023.7.22, Mozilla Public License 2.0 (MPL 2.0)
 charset-normalizer, 3.3.2, MIT License
 click, 8.1.7, BSD License
 coloredlogs, 15.0.1, MIT License
-concrete-python, 2.6.0rc1, BSD-3-Clause
+concrete-python, 2024.3.27, BSD-3-Clause
 dependencies, 2.0.1, BSD License
 dill, 0.3.8, BSD License
 exceptiongroup, 1.2.0, MIT License
@@ -19,7 +19,7 @@ flatbuffers, 24.3.25, Apache Software License
 fsspec, 2024.3.1, BSD License
 gitdb, 4.0.11, BSD License
 h11, 0.14.0, MIT License
-huggingface-hub, 0.22.2, Apache Software License
+huggingface-hub, 0.22.1, Apache Software License
 humanfriendly, 10.0, MIT License
 hummingbird-ml, 0.4.8, MIT License
 idna, 3.6, BSD License
@@ -67,7 +67,7 @@ tokenizers, 0.15.2, Apache Software License
 tomli, 2.0.1, MIT License
 torch, 1.13.1, BSD License
 tqdm, 4.66.2, MIT License; Mozilla Public License 2.0 (MPL 2.0)
-transformers, 4.39.3, Apache Software License
+transformers, 4.39.1, Apache Software License
 typing_extensions, 4.5.0, Python Software Foundation License
 tzdata, 2024.1, Apache Software License
 urllib3, 2.2.1, MIT License

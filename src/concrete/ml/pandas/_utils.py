@@ -134,7 +134,7 @@ def deserialize_elementwise(array: numpy.ndarray) -> numpy.ndarray:
 
 
 def serialize_evaluation_keys(evaluation_keys: fhe.EvaluationKeys) -> bytes:
-    """Serialize the evaluation keys into a string of hexadecimal numbers.
+    """Serialize the evaluation keys into bytes.
 
     Args:
         evaluation_keys (fhe.EvaluationKeys): The evaluation keys to serialize.

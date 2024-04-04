@@ -1,8 +1,8 @@
 """Define the encrypted data-frame framework."""
 import json
-import zipfile
 from pathlib import Path
 from typing import Dict, Hashable, List, Optional, Sequence, Tuple, Union
+from zipfile import ZIP_STORED, ZipFile
 
 import numpy
 import pandas
@@ -327,7 +327,7 @@ class EncryptedDataFrame:
 
         encrypted_df_json_bytes = json.dumps(encrypted_df_dict).encode(encoding="utf-8")
 
-        with zipfile.ZipFile(path, "w") as zip_file:
+        with ZipFile(path, "w", compression=ZIP_STORED, allowZip64=True) as zip_file:
             zip_file.writestr("encrypted_dataframe.json", encrypted_df_json_bytes)
             zip_file.writestr("evaluation_keys", evaluation_keys)
 
@@ -346,7 +346,7 @@ class EncryptedDataFrame:
         if path.suffix != ".zip":
             path = path.with_suffix(".zip")
 
-        with zipfile.ZipFile(path, "r") as zip_file:
+        with ZipFile(path, "r", compression=ZIP_STORED, allowZip64=True) as zip_file:
             with zip_file.open("encrypted_dataframe.json") as encrypted_df_json_file:
                 encrypted_df_json_bytes = encrypted_df_json_file.read()
                 encrypted_df_dict = json.loads(encrypted_df_json_bytes)
