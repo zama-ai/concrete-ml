@@ -88,10 +88,11 @@ if ${TEST_CODEBLOCKS}; then
 elif ${NO_FLAKY}; then
     make pytest_no_flaky
 
-# Else, intall the pytest coverage plugin and run 'pytest' 
+# Else, intall the pytest coverage plugin and run 'pytest_internal_parallel' (instead of `pytest`
+# since we don't want to check for coverage here)
 else
     python -m pip install pytest-cov==4.1.0
-    make pytest
+    make pytest_internal_parallel
 fi
 
 # Delete the virtual env directory
