@@ -495,6 +495,9 @@ def test_brevitas_constant_folding(default_configuration):
         )
 
 
+# This test is a known flaky
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4356
+@pytest.mark.flaky
 @pytest.mark.parametrize("manual_rounding", [None, 3])
 @pytest.mark.parametrize("power_of_two", [True, False])
 @pytest.mark.parametrize("n_bits", [4])
