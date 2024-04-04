@@ -9,6 +9,9 @@ from concrete.ml.pytest.torch_models import TorchSum
 from concrete.ml.torch.compile import compile_torch_model
 
 
+# This test is a known flaky test
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4357
+@pytest.mark.flaky
 @pytest.mark.parametrize(
     "data_generator",
     [
@@ -65,12 +68,8 @@ def test_sum(
     check_circuit_has_no_tlu,
     check_circuit_precision,
     check_r2_score,
-    is_weekly_option,
 ):
     """Tests ReduceSum ONNX operator on a torch model."""
-
-    if with_pbs and not is_weekly_option:
-        pytest.skip("Tests on model with some PBS take too long for regular CIs")
 
     # Generate the input-set with several samples. This adds a necessary batch size
     inputset = data_generator(size=(100,) + size)
