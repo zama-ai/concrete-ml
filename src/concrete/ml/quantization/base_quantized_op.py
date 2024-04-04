@@ -1017,5 +1017,7 @@ class QuantizedMixingOp(QuantizedOp, is_utility=True):
                     x, lsbs_to_remove=lsbs_value, exactness=exactness, overflow_protection=False
                 )
             else:
-                x = fhe.round_bit_pattern(x, lsbs_to_remove=lsbs_value, exactness=exactness)
+                x = fhe.round_bit_pattern(
+                    x, lsbs_to_remove=lsbs_value, exactness=exactness, overflow_protection=False
+                )
         return x
