@@ -133,28 +133,28 @@ def deserialize_elementwise(array: numpy.ndarray) -> numpy.ndarray:
     return numpy.vectorize(deserialize_value)(array)
 
 
-def serialize_evaluation_keys(evaluation_keys: fhe.EvaluationKeys) -> str:
-    """Serialize the evaluation keys into a string of hexadecimal numbers.
+def serialize_evaluation_keys(evaluation_keys: fhe.EvaluationKeys) -> bytes:
+    """Serialize the evaluation keys into bytes.
 
     Args:
         evaluation_keys (fhe.EvaluationKeys): The evaluation keys to serialize.
 
     Returns:
-        str: The serialized evaluation keys as a string of hexadecimal numbers.
+        bytes: The serialized evaluation keys.
     """
-    return serialize_value(evaluation_keys)
+    return evaluation_keys.serialize()
 
 
-def deserialize_evaluation_keys(serialized_evaluation_keys: str) -> fhe.EvaluationKeys:
+def deserialize_evaluation_keys(serialized_evaluation_keys: bytes) -> fhe.EvaluationKeys:
     """Deserialize the evaluation keys.
 
     Args:
-        serialized_evaluation_keys (str): The evaluation keys to deserialize.
+        serialized_evaluation_keys (bytes): The evaluation keys to deserialize.
 
     Returns:
         fhe.EvaluationKeys: The deserialized evaluation keys.
     """
-    return fhe.EvaluationKeys.deserialize(bytes.fromhex(serialized_evaluation_keys))
+    return fhe.EvaluationKeys.deserialize(serialized_evaluation_keys)
 
 
 def slice_hex_str(hex_str: str, n: int = 10) -> str:
