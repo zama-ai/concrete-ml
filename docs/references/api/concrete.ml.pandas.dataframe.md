@@ -6,15 +6,19 @@
 
 Define the encrypted data-frame framework.
 
+## **Global Variables**
+
+- **ZIP_STORED**
+
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pandas/dataframe.py#L26"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pandas/dataframe.py#L27"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `EncryptedDataFrame`
 
 Define an encrypted data-frame framework that supports Pandas operators and parameters.
 
-<a href="../../../src/concrete/ml/pandas/dataframe.py#L29"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pandas/dataframe.py#L30"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -101,7 +105,7 @@ Get the evaluation keys.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pandas/dataframe.py#L132"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pandas/dataframe.py#L133"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_schema`
 
@@ -119,7 +123,7 @@ The scheme can include column names, dtypes or dtype mappings. It is displayed a
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pandas/dataframe.py#L325"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pandas/dataframe.py#L334"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load`
 
@@ -139,7 +143,7 @@ Load an encrypted data-frame from disk.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pandas/dataframe.py#L170"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pandas/dataframe.py#L171"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `merge`
 
@@ -189,7 +193,7 @@ Pandas documentation for version 2.0 can be found here: https://pandas.pydata.or
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pandas/dataframe.py#L313"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pandas/dataframe.py#L315"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `save`
 
