@@ -72,7 +72,7 @@ ______________________________________________________________________
 ### <kbd>method</kbd> `bitwidth_and_range_report`
 
 ```python
-bitwidth_and_range_report() → Optional[Dict[str, Dict[str, Union[Tuple[int, ], int]]]]
+bitwidth_and_range_report() → Union[Dict[str, Dict[str, Union[Tuple[int, ], int]]], NoneType]
 ```
 
 Report the ranges and bit-widths for layers that mix encrypted integer values.
