@@ -1,22 +1,23 @@
 # Workflow to update licenses for x86 Linux and MacOS
-# Support ARM MacOS
-# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3925
 name: Update licenses
 on:
   workflow_dispatch:
 
 concurrency:
   group: "${{ github.ref }}-${{ github.event_name }}-${{ github.workflow }}"
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
+  # Update licenses for all supported OS
   update_licenses:
     strategy:
       matrix:
-        # No arm-macos machines on github runners
-        # we would need to use one of our own runners
-        os: [ubuntu-20.04, macos-latest-xl]
-    runs-on: ${{ matrix.os }}
+        config:
+          - {os_name: linux, os: ubuntu-20.04}
+          - {os_name: mac_intel, os: macos-latest-large}
+          - {os_name: mac_silicon, os: macos-latest-xlarge}
+
+    runs-on: ${{ matrix.config.os }}
     defaults:
       run:
         shell: bash
@@ -32,7 +33,6 @@ jobs:
           echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
           echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
 
-      # Checkout repository
       - name: Checkout Code
         uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
         with:
@@ -52,11 +52,36 @@ jobs:
       - name: Update licenses
         run: |
           make licenses
-      
-      # Pull the latest changes if there are some
-      - name: Pull latest changes
+
+      # Upload the updated license files as artifacts, if they exist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: licenses-${{ matrix.config.os_name }}
+          if-no-files-found: ignore
+          path: |
+            deps_licenses/licenses_${{ matrix.config.os_name }}_user.txt
+            deps_licenses/licenses_${{ matrix.config.os_name }}_user.txt.md5
+
+  # Push the updates license files, as a PR or directly to the branch
+  push_licenses:
+    runs-on: ubuntu-latest
+    needs: [update_licenses]
+    steps:
+      # Mask internal URLs if logged
+      - name: Add masks
+        id: masks
         run: |
-          git pull -X theirs
+          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
+          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
+
+      - name: Checkout Code
+        uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
+        with:
+          token: ${{ secrets.BOT_TOKEN }}
+
+      # Retrieve all updated license files
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
 
       # If the target branch is main or a release branch, a pull request is opened for everyone to 
       # review
@@ -65,16 +90,16 @@ jobs:
         uses: peter-evans/create-pull-request@70a41aba780001da0a30141984ae2a0c95d8704e
         with:
           token: ${{ secrets.BOT_TOKEN }}
-          commit-message: "chore: update licenses ${{ matrix.os }}"
-          branch: "chore/update_licenses_${{ matrix.os }}"
+          commit-message: "chore: update licenses"
+          branch: "chore/update_licenses"
           base: "${{ github.ref_name }}"
-          title: "Update licenses for ${{ matrix.os }} on ${{ github.ref_name }}"
-          body: "Update licenses for ${{ matrix.os }} on ${{ github.ref_name }}"
+          title: "Update licenses in ${{ github.ref_name }}"
+          body: "Update licenses in ${{ github.ref_name }}"
 
       # If the target branch is another branch, the current branch is automatically merged into it
       - name: Push changes into the current branch
         if: ${{ github.ref_name != 'main' && !(startsWith(github.ref_name , 'release/')) }}
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "chore: update licenses for ${{ matrix.os }}"
+          commit_message: "chore: update licenses"
           add_options: '-u'
