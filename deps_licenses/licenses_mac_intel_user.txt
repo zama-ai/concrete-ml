@@ -2,14 +2,14 @@ Name, Version, License
 GitPython, 3.1.41, BSD License
 PyYAML, 6.0.1, MIT License
 anyio, 3.7.1, MIT License
-boto3, 1.34.75, Apache Software License
-botocore, 1.34.75, Apache Software License
+boto3, 1.34.78, Apache Software License
+botocore, 1.34.78, Apache Software License
 brevitas, 0.8.0, UNKNOWN
 certifi, 2023.7.22, Mozilla Public License 2.0 (MPL 2.0)
 charset-normalizer, 3.3.2, MIT License
 click, 8.1.7, BSD License
 coloredlogs, 15.0.1, MIT License
-concrete-python, 2.6.0rc1, BSD-3-Clause
+concrete-python, 2.6.0, BSD-3-Clause
 dependencies, 2.0.1, BSD License
 dill, 0.3.8, BSD License
 exceptiongroup, 1.2.0, MIT License
@@ -41,7 +41,7 @@ pandas, 2.0.3, BSD License
 pluggy, 1.4.0, MIT License
 protobuf, 3.20.3, BSD-3-Clause
 psutil, 5.9.8, BSD License
-pydantic, 1.10.14, MIT License
+pydantic, 1.10.15, MIT License
 pytest, 7.4.1, MIT License
 pytest-json-report, 1.5.0, MIT
 pytest-metadata, 3.1.1, Mozilla Public License 2.0 (MPL 2.0)
