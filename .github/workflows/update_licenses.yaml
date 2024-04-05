@@ -2,6 +2,22 @@
 name: Update licenses
 on:
   workflow_dispatch:
+    inputs:
+      linux:
+        description: "Update licenses for Ubuntu"
+        type: boolean
+        required: false
+        default: true
+      mac_silicon:
+        description: "Update licenses for macOS (silicon)"
+        type: boolean
+        required: false
+        default: true
+      mac_intel:
+        description: "Update licenses for macOS (intel)"
+        type: boolean
+        required: false
+        default: true
 
 concurrency:
   group: "${{ github.ref }}-${{ github.event_name }}-${{ github.workflow }}"
@@ -13,10 +29,17 @@ jobs:
     strategy:
       matrix:
         config:
-          - {os_name: linux, os: ubuntu-20.04}
-          - {os_name: mac_intel, os: macos-latest-large}
-          - {os_name: mac_silicon, os: macos-latest-xlarge}
-
+          - os_name: linux
+            os: ubuntu-latest 
+            if: ${{ inputs.linux }}
+          - os_name: mac_silicon
+            os: macos-latest-xlarge
+            if: ${{ inputs.mac_silicon }}
+          - os_name: mac_intel
+            os: macos-latest-large 
+            if: ${{ inputs.mac_intel }}
+      fail-fast: false
+    
     runs-on: ${{ matrix.config.os }}
     defaults:
       run:
@@ -38,10 +61,13 @@ jobs:
         with:
           token: ${{ secrets.BOT_TOKEN }}
 
-      - name: Set up Python 3.8
+      # Set up python 3.10 because Github does not seem to provide support for python 3.8 on arm64 
+      # List of available versions and architectures : 
+      # https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json
+      - name: Set up Python 3.10
         uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d
         with:
-          python-version: '3.8'
+          python-version: '3.10'
 
       - name: Install dependencies
         run: |
