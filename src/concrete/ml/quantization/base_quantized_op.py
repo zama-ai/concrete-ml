@@ -1012,10 +1012,7 @@ class QuantizedMixingOp(QuantizedOp, is_utility=True):
         if lsbs_value > 0:
             # Rounding to low bit-width with approximate can cause issues with overflow protection
             # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4345
-            if exactness == fhe.Exactness.APPROXIMATE:
-                x = fhe.round_bit_pattern(
-                    x, lsbs_to_remove=lsbs_value, exactness=exactness, overflow_protection=False
-                )
-            else:
-                x = fhe.round_bit_pattern(x, lsbs_to_remove=lsbs_value, exactness=exactness)
+            x = fhe.round_bit_pattern(
+                x, lsbs_to_remove=lsbs_value, exactness=exactness, overflow_protection=False
+            )
         return x
