@@ -93,6 +93,8 @@ jobs:
   # Push the updates license files, as a PR or directly to the branch
   push_licenses:
     runs-on: ubuntu-latest
+    needs: [update_licenses]
+    if: always()
     steps:
       # Mask internal URLs if logged
       - name: Add masks
