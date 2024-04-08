@@ -38,7 +38,7 @@ concrete-python = "2.6.0-rc1"
 setuptools = "65.6.3"
 skops = {version = "0.5.0"}
 xgboost = "1.6.2"
-skorch = "0.12.0"
+skorch = "0.11.0"
 torch = "1.13.1"
 typing-extensions = "4.5.0"
 brevitas = "0.8.0"
