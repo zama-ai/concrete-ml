@@ -10,7 +10,7 @@ MACHINE=$(uname -m)
 PYTHON_VERSION=$(python --version | cut -d' ' -f2 | cut -d'.' -f1,2)
 
 # The error does not seem to happen on python 3.10 (on MacOS 13.6.6)
-if [ "$UNAME" == "Darwin" ] && [ "$MACHINE" != "arm64" ] && [ "$PYTHON_VERSION" != "3.10"]
+if [ "$UNAME" == "Darwin" ] && [ "$MACHINE" != "arm64" ] && [ "$PYTHON_VERSION" != "3.10" ]
 then
 
     # We need to source the venv here, since it's not done in the CI
