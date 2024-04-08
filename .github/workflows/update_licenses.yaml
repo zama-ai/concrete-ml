@@ -80,12 +80,12 @@ jobs:
           make licenses
 
       # Upload the updated license files as artifacts, if they exist
-      # There's no need to specify a name as all files are expected to be different. Also, it's
-      # possible that no files have been generated if licenses have already been done for some
+      # It is possible that no files have been generated if licenses have already been done for some
       # configuration(s)
       - uses: actions/upload-artifact@v4
         with:
           if-no-files-found: ignore
+          name: licenses_${{ matrix.config.os_name }}
           path: |
             deps_licenses/licenses_${{ matrix.config.os_name }}_user.txt
             deps_licenses/licenses_${{ matrix.config.os_name }}_user.txt.md5
@@ -93,7 +93,6 @@ jobs:
   # Push the updates license files, as a PR or directly to the branch
   push_licenses:
     runs-on: ubuntu-latest
-    needs: [update_licenses]
     steps:
       # Mask internal URLs if logged
       - name: Add masks
