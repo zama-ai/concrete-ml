@@ -80,9 +80,11 @@ jobs:
           make licenses
 
       # Upload the updated license files as artifacts, if they exist
+      # There's no need to specify a name as all files are expected to be different. Also, it's
+      # possible that no files have been generated if licenses have already been done for some
+      # configuration(s)
       - uses: actions/upload-artifact@v4
         with:
-          name: licenses-${{ matrix.config.os_name }}
           if-no-files-found: ignore
           path: |
             deps_licenses/licenses_${{ matrix.config.os_name }}_user.txt
@@ -106,10 +108,12 @@ jobs:
           token: ${{ secrets.BOT_TOKEN }}
 
       # Retrieve all updated license files
+      # Enable merge multiple to download all files in the 'deps_licenses' directory
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           path: deps_licenses/
+          merge-multiple: true
 
       # If the target branch is main or a release branch, a pull request is opened for everyone to 
       # review
