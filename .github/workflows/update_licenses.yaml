@@ -108,6 +108,8 @@ jobs:
       # Retrieve all updated license files
       - name: Download artifacts
         uses: actions/download-artifact@v4
+        with:
+          path: deps_licenses/
 
       # If the target branch is main or a release branch, a pull request is opened for everyone to 
       # review
