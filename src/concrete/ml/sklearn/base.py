@@ -808,11 +808,9 @@ class BaseClassifier(BaseEstimator):
             # If the prediction array is 1D, transform the output into a 2D array [1-p, p],
             # with p the initial output probabilities
             # This is similar to what is done in scikit-learn
-            if y_preds.ndim == 1:
-                y_preds = numpy.vstack([1 - y_preds, y_preds]).T
-
-            elif y_preds.shape[1] == 1:
-                y_preds = numpy.concatenate((1 - y_preds, y_preds), axis=1)
+            if y_preds.ndim == 1 or y_preds.shape[1] == 1:
+                y_preds = y_preds.flatten()
+                return numpy.vstack([1 - y_preds, y_preds]).T
 
         # Else, apply the softmax operator
         else:

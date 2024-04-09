@@ -868,9 +868,6 @@ class SGDClassifier(SklearnSGDClassifierMixin):
             assert isinstance(self.classes_, numpy.ndarray)
             binary = len(self.classes_) == 2
 
-            if binary:
-                y_preds = y_preds[:, 0]
-
             prob2 = numpy.empty(tuple())
             if binary:
                 prob2 = numpy.ones((y_preds.shape[0], 2))
