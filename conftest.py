@@ -13,6 +13,7 @@ from concrete.fhe import Graph as CPGraph
 from concrete.fhe.compilation import Circuit, Configuration
 from concrete.fhe.mlir.utils import MAXIMUM_TLU_BIT_WIDTH
 from sklearn.datasets import make_classification, make_regression
+from sklearn.metrics import accuracy_score
 
 from concrete.ml.common.utils import (
     SUPPORTED_FLOAT_TYPES,
@@ -420,7 +421,7 @@ def check_accuracy():
     """Fixture to check the accuracy."""
 
     def check_accuracy_impl(expected, actual, threshold=0.9):
-        accuracy = numpy.mean(expected == actual)
+        accuracy = accuracy_score(expected, actual)
         assert accuracy >= threshold, f"Accuracy of {accuracy} is not high enough ({threshold})."
 
     return check_accuracy_impl

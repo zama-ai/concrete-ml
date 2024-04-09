@@ -1783,13 +1783,17 @@ class SklearnLinearClassifierMixin(
         y_proba = self.post_processing(y_logits)
         return y_proba
 
-    # In scikit-learn, the argmax is done on the scores directly, not the probabilities
+    # In scikit-learn, the argmax is done on the logits directly, not the probabilities
     def predict(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
         # Compute the predicted scores
-        y_proba = self.decision_function(X, fhe=fhe)
+        y_logits = self.decision_function(X, fhe=fhe)
 
         # Retrieve the class with the highest score
-        y_preds = numpy.argmax(y_proba, axis=1)
+        # If there is a single dimension, only compare the scores to 0
+        if y_logits.ndim == 1 or y_logits.shape[1] == 1:
+            y_preds = (y_logits > 0).astype(int)
+        else:
+            y_preds = numpy.argmax(y_logits, axis=1)
 
         return self.classes_[y_preds]
 
