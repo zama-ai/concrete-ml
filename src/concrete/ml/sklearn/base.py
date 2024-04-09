@@ -694,6 +694,8 @@ class BaseEstimator:
         Returns:
             numpy.ndarray: The post-processed predictions.
         """
+        assert isinstance(y_preds, numpy.ndarray), "Output predictions must be an array."
+
         return y_preds
 
 
@@ -805,7 +807,11 @@ class BaseClassifier(BaseEstimator):
 
             # If the prediction array is 1D, transform the output into a 2D array [1-p, p],
             # with p the initial output probabilities
-            if y_preds.ndim == 1 or y_preds.shape[1] == 1:
+            # This is similar to what is done in scikit-learn
+            if y_preds.ndim == 1:
+                y_preds = numpy.vstack([1 - y_preds, y_preds]).T
+
+            elif y_preds.shape[1] == 1:
                 y_preds = numpy.concatenate((1 - y_preds, y_preds), axis=1)
 
         # Else, apply the softmax operator
@@ -1387,8 +1393,13 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
     def dequantize_output(self, q_y_preds: numpy.ndarray) -> numpy.ndarray:
         self.check_model_is_fitted()
 
-        q_y_preds = self.output_quantizers[0].dequant(q_y_preds)
-        return q_y_preds
+        y_preds = self.output_quantizers[0].dequant(q_y_preds)
+
+        # If the preds have shape (n, 1), squeeze it to shape (n,) like in scikit-learn
+        if y_preds.ndim == 2 and y_preds.shape[1] == 1:
+            return y_preds.ravel()
+
+        return y_preds
 
     def _get_module_to_compile(self) -> Union[Compiler, QuantizedModule]:
         assert self._tree_inference is not None, self._is_not_fitted_error_message()
@@ -1442,7 +1453,12 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         if not self._fhe_ensembling:
             y_preds = numpy.sum(y_preds, axis=-1)
 
-            assert_true(y_preds.ndim == 2, "y_preds should be a 2D array")
+            assert isinstance(y_preds, numpy.ndarray), "Output predictions must be an array."
+
+            # If the preds have shape (n, 1), squeeze it to shape (n,) like in scikit-learn
+            if y_preds.ndim == 2 and y_preds.shape[1] == 1:
+                return y_preds.ravel()
+
             return y_preds
 
         return super().post_processing(y_preds)
@@ -1693,6 +1709,10 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # De-quantize the output values
         y_preds = self.output_quantizers[0].dequant(q_y_preds)
 
+        # If the preds have shape (n, 1), squeeze it to shape (n,) like in scikit-learn
+        if y_preds.ndim == 2 and y_preds.shape[1] == 1:
+            return y_preds.ravel()
+
         return y_preds
 
     def _get_module_to_compile(self) -> Union[Compiler, QuantizedModule]:
@@ -1775,25 +1795,26 @@ class SklearnLinearClassifierMixin(
         """
         # Here, we want to use SklearnLinearModelMixin's `predict` method as confidence scores are
         # the dot product's output values, without any post-processing
-        y_preds = SklearnLinearModelMixin.predict(self, X, fhe=fhe)
-        return y_preds
+        y_scores = SklearnLinearModelMixin.predict(self, X, fhe=fhe)
+
+        return y_scores
 
     def predict_proba(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
-        y_logits = self.decision_function(X, fhe=fhe)
-        y_proba = self.post_processing(y_logits)
+        y_scores = self.decision_function(X, fhe=fhe)
+        y_proba = self.post_processing(y_scores)
         return y_proba
 
-    # In scikit-learn, the argmax is done on the logits directly, not the probabilities
+    # In scikit-learn, the argmax is done on the scores directly, not the probabilities
     def predict(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
         # Compute the predicted scores
-        y_logits = self.decision_function(X, fhe=fhe)
+        y_scores = self.decision_function(X, fhe=fhe)
 
         # Retrieve the class with the highest score
         # If there is a single dimension, only compare the scores to 0
-        if y_logits.ndim == 1 or y_logits.shape[1] == 1:
-            y_preds = (y_logits > 0).astype(int)
+        if y_scores.ndim == 1:
+            y_preds = (y_scores > 0).astype(int)
         else:
-            y_preds = numpy.argmax(y_logits, axis=1)
+            y_preds = numpy.argmax(y_scores, axis=1)
 
         return self.classes_[y_preds]
 
@@ -2002,6 +2023,11 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         self.check_model_is_fitted()
         # We compute the sorted argmax in FHE, which are integers.
         # No need to de-quantize the output values
+
+        # If the preds have shape (n, 1), squeeze it to shape (n,) like in scikit-learn
+        if q_y_preds.ndim > 1 and q_y_preds.shape[1] == 1:
+            return q_y_preds.ravel()
+
         return q_y_preds
 
     def _get_module_to_compile(self) -> Union[Compiler, QuantizedModule]:

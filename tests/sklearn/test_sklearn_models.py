@@ -204,13 +204,11 @@ def check_correctness_with_sklearn(
             y_scores_sklearn = sklearn_model.decision_function(x)
             y_scores_fhe = model.decision_function(x, fhe=fhe)
 
-            # Currently, for single target data sets, Concrete models' outputs have shape (n, 1)
-            # while scikit-learn models' outputs have shape (n, )
-            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4029
-            # assert y_scores_sklearn.shape == y_scores_fhe.shape, (
-            #     "Method 'decision_function' outputs different shapes between scikit-learn and "
-            #     f"Concrete ML in FHE (fhe={fhe})"
-            # )
+            assert y_scores_sklearn.shape == y_scores_fhe.shape, (
+                "Method 'decision_function' outputs different shapes between scikit-learn and "
+                f"Concrete ML in FHE (fhe={fhe})"
+            )
+
             check_r2_score(y_scores_sklearn, y_scores_fhe, acceptance_score=acceptance_r2score)
 
         # LinearSVC models from scikit-learn do not provide a 'predict_proba' method
@@ -231,13 +229,10 @@ def check_correctness_with_sklearn(
     y_pred_sklearn = sklearn_model.predict(x)
     y_pred_fhe = model.predict(x, fhe=fhe)
 
-    # Currently, for single target data sets, Concrete models' outputs have shape (n, 1) while
-    # scikit-learn models' outputs have shape (n, )
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4029
-    # assert y_pred_sklearn.shape == y_pred_fhe.shape, (
-    #     "Method 'predict' outputs different shapes between scikit-learn and "
-    #     f"Concrete ML in FHE (fhe={fhe})"
-    # )
+    assert y_pred_sklearn.shape == y_pred_fhe.shape, (
+        "Method 'predict' outputs different shapes between scikit-learn and "
+        f"Concrete ML in FHE (fhe={fhe})"
+    )
 
     # If the model is a classifier, check that accuracies are similar
     if is_classifier_or_partial_classifier(model):
@@ -649,10 +644,14 @@ def check_separated_inference(model, fhe_circuit, x, check_float_array_equal):
         and get_model_name(model) != "KNeighborsClassifier"
     ):
         # For linear classifiers, the argmax is done on the scores directly, not the probabilities
+        # Also, it is handled differently if shape is (n,) instead of (n, 1)
         if is_model_class_in_a_list(model, _get_sklearn_linear_models()):
-            y_pred = numpy.argmax(y_scores, axis=-1)
+            if y_scores.ndim == 1:
+                y_pred = (y_scores > 0).astype(int)
+            else:
+                y_pred = numpy.argmax(y_scores, axis=1)
         else:
-            y_pred = numpy.argmax(y_pred, axis=-1)
+            y_pred = numpy.argmax(y_pred, axis=1)
 
         y_pred_class = model.predict(x, fhe="simulate")
 
@@ -1874,7 +1873,6 @@ def test_rounding_consistency_for_regular_models(
     n_bits,
     load_data,
     check_r2_score,
-    check_accuracy,
     is_weekly_option,
     verbose=True,
 ):
@@ -1894,7 +1892,7 @@ def test_rounding_consistency_for_regular_models(
     else:
         # Check `predict` for regressors
         predict_method = model.predict
-        metric = check_accuracy
+        metric = check_r2_score
 
     check_rounding_consistency(
         model,
