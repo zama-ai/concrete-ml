@@ -9,7 +9,6 @@ import sklearn.linear_model
 from sklearn.linear_model import SGDClassifier as SklearnSGDClassifier
 from sklearn.preprocessing import LabelEncoder
 
-from ..common.check_inputs import check_array_and_assert
 from ..common.utils import FheMode
 from ..onnx.ops_impl import numpy_sigmoid
 from ..quantization import QuantizedModule
@@ -253,27 +252,12 @@ class SGDClassifier(SklearnSGDClassifierMixin):
                     "Setting 'parameter_range' is mandatory if FHE training is enabled "
                     f"({fit_encrypted=}). Got {parameters_range=}"
                 )
-
-    def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
-        # If the prediction array is 1D, which happens with some models such as XGBCLassifier or
-        # LogisticRegression models, we have a binary classification problem
-        n_classes = y_preds.shape[1] if y_preds.ndim > 1 and y_preds.shape[1] > 1 else 2
-
-        # For binary classification problem, apply the sigmoid operator
-        if n_classes == 2:
-            y_preds = numpy_sigmoid(y_preds)[0]
-
-            # If the prediction array is 1D, transform the output into a 2D array [1-p, p],
-            # with p the initial output probabilities
-            if y_preds.ndim == 1 or y_preds.shape[1] == 1:
-                y_preds = numpy.concatenate((1 - y_preds, y_preds), axis=1)
-
-        # Else, apply the softmax operator
         else:
-            y_preds = numpy_sigmoid(y_preds)[0]
-            y_preds = y_preds / y_preds.sum(axis=1)
-
-        return y_preds
+            supported_losses = ["log_loss", "modified_huber"]
+            if self.loss not in supported_losses:
+                raise NotImplementedError(
+                    f"Only one of {supported_losses} loss is supported. Got {self.loss}."
+                )
 
     def get_sklearn_params(self, deep: bool = True) -> dict:
         # Here, the `get_params` method is the `BaseEstimator.get_params` method from scikit-learn
@@ -835,45 +819,12 @@ class SGDClassifier(SklearnSGDClassifierMixin):
             # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4184
             raise NotImplementedError("Partial fit is not currently supported for clear training.")
 
-    # This method is taken directly from scikit-learn
-    def _predict_proba_lr(self, X: Data, fhe: Union[FheMode, str]) -> numpy.ndarray:
-        """Probability estimation for OvR logistic regression.
+    def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
+        """Apply post-processing to the de-quantized predictions.
 
-        Positive class probabilities are computed as
-        1. / (1. + np.exp(-self.decision_function(X)));
-        multiclass is handled by normalizing that over all classes.
-
-        Args:
-            X (Data): The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame
-                or List. It mush have a shape of (n_samples, n_features).
-            fhe (Union[FheMode, str]): The mode to use for prediction.
-                Can be FheMode.DISABLE for Concrete ML Python inference,
-                FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.
-                Can also be the string representation of any of these values.
-
-        Returns:
-            numpy.ndarray: The predicted class probabilities.
-        """
-        prob = self.decision_function(X, fhe=fhe)
-        prob = numpy_sigmoid(prob)[0]
-
-        assert isinstance(prob, numpy.ndarray)
-
-        if prob.shape[1] == 1:
-            prob = prob.flatten()
-            return numpy.vstack([1 - prob, prob]).T
-
-        # OvR normalization, like LibLinear's predict_probability
-        prob /= prob.sum(axis=1).reshape((prob.shape[0], -1))
-
-        return prob
-
-    def predict_proba(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
-        """Probability estimates.
-
-        This method is only available for log loss and modified Huber loss.
-        Multiclass probability estimates are derived from binary (one-vs.-rest)
-        estimates by simple normalization, as recommended by Zadrozny and Elkan.
+        This is called at the end of the `predict_proba` method and is only available for log loss
+        and modified Huber losses. Multiclass probability estimates are derived from binary
+        (one-vs.-rest) estimates by simple normalization, as recommended by Zadrozny and Elkan.
 
         Binary probability estimates for loss="modified_huber" are given by
         (clip(decision_function(X), -1, 1) + 1) / 2. For other loss functions
@@ -881,15 +832,11 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         the classifier with `sklearn.calibration.CalibratedClassifierCV` instead.
 
         Args:
-            X (Data): The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame
-                or List. It mush have a shape of (n_samples, n_features).
-            fhe (Union[FheMode, str]): The mode to use for prediction.
-                Can be FheMode.DISABLE for Concrete ML Python inference,
-                FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.
-                Can also be the string representation of any of these values.
+            y_preds (Data): The de-quantized predictions to post-process. It mush have a shape of
+                (n_samples, n_features).
 
         Returns:
-            numpy.ndarray: The predicted class probabilities, with shape (n_samples, n_classes).
+            numpy.ndarray: The post-processed predictions, with shape (n_samples, n_classes).
 
         Raises:
             NotImplementedError: If the given loss is not supported.
@@ -903,39 +850,47 @@ class SGDClassifier(SklearnSGDClassifierMixin):
             case is in the appendix B in:
             http://jmlr.csail.mit.edu/papers/volume2/zhang02c/zhang02c.pdf
         """
-        X = check_array_and_assert(X)
-
+        # The following lines are taken directly from scikit-learn's source code
         if self.loss == "log_loss":
-            return self._predict_proba_lr(X, fhe=fhe)
+            y_preds = numpy_sigmoid(y_preds)[0]
 
-        if self.loss == "modified_huber":
+            assert isinstance(y_preds, numpy.ndarray)
+
+            if y_preds.ndim == 1 or y_preds.shape[1] == 1:
+                y_preds = y_preds.flatten()
+                return numpy.vstack([1 - y_preds, y_preds]).T
+
+            # OvR normalization, like LibLinear's predict_probability
+            prob = y_preds / y_preds.sum(axis=1).reshape((y_preds.shape[0], -1))
+
+        # The following lines are taken directly from scikit-learn's source code
+        elif self.loss == "modified_huber":
             assert isinstance(self.classes_, numpy.ndarray)
             binary = len(self.classes_) == 2
-            scores = self.decision_function(X)
-
-            if binary:
-                scores = scores[:, 0]
 
             prob2 = numpy.empty(tuple())
             if binary:
-                prob2 = numpy.ones((scores.shape[0], 2))
+                prob2 = numpy.ones((y_preds.shape[0], 2))
                 prob = prob2[:, 1]
-            else:
-                prob = scores
 
-            numpy.clip(scores, -1, 1, prob)
+            else:
+                prob = y_preds
+
+            numpy.clip(y_preds, -1, 1, prob)
             prob += 1.0
             prob /= 2.0
 
             if binary:
                 prob2[:, 0] -= prob
                 prob = prob2
+
             else:
                 # the above might assign zero to all classes, which doesn't
                 # normalize neatly; work around this to produce uniform
                 # probabilities
                 prob_sum = prob.sum(axis=1)
                 all_zero = prob_sum == 0
+
                 if numpy.any(all_zero):  # pragma: no cover
                     prob[all_zero, :] = 1
                     prob_sum[all_zero] = len(self.classes_)
@@ -943,12 +898,13 @@ class SGDClassifier(SklearnSGDClassifierMixin):
                 # normalize
                 prob /= prob_sum.reshape((prob.shape[0], -1))
 
-            return prob
+        else:  # pragma: no cover
+            supported_losses = ["log_loss", "modified_huber"]
+            raise NotImplementedError(
+                f"Only one of {supported_losses} loss is supported. Got {self.loss}."
+            )
 
-        raise NotImplementedError(
-            f"Method 'predict_proba' currently only supports one of"
-            f" ['log_loss', 'modifier_huber'] loss. Got {self.loss}."
-        )
+        return prob
 
     def dump_dict(self) -> Dict[str, Any]:
         assert self._weight_quantizer is not None, self._is_not_fitted_error_message()

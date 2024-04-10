@@ -133,27 +133,23 @@ def test_fit_error_if_non_binary_targets(n_bits, max_iter, parameter_min_max):
         model.partial_fit(x, y, fhe="disable")
 
 
-@pytest.mark.parametrize("loss", ["log_loss", "modified_huber"])
-@pytest.mark.parametrize("binary", [True, False])
-@pytest.mark.parametrize("n_bits, max_iter, parameter_min_max", [pytest.param(7, 30, 1.0)])
-def test_clear_fit_warning_error_raises(loss, binary, n_bits, max_iter, parameter_min_max):
-    """Test that training in clear using wrong parameters properly raises some errors."""
+def test_clear_fit_warning_error_raises():
+    """Test that training in clear using wrong parameters raises proper errors."""
 
     # Model parameters
-    random_state = numpy.random.randint(0, 2**15)
-    parameters_range = (-parameter_min_max, parameter_min_max)
+    parameters_range = (-1.0, 1.0)
 
-    # Generate a data-set with binary target classes
-    x, y = get_blob_data(binary_targets=binary, scale_input=True, parameters_range=parameters_range)
+    # Generate a data-set
+    x, y = get_blob_data()
 
-    model = SGDClassifier(
-        n_bits=n_bits,
-        fit_encrypted=False,
-        random_state=random_state,
-        parameters_range=parameters_range,
-        max_iter=max_iter,
-        loss=loss,
-    )
+    with pytest.raises(NotImplementedError, match="Only one of .* loss is supported.*"):
+        model = SGDClassifier(
+            fit_encrypted=False,
+            parameters_range=parameters_range,
+            loss="perceptron",
+        )
+
+    model = SGDClassifier(fit_encrypted=False, parameters_range=parameters_range)
 
     with pytest.raises(
         ValueError, match="Parameter 'fhe' should not be set when FHE training is disabled.*"
@@ -261,7 +257,7 @@ def test_encrypted_fit_warning_error_raises(n_bits, max_iter, parameter_min_max)
 
 @pytest.mark.parametrize("loss", ["log_loss", "modified_huber"])
 @pytest.mark.parametrize("binary", [True, False])
-@pytest.mark.parametrize("n_bits, max_iter, parameter_min_max", [pytest.param(7, 30, 1.0)])
+@pytest.mark.parametrize("n_bits, max_iter, parameter_min_max", [pytest.param(8, 100, 1.0)])
 def test_clear_fit(
     loss,
     binary,
@@ -275,10 +271,9 @@ def test_clear_fit(
     random_state = numpy.random.randint(0, 2**15)
     parameters_range = (-parameter_min_max, parameter_min_max)
 
-    # Generate a data-set with binary target classes
+    # Generate a data-set
     x, y = get_blob_data(binary_targets=binary, scale_input=True, parameters_range=parameters_range)
-    n_bits = 8
-    max_iter = 100
+
     random_state = numpy.random.randint(0, 2**15)
     model = SGDClassifier(
         n_bits=n_bits,

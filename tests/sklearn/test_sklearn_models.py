@@ -204,13 +204,11 @@ def check_correctness_with_sklearn(
             y_scores_sklearn = sklearn_model.decision_function(x)
             y_scores_fhe = model.decision_function(x, fhe=fhe)
 
-            # Currently, for single target data sets, Concrete models' outputs have shape (n, 1)
-            # while scikit-learn models' outputs have shape (n, )
-            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4029
-            # assert y_scores_sklearn.shape == y_scores_fhe.shape, (
-            #     "Method 'decision_function' outputs different shapes between scikit-learn and "
-            #     f"Concrete ML in FHE (fhe={fhe})"
-            # )
+            assert y_scores_sklearn.shape == y_scores_fhe.shape, (
+                "Method 'decision_function' outputs different shapes between scikit-learn and "
+                f"Concrete ML in FHE (fhe={fhe})"
+            )
+
             check_r2_score(y_scores_sklearn, y_scores_fhe, acceptance_score=acceptance_r2score)
 
         # LinearSVC models from scikit-learn do not provide a 'predict_proba' method
@@ -231,20 +229,14 @@ def check_correctness_with_sklearn(
     y_pred_sklearn = sklearn_model.predict(x)
     y_pred_fhe = model.predict(x, fhe=fhe)
 
-    # Currently, for single target data sets, Concrete models' outputs have shape (n, 1) while
-    # scikit-learn models' outputs have shape (n, )
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4029
-    # assert y_pred_sklearn.shape == y_pred_fhe.shape, (
-    #     "Method 'predict' outputs different shapes between scikit-learn and "
-    #     f"Concrete ML in FHE (fhe={fhe})"
-    # )
+    assert y_pred_sklearn.shape == y_pred_fhe.shape, (
+        "Method 'predict' outputs different shapes between scikit-learn and "
+        f"Concrete ML in FHE (fhe={fhe})"
+    )
 
     # If the model is a classifier, check that accuracies are similar
     if is_classifier_or_partial_classifier(model):
-        # Skip if SGDClassifier
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4344
-        if get_model_name(model_class) != "SGDClassifier":
-            check_accuracy(y_pred_sklearn, y_pred_fhe, threshold=threshold_accuracy)
+        check_accuracy(y_pred_sklearn, y_pred_fhe, threshold=threshold_accuracy)
 
     # If the model is a regressor, check that R2 scores are similar
     elif is_regressor_or_partial_regressor(model):
@@ -651,7 +643,15 @@ def check_separated_inference(model, fhe_circuit, x, check_float_array_equal):
         is_classifier_or_partial_classifier(model)
         and get_model_name(model) != "KNeighborsClassifier"
     ):
-        y_pred = numpy.argmax(y_pred, axis=-1)
+        # For linear classifiers, the argmax is done on the scores directly, not the probabilities
+        # Also, it is handled differently if shape is (n,) instead of (n, 1)
+        if is_model_class_in_a_list(model, _get_sklearn_linear_models()):
+            if y_scores.ndim == 1:
+                y_pred = (y_scores > 0).astype(int)
+            else:
+                y_pred = numpy.argmax(y_scores, axis=1)
+        else:
+            y_pred = numpy.argmax(y_pred, axis=1)
 
         y_pred_class = model.predict(x, fhe="simulate")
 
@@ -1605,31 +1605,10 @@ def test_predict_correctness(
 
 
 @pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
-@pytest.mark.parametrize(
-    "simulate",
-    [
-        pytest.param(False, id="fhe"),
-    ],
-)
-# N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS bits is currently the
-# limit to find crypto parameters for linear models
-# make sure we only compile below that bit-width.
-# Additionally, prevent computations in FHE with too many bits
-@pytest.mark.parametrize(
-    "n_bits",
-    [
-        n_bits
-        for n_bits in N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS
-        if n_bits
-        < min(N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS, N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE)
-    ],
-)
 # pylint: disable=too-many-branches
 def test_separated_inference(
     model_class,
     parameters,
-    simulate,
-    n_bits,
     load_data,
     default_configuration,
     is_weekly_option,
@@ -1637,6 +1616,8 @@ def test_separated_inference(
     verbose=True,
 ):
     """Test prediction correctness between clear quantized and FHE simulation or execution."""
+
+    n_bits = min(N_BITS_REGULAR_BUILDS)
 
     # KNN can only be compiled with small quantization bit numbers for now
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
@@ -1646,7 +1627,7 @@ def test_separated_inference(
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     # Run the test with more samples during weekly CIs or when using FHE simulation
-    if is_weekly_option or simulate:
+    if is_weekly_option:
         fhe_samples = 5
     else:
         fhe_samples = 1
@@ -1892,7 +1873,6 @@ def test_rounding_consistency_for_regular_models(
     n_bits,
     load_data,
     check_r2_score,
-    check_accuracy,
     is_weekly_option,
     verbose=True,
 ):
@@ -1912,7 +1892,7 @@ def test_rounding_consistency_for_regular_models(
     else:
         # Check `predict` for regressors
         predict_method = model.predict
-        metric = check_accuracy
+        metric = check_r2_score
 
     check_rounding_consistency(
         model,
