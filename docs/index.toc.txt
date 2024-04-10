@@ -95,5 +95,6 @@
     developer/documenting.md
     developer/debug_support_submit_issues.md
     developer/contributing.md
+    developer/support_new_onnx_node.md
 
 
