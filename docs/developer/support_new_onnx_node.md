@@ -23,6 +23,7 @@ There exist two types of quantized operators:
 - **Univariate Non-Linear Operators**: Such operator applies transformation on every element of the input without changing its shape. Sigmoid, Tanh, ReLU are examples of such operation. The sigmoid in this file is simply supported as follows:
 
 <!--pytest-codeblocks:skip-->
+
 ```python
 class QuantizedSigmoid(QuantizedOp):
     """Quantized sigmoid op."""
@@ -37,14 +38,13 @@ class QuantizedSigmoid(QuantizedOp):
 Proper testing is essential to ensure the correctness of the new ONNX node support.
 
 There are many locations where tests can be added:
+
 - [`test_onnx_ops_impl.py`](../../tests/onnx/test_onnx_ops_impl.py): Tests implementation of the ONNX node in floating points.
 - [`test_quantized_ops.py`](../../tests/quantization/test_quantized_ops.py): Tests implementation of the ONNX node in integer arithmetic.
 - Optional: [`test_compile_torch.py`](../../tests/torch/test_compile_torch.py): Tests a specific torch model implementation that contains the new ONNX operator. The model needs to be added to [`torch_models.py`](../../src/concrete/ml/pytest/torch_models.py).
-
 
 ## Update Documentation
 
 Finally, update the documentation to reflect the newly supported ONNX node.
 
 **Documentation File**: Edit the [docs/deep-learning/onnx_support.md](../deep-learning/onnx_support.md) file to include the new operator.
-
