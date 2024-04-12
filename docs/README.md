@@ -44,7 +44,7 @@ Refer to the API, review product architecture, and access additional resources f
 - [Advanced features](explanations/advanced_features.md)
 - [Project architecture](explanations/inner-workings/)
 
-### Supports
+### Support channels
 
 Ask technical questions and discuss with the community. Our team of experts usually answers within 24 hours in working days.
 
