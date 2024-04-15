@@ -17,7 +17,15 @@ rm -rf concrete-ml
 git clone https://github.com/zama-ai/concrete-ml
 ```
 
-Several files are tracked by [git-lfs](https://git-lfs.github.com/). While a few are required for running some tests, most of them are used for benchmarking and use case examples. By default, `git clone` downloads all LFS files, which can add up to several hundreds of MB to the directory. Is it however possible to disable such behavior by running the running the following command instead :
+In order to be able to run all documentation examples, we recommend to also [install git-lfs](https://docs.github.com/en/repositories/working-with-files/managing-large-files/installing-git-large-file-storage) and then pull the necessary files :
+
+<!--pytest-codeblocks:skip-->
+
+```bash
+git lfs pull
+```
+
+On the contrary, to disable downloading all these files (which represents up to several hundreds of MB) when cloning the repository, simply run :
 
 <!--pytest-codeblocks:skip-->
 
