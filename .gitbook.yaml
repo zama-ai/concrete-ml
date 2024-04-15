@@ -1,1 +1,11 @@
 root: ./docs
+
+redirects:
+  deployment/client_server: guides/client_server.md
+  deployment/prediction_with_fhe: guides/prediction_with_fhe.md
+  deployment/hybrid-models: guides/hybrid-models.md
+  deployment/serialization: guides/serialization.md
+  advanced-topics/quantization: explanations/quantization.md
+  advanced-topics/pruning: explanations/pruning.md
+  advanced-topics/compilation: explanations/compilation.md
+  advanced-topics/advanced_features: explanations/advanced_features.md
