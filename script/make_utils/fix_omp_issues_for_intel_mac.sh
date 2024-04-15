@@ -9,8 +9,7 @@ UNAME=$(uname)
 MACHINE=$(uname -m)
 PYTHON_VERSION=$(python --version | cut -d' ' -f2 | cut -d'.' -f1,2)
 
-# The error does not seem to happen on python 3.10 (on MacOS 13.6.6)
-if [ "$UNAME" == "Darwin" ] && [ "$MACHINE" != "arm64" ] && [ "$PYTHON_VERSION" != "3.10" ]
+if [ "$UNAME" == "Darwin" ] && [ "$MACHINE" != "arm64" ]
 then
 
     # We need to source the venv here, since it's not done in the CI
@@ -22,11 +21,23 @@ then
     WHICH_VENV=$(command -v python | sed -e "s@bin/python@@")
     WHICH_PYTHON=$(python -c 'import sys; print(f"python{sys.version_info.major}.{sys.version_info.minor}")')
 
-    rm "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/torch/lib/libiomp5.dylib
-    ln -s "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/concrete/.dylibs/libomp.dylib "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/torch/lib/libiomp5.dylib
-    rm "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/functorch/.dylibs/libiomp5.dylib
-    ln -s "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/concrete/.dylibs/libomp.dylib "${WHICH_VENV}"lib/"${WHICH_PYTHON}"/site-packages/functorch/.dylibs/libiomp5.dylib
+    # The error is specific to python version
+    if [ "$PYTHON_VERSION" == "3.8" ] || [ "$PYTHON_VERSION" == "3.9" ]
+    then
+        rm "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/torch/lib/libiomp5.dylib
+        ln -s "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/concrete/.dylibs/libomp.dylib "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/torch/lib/libiomp5.dylib
+        rm "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/functorch/.dylibs/libiomp5.dylib
+        ln -s "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/concrete/.dylibs/libomp.dylib "${WHICH_VENV}"lib/"${WHICH_PYTHON}"/site-packages/functorch/.dylibs/libiomp5.dylib
+
+    elif [ "$PYTHON_VERSION" == "3.10" ]
+    then
+        rm "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/torch/lib/libiomp5.dylib
+        ln -s "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/concrete/.dylibs/libomp.dylib "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/torch/lib/libiomp5.dylib
+        rm "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/torch/.dylibs/libiomp5.dylib
+        ln -s "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/concrete/.dylibs/libomp.dylib "${WHICH_VENV}"lib/"${WHICH_PYTHON}"/site-packages/torch/.dylibs/libiomp5.dylib
+    else
+        echo "Please have a look to libraries libiomp5.dylib related to torch and then"
+        echo "apply appropriate fix"
+        exit 255
+    fi
 fi
-
-
-
