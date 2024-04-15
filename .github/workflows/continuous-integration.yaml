@@ -875,12 +875,15 @@ jobs:
           make pytest_codeblocks_pypi_cml VERSION="$PROJECT_VERSION"
 
       # Run Pytest on all notebooks on a weekly basis
+      # Note: some notebooks need specific data stored in LFS
       - name: PyTest Notebooks (weekly)
         if: | 
           fromJSON(env.IS_WEEKLY) 
           && steps.conformance.outcome == 'success' 
           && !cancelled()
         run: |
+          git lfs pull --include "docs/advanced_examples/data/**" --exclude  ""
+
           make pytest_nb
 
       - name: Fast sanity check
