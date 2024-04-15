@@ -8,7 +8,7 @@ There are three ways to contribute to Concrete ML:
 
 ## 1. Setting up the project
 
-First, you need to [fork](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo) the [Concrete ML](https://github.com/zama-ai/concrete-ml) repository and properly set up the project by following the steps provided [here](project_setup.md).
+First, you need to [fork](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo) the [Concrete ML](../README.md) repository and properly set up the project by following the steps provided [here](project_setup.md).
 
 ## 2. Creating a new branch
 

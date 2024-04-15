@@ -4,7 +4,7 @@ This section provides a set of tools and guidelines to help users build optimize
 
 ## Simulation
 
-The [simulation functionality](../explanations/compilation.md#fhe-simulation) of Concrete ML provides a way to evaluate, using clear data, the results that ML models produce on encrypted data. The simulation includes any probabilistic behavior FHE may induce. The simulation is implemented with [Concrete's simulation](https://docs.zama.ai/concrete/tutorials/simulation).
+The [simulation functionality](../explanations/compilation.md#fhe-simulation) of Concrete ML provides a way to evaluate, using clear data, the results that ML models produce on encrypted data. The simulation includes any probabilistic behavior FHE may induce. The simulation is implemented with [Concrete's simulation](https://docs.zama.ai/concrete/execution-analysis/simulation).
 
 The simulation mode can be useful when developing and iterating on an ML model implementation. As FHE non-linear models work with integers up to 16 bits, with a trade-off between the number of bits and the FHE execution speed, the simulation can help to find the optimal model design.
 
