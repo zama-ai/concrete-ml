@@ -35,7 +35,7 @@ nvidia-cublas-cu11, 11.10.3.66, Other/Proprietary License
 nvidia-cuda-nvrtc-cu11, 11.7.99, Other/Proprietary License
 nvidia-cuda-runtime-cu11, 11.7.99, Other/Proprietary License
 nvidia-cudnn-cu11, 8.5.0.96, Other/Proprietary License
-onnx, 1.16.0, Apache License v2.0
+onnx, 1.15.0, Apache License v2.0
 onnxconverter-common, 1.13.0, MIT License
 onnxmltools, 1.11.0, Apache Software License
 onnxoptimizer, 0.3.13, Apache License v2.0
