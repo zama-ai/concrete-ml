@@ -560,8 +560,6 @@ class BaseEstimator:
             f"{type(module_to_compile)}."
         )
 
-        # Jit compiler is now deprecated and will soon be removed, it is thus forced to False
-        # by default
         self.fhe_circuit_ = module_to_compile.compile(
             inputset,
             configuration=configuration,
@@ -573,6 +571,7 @@ class BaseEstimator:
             single_precision=False,
             fhe_simulation=False,
             fhe_execution=True,
+            compress_input_ciphertexts=True,
         )
 
         self._is_compiled = True

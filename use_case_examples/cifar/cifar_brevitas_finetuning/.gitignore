@@ -9,7 +9,7 @@ profile_default/
 ipython_config.py
 
 # Key cache
-ConcreteNumpyKeyCache
+ConcretePythonKeyCache
 
 # Data
 /data/

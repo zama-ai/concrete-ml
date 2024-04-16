@@ -237,7 +237,6 @@ DATASET_VERSIONS = {
 
 
 # This is only for benchmarks to speed up compilation times
-# Jit compiler is now deprecated and will soon be removed, it is thus forced to False by default
 # Parameter `enable_unsafe_features` and `use_insecure_key_cache` are needed in order to be able to
 # cache generated keys through `insecure_key_cache_location`. As the name suggests, these
 # parameters are unsafe and should only be used for debugging in development
@@ -245,7 +244,7 @@ BENCHMARK_CONFIGURATION = fhe.Configuration(
     dump_artifacts_on_unexpected_failures=True,
     enable_unsafe_features=True,
     use_insecure_key_cache=True,
-    insecure_key_cache_location="ConcreteNumpyKeyCache",
+    insecure_key_cache_location="ConcretePythonKeyCache",
 )
 
 

@@ -154,7 +154,7 @@ def main(args):
 
     keyring_dir_as_str = None
     if is_fast:
-        keyring_dir = Path.home().resolve() / "ConcreteNumpyKeyCache"
+        keyring_dir = Path.home().resolve() / "ConcretePythonKeyCache"
         keyring_dir.mkdir(parents=True, exist_ok=True)
         keyring_dir_as_str = str(keyring_dir)
         print(f"Using {keyring_dir_as_str} as key cache dir")
@@ -163,7 +163,7 @@ def main(args):
     cn_check(args, keyring_dir_as_str)
 
     if is_fast:
-        keyring_dir = Path.home().resolve() / "ConcreteNumpyKeyCache"
+        keyring_dir = Path.home().resolve() / "ConcretePythonKeyCache"
         if keyring_dir is not None:
             # Remove incomplete keys
             for incomplete_keys in keyring_dir.glob("**/*incomplete*"):

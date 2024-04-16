@@ -96,7 +96,7 @@ def monkeypatched_compilation_configuration_init_for_codeblocks(
     self.enable_unsafe_features = True
     self.treat_warnings_as_errors = True
     self.use_insecure_key_cache = True
-    self.insecure_key_cache_location = "ConcreteNumpyKeyCache"
+    self.insecure_key_cache_location = "ConcretePythonKeyCache"
 
 
 def pytest_sessionstart(session: pytest.Session):
@@ -139,25 +139,27 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus):  # pylint: disabl
 
 @pytest.fixture
 def default_configuration():
-    """Return the default test compilation configuration."""
+    """Return the compilation configuration for tests that can execute in FHE."""
 
     # Parameter `enable_unsafe_features` and `use_insecure_key_cache` are needed in order to be
     # able to cache generated keys through `insecure_key_cache_location`. As the name suggests,
     # these parameters are unsafe and should only be used for debugging in development
+    # Simulation compilation is done lazily when calling circuit.simulate, so we do not need to
+    # set it by default
     return Configuration(
         dump_artifacts_on_unexpected_failures=False,
         enable_unsafe_features=True,
         use_insecure_key_cache=True,
-        insecure_key_cache_location="ConcreteNumpyKeyCache",
-        # Simulation compilation is done lazily on circuit.simulate
+        insecure_key_cache_location="ConcretePythonKeyCache",
         fhe_simulation=False,
         fhe_execution=True,
+        compress_input_ciphertexts=True,
     )
 
 
 @pytest.fixture
 def simulation_configuration():
-    """Return the simulation test compilation configuration for simulation."""
+    """Return the compilation configuration for tests that only simulate."""
 
     # Parameter `enable_unsafe_features` and `use_insecure_key_cache` are needed in order to be
     # able to cache generated keys through `insecure_key_cache_location`. As the name suggests,
@@ -166,9 +168,10 @@ def simulation_configuration():
         dump_artifacts_on_unexpected_failures=False,
         enable_unsafe_features=True,
         use_insecure_key_cache=True,
-        insecure_key_cache_location="ConcreteNumpyKeyCache",
+        insecure_key_cache_location="ConcretePythonKeyCache",
         fhe_simulation=True,
         fhe_execution=False,
+        compress_input_ciphertexts=True,
     )
 
 
