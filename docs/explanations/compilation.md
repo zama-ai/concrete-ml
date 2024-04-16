@@ -6,12 +6,12 @@ As FHE execution is much slower than execution on non-encrypted data, Concrete M
 
 ## Compilation to FHE
 
-Concrete ML implements model inference using Concrete as a backend. In order to execute in FHE, a numerical program written in Concrete needs to be compiled. This functionality is [described here](https://docs.zama.ai/concrete/getting-started/quick_start), and Concrete ML hides away most of the complexity of this step, completing the entire compilation process itself.
+Concrete ML implements model inference using Concrete as a backend. In order to execute in FHE, a numerical program written in Concrete needs to be compiled. This functionality is [described here](https://docs.zama.ai/concrete/get-started/quick_start), and Concrete ML hides away most of the complexity of this step, completing the entire compilation process itself.
 
 From the perspective of the Concrete ML user, the compilation process performed by Concrete can be broken up into 3 steps:
 
 1. tracing the NumPy program and creating a Concrete op-graph
-1. checking the op-graph for FHE compatability
+1. checking the op-graph for FHE compatibility
 1. producing machine code for the op-graph (this step automatically determines cryptographic parameters)
 
 Additionally, the [client/server API](../guides/client_server.md) packages the result of the last step in a way that allows the deployment of the encrypted circuit to a server, as well as key generation, encryption, and decryption on the client side.
