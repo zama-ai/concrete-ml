@@ -7,7 +7,6 @@ from typing import Any, Dict, Optional, Union
 
 import numpy
 import sklearn.linear_model
-from sklearn.linear_model import SGDClassifier as SklearnSGDClassifier
 from sklearn.preprocessing import LabelEncoder
 
 from ..common.utils import FheMode
@@ -229,7 +228,9 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         self.average = average
 
         # Checks the coherence of some attributes
-        assert isinstance(self.max_iter, int)
+        assert (
+            isinstance(self.max_iter, int) and self.max_iter >= 1
+        ), "Parameter 'max_iter' must be an integer in range [1, inf]"
         assert isinstance(self.tol, (float, type(None)))
 
         # Checks and warnings for FHE training
@@ -307,8 +308,8 @@ class SGDClassifier(SklearnSGDClassifierMixin):
                 [self.parameters_range[0], self.parameters_range[1]],  # Bias
             )
         )
-        compile_size = len(combinations)
 
+        compile_size = len(combinations)
         n_targets = 1
 
         # Generate the input values to consider for compilation
@@ -317,13 +318,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         # Generate the target values to consider for compilation
         # Update this once we support multi-class
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4182
-        y_compile_set = numpy.empty(
-            (
-                compile_size,
-                self.batch_size,
-                n_targets,
-            )
-        )
+        y_compile_set = numpy.empty((compile_size, self.batch_size, n_targets))
 
         # Generate the weight values to consider for compilation
         weights_compile_set = numpy.empty((compile_size, x_min.shape[0], n_targets))
@@ -338,8 +333,10 @@ class SGDClassifier(SklearnSGDClassifierMixin):
             compile_set[0][index] = x_value
             compile_set[1][index] = label
             compile_set[2][index] = coef_value
+
             if not self.fit_intercept:
                 bias_value *= 0.0
+
             compile_set[3][index] = bias_value
 
         # Instantiate the LogisticRegressor model
@@ -348,9 +345,11 @@ class SGDClassifier(SklearnSGDClassifierMixin):
             iterations=1,
             fit_bias=self.fit_intercept,
         )
+
         # Compile the model using the compile set
         if self.verbose:
             print("Compiling training circuit ...")
+
         start = time.time()
         training_quantized_module = compile_torch_model(
             trainer,
@@ -361,12 +360,13 @@ class SGDClassifier(SklearnSGDClassifierMixin):
             reduce_sum_copy=True,
         )
         end = time.time()
+
         if self.verbose:
             print(f"Compilation took {end - start:.4f} seconds.")
 
         return training_quantized_module
 
-    # pylint: disable-next=too-many-branches, too-many-statements
+    # pylint: disable-next=too-many-branches, too-many-statements, too-many-locals
     def _fit_encrypted(
         self,
         X,
@@ -374,6 +374,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         fhe: Union[str, FheMode] = FheMode.DISABLE,
         coef_init: Optional[numpy.ndarray] = None,
         intercept_init: Optional[numpy.ndarray] = None,
+        is_partial_fit: bool = False,
     ):
         """Fit SGDClassifier in FHE.
 
@@ -398,6 +399,8 @@ class SGDClassifier(SklearnSGDClassifierMixin):
                 optimization. Default to None.
             intercept_init (Optional[numpy.ndarray]): The initial intercept to warm-start the
                 optimization. Default to None.
+            is_partial_fit (bool): Indicates if this fit represents a partial fit. A partial fit is
+                similar to a fit but with only a single iteration.
 
         Returns:
             The fitted estimator.
@@ -418,55 +421,69 @@ class SGDClassifier(SklearnSGDClassifierMixin):
                 f"enabled. Got {y.shape}"
             )
 
-        # Update this once we support multi-class
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4182
-        # We need to define this here and not in the init otherwise this breaks
-        # because scikit-learn assumes that as soon as the attribute exists
-        # the model is fitted
-        # pylint: disable=attribute-defined-outside-init
-        self.label_encoder = LabelEncoder()
-        self.label_encoder.fit(y)
-        self.classes_ = self.label_encoder.classes_
-        assert isinstance(self.classes_, numpy.ndarray)
-        if len(self.classes_) != 2:
-            raise NotImplementedError(
-                f"Only binary classification is currently supported when FHE training is enabled. "
-                f"Got {len(self.classes_)} labels: {self.classes_}."
+        # Build the quantized module
+        # In case of a partial fit, only do so if it has not been done already (which indicates
+        # that this is the partial fit's first call)
+        if not is_partial_fit or self.training_quantized_module is None:
+            # Update this once we support multi-class
+            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4182
+            # We need to define this here and not in the init otherwise this breaks
+            # because scikit-learn assumes that as soon as the attribute exists
+            # the model is fitted
+            # pylint: disable=attribute-defined-outside-init
+            self.label_encoder = LabelEncoder()
+            self.label_encoder.fit(y)
+            self.classes_ = self.label_encoder.classes_
+
+            assert isinstance(self.classes_, numpy.ndarray)
+
+            if len(self.classes_) != 2:
+                raise NotImplementedError(
+                    f"Only binary classification is currently supported when FHE training is "
+                    f"enabled. Got {len(self.classes_)} labels: {self.classes_}."
+                )
+
+            # Get the inputs' extreme values
+            x_min, x_max = X.min(axis=0), X.max(axis=0)
+
+            # Build and compile the training quantized module
+            self.training_quantized_module = self._get_training_quantized_module(
+                x_min=x_min,
+                x_max=x_max,
             )
 
         y = self.label_encoder.transform(y)
 
-        # Get the inputs' extreme values
-        x_min, x_max = X.min(axis=0), X.max(axis=0)
-
-        # Build and compile the training quantized module
-        self.training_quantized_module = self._get_training_quantized_module(
-            x_min=x_min,
-            x_max=x_max,
-        )
-
+        # Key generation
         if fhe == "execute":  # pragma: no cover
-            # Key generation
-            if self.verbose:
-                print("Key Generation...")
-
-            # mypy
             assert self.training_quantized_module.fhe_circuit is not None
 
-            start = time.time()
-            self.training_quantized_module.fhe_circuit.keygen(force=False)
-            end = time.time()
-            if self.verbose:
-                print(f"Key generation took {end - start:.4f} seconds.")
+            # Generate the keys only if necessary. This is already done using the `force=False`
+            # parameter, but here we also avoid printing too much verbose if activated
+            if not self.training_quantized_module.fhe_circuit.keys.are_generated:
+                if self.verbose:
+                    print("Key Generation...")
+
+                start = time.time()
+                self.training_quantized_module.fhe_circuit.keygen(force=False)
+                end = time.time()
+
+                if self.verbose:
+                    print(f"Key generation took {end - start:.4f} seconds.")
 
         # Mypy
         assert self.parameters_range is not None
 
-        # Initialize the weight values
+        # Initialize the weight values with the given ones if some are provided
         if coef_init is not None:
             weights = coef_init
-        elif self.warm_start and self._weights_encrypted_fit is not None:
+
+        # Else, if warm start is activated or this is a partial fit, use some already computed
+        # weight values have if there are some
+        elif (self.warm_start or is_partial_fit) and self._weights_encrypted_fit is not None:
             weights = self._weights_encrypted_fit
+
+        # Else, initialize the values randomly
         else:
             weights = self.random_number_generator.uniform(
                 low=self.parameters_range[0],
@@ -474,34 +491,45 @@ class SGDClassifier(SklearnSGDClassifierMixin):
                 size=(1, X.shape[1], 1),
             )
 
-        # Initialize the bias values
+        # If the mode should fit the bias values as well
         if self.fit_intercept:
+
+            # Initialize the bias values with the given ones if some are provided
             if intercept_init is not None:
                 bias = intercept_init
-            elif self.warm_start and self._bias_encrypted_fit is not None:
+
+            # Else, if warm start is activated or this is a partial fit, use some already computed
+            # bias values have if there are some
+            elif (self.warm_start or is_partial_fit) and self._bias_encrypted_fit is not None:
                 bias = self._bias_encrypted_fit
+
+            # Else, initialize the values randomly
             else:
                 bias = self.random_number_generator.uniform(
                     low=self.parameters_range[0],
                     high=self.parameters_range[1],
                     size=(1, 1, 1),
                 )
+
+        # Else, initialize the bias with zeros
         else:
             bias = numpy.zeros((1, 1, 1))
 
         loss_value_moving_average = None
-        X_indexes = numpy.arange(0, len(X))
 
         if self.verbose:
             mode_string = " (simulation)" if fhe == "simulate" else ""
             print(f"Training on encrypted data{mode_string}...")
 
+        # A partial fit is similar to running a fit with a single iteration
+        max_iter = 1 if is_partial_fit else self.max_iter
+
         # Iterate on the training quantized module in the clear
-        for iteration_step in range(self.max_iter):
+        for iteration_step in range(max_iter):
 
             # Sample the batches from X and y in the clear
             batch_indexes = self.random_number_generator.choice(
-                X_indexes, size=self.batch_size, replace=False
+                len(X), size=self.batch_size, replace=False
             )
 
             # Mypy
@@ -511,59 +539,76 @@ class SGDClassifier(SklearnSGDClassifierMixin):
             X_batch = X[batch_indexes].astype(float).reshape((1, len(batch_indexes), X.shape[1]))
             y_batch = y[batch_indexes].reshape((1, self.batch_size, 1)).astype(float)
 
-            # Mypy
-            assert self.training_quantized_module is not None
-
             weights = weights.reshape(1, X.shape[1], 1)
             bias = bias.reshape(1, 1, 1)
 
-            to = time.time()
+            # Mypy
+            assert self.training_quantized_module is not None
+
             # Train the model over one iteration
+            inference_start = time.time()
             weights, bias = self.training_quantized_module.forward(  # type: ignore[assignment]
                 X_batch, y_batch, weights, bias, fhe=fhe
             )
+
             if self.verbose:
-                print(f"Iteration {iteration_step} took {time.time() - to:.4f} seconds.")
+                print(
+                    f"Iteration {iteration_step} took {time.time() - inference_start:.4f} seconds."
+                )
 
             # Mypy
             assert isinstance(weights, numpy.ndarray)
             assert isinstance(bias, numpy.ndarray)
 
+            # Reshape parameters to fit what scikit-learn expects
             weights = weights.squeeze(0)
             bias = bias.squeeze(0)  # pylint: disable=no-member
 
-            # Evaluate the model on the full dataset and compute the loss
-            logits = ((X @ weights) + bias).squeeze()
-            loss_value = binary_cross_entropy(y_true=y, logits=logits)
+            # If early stopping is enabled, compute the loss and stop the training if it gets under
+            # the given tolerance
+            # Additionally, there is no point in computing the following in case of a partial fit,
+            # as it only represents a single iteration
+            if self.early_stopping and not is_partial_fit:
 
-            # If this is the first training iteration, store the loss value computed above
-            if loss_value_moving_average is None:
-                loss_value_moving_average = loss_value
+                # Evaluate the model on the full dataset and compute the loss
+                logits = ((X @ weights) + bias).squeeze()
+                loss_value = binary_cross_entropy(y_true=y, logits=logits)
 
-            # Else, update the value
-            else:
-                previous_loss_value_moving_average = loss_value_moving_average
-                loss_value_moving_average = (loss_value_moving_average + loss_value) / 2
+                # If this is the first training iteration, store the loss value computed above
+                if loss_value_moving_average is None:
+                    loss_value_moving_average = loss_value
 
-                loss_difference = numpy.abs(
-                    previous_loss_value_moving_average - loss_value_moving_average
-                )
+                # Else, update the value
+                else:
+                    previous_loss_value_moving_average = loss_value_moving_average
+                    loss_value_moving_average = (loss_value_moving_average + loss_value) / 2
 
-                # If early stopping is enabled and the loss gets under the given tolerance, stop the
-                # training
-                if self.early_stopping and loss_difference < self.tol:
-                    break
+                    loss_difference = numpy.abs(
+                        previous_loss_value_moving_average - loss_value_moving_average
+                    )
 
-        self._is_fitted = True
+                    # If the loss gets under the given tolerance, stop the training
+                    if loss_difference < self.tol:
+                        break
+
+        # Initialize the underlying scikit-learn model if it has not already been done
+        # This model should be directly initialized in the model's __init__ method instead
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3373
+        if self.sklearn_model is None:
+
+            # Retrieve the init parameters
+            params = self.get_sklearn_params()
+
+            self.sklearn_model = self.sklearn_model_class(**params)
 
         # Build the underlying scikit-learn model with the computed weight and bias values
-        self.sklearn_model = SklearnSGDClassifier()
         self.sklearn_model.coef_ = weights.T
         self.sklearn_model.intercept_ = bias
 
         # Update the model's Concrete ML parameters
         self._weights_encrypted_fit = weights
         self._bias_encrypted_fit = bias
+        self._is_fitted = True
         self._quantize_model(X)
 
         return self
@@ -663,132 +708,6 @@ class SGDClassifier(SklearnSGDClassifierMixin):
             sample_weight=sample_weight,
         )
 
-    # pylint: disable-next=too-many-branches,too-many-statements
-    def _fit_encrypted_one_step(self, X, y, fhe):
-        # Data validation
-        if len(X.shape) != 2:
-            raise NotImplementedError(
-                "Input values must be 2D, with a shape of (n_samples, n_features), when FHE "
-                f"training is enabled. Got {X.shape}"
-            )
-
-        if len(y.shape) != 1:
-            raise NotImplementedError(
-                "Target values must be 1D, with a shape of (n_samples,), when FHE training is "
-                f"enabled. Got {y.shape}"
-            )
-
-        if self.training_quantized_module is None:
-            # Update this once we support multi-class
-            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4182
-            # We need to define this here and not in the init otherwise this breaks
-            # because scikit-learn assumes that as soon as the attribute exists
-            # the model is fitted
-            # pylint: disable=attribute-defined-outside-init
-            self.label_encoder = LabelEncoder()
-            self.label_encoder.fit(y)
-            self.classes_ = self.label_encoder.classes_
-            assert isinstance(self.classes_, numpy.ndarray)
-            if len(self.classes_) != 2:
-                raise NotImplementedError(
-                    f"Only binary classification is currently supported"
-                    " when FHE training is enabled. "
-                    f"Got {len(self.classes_)} labels: {self.classes_}."
-                )
-
-            # Build training quantized module
-            # Get the inputs' extreme values
-            x_min, x_max = X.min(axis=0), X.max(axis=0)
-
-            # Build and compile the training quantized module
-            self.training_quantized_module = self._get_training_quantized_module(
-                x_min=x_min,
-                x_max=x_max,
-            )
-
-        y = self.label_encoder.transform(y)
-
-        # mypy
-        assert self.parameters_range is not None
-        assert self.training_quantized_module is not None
-
-        # Key generation
-        if fhe == "execute":  # pragma: no cover
-            assert self.training_quantized_module.fhe_circuit is not None
-            # pylint: disable-next=protected-access
-            if self.training_quantized_module.fhe_circuit.keys._keyset is None:
-                # Key generation
-                if self.verbose:
-                    print("Key Generation...")
-
-                # mypy
-                self.training_quantized_module.fhe_circuit.keygen(force=False)
-
-        # Initialize the weight values
-        if self.warm_start and self._weights_encrypted_fit is not None:
-            weights = self._weights_encrypted_fit
-        else:
-            weights = self.random_number_generator.uniform(
-                low=self.parameters_range[0],
-                high=self.parameters_range[1],
-                size=(1, X.shape[1], 1),
-            )
-
-        # Initialize the bias values
-        if self.fit_intercept:
-            if self.warm_start and self._bias_encrypted_fit is not None:
-                bias = self._bias_encrypted_fit
-            else:
-                bias = self.random_number_generator.uniform(
-                    low=self.parameters_range[0],
-                    high=self.parameters_range[1],
-                    size=(1, 1, 1),
-                )
-        else:
-            bias = numpy.zeros((1, 1, 1))
-
-        # Sample the batches from X and y in the clear
-        X_indexes = numpy.arange(0, len(X))
-        batch_indexes = self.random_number_generator.choice(
-            X_indexes, size=self.batch_size, replace=False
-        )
-        assert isinstance(batch_indexes, numpy.ndarray)
-        X_batch = X[batch_indexes].astype(float).reshape((1, len(batch_indexes), X.shape[1]))
-        y_batch = y[batch_indexes].reshape((1, self.batch_size, 1)).astype(float)
-
-        # Reshape parameters to fit quantized module shape expectation
-        weights = weights.reshape(1, X.shape[1], 1)
-        bias = bias.reshape(1, 1, 1)
-
-        # Train the model over one iteration
-        start = time.time()
-        weights, bias = self.training_quantized_module.forward(  # type: ignore[assignment]
-            X_batch, y_batch, weights, bias, fhe=fhe
-        )
-        if self.verbose:
-            print(f"One iteration took:{time.time() - start:.4f}")
-
-        # Mypy
-        assert isinstance(weights, numpy.ndarray)
-        assert isinstance(bias, numpy.ndarray)
-
-        # Reshape parameters to fit what scikit-learn expects
-        weights = weights.squeeze(0)
-        bias = bias.squeeze(0)  # pylint: disable=no-member
-
-        # Build the underlying scikit-learn model with the computed weight and bias values
-        self.sklearn_model = SklearnSGDClassifier()
-        self.sklearn_model.coef_ = weights.T
-        self.sklearn_model.intercept_ = bias
-
-        # Update the model's Concrete ML parameters
-        self._weights_encrypted_fit = weights
-        self._bias_encrypted_fit = bias
-        self._is_fitted = True
-        self._quantize_model(X)
-
-        return self
-
     def partial_fit(
         self,
         X: numpy.ndarray,
@@ -813,8 +732,26 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         Raises:
             NotImplementedError: If FHE training is disabled.
         """
+        # A partial fit is similar to a fit with a single iteration. The slight differences between
+        # both are handled in the encrypted method when setting `is_partial_fit` to True.
         if self.fit_encrypted:
-            self._fit_encrypted_one_step(X=X, y=y, fhe=fhe)
+            if fhe is None:
+                fhe = "disable"
+                warnings.warn(
+                    "Parameter 'fhe' isn't set while FHE training is enabled.\n"
+                    f"Defaulting to '{fhe=}'",
+                    stacklevel=2,
+                )
+
+            # Make sure the `fhe` parameter is correct
+            assert FheMode.is_valid(fhe), (
+                "`fhe` mode is not supported. Expected one of 'disable' (resp. FheMode.DISABLE), "
+                "'simulate' (resp. FheMode.SIMULATE) or 'execute' (resp. FheMode.EXECUTE). Got "
+                f"{fhe}",
+            )
+
+            self._fit_encrypted(X=X, y=y, fhe=fhe, is_partial_fit=True)
+
         else:
             # Expose and implement partial_fit for clear training
             # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4184

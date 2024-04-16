@@ -36,7 +36,7 @@ def get_blob_data(binary_targets=True, scale_input=False, parameters_range=None)
 
 
 @pytest.mark.parametrize("n_bits, parameter_min_max", [pytest.param(7, 1.0)])
-def test_init_warning_error_raises(n_bits, parameter_min_max):
+def test_init_error_raises(n_bits, parameter_min_max):
     """Test that initializing the model for FHE training using wrong parameters raises errors."""
 
     # Model parameters
@@ -58,6 +58,7 @@ def test_init_warning_error_raises(n_bits, parameter_min_max):
         )
 
     with warnings.catch_warnings():
+
         # FHE training is an experimental feature and a warning is raised each time `fit_encrypted`
         # is set to True
         warnings.filterwarnings("ignore", message="FHE training is an experimental feature.*")
@@ -109,6 +110,7 @@ def test_fit_error_if_non_binary_targets(n_bits, max_iter, parameter_min_max):
     x, y = get_blob_data(binary_targets=False)
 
     with warnings.catch_warnings():
+
         # FHE training is an experimental feature and a warning is raised each time `fit_encrypted`
         # is set to True
         warnings.filterwarnings("ignore", message="FHE training is an experimental feature.*")
@@ -134,7 +136,7 @@ def test_fit_error_if_non_binary_targets(n_bits, max_iter, parameter_min_max):
         model.partial_fit(x, y, fhe="disable")
 
 
-def test_clear_fit_warning_error_raises():
+def test_clear_fit_error_raises():
     """Test that training in clear using wrong parameters raises proper errors."""
 
     # Model parameters
@@ -175,6 +177,7 @@ def test_encrypted_fit_warning_error_raises(n_bits, max_iter, parameter_min_max)
     x, y = get_blob_data(scale_input=True, parameters_range=parameters_range)
 
     with warnings.catch_warnings():
+
         # FHE training is an experimental feature and a warning is raised each time `fit_encrypted`
         # is set to True
         warnings.filterwarnings("ignore", message="FHE training is an experimental feature.*")
@@ -193,6 +196,13 @@ def test_encrypted_fit_warning_error_raises(n_bits, max_iter, parameter_min_max)
         "Defaulting to 'fhe='disable''",
     ):
         model.fit(x, y, fhe=None)
+
+    with pytest.warns(
+        UserWarning,
+        match="Parameter 'fhe' isn't set while FHE training is enabled.\n"
+        "Defaulting to 'fhe='disable''",
+    ):
+        model.partial_fit(x, y, fhe=None)
 
     with pytest.raises(
         NotImplementedError,
@@ -229,8 +239,10 @@ def test_encrypted_fit_warning_error_raises(n_bits, max_iter, parameter_min_max)
             max_iter=max_iter,
             loss="log_loss",
         )
+
     with pytest.warns(UserWarning, match="ONNX Preprocess - Removing mutation from node .*"):
         model.fit(x, y, fhe="disable")
+
     with pytest.raises(NotImplementedError, match=""):
         model.loss = "random"
         model.predict_proba(x)
@@ -248,7 +260,9 @@ def test_encrypted_fit_warning_error_raises(n_bits, max_iter, parameter_min_max)
             max_iter=max_iter,
             loss="log_loss",
         )
+
     assert isinstance(y, numpy.ndarray)
+
     with pytest.raises(
         NotImplementedError,
         match="Parameter 'sample_weight' is currently not supported for FHE training.",
@@ -276,6 +290,7 @@ def test_clear_fit(
     x, y = get_blob_data(binary_targets=binary, scale_input=True, parameters_range=parameters_range)
 
     random_state = numpy.random.randint(0, 2**15)
+
     model = SGDClassifier(
         n_bits=n_bits,
         fit_encrypted=False,
@@ -285,12 +300,124 @@ def test_clear_fit(
         fit_intercept=True,
         loss=loss,
     )
+
     model.fit(x, y)
     model.predict(x)
     model.predict_proba(x)
     model.compile(x)
     model.predict(x, fhe="simulate")
     model.predict_proba(x, fhe="simulate")
+
+
+# pylint: disable=too-many-arguments
+def check_encrypted_fit(
+    x,
+    y,
+    n_bits,
+    random_state,
+    parameters_range,
+    max_iter,
+    fit_intercept,
+    check_accuracy,
+    fhe=None,
+    partial_fit=False,
+    warm_fit=False,
+    random_number_generator=None,
+    init_kwargs=None,
+    fit_kwargs=None,
+):
+    """Check that encrypted fitting works properly."""
+
+    # Fit method cannot be partial or warm type as the same time
+    assert not (partial_fit and warm_fit)
+
+    # fhe mode cannot be set when executing partial or warm fitting, but must be set otherwise
+    if partial_fit or warm_fit:
+        assert fhe is None
+    else:
+        assert fhe is not None
+
+    if init_kwargs is None:
+        init_kwargs = {}
+
+    if fit_kwargs is None:
+        fit_kwargs = {}
+
+    # Initialize the model
+    with warnings.catch_warnings():
+
+        # FHE training is an experimental feature and a warning is raised each time `fit_encrypted`
+        # is set to True
+        warnings.filterwarnings("ignore", message="FHE training is an experimental feature.*")
+
+        model = SGDClassifier(
+            n_bits=n_bits,
+            fit_encrypted=True,
+            random_state=random_state,
+            parameters_range=parameters_range,
+            max_iter=max_iter,
+            fit_intercept=fit_intercept,
+            verbose=True,
+            **init_kwargs,
+        )
+
+        # If a RNG instance if provided, use it to set the new model's one
+        if random_number_generator is not None:
+            model.random_number_generator = random_number_generator
+
+        # We need to lower the p-error to make sure that the test passes
+        model.training_p_error = 1e-15
+
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message="ONNX Preprocess - Removing mutation from node aten::sub_ on block input.*",
+        )
+
+        if partial_fit:
+
+            # Check that we can swap between disable and simulation modes without any impact on the
+            # final training performance
+            for index in range(max_iter):
+                if index % 2 == 0:
+                    model.partial_fit(x, y, fhe="disable")
+                else:
+                    model.partial_fit(x, y, fhe="simulate")
+
+        elif warm_fit:
+
+            # Check that we can swap between disable and simulation modes without any impact on the
+            # final training performance
+            half_iter = max_iter // 2
+            model.max_iter = half_iter
+            model.fit(x, y, fhe="disable")
+
+            other_iter = max_iter - half_iter
+            model.max_iter = other_iter
+            model.fit(x, y, fhe="simulate")
+
+            assert half_iter + other_iter == max_iter
+
+        else:
+            # Fit the model
+            model.fit(x, y, fhe=fhe, **fit_kwargs)
+
+    y_pred_class = model.predict(x)
+    y_pred_proba = model.predict_proba(x)
+
+    weights = model._weights_encrypted_fit.copy()  # pylint: disable=protected-access
+
+    bias = model._bias_encrypted_fit.copy()  # pylint: disable=protected-access
+
+    if not fit_intercept:
+        assert bias == numpy.zeros(
+            (1, 1)
+        ), "When the model is fitted without bias, the bias term should only be made of zeros."
+
+    # Check that we overfit properly a linearly separable dataset
+    check_accuracy(y, y_pred_class)
+
+    return weights, bias, y_pred_proba, y_pred_class, model.random_number_generator
 
 
 # pylint: disable=too-many-statements,protected-access,too-many-locals
@@ -310,242 +437,145 @@ def test_encrypted_fit_coherence(
     x, y = get_blob_data(scale_input=True, parameters_range=parameters_range)
     y = y + label_offset
 
-    # Initialize the model
-    with warnings.catch_warnings():
-        # FHE training is an experimental feature and a warning is raised each time `fit_encrypted`
-        # is set to True
-        warnings.filterwarnings("ignore", message="FHE training is an experimental feature.*")
-
-        model_disable = SGDClassifier(
-            n_bits=n_bits,
-            fit_encrypted=True,
-            random_state=random_state,
-            parameters_range=parameters_range,
-            max_iter=max_iter,
-            early_stopping=False,
-            fit_intercept=fit_intercept,
-            verbose=True,
+    weights_disable, bias_disable, y_pred_proba_disable, y_pred_class_disable, _ = (
+        check_encrypted_fit(
+            x,
+            y,
+            n_bits,
+            random_state,
+            parameters_range,
+            max_iter,
+            fit_intercept,
+            check_accuracy,
+            fhe="disable",
         )
-        model_disable.training_p_error = 1e-15
+    )
 
-    with warnings.catch_warnings():
-        warnings.filterwarnings(
-            "ignore",
-            message="ONNX Preprocess - Removing mutation from node aten::sub_ on block input.*",
+    weights_simulated, bias_simulated, y_pred_proba_simulated, y_pred_class_simulated, _ = (
+        check_encrypted_fit(
+            x,
+            y,
+            n_bits,
+            random_state,
+            parameters_range,
+            max_iter,
+            fit_intercept,
+            check_accuracy,
+            fhe="simulate",
         )
-
-        # Fit the model in the clear
-        model_disable.fit(x, y, fhe="disable")
-
-    y_pred_class_disable = model_disable.predict(x)
-    y_pred_proba_disable = model_disable.predict_proba(x)
-    weights_disable = (
-        model_disable._weights_encrypted_fit.copy()
-    )  # pylint: disable=protected-access
-    bias_disable = model_disable._bias_encrypted_fit.copy()  # pylint: disable=protected-access
-
-    # Check that we overfit properly a linearly separable dataset
-    check_accuracy(y, y_pred_class_disable, threshold=0.95)
-
-    # We need to re-create an object to avoid any issue with random state
-    # Initialize the model
-    with warnings.catch_warnings():
-        # FHE training is an experimental feature and a warning is raised each time `fit_encrypted`
-        # is set to True
-        warnings.filterwarnings("ignore", message="FHE training is an experimental feature.*")
-        model_simulate = SGDClassifier(
-            n_bits=n_bits,
-            fit_encrypted=True,
-            random_state=random_state,
-            parameters_range=parameters_range,
-            max_iter=max_iter,
-            early_stopping=False,
-            fit_intercept=fit_intercept,
-            verbose=True,
-        )
-        # We need to lower the p-error to make sure that the test passes
-        model_simulate.training_p_error = 1e-15
-
-    with warnings.catch_warnings():
-        warnings.filterwarnings(
-            "ignore",
-            message="ONNX Preprocess - Removing mutation from node aten::sub_ on block input.*",
-        )
-
-        # Fit the model with simulation
-        model_simulate.fit(x, y, fhe="simulate")
-
-    # We need to re-create an object to avoid any issue with random state
-    # Initialize the model
-    with warnings.catch_warnings():
-        # FHE training is an experimental feature and a warning is raised each time `fit_encrypted`
-        # is set to True
-        warnings.filterwarnings("ignore", message="FHE training is an experimental feature.*")
-        model_early_break = SGDClassifier(
-            n_bits=n_bits,
-            fit_encrypted=True,
-            random_state=random_state,
-            parameters_range=parameters_range,
-            max_iter=max_iter,
-            early_stopping=True,
-            tol=1e100,  # Crazy high tolerance
-            fit_intercept=fit_intercept,
-            verbose=True,
-        )
-        model_early_break.training_p_error = 1e-15
-
-    # We don't have any way to detect early break
-    with warnings.catch_warnings():
-        warnings.filterwarnings(
-            "ignore",
-            message="ONNX Preprocess - Removing mutation from node aten::sub_ on block input.*",
-        )
-
-        # Fit the model with simulation
-        model_early_break.fit(x, y, fhe="simulate")
-
-    y_pred_class_simulate = model_simulate.predict(x)
-    y_pred_proba_simulate = model_simulate.predict_proba(x)
-
-    weights_simulate = (
-        model_simulate._weights_encrypted_fit.copy()
-    )  # pylint: disable=protected-access
-    bias_simulate = model_simulate._bias_encrypted_fit.copy()  # pylint: disable=protected-access
-
-    # Check that we overfit properly a linearly separable dataset
-    check_accuracy(y, y_pred_class_simulate, threshold=0.95)
+    )
 
     # Make sure weight, bias and prediction values are identical between clear and
     # simulated training
-    assert array_allclose_and_same_shape(weights_simulate, weights_disable)
-    assert array_allclose_and_same_shape(bias_simulate, bias_disable)
-    assert array_allclose_and_same_shape(y_pred_proba_simulate, y_pred_proba_disable)
-    assert array_allclose_and_same_shape(y_pred_class_simulate, y_pred_class_disable)
+    assert array_allclose_and_same_shape(weights_simulated, weights_disable)
+    assert array_allclose_and_same_shape(bias_simulated, bias_disable)
+    assert array_allclose_and_same_shape(y_pred_proba_simulated, y_pred_proba_disable)
+    assert array_allclose_and_same_shape(y_pred_class_simulated, y_pred_class_disable)
 
-    # Initialize a model for partial fitting
-    with warnings.catch_warnings():
-        # FHE training is an experimental feature and a warning is raised each time `fit_encrypted`
-        # is set to True
-        warnings.filterwarnings("ignore", message="FHE training is an experimental feature.*")
+    # Define early break parameters, with a very high tolerance
+    early_break_kwargs = {"early_stopping": True, "tol": 1e100}
 
-        model_partial = SGDClassifier(
-            n_bits=n_bits,
-            fit_encrypted=True,
-            random_state=random_state,
-            parameters_range=parameters_range,
-            max_iter=max_iter,
-            warm_start=True,
-            early_stopping=False,
-            fit_intercept=fit_intercept,
-            verbose=True,
+    # We don't have any way to detect early break
+    check_encrypted_fit(
+        x,
+        y,
+        n_bits,
+        random_state,
+        parameters_range,
+        max_iter,
+        fit_intercept,
+        check_accuracy,
+        fhe="simulate",
+        init_kwargs=early_break_kwargs,
+    )
+
+    weights_partial, bias_partial, y_pred_proba_partial, y_pred_class_partial, _ = (
+        check_encrypted_fit(
+            x,
+            y,
+            n_bits,
+            random_state,
+            parameters_range,
+            max_iter,
+            fit_intercept,
+            check_accuracy,
+            partial_fit=True,
         )
-        # We need to lower the p-error to make sure that the test passes
-        model_partial.training_p_error = 1e-15
+    )
 
-    with warnings.catch_warnings():
-        warnings.filterwarnings(
-            "ignore",
-            message="ONNX Preprocess - Removing mutation from node aten::sub_ on block input.*",
-        )
-
-        for index in range(max_iter):
-            # Check that we can swap between modes without any impact on
-            # the final training performance
-            if index % 2 == 0:
-                model_partial.partial_fit(x, y, fhe="disable")
-            else:
-                model_partial.partial_fit(x, y, fhe="simulate")
-
-    y_pred_class_partial = model_partial.predict(x)
-    y_pred_proba_partial = model_partial.predict_proba(x)
-
-    # pylint: disable-next=protected-access
-    weights_partial = model_partial._weights_encrypted_fit.copy()
-    bias_partial = model_partial._bias_encrypted_fit.copy()  # pylint: disable=protected-access
-
-    # Check that we overfit properly a linearly separable dataset
-    check_accuracy(y, y_pred_class_partial, threshold=0.95)
-
-    # Initialize another model for partial fitting
-    with warnings.catch_warnings():
-        # FHE training is an experimental feature and a warning is raised each time `fit_encrypted`
-        # is set to True
-        warnings.filterwarnings("ignore", message="FHE training is an experimental feature.*")
-
-        model_partial_2 = SGDClassifier(
-            n_bits=n_bits,
-            fit_encrypted=True,
-            random_state=random_state,
-            parameters_range=parameters_range,
-            max_iter=max_iter,
-            warm_start=True,
-            early_stopping=False,
-            fit_intercept=fit_intercept,
-            verbose=True,
-        )
-        # We need to lower the p-error to make sure that the test passes
-        model_partial_2.training_p_error = 1e-15
-
-    with warnings.catch_warnings():
-        warnings.filterwarnings(
-            "ignore",
-            message="ONNX Preprocess - Removing mutation from node aten::sub_ on block input.*",
-        )
-        half_iter = max_iter // 2
-        other_iter = max_iter - half_iter
-        model_partial_2.max_iter = half_iter
-        model_partial_2.fit(x, y, fhe="disable")
-        model_partial_2.max_iter = other_iter
-        model_partial_2.fit(x, y, fhe="simulate")
-        assert half_iter + other_iter == max_iter
-
-    # pylint: disable-next=protected-access
-    weights_partial_2 = model_partial_2._weights_encrypted_fit.copy()
-    bias_partial_2 = model_partial_2._bias_encrypted_fit.copy()  # pylint: disable=protected-access
-
-    # Make sure weight, bias and prediction values are identical between clear and
-    # partial clear training
+    # Make sure weight, bias and prediction values are identical between clear and partial fitting
     assert array_allclose_and_same_shape(weights_disable, weights_partial)
     assert array_allclose_and_same_shape(bias_disable, bias_partial)
-    assert array_allclose_and_same_shape(weights_partial_2, weights_partial)
-    assert array_allclose_and_same_shape(bias_partial_2, bias_partial)
     assert array_allclose_and_same_shape(y_pred_proba_disable, y_pred_proba_partial)
     assert array_allclose_and_same_shape(y_pred_class_disable, y_pred_class_partial)
 
-    if not fit_intercept:
-        assert bias_partial == numpy.zeros((1, 1))
-        assert bias_disable == numpy.zeros((1, 1))
-        assert bias_simulate == numpy.zeros((1, 1))
+    # Define warm fitting parameters
+    warm_fit_init_kwargs = {"warm_start": True}
 
-    # Initialize a model for fitting
-    with warnings.catch_warnings():
-        # FHE training is an experimental feature and a warning is raised each time `fit_encrypted`
-        # is set to True
-        warnings.filterwarnings("ignore", message="FHE training is an experimental feature.*")
+    weights_warm, bias_warm, y_pred_proba_warm, y_pred_class_warm, _ = check_encrypted_fit(
+        x,
+        y,
+        n_bits,
+        random_state,
+        parameters_range,
+        max_iter,
+        fit_intercept,
+        check_accuracy,
+        warm_fit=True,
+        init_kwargs=warm_fit_init_kwargs,
+    )
 
-        model_from_another = SGDClassifier(
-            n_bits=n_bits,
-            fit_encrypted=True,
-            random_state=random_state,
-            parameters_range=parameters_range,
-            max_iter=max_iter,
-            warm_start=True,
-            early_stopping=False,
-            fit_intercept=fit_intercept,
-            verbose=True,
-        )
-        model_from_another.training_p_error = 1e-15
+    # Make sure weight, bias and prediction values are identical between clear and warm fitting
+    assert array_allclose_and_same_shape(weights_disable, weights_warm)
+    assert array_allclose_and_same_shape(bias_disable, bias_warm)
+    assert array_allclose_and_same_shape(y_pred_proba_disable, y_pred_proba_warm)
+    assert array_allclose_and_same_shape(y_pred_class_disable, y_pred_class_warm)
 
-    with warnings.catch_warnings():
-        warnings.filterwarnings(
-            "ignore",
-            message="ONNX Preprocess - Removing mutation from node aten::sub_ on block input.*",
-        )
+    first_iterations = max_iter // 2
 
-        model_from_another.fit(
+    # Fit the model for max_iter // 2 iterations and retrieved the weight/bias values, as well as
+    # the RNG object
+    weights_coef_init, bias_coef_init, _, _, rng_coef_init = check_encrypted_fit(
+        x,
+        y,
+        n_bits,
+        random_state,
+        parameters_range,
+        first_iterations,
+        fit_intercept,
+        check_accuracy,
+        fhe="simulate",
+    )
+
+    last_iterations = max_iter - first_iterations
+
+    # Define coef parameters
+    coef_init_fit_kwargs = {
+        "coef_init": weights_coef_init,
+        "intercept_init": bias_coef_init,
+    }
+
+    # Fit the model for the remaining iterations starting at the previous weight/bias values. It is
+    # necessary to provide the RNG object as well in order to keep data shuffle consistent
+    weights_coef_init, bias_coef_init, y_pred_proba_coef_init, y_pred_class_coef_init, _ = (
+        check_encrypted_fit(
             x,
             y,
-            fhe="disable",
-            coef_init=model_partial.coef_,
-            intercept_init=model_partial.intercept_,
+            n_bits,
+            random_state,
+            parameters_range,
+            last_iterations,
+            fit_intercept,
+            check_accuracy,
+            fhe="simulate",
+            random_number_generator=rng_coef_init,
+            fit_kwargs=coef_init_fit_kwargs,
         )
+    )
+
+    # Make sure weight, bias and prediction values are identical between clear fitting with and
+    # without using initial weight/bias values
+    assert array_allclose_and_same_shape(weights_disable, weights_coef_init)
+    assert array_allclose_and_same_shape(bias_disable, bias_coef_init)
+    assert array_allclose_and_same_shape(y_pred_proba_disable, y_pred_proba_coef_init)
+    assert array_allclose_and_same_shape(y_pred_class_disable, y_pred_class_coef_init)
