@@ -1,4 +1,5 @@
 """Implements the conversion of a tree model to a numpy function."""
+
 import math
 import warnings
 from typing import Callable, List, Optional, Tuple

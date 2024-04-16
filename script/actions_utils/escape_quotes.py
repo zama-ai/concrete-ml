@@ -1,4 +1,5 @@
 """Script to escape double quotes within brackets or curly braces."""
+
 import argparse
 
 parser = argparse.ArgumentParser(description="Escape double quotes in a string")

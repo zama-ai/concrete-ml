@@ -1,4 +1,5 @@
 """Define the framework used for managing keys (encrypt, decrypt) for encrypted data-frames."""
+
 from pathlib import Path
 from typing import Optional, Union
 

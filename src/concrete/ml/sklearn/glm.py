@@ -1,4 +1,5 @@
 """Implement sklearn's Generalized Linear Models (GLM)."""
+
 from __future__ import annotations
 
 from abc import abstractmethod

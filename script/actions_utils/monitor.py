@@ -1,4 +1,5 @@
 """Module to generate figure of evolution of Concrete ML-CI time on main for last 4 weeks."""
+
 import argparse
 import datetime
 import json

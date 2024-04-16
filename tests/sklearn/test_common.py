@@ -1,4 +1,5 @@
 """Tests common to all sklearn models."""
+
 import inspect
 import warnings
 

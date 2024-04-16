@@ -1,4 +1,5 @@
 """Test Neural Networks compilations"""
+
 import numpy
 import onnx
 import pytest

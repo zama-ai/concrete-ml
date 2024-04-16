@@ -1,4 +1,5 @@
 """Load functions for serialization."""
+
 import json
 from typing import IO, Any, Union
 

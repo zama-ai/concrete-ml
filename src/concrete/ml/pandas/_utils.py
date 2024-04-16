@@ -1,4 +1,5 @@
 """Define utility functions for encrypted data-frames."""
+
 import functools
 from typing import List, Optional, Tuple, Union
 

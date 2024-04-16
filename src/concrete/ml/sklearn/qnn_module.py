@@ -1,4 +1,5 @@
 """Sparse Quantized Neural Network torch module."""
+
 from typing import Set, Type
 
 import brevitas.nn as qnn
@@ -112,9 +113,9 @@ class SparseQuantNeuralNetwork(nn.Module):
                 weight_narrow_range=quant_narrow,
                 narrow_range=quant_narrow,
                 signed=quant_signed,
-                weight_quant=Int8WeightPerTensorPoT
-                if power_of_two_scaling
-                else Int8WeightPerTensorFloat,
+                weight_quant=(
+                    Int8WeightPerTensorPoT if power_of_two_scaling else Int8WeightPerTensorFloat
+                ),
             )
 
             self.features.add_module(quant_name, quantizer)

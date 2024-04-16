@@ -1,4 +1,5 @@
 """Provide some variants of assert."""
+
 from typing import Type
 
 

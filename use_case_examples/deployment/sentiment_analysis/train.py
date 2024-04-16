@@ -1,4 +1,5 @@
 """Copy-pasted from use_case_examples/sentiment_analysis_with_transformer"""
+
 import os
 
 os.environ["TRANSFORMERS_CACHE"] = "./hf_cache"

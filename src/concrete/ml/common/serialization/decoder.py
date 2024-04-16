@@ -1,4 +1,5 @@
 """Custom decoder for serialization."""
+
 import inspect
 import json
 from typing import Any, Dict, Type

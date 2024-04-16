@@ -1,4 +1,5 @@
 """QuantizedModule API."""
+
 import copy
 import re
 from functools import partial
@@ -145,7 +146,7 @@ class QuantizedModule:
         to copy the inputs with a PBS to avoid it.
         """
         assert self.quant_layers_dict is not None
-        for (_, quantized_op) in self.quant_layers_dict.values():
+        for _, quantized_op in self.quant_layers_dict.values():
             if isinstance(quantized_op, QuantizedReduceSum):
                 quantized_op.copy_inputs = True
 
@@ -369,10 +370,10 @@ class QuantizedModule:
             debug_value_tracker: Dict[
                 str, Dict[Union[int, str], Optional[ONNXOpInputOutputType]]
             ] = {}
-            for (_, layer) in self.quant_layers_dict.values():
+            for _, layer in self.quant_layers_dict.values():
                 layer.debug_value_tracker = debug_value_tracker
             q_y_pred = self.quantized_forward(*q_x, fhe="disable")
-            for (_, layer) in self.quant_layers_dict.values():
+            for _, layer in self.quant_layers_dict.values():
                 layer.debug_value_tracker = None
             # De-quantize the output predicted values
             y_pred = self.dequantize_output(*to_tuple(q_y_pred))
@@ -767,7 +768,7 @@ class QuantizedModule:
             return None
 
         op_names_to_report: Dict[str, Dict[str, Union[Tuple[int, ...], int]]] = {}
-        for (_, op_inst) in self.quant_layers_dict.values():
+        for _, op_inst in self.quant_layers_dict.values():
             # Get the value range of this tag and all its subtags
             # The potential tags for this op start with the op instance name
             # and are, sometimes, followed by a subtag starting with a period:

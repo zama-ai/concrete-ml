@@ -1,4 +1,5 @@
 """Optimization passes for QuantizedModules."""
+
 from collections import defaultdict
 from typing import DefaultDict, Dict, List, Optional, Tuple
 
@@ -101,7 +102,7 @@ class PowerOfTwoScalingRoundPBSAdapter:
         # Initialize the list of predecessors with tensors that are graph inputs
         predecessors: PredecessorsType = defaultdict(list)
 
-        for (node_inputs, node_op) in self._qmodule.quant_layers_dict.values():
+        for node_inputs, node_op in self._qmodule.quant_layers_dict.values():
             # The first input node contains the encrypted data
             enc_input_node = node_inputs[0]
 
@@ -168,7 +169,7 @@ class PowerOfTwoScalingRoundPBSAdapter:
         valid_paths: PatternDict = {}
 
         # pylint: disable-next=too-many-nested-blocks
-        for (_, node_op) in self._qmodule.quant_layers_dict.values():
+        for _, node_op in self._qmodule.quant_layers_dict.values():
             # Only work with supported nodes that have a single
             # encrypted input (not supporting enc x enc matmul)
             if (

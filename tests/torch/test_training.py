@@ -1,4 +1,5 @@
 """Tests for FHE training."""
+
 import numpy
 import torch
 from sklearn import datasets

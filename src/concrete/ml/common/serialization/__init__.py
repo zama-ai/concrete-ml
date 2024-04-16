@@ -1,4 +1,5 @@
 """Serialization module."""
+
 import os
 
 from torch.nn.modules import activation

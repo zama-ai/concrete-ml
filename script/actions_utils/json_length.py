@@ -1,4 +1,5 @@
 """Script to evaluate the length of a json file"""
+
 import argparse
 import json
 from pathlib import Path

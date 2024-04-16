@@ -3,6 +3,7 @@
 Here we test the custom dump(s)/load(s) functions for all supported objects. We also check that
 serializing unsupported object types properly throws an error.
 """
+
 import inspect
 import io
 import warnings

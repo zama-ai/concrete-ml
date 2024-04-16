@@ -1,4 +1,5 @@
 """Public API for encrypted data-frames."""
+
 from pathlib import Path
 from typing import Hashable, Optional, Sequence, Tuple, Union
 

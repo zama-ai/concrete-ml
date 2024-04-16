@@ -1,4 +1,5 @@
 """Tests for the quantized array/tensors."""
+
 import numpy
 import pytest
 

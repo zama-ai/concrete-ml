@@ -50,6 +50,7 @@ We stop the search when the maximum number of iterations is reached.
 
 If we don't reach the convergence, a user warning is raised.
 """
+
 import warnings
 from collections import OrderedDict
 from pathlib import Path
@@ -478,9 +479,11 @@ class BinarySearch:
             self.history.append(
                 OrderedDict(
                     {
-                        k: sum((d[k] for d in simulation_data), [])
-                        if isinstance(simulation_data[0][k], list)
-                        else simulation_data[0][k]
+                        k: (
+                            sum((d[k] for d in simulation_data), [])
+                            if isinstance(simulation_data[0][k], list)
+                            else simulation_data[0][k]
+                        )
                         for k in simulation_data[0]
                     }
                 )

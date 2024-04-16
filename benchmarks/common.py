@@ -274,7 +274,7 @@ def run_and_report_classification_metrics(
             (f1_score, "f1", "F1Score"),
         ]
 
-    for (metric, metric_id, metric_label) in metric_info:
+    for metric, metric_id, metric_label in metric_info:
         run_and_report_metric(
             y_gt,
             y_pred,
@@ -288,7 +288,7 @@ def run_and_report_regression_metrics(y_gt, y_pred, metric_id_prefix, metric_lab
     """Run several metrics and report results to progress tracker with computed name and id"""
 
     metric_info = [(r2_score, "r2_score", "R2Score"), (mean_squared_error, "MSE", "MSE")]
-    for (metric, metric_id, metric_label) in metric_info:
+    for metric, metric_id, metric_label in metric_info:
         run_and_report_metric(
             y_gt,
             y_pred,
@@ -767,6 +767,7 @@ def benchmark_name_generator(
 # - Bijection between both functions
 # - The functions support all models
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/1866
+
 
 # pylint: disable-next=too-many-branches, redefined-outer-name
 def benchmark_name_to_config(

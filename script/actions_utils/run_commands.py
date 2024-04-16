@@ -1,4 +1,5 @@
 """Script to run commands from a json file"""
+
 import argparse
 import json
 import subprocess

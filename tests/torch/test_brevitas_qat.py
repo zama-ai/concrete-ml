@@ -532,7 +532,7 @@ def test_brevitas_power_of_two(
     pot_should_be_applied = not manual_rounding and power_of_two
     # Count the number of patterns that were optimized with roundPBS
     num_round_pbs_layers = 0
-    for (_, node_op) in quantized_module.quant_layers_dict.values():
+    for _, node_op in quantized_module.quant_layers_dict.values():
         if isinstance(node_op, QuantizedMixingOp):
             num_round_pbs_layers += 1 if node_op.rounding_threshold_bits is not None else 0
             if pot_should_be_applied:
@@ -590,7 +590,7 @@ def test_brevitas_power_of_two(
     # Remove rounding in the network to perform inference without the optimization.
     # We expect a network that was optimized with the power-of-two adapter
     # to be exactly correct to the non-optimized one
-    for (_, node_op) in quantized_module.quant_layers_dict.values():
+    for _, node_op in quantized_module.quant_layers_dict.values():
         if isinstance(node_op, QuantizedMixingOp):
             node_op.rounding_threshold_bits = None
             node_op.lsbs_to_remove = None

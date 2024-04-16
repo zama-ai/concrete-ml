@@ -1,4 +1,5 @@
 """Check that headers linked do indeed exist in target markdown files"""
+
 import os
 from pathlib import Path
 

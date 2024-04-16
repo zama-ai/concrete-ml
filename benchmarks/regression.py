@@ -109,7 +109,7 @@ def main():
     # Listing
     if args.long_list or args.short_list:
         already_done_models = {}
-        for (dataset_i, model_class_i, config_i) in all_tasks:
+        for dataset_i, model_class_i, config_i in all_tasks:
             config_n = json.dumps(config_i).replace("'", '"')
             model_name_i = model_class_i.__name__
 

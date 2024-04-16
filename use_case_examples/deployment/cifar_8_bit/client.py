@@ -8,6 +8,7 @@ This script does the following:
     - Collect the data and decrypt it
     - De-quantize the decrypted results
 """
+
 import io
 import os
 import sys

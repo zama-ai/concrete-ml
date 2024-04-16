@@ -1,4 +1,5 @@
 """Implement Support Vector Machine."""
+
 from typing import Any, Dict
 
 import sklearn.svm

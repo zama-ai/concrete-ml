@@ -1,4 +1,5 @@
 """Test pytest utility functions."""
+
 import numpy
 import pytest
 from numpy.random import RandomState

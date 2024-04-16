@@ -1,4 +1,5 @@
 """Load torch model, compiles it to FHE and exports it"""
+
 import sys
 import time
 from pathlib import Path

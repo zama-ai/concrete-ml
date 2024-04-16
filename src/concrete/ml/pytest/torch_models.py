@@ -867,9 +867,7 @@ class SimpleQAT(nn.Module):
         n_bits_weights = n_bits
 
         # Generate the pattern 0, 1, ..., 2^N-1, 0, 1, .. 2^N-1, 0, 1..
-        all_weights = numpy.mod(
-            numpy.arange(numpy.prod(self.fc1.weight.shape)), 2**n_bits_weights
-        )
+        all_weights = numpy.mod(numpy.arange(numpy.prod(self.fc1.weight.shape)), 2**n_bits_weights)
 
         # Shuffle the pattern and reshape to weight shape
         numpy.random.shuffle(all_weights)

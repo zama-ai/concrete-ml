@@ -1,4 +1,5 @@
 """Implement RandomForest models."""
+
 from typing import Any, Dict, Union
 
 import numpy

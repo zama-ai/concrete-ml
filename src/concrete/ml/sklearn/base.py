@@ -1,4 +1,5 @@
 """Base classes for all estimators."""
+
 from __future__ import annotations
 
 import copy

@@ -1,4 +1,5 @@
 """Tests for the quantized module."""
+
 from functools import partial
 
 import numpy
