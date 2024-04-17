@@ -27,12 +27,23 @@ SECTION_HEADERS = {
 
 
 def no_edit_message(indent):
-    """Generates no edit message with appropriate indentation."""
+    """Generates a no edit message with appropriate indentation.
+
+    Args:
+        indent (str): The indentation to apply before the message.
+
+    Returns:
+        str: The formatted no edit message.
+    """
     return indent + "# --- do not edit, auto generated part by `make refresh_use_cases_list` ---\n"
 
 
 def find_use_cases_with_makefile():
-    """Finds directories containing a Makefile, indicating a valid use case."""
+    """Finds directories containing a Makefile, indicating a valid use case.
+
+    Returns:
+        list[Path]: A list of paths to directories with a Makefile.
+    """
     use_case_paths = []
     for use_cases_dir in USE_CASES_DIRS:
         for use_cases_path in use_cases_dir.rglob("*"):
@@ -44,7 +55,18 @@ def find_use_cases_with_makefile():
 
 
 def update_section(lines, start_header, end_header, new_content, indent):
-    """Updates specific sections of the file with new content between start and end headers."""
+    """Updates specific sections of the file with new content between start and end headers.
+
+    Args:
+        lines (list[str]): The original lines of the file.
+        start_header (str): The starting header after which content should be updated.
+        end_header (str): The ending header before which content should be updated.
+        new_content (list[str]): The new content to insert between the headers.
+        indent (str): The indentation used for formatting the new content.
+
+    Returns:
+        list[str]: The updated list of lines.
+    """
     new_lines = []
     in_update_section = False
 
@@ -64,7 +86,12 @@ def update_section(lines, start_header, end_header, new_content, indent):
 
 
 def main(file_to_update, check_mode=False):
-    """Updates or checks the specified file with the current list of use cases and their paths."""
+    """Updates or checks the specified file with the current list of use cases and their paths.
+
+    Args:
+        file_to_update (str): The path to the file to be updated.
+        check_mode (bool): If True, checks the file for needed updates without writing changes.
+    """
     use_case_paths = find_use_cases_with_makefile()
 
     with open(file_to_update, "r", encoding="utf-8") as file:
