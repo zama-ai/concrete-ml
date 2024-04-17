@@ -1,4 +1,5 @@
 """Sanity checks, to be sure that our package is usable"""
+
 import argparse
 import random
 import shutil

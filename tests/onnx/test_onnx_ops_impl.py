@@ -1,4 +1,5 @@
 """Test custom assert functions."""
+
 import numpy
 import pytest
 

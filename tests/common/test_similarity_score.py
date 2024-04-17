@@ -1,4 +1,5 @@
 """Tests for the r2 score test """
+
 import numpy
 import pytest
 

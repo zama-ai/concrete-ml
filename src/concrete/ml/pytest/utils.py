@@ -1,4 +1,5 @@
 """Common functions or lists for test files, which can't be put in fixtures."""
+
 import copy
 import io
 from functools import partial

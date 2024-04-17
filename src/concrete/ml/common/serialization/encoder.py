@@ -1,4 +1,5 @@
 """Custom encoder for serialization."""
+
 import inspect
 import json
 from json.encoder import _make_iterencode  # type: ignore[attr-defined]

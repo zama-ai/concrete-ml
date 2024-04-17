@@ -1,4 +1,5 @@
 """Test custom assert functions."""
+
 import pytest
 
 from concrete.ml.common.debugging.custom_assert import assert_false, assert_not_reached, assert_true

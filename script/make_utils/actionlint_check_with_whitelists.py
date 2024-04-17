@@ -1,4 +1,5 @@
 """ Check an actionlint log against some whitelists """
+
 import sys
 from typing import Set
 

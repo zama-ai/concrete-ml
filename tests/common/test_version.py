@@ -1,4 +1,5 @@
 """Testing the version of the package"""
+
 import concrete
 from concrete import ml
 

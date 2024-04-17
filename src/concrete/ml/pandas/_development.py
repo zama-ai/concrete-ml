@@ -1,4 +1,5 @@
 """Define development methods for generating client/server files."""
+
 import itertools
 from functools import partial
 from pathlib import Path

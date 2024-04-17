@@ -1,4 +1,5 @@
 """Update list of supported functions in the doc."""
+
 import argparse
 from pathlib import Path
 

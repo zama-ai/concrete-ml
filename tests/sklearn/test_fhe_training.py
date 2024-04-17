@@ -1,4 +1,5 @@
 """Tests training in FHE."""
+
 import re
 import warnings
 

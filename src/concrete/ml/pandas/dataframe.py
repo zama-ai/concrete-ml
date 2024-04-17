@@ -1,4 +1,5 @@
 """Define the encrypted data-frame framework."""
+
 import json
 from pathlib import Path
 from typing import Dict, Hashable, List, Optional, Sequence, Tuple, Union

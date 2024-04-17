@@ -1,4 +1,5 @@
 """Implements XGBoost models."""
+
 import platform
 import warnings
 from typing import Any, Dict, List, Optional, Tuple, Union

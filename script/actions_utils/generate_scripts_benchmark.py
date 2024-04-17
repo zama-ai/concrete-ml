@@ -1,4 +1,5 @@
 """Script to generate the list of commands to run all benchmarks"""
+
 import argparse
 import datetime
 import json

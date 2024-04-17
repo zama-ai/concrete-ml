@@ -1,4 +1,5 @@
 """Quantization utilities for a numpy array/tensor."""
+
 # pylint: disable=too-many-lines
 from __future__ import annotations
 

@@ -886,7 +886,7 @@ def main():
     if args.long_list or args.short_list:
         # Print the short or long lists if asked and stop
         printed_models = set()
-        for (dataset, cnn_class, config) in all_tasks:
+        for dataset, cnn_class, config in all_tasks:
             configs = json.dumps(config).replace("'", '"')
             cnn_name = cnn_class.__name__
 

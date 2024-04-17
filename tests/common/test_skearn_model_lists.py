@@ -1,4 +1,5 @@
 """Tests lists of models in Concrete ML."""
+
 from concrete.ml.pytest.utils import MODELS_AND_DATASETS, UNIQUE_MODELS_AND_DATASETS
 from concrete.ml.sklearn import (
     _get_sklearn_all_models,

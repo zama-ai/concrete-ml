@@ -1,4 +1,5 @@
 """Update the list of available notebooks for the refresh_one_notebook GitHib action."""
+
 import argparse
 from pathlib import Path
 

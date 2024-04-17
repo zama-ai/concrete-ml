@@ -237,14 +237,14 @@ class QuantizedOp:
         metadata["_input_idx_to_params_name"] = self._input_idx_to_params_name
         metadata["_params_that_are_onnx_inputs"] = self._params_that_are_onnx_inputs
         metadata["_params_that_are_onnx_var_inputs"] = self._params_that_are_onnx_var_inputs
-        metadata[
-            "_params_that_are_required_onnx_inputs"
-        ] = self._params_that_are_required_onnx_inputs
+        metadata["_params_that_are_required_onnx_inputs"] = (
+            self._params_that_are_required_onnx_inputs
+        )
         metadata["_has_attr"] = self._has_attr
         metadata["_inputs_not_quantized"] = self._inputs_not_quantized
-        metadata[
-            "quantize_inputs_with_model_outputs_precision"
-        ] = self.quantize_inputs_with_model_outputs_precision
+        metadata["quantize_inputs_with_model_outputs_precision"] = (
+            self.quantize_inputs_with_model_outputs_precision
+        )
         metadata["produces_graph_output"] = self.produces_graph_output
         metadata["produces_raw_output"] = self.produces_raw_output
         metadata["error_tracker"] = self.error_tracker

@@ -1,4 +1,5 @@
 """PyTest configuration file."""
+
 import hashlib
 import json
 import random

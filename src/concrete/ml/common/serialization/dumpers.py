@@ -1,4 +1,5 @@
 """Dump functions for serialization."""
+
 import json
 from typing import Any, TextIO
 

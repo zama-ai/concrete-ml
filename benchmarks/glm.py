@@ -113,14 +113,20 @@ def get_preprocessor() -> ColumnTransformer:
 
 def get_train_test_data(data: pandas.DataFrame) -> Tuple[pandas.DataFrame, pandas.DataFrame]:
     """Split the data into a train and test set."""
-    train_data, test_data, = train_test_split(
+    (
+        train_data,
+        test_data,
+    ) = train_test_split(
         data,
         test_size=0.2,
         random_state=0,
     )
 
     # The test set is reduced for faster FHE runs.
-    _, test_data, = train_test_split(
+    (
+        _,
+        test_data,
+    ) = train_test_split(
         test_data,
         test_size=500,
         random_state=0,

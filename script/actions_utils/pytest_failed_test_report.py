@@ -1,4 +1,5 @@
 """Pytest JSON report on failed tests utils."""
+
 import argparse
 import json
 from pathlib import Path

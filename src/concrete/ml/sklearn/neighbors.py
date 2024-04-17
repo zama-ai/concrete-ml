@@ -1,4 +1,5 @@
 """Implement sklearn neighbors model."""
+
 from typing import Any, Dict, Union
 
 import numpy

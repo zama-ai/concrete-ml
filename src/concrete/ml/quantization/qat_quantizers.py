@@ -1,4 +1,5 @@
 """Custom Quantization Aware Training Brevitas quantizers."""
+
 from brevitas.quant.scaled_int import (
     IntQuant,
     MaxStatsScaling,

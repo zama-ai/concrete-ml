@@ -1,4 +1,5 @@
 """Check linked github issues states"""
+
 import json
 import re
 import subprocess

@@ -1,4 +1,5 @@
 """Test file for FHE simulation specific tests."""
+
 import numpy
 from concrete.fhe.compilation.circuit import Circuit
 from concrete.fhe.compilation.compiler import Compiler
