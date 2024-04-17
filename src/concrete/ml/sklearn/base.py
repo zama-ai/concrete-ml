@@ -645,9 +645,13 @@ class BaseEstimator:
 
                 # If the inference should be executed using simulation
                 if fhe == "simulate":
+                    is_crt_encoding = self.fhe_circuit.statistics["packing_key_switch_count"] != 0
 
-                    # If the old simulation method should be used
-                    if USE_OLD_VL:
+                    # If the virtual library method should be used
+                    # For now, use the virtual library when simulating
+                    # circuits that use CRT  encoding because the official simulation is too slow
+                    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4391
+                    if USE_OLD_VL or is_crt_encoding:
                         predict_method = partial(
                             self.fhe_circuit.graph, p_error=self.fhe_circuit.p_error
                         )  # pragma: no cover
