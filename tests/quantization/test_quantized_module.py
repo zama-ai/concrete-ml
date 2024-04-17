@@ -515,8 +515,8 @@ def test_quantized_module_initialization_error():
 
 
 @pytest.mark.parametrize("model_class, input_shape", [pytest.param(FC, (100, 32 * 32 * 3))])
-def test_crt_simulation_using_cp_vl(model_class, input_shape, default_configuration):
-    "Test simulation based on whether the circuit uses CRT encoding."
+def test_crt_circuit_creation_with_rounding(model_class, input_shape, default_configuration):
+    """Test the creation of CRT and non-CRT circuits based on rounding settings."""
 
     torch_fc_model = model_class(activation_function=nn.ReLU)
     torch_fc_model.eval()
