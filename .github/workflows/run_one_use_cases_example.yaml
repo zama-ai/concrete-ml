@@ -1,6 +1,21 @@
-name: Run Use Case Examples
+name: Run One Use Case Example
 on:
-  workflow_dispatch: 
+  workflow_dispatch:
+    inputs:
+      use_case:
+        # --- refresh_use_cases_list.py: refresh list of use cases currently available [START] ---
+        # --- do not edit, auto generated part by `make refresh_use_cases_list` ---
+        - cifar/cifar_brevitas_finetuning
+        - cifar/cifar_brevitas_training
+        - credit_scoring
+        - disease_prediction
+        - federated_learning
+        - hybrid_model
+        - llm
+        - sentiment_analysis_with_transformer
+        - titanic
+        # --- refresh_use_cases_list.py: refresh list of use cases currently available [END] ---
+        required: true
 
 concurrency:
   group: ${{ github.ref }}
@@ -54,13 +69,13 @@ jobs:
           apt-get update && apt-get install -y python3-venv make git git-lfs binutils
 
       - name: Checkout Code
-        uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
+        uses: actions/checkout@v4
         with:
           lfs: true
 
-      - name: Run Use Case Examples Script
+      - name: Run One Use Case Example Script
         run: |
-          bash ./script/make_utils/run_use_case_examples.sh
+          make run_one_use_case_example USE_CASE=${{ github.event.inputs.use_case }}
 
   stop-runner-linux:
     name: Stop EC2 runner
@@ -95,7 +110,7 @@ jobs:
     name: Send Slack notification
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
+      - uses: actions/checkout@v4
 
       - name: Prepare whole job status
         if: ${{ always() }}
