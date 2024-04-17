@@ -1,3 +1,5 @@
+"""Updates or checks the run_one_use_case_example.yaml workflow with available use cases."""
+
 import argparse
 from pathlib import Path
 
@@ -62,6 +64,7 @@ def update_section(lines, start_header, end_header, new_content, indent):
 
 
 def main(file_to_update, check_mode=False):
+    """Updates or checks the specified file with the current list of use cases and their paths."""
     use_case_paths = find_use_cases_with_makefile()
 
     with open(file_to_update, "r", encoding="utf-8") as file:
