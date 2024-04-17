@@ -42,6 +42,8 @@ skorch = "0.11.0"
 torch = "1.13.1"
 typing-extensions = "4.5.0"
 brevitas = "0.8.0"
+# Update to 1.16.0 once onnxruntime supports this version
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4395
 onnx = "1.15.0"
 onnxoptimizer = "0.3.13"
 # onnxruntime versions supported by onnx versions and opsets can be found here : 
