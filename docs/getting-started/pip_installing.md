@@ -9,10 +9,10 @@ Depending on your OS, Concrete ML may be installed with Docker or with pip:
 |                 OS / HW                 | Available on Docker | Available on pip |
 | :-------------------------------------: | :-----------------: | :--------------: |
 |                  Linux                  |         Yes         |       Yes        |
-|                 Windows                 |         Yes         |  Not currently   |
+|                 Windows                 |         Yes         |        No        |
 |       Windows Subsystem for Linux       |         Yes         |       Yes        |
 |            macOS 11+ (Intel)            |         Yes         |       Yes        |
-| macOS 11+ (Apple Silicon: M1, M2, etc.) |         Yes         |       Yes        |
+| macOS 11+ (Apple Silicon: M1, M2, etc.) |     Coming soon     |       Yes        |
 
 Only some versions of `python` are supported: In the current release, these are `3.8`, `3.9` and `3.10`. The Concrete ML Python package requires `glibc >= 2.28`. On Linux, you can check your `glibc` version by running `ldd --version`.
 
