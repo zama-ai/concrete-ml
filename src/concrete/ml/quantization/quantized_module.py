@@ -526,7 +526,7 @@ class QuantizedModule:
 
                 # Whether the old simulation method should be used based on USE_OLD_VL
                 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4391
-                # and the circuit encoding (CRT encoding should use CP VL)
+                # and the circuit encoding (CRT encoding should use Concrete VL)
                 if USE_OLD_VL or is_crt_encoding:
                     predict_method = partial(
                         self.fhe_circuit.graph, p_error=self.fhe_circuit.p_error
