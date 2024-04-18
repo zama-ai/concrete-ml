@@ -35,6 +35,10 @@ Access to additional resources and join the Zama community.
 
 ### References & Explanations
 
+Concrete ML uses the TFHE cryptographic scheme. For cryptography-related considerations such as the security-model, refer to the following section:
+
+- [Cryptography concepts](getting-started/concepts.md#cryptography-concepts).
+
 Refer to the API, review product architecture, and access additional resources for in-depth explanations while working with Concrete ML.
 
 - [API](references/api/README.md)
