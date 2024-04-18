@@ -1,17 +1,20 @@
 #!/bin/env python
 """Check links to local files."""
 
+import json
 import re
 import sys
 from pathlib import Path
-from typing import List, Union
+from typing import List, Optional, Union
 
 # A regex that matches [foo (bar)](my_link) and returns the my_link
 # used to find all links made in our markdown files.
 MARKDOWN_LINK_REGEX = [re.compile(r"\[[^\]]*\]\(([^\)]*)\)"), re.compile(r"href=\"[^\"]*\"")]
 
 
-def check_content_for_dead_links(content: str, file_path: Path) -> List[str]:
+def check_content_for_dead_links(
+    content: str, file_path: Path, cell_id: Optional[int] = None
+) -> List[str]:
     """Check the content of a markdown file for dead links.
 
     This checks a markdown file for dead-links to local files.
@@ -35,7 +38,7 @@ def check_content_for_dead_links(content: str, file_path: Path) -> List[str]:
             links.append(link)
 
     for link in links:
-
+        link = link.strip()
         if link.startswith("http"):
             # This means this is a reference to a website
             continue
@@ -56,18 +59,22 @@ def check_content_for_dead_links(content: str, file_path: Path) -> List[str]:
         ext = link_path.suffix
         link_path_no_ext = link_path.parent / link_path.stem
 
+        file_path_display = str(file_path)
+        if cell_id:
+            file_path_display += f"/cell:{cell_id}"
+
         if ext == ".html":
             rst_alternative = link_path_no_ext.with_suffix(".rst")
             if not link_path.exists() and not rst_alternative.exists():
                 errors.append(
-                    f"{file_path} contains a link to {link_path} "
+                    f"{file_path_display} contains a link to {link_path} "
                     f"could not find either files:\n{link_path}\n{rst_alternative}"
                 )
             continue
 
         if not link_path.exists():
             errors.append(
-                f"{file_path} contains a link to file '{link_path.resolve()}' that can't be found"
+                f"{file_path_display} contains a link to file '{link_path.resolve()}' that can't be found"
             )
     return errors
 
@@ -117,6 +124,25 @@ def main():
             with path.open() as file:
                 file_content = file.read()
             errors += check_content_for_dead_links(file_content, path)
+
+        if (
+            path.is_file()
+            and path.suffix == ".ipynb"
+            and not any(is_relative_to(path, ignore) for ignore in ignores)
+        ):
+            print(f"checking {path}")
+            with path.open() as file:
+                nb_structure = json.load(file)
+                if not "cells" in nb_structure:
+                    print(f"Invalid notebook, skipping {path}")
+                    continue
+                cell_id = 0
+                for cell in nb_structure["cells"]:
+                    if cell["cell_type"] != "markdown":
+                        cell_id += 1
+                        continue
+                    errors += check_content_for_dead_links("".join(cell["source"]), path, cell_id)
+                    cell_id += 1
 
     if errors:
         sys.exit("\n".join(errors))
