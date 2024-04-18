@@ -1420,6 +1420,11 @@ def test_onnx_no_input():
             ValueError,
             "n_bits_rounding must be between 2 and 8 inclusive",
         ),
+        (
+            {"invalid_key": 4},
+            KeyError,
+            "Invalid keys in rounding_threshold_bits. Allowed keys are {'n_bits', 'method'}.",
+        ),
     ],
 )
 def test_compile_torch_model_rounding_threshold_bits_errors(

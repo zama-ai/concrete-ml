@@ -623,6 +623,7 @@ def process_rounding_threshold_bits(rounding_threshold_bits):
     Raises:
         NotImplementedError: If 'auto' rounding is specified but not implemented.
         ValueError: If an invalid type or value is provided for rounding_threshold_bits.
+        KeyError: If the dict contains keys other than 'n_bits' and 'method'.
     """
     n_bits_rounding: Union[None, str, int] = None
     method: Exactness = Exactness.EXACT
@@ -632,6 +633,11 @@ def process_rounding_threshold_bits(rounding_threshold_bits):
         if isinstance(rounding_threshold_bits, int):
             n_bits_rounding = rounding_threshold_bits
         elif isinstance(rounding_threshold_bits, dict):
+            valid_keys = {"n_bits", "method"}
+            if not valid_keys.issuperset(rounding_threshold_bits.keys()):
+                raise KeyError(
+                    f"Invalid keys in rounding_threshold_bits. Allowed keys are {valid_keys}."
+                )
             n_bits_rounding = rounding_threshold_bits.get("n_bits")
             if n_bits_rounding == "auto":
                 raise NotImplementedError("Automatic rounding is not implemented yet.")
