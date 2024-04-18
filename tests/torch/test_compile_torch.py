@@ -1406,7 +1406,7 @@ def test_onnx_no_input():
             "Invalid type for rounding_threshold_bits. Must be int or dict.",
         ),
         (
-            {"method": "INVALID_METHOD"},
+            {"n_bits": 4, "method": "INVALID_METHOD"},
             ValueError,
             "INVALID_METHOD is not a valid method. Must be one of EXACT, APPROXIMATE.",
         ),
@@ -1419,6 +1419,16 @@ def test_onnx_no_input():
             {"n_bits": 9},
             ValueError,
             "n_bits_rounding must be between 2 and 8 inclusive",
+        ),
+        (
+            {"invalid_key": 4},
+            KeyError,
+            "Invalid keys in rounding_threshold_bits. Allowed keys are {'n_bits', 'method'}.",
+        ),
+        (
+            {"n_bits": "not_an_int"},
+            ValueError,
+            "n_bits must be an integer.",
         ),
     ],
 )
