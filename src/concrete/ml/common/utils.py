@@ -641,6 +641,8 @@ def process_rounding_threshold_bits(rounding_threshold_bits):
             n_bits_rounding = rounding_threshold_bits.get("n_bits")
             if n_bits_rounding == "auto":
                 raise NotImplementedError("Automatic rounding is not implemented yet.")
+            if not isinstance(n_bits_rounding, int):
+                raise ValueError("n_bits must be an integer.")
             method = rounding_threshold_bits.get("method", method)
             if not isinstance(method, Exactness):
                 method_str = method.upper()

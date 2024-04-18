@@ -1425,6 +1425,11 @@ def test_onnx_no_input():
             KeyError,
             "Invalid keys in rounding_threshold_bits. Allowed keys are {'n_bits', 'method'}.",
         ),
+        (
+            {"n_bits": "not_an_int"},
+            ValueError,
+            "n_bits must be an integer.",
+        ),
     ],
 )
 def test_compile_torch_model_rounding_threshold_bits_errors(
