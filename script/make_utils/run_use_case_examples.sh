@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-CURRENT_DIR=$(pwd)
+CURRENT_DIR=$(dirname "$(realpath "$0")")/../../
 USE_CASE_DIR_NAME="use_case_examples"
 USE_CASE_DIR="${CURRENT_DIR}/${USE_CASE_DIR_NAME}"
 
