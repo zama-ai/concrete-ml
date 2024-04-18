@@ -827,7 +827,7 @@ clean_sklearn_cache:
 
 .PHONY: run_one_use_case_example # Run one use-case example (USE_CASE, eg use_case_examples/hybrid_model)
 run_one_use_case_example:
-	./script/make_utils/run_use_case_examples.sh
+	USE_CASE=$(USE_CASE) ./script/make_utils/run_use_case_examples.sh
 
 .PHONY: run_all_use_case_examples # Run all use-case examples
 run_all_use_case_examples:

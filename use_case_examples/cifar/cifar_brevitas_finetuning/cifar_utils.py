@@ -255,7 +255,7 @@ def plot_baseline(param: Dict, data: DataLoader, device: str) -> None:
     checkpoint = torch.load(f"{param['dir']}/{param['pre_trained_path']}", map_location=device)
     fp32_vgg = Fp32VGG11(param["output_size"])
     fp32_vgg.load_state_dict(checkpoint)
-    baseline = torch_inference(fp32_vgg, data, param, device)
+    baseline = torch_inference(fp32_vgg, data, device)
 
     plt.plot(
         range(len(param["accuracy_test"])),
