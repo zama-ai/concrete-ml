@@ -7,7 +7,7 @@ SCRIPT_NAME = Path(__file__).name
 USE_CASES_DIRS = [Path(r"use_case_examples")]
 
 SMALL_TAB = "  "
-TAB = SMALL_TAB * 4
+TAB = SMALL_TAB * 5
 
 # Headers for updating sections
 SECTION_HEADERS = {

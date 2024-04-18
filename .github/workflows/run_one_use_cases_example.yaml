@@ -3,22 +3,25 @@ on:
   workflow_dispatch:
     inputs:
       use_case:
-        # --- refresh_use_cases_list.py: refresh list of use cases currently available [START] ---
-        # --- do not edit, auto generated part by `make refresh_use_cases_list` ---
-        - cifar/cifar_brevitas_finetuning
-        - cifar/cifar_brevitas_training
-        - credit_scoring
-        - deployment/breast_cancer_builtin
-        - deployment/cifar
-        - deployment/sentiment_analysis
-        - disease_prediction
-        - federated_learning
-        - hybrid_model
-        - llm
-        - sentiment_analysis_with_transformer
-        - titanic
-        # --- refresh_use_cases_list.py: refresh list of use cases currently available [END] ---
+        description: 'Select a use case to run'
         required: true
+        type: choice
+        options:
+          # --- refresh_use_cases_list.py: refresh list of use cases currently available [START] ---
+          # --- do not edit, auto generated part by `make refresh_use_cases_list` ---
+          - cifar/cifar_brevitas_finetuning
+          - cifar/cifar_brevitas_training
+          - credit_scoring
+          - deployment/breast_cancer_builtin
+          - deployment/cifar
+          - deployment/sentiment_analysis
+          - disease_prediction
+          - federated_learning
+          - hybrid_model
+          - llm
+          - sentiment_analysis_with_transformer
+          - titanic
+          # --- refresh_use_cases_list.py: refresh list of use cases currently available [END] ---
 
 concurrency:
   group: ${{ github.ref }}
@@ -134,7 +137,7 @@ jobs:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: ${{ env.JOB_STATUS || 'failure' }}
-          SLACK_MESSAGE: "Full run of use case examples finished with status ${{ env.JOB_STATUS || 'failure' }} \
+          SLACK_MESSAGE: "Run of single use case '${{ github.event.inputs.use_case }}' finished with status ${{ env.JOB_STATUS || 'failure' }} \
             (${{ env.ACTION_RUN_URL }})\n\
             - start-runner-linux: ${{ needs.start-runner-linux.result || 'Did not run.'}}\n\n\
             - run-use-case-examples: ${{ needs.run-use-case-examples.result || 'Did not run.' }}\n\n\
