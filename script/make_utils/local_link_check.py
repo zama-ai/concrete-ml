@@ -2,10 +2,14 @@
 """Check links to local files."""
 
 import json
+import os
 import re
 import sys
+import tempfile
 from pathlib import Path
 from typing import List, Optional, Union
+
+import linkcheckmd as lc
 
 # A regex that matches [foo (bar)](my_link) and returns the my_link
 # used to find all links made in our markdown files.
@@ -141,8 +145,21 @@ def main():
                     if cell["cell_type"] != "markdown":
                         cell_id += 1
                         continue
-                    errors += check_content_for_dead_links("".join(cell["source"]), path, cell_id)
+
+                    markdown_cell = "".join(cell["source"])
+                    errors += check_content_for_dead_links(markdown_cell, path, cell_id)
                     cell_id += 1
+
+                    tmp_file_name = tempfile.mktemp()
+                    with open(tmp_file_name, "wt") as fp:
+                        fp.write(markdown_cell)
+                    bad = lc.check_links(tmp_file_name, ext=".*")
+                    if bad:
+                        for err_link in bad:
+                            errors.append(
+                                f"{path}/cell{cell_id} contains a link to file '{err_link[1]}' that can't be found"
+                            )
+                    os.unlink(tmp_file_name)
 
     if errors:
         sys.exit("\n".join(errors))
