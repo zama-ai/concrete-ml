@@ -191,7 +191,7 @@ spcc:
 
 PCC_DEPS := check_python_format check_finalize_nb python_linting mypy_ci pydocstyle shell_lint
 PCC_DEPS += check_version_coherence check_licenses check_nbqa check_supported_ops
-PCC_DEPS += check_refresh_notebooks_list check_mdformat
+PCC_DEPS += check_refresh_notebooks_list check_refresh_use_cases_list check_mdformat
 PCC_DEPS += check_unused_images check_utils_use_case gitleaks
 
 .PHONY: pcc_internal
@@ -532,9 +532,17 @@ jupyter_execute_parallel:
 refresh_notebooks_list:
 	poetry run python script/actions_utils/refresh_notebooks_list.py .github/workflows/refresh-one-notebook.yaml
 
+.PHONY: refresh_use_cases_list # Refresh the list of use cases currently available 
+refresh_use_cases_list:
+	poetry run python script/actions_utils/refresh_use_cases_list.py .github/workflows/run_one_use_cases_example.yaml
+
 .PHONY: check_refresh_notebooks_list # Check if the list of notebooks currently available hasn't change
 check_refresh_notebooks_list:
 	poetry run python script/actions_utils/refresh_notebooks_list.py .github/workflows/refresh-one-notebook.yaml --check
+
+.PHONY: check_refresh_use_cases_list # Check if the list of use cases currently available hasn't change
+check_refresh_use_cases_list:
+	poetry run python script/actions_utils/refresh_use_cases_list.py .github/workflows/run_one_use_cases_example.yaml --check
 
 .PHONY: release_docker # Build a docker release image
 release_docker:
@@ -825,7 +833,7 @@ clean_pycache:
 clean_sklearn_cache:
 	rm -rf ~/scikit_learn_data
 
-.PHONY: run_one_use_case_example # Run one use-case example (USE_CASE, eg use_case_examples/hybrid_model)
+.PHONY: run_one_use_case_example # Run one use-case example (USE_CASE, e.g. hybrid_model)
 run_one_use_case_example:
 	USE_CASE=$(USE_CASE) ./script/make_utils/run_use_case_examples.sh
 
