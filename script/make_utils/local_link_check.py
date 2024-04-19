@@ -27,6 +27,7 @@ def check_content_for_dead_links(
     Args:
         content (str): The content of the file.
         file_path (Path): The path to the file.
+        cell_id (Optional[int]): the id of the notebook cell
 
     Returns:
         List[str]: a list of errors (dead-links) found.
@@ -139,7 +140,7 @@ def main():
             print(f"checking {path}")
             with path.open() as file:
                 nb_structure = json.load(file)
-                if not "cells" in nb_structure:
+                if "cells" not in nb_structure:
                     print(f"Invalid notebook, skipping {path}")
                     continue
                 cell_id = 0
