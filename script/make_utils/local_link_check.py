@@ -79,8 +79,8 @@ def check_content_for_dead_links(
 
         if not link_path.exists():
             errors.append(
-                f"{file_path_display} contains a link to "
-                f"file '{link_path.resolve()}' that can't be found"
+                f"{file_path_display} contains a link to"
+                f" file '{link_path.resolve()}' that can't be found"
             )
     return errors
 
