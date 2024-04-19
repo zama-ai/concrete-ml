@@ -16,6 +16,7 @@ import linkcheckmd as lc
 MARKDOWN_LINK_REGEX = [re.compile(r"\[[^\]]*\]\(([^\)]*)\)"), re.compile(r"href=\"[^\"]*\"")]
 
 
+# pylint: disable-next=too-many-branches
 def check_content_for_dead_links(
     content: str, file_path: Path, cell_id: Optional[int] = None
 ) -> List[str]:
@@ -78,7 +79,8 @@ def check_content_for_dead_links(
 
         if not link_path.exists():
             errors.append(
-                f"{file_path_display} contains a link to file '{link_path.resolve()}' that can't be found"
+                f"{file_path_display} contains a link to "
+                f"file '{link_path.resolve()}' that can't be found"
             )
     return errors
 
@@ -151,13 +153,14 @@ def main():
                     cell_id += 1
 
                     tmp_file_name = tempfile.mktemp()
-                    with open(tmp_file_name, "wt") as fp:
-                        fp.write(markdown_cell)
+                    with open(tmp_file_name, "wt", encoding="utf-8") as fptr:
+                        fptr.write(markdown_cell)
                     bad = lc.check_links(tmp_file_name, ext=".*")
                     if bad:
                         for err_link in bad:
                             errors.append(
-                                f"{path}/cell{cell_id} contains a link to file '{err_link[1]}' that can't be found"
+                                f"{path}/cell{cell_id} contains "
+                                f"a link to file '{err_link[1]}' that can't be found"
                             )
                     os.unlink(tmp_file_name)
 
