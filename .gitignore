@@ -72,11 +72,6 @@ instance/
 # Scrapy stuff:
 .scrapy
 
-# Sphinx documentation
-docs/_apidoc/
-docs/_build/
-docs-copy/
-
 # GitBook
 docs/references/api/.pages
 

@@ -424,9 +424,6 @@ check_apidocs:
 	@# Check nothing has changed
 	./script/doc_utils/check_apidocs.sh
 
-.PHONY: clean_docs # Clean docs build directory
-clean_docs:
-	rm -rf docs/_apidoc docs/_build
 
 .PHONY: check_docs_dollars # Check that latex equations are enclosed by double dollar signs
 check_docs_dollars:
@@ -435,13 +432,6 @@ check_docs_dollars:
 # Only double dollar signs $$ should be used in order to 
 # show properly in gitbook
 	./script/make_utils/check_double_dollars_in_doc.sh
-
-.PHONY: open_docs # Launch docs in a browser
-open_docs:
-	python3 -m webbrowser -t "file://${PWD}/docs/_build/html/index.html"
-
-.PHONY: docs_and_open # Make docs and open them in a browser
-docs_and_open: docs open_docs
 
 .PHONY: pydocstyle # Launch syntax checker on source code documentation
 pydocstyle:
@@ -721,7 +711,7 @@ check_links:
 	@# To avoid some issues with priviledges and linkcheckmd
 	find docs/ -name "*.md" -type f | xargs chmod +r
 
-	@# Run linkcheck on mardown files. It is mainly used for web links and _api_doc (Sphinx)
+	@# Run linkcheck on mardown files. It is mainly used for web links
 	poetry run python -m linkcheckmd docs -local
 	poetry run python -m linkcheckmd README.md
 
@@ -739,19 +729,14 @@ check_links:
 	@#  --ignore-url=https://github.com/zama-ai/concrete-ml-internal/issues: because issues are
 	@#		private
 	@#	--ignore-url=.gitbook/assets : some gitbook functionalities use links to images to include
-	@# 		them in the docs. But sphinx does not copy such as images to the _build dir since 
-	@#		they are not included by image tags or sphinx image annotations. We ignore links 
-	@#		to gitbook images in the HTML checker. But the images are actually checked by the 
-	@#		markdown link checker, `local_link_check.sh`.
+	@# 		them in the docs.
 	@#  --ignore-url=https://arxiv.org: this website returns a lots of timeouts
 	poetry run linkchecker docs --check-extern \
 		--no-warnings \
-		--ignore-url=_static/webpack-macros.html \
 		--ignore-url=https://www.conventionalcommits.org/en/v1.0.0/ \
 		--ignore-url=https://www.openml.org \
 		--ignore-url=https://github.com/zama-ai/concrete-ml-internal/issues \
-		--ignore-url=https://arxiv.org \
-		--ignore-url=.gitbook/assets
+		--ignore-url=https://arxiv.org
 
 .PHONY: actionlint # Linter for our github actions
 actionlint:
