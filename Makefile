@@ -731,8 +731,6 @@ check_links:
 	@#  --ignore-url=https://www.openml.org: this website returns a lots of timeouts
 	@#  --ignore-url=https://github.com/zama-ai/concrete-ml-internal/issues: because issues are
 	@#		private
-	@#	--ignore-url=.gitbook/assets : some gitbook functionalities use links to images to include
-	@# 		them in the docs.
 	@#  --ignore-url=https://arxiv.org: this website returns a lots of timeouts
 	poetry run linkchecker docs --check-extern \
 		--no-warnings \
