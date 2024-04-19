@@ -159,8 +159,12 @@ def main():
                     bad = lc.check_links(tmp_file_name, ext=".*")
                     if bad:
                         for err_link in bad:
+                            # Skip links to CML internal issues
+                            if "zama-ai/concrete-ml-internal" in err_link[1]:
+                                continue
+
                             errors.append(
-                                f"{path}/cell{cell_id} contains "
+                                f"{path}/cell:{cell_id} contains "
                                 f"a link to file '{err_link[1]}' that can't be found"
                             )
                     os.unlink(tmp_file_name)
