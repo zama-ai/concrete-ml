@@ -46,6 +46,7 @@
 
 ## Explanations
 
+- [Security and correctness](explanations/security_and_correctness.md)
 - [Quantization](explanations/quantization.md)
 - [Pruning](explanations/pruning.md)
 - [Compilation](explanations/compilation.md)

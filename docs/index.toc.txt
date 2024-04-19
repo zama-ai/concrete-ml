@@ -69,6 +69,7 @@
     :hidden:
     :caption: Explanations
 
+    explanations/security_and_correctness.md
     explanations/quantization.md
     explanations/pruning.md
     explanations/compilation.md
