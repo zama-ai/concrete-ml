@@ -27,10 +27,7 @@ jobs:
   # Update licenses for all selected OS
   # The matrix strategy trick is inspired from https://github.com/orgs/community/discussions/26253
   # Basically, GitHub does not allow to have conditional statements when building matrices. One way
-  # to do it is to add new boolean fields and exclude the os name by combining them together. Then, 
-  # include the actual os using the 'include' section, which is always processed after 'exclude'
-  # based on GitHub's documentation :
-  # https://docs.github.com/en/actions/using-jobs/using-a-matrix-for-your-jobs#excluding-matrix-configurations
+  # to do it is to add new boolean fields and exclude the os config(s) by combining them together.
   update_licenses:
     strategy:
       matrix:
