@@ -19,7 +19,7 @@ OPEN_PR="true"
 # Force the installation of a Concrete Python version, which is very useful with nightly versions
 # /!\ WARNING /!\: This version should NEVER be a wildcard as it might create some
 # issues when trying to run it in the future.
-CONCRETE_PYTHON_VERSION="concrete-python==2024.4.19"
+CONCRETE_PYTHON_VERSION="concrete-python==2.6.0-rc1"
 
 # Force the installation of Concrete Python's latest version, release-candidates included
 # CONCRETE_PYTHON_VERSION="$$(poetry run python \
