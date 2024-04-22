@@ -798,3 +798,12 @@ check_utils_use_case:
 .PHONY: update_encrypted_dataframe # Update encrypted data-frame's development files
 update_encrypted_dataframe:
 	poetry run python ./script/make_utils/update_encrypted_dataframe_files.py
+
+.PHONY: check_symlinks # Check that no utils.py are found in use_case_examples
+check_symlinks:
+	if [[ -z $$(find . -xtype l -name abc) ]]; then \
+		echo "All symlinks point to exiting files"; \
+	else \
+		echo "Bad symlinks found: " && echo $$(find . -xtype l) && \
+		exit 1; \
+	fi
