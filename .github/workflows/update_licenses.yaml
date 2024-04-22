@@ -1,4 +1,4 @@
-# Workflow to update licenses for x86 Linux and MacOS
+# Workflow to update licenses for Ubuntu, macOS Silicon and macOS intel
 name: Update licenses
 on:
   workflow_dispatch:
@@ -24,20 +24,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Update licenses for all supported OS
+  # Update licenses for all selected OS
+  # The matrix strategy trick is inspired from https://github.com/orgs/community/discussions/26253
+  # Basically, GitHub does not allow to have conditional statements when building matrices. One way
+  # to do it is to add new boolean fields and exclude the os config(s) by combining them together.
   update_licenses:
     strategy:
       matrix:
         config:
           - os_name: linux
-            os: ubuntu-latest 
-            if: ${{ inputs.linux }}
+            os: ubuntu-latest
           - os_name: mac_silicon
             os: macos-latest-xlarge
-            if: ${{ inputs.mac_silicon }}
           - os_name: mac_intel
             os: macos-latest-large 
-            if: ${{ inputs.mac_intel }}
+        triggerLinux:
+          - ${{ inputs.linux }}
+        triggerMacSilicon:
+          - ${{ inputs.mac_silicon }}
+        triggerMacIntel:
+          - ${{ inputs.mac_intel }}
+        exclude:
+          - triggerLinux: false
+            config: {os_name: linux, os: ubuntu-latest}
+          - triggerMacSilicon: false
+            config: {os_name: mac_silicon, os: macos-latest-xlarge}
+          - triggerMacIntel: false
+            config: {os_name: mac_intel, os: macos-latest-large}
+
       fail-fast: false
     
     runs-on: ${{ matrix.config.os }}
