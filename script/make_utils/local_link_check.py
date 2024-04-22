@@ -1,17 +1,24 @@
 #!/bin/env python
 """Check links to local files."""
 
+import json
 import re
 import sys
+import tempfile
 from pathlib import Path
-from typing import List, Union
+from typing import List, Optional, Union
+
+import linkcheckmd as lc
 
 # A regex that matches [foo (bar)](my_link) and returns the my_link
 # used to find all links made in our markdown files.
 MARKDOWN_LINK_REGEX = [re.compile(r"\[[^\]]*\]\(([^\)]*)\)"), re.compile(r"href=\"[^\"]*\"")]
 
 
-def check_content_for_dead_links(content: str, file_path: Path) -> List[str]:
+# pylint: disable-next=too-many-branches
+def check_content_for_dead_links(
+    content: str, file_path: Path, cell_id: Optional[int] = None
+) -> List[str]:
     """Check the content of a markdown file for dead links.
 
     This checks a markdown file for dead-links to local files.
@@ -19,6 +26,7 @@ def check_content_for_dead_links(content: str, file_path: Path) -> List[str]:
     Args:
         content (str): The content of the file.
         file_path (Path): The path to the file.
+        cell_id (Optional[int]): the id of the notebook cell
 
     Returns:
         List[str]: a list of errors (dead-links) found.
@@ -35,7 +43,7 @@ def check_content_for_dead_links(content: str, file_path: Path) -> List[str]:
             links.append(link)
 
     for link in links:
-
+        link = link.strip()
         if link.startswith("http"):
             # This means this is a reference to a website
             continue
@@ -56,18 +64,23 @@ def check_content_for_dead_links(content: str, file_path: Path) -> List[str]:
         ext = link_path.suffix
         link_path_no_ext = link_path.parent / link_path.stem
 
+        file_path_display = str(file_path)
+        if cell_id:
+            file_path_display += f"/cell:{cell_id}"
+
         if ext == ".html":
             rst_alternative = link_path_no_ext.with_suffix(".rst")
             if not link_path.exists() and not rst_alternative.exists():
                 errors.append(
-                    f"{file_path} contains a link to {link_path} "
+                    f"{file_path_display} contains a link to {link_path} "
                     f"could not find either files:\n{link_path}\n{rst_alternative}"
                 )
             continue
 
         if not link_path.exists():
             errors.append(
-                f"{file_path} contains a link to file '{link_path.resolve()}' that can't be found"
+                f"{file_path_display} contains a link to"
+                f" file '{link_path.resolve()}' that can't be found"
             )
     return errors
 
@@ -117,6 +130,44 @@ def main():
             with path.open() as file:
                 file_content = file.read()
             errors += check_content_for_dead_links(file_content, path)
+
+        if (
+            path.is_file()
+            and path.suffix == ".ipynb"
+            and not any(is_relative_to(path, ignore) for ignore in ignores)
+        ):
+            print(f"checking {path}")
+            with path.open() as file:
+                nb_structure = json.load(file)
+                if "cells" not in nb_structure:
+                    print(f"Invalid notebook, skipping {path}")
+                    continue
+                cell_id = 0
+                for cell in nb_structure["cells"]:
+                    if cell["cell_type"] != "markdown":
+                        cell_id += 1
+                        continue
+
+                    markdown_cell = "".join(cell["source"])
+                    errors += check_content_for_dead_links(markdown_cell, path, cell_id)
+                    cell_id += 1
+
+                    with tempfile.NamedTemporaryFile(
+                        delete=False, mode="wt", encoding="utf-8"
+                    ) as fptr:
+                        fptr.write(markdown_cell)
+                        fptr.close()
+                        bad = lc.check_links(fptr.name, ext=".*")
+                        if bad:
+                            for err_link in bad:
+                                # Skip links to CML internal issues
+                                if "zama-ai/concrete-ml-internal" in err_link[1]:
+                                    continue
+
+                                errors.append(
+                                    f"{path}/cell:{cell_id} contains "
+                                    f"a link to file '{err_link[1]}' that can't be found"
+                                )
 
     if errors:
         sys.exit("\n".join(errors))
