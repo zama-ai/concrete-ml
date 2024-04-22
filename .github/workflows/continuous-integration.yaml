@@ -586,6 +586,7 @@ jobs:
           && !cancelled()
         run: |
           make check_links
+          make check_symlinks
 
       # Make sure all necessary steps passed. For build-docs and determinism steps, we only check for 
       # non-failures as the 'changed-files-in-pr' step might skip them
