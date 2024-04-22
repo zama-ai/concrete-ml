@@ -82,7 +82,6 @@ configuration = Configuration(
     enable_unsafe_features=True,
     use_insecure_key_cache=True,
     insecure_key_cache_location=KEYGEN_CACHE_DIR,
-    compress_input_ciphertexts=True,
 )
 
 print("Compiling the model.")

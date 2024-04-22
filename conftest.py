@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import os
 import random
 import re
 from pathlib import Path
@@ -153,7 +154,7 @@ def default_configuration():
         insecure_key_cache_location="ConcretePythonKeyCache",
         fhe_simulation=False,
         fhe_execution=True,
-        compress_input_ciphertexts=True,
+        compress_input_ciphertexts=os.environ.get("USE_INPUT_COMPRESSION", "1") == "1",
     )
 
 
@@ -171,7 +172,7 @@ def simulation_configuration():
         insecure_key_cache_location="ConcretePythonKeyCache",
         fhe_simulation=True,
         fhe_execution=False,
-        compress_input_ciphertexts=True,
+        compress_input_ciphertexts=os.environ.get("USE_INPUT_COMPRESSION", "1") == "1",
     )
 
 

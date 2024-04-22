@@ -560,6 +560,9 @@ class BaseEstimator:
             f"{type(module_to_compile)}."
         )
 
+        # Enable input ciphertext compression
+        enable_input_compression = os.environ.get("USE_INPUT_COMPRESSION", "1") == "1"
+
         self.fhe_circuit_ = module_to_compile.compile(
             inputset,
             configuration=configuration,
@@ -571,7 +574,7 @@ class BaseEstimator:
             single_precision=False,
             fhe_simulation=False,
             fhe_execution=True,
-            compress_input_ciphertexts=True,
+            compress_input_ciphertexts=enable_input_compression,
         )
 
         self._is_compiled = True

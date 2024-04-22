@@ -1,6 +1,7 @@
 """Tests the deployment APIs."""
 
 import json
+import os
 import tempfile
 import warnings
 import zipfile
@@ -110,8 +111,15 @@ def test_client_server_sklearn(
             x_test, model, key_dir, check_array_equal, check_float_array_equal
         )
 
+    compilation_kwargs = {
+        "X": x_train,
+        "configuration": default_configuration,
+    }
+
     # Compile the model
-    fhe_circuit = model.compile(x_train, configuration=default_configuration)
+    fhe_circuit = model.compile(**compilation_kwargs)
+
+    check_input_compression(model, fhe_circuit, is_torch=False, **compilation_kwargs)
 
     # Check that client and server files are properly generated
     check_client_server_files(model)
@@ -153,12 +161,17 @@ def test_client_server_custom_model(
 
     torch_model = FCSmall(2, nn.ReLU)
 
+    compilation_kwargs = {
+        "torch_inputset": x_train,
+        "configuration": default_configuration,
+        "n_bits": 2,
+    }
+
     # Get the quantized module from the model and compile it
-    quantized_numpy_module = compile_torch_model(
-        torch_model,
-        x_train,
-        configuration=default_configuration,
-        n_bits=2,
+    quantized_numpy_module = compile_torch_model(torch_model, **compilation_kwargs)
+
+    check_input_compression(
+        torch_model, quantized_numpy_module.fhe_circuit, is_torch=True, **compilation_kwargs
     )
 
     # Check that client and server files are properly generated
@@ -291,3 +304,34 @@ def check_client_server_execution(
 
     # Clean up
     disk_network.cleanup()
+
+
+def check_input_compression(model, fhe_circuit_compressed, is_torch, **compilation_kwargs):
+    """Check that input compression properly reduces input sizes."""
+
+    # Check that input ciphertext compression is enabled
+    assert os.environ.get("USE_INPUT_COMPRESSION") == "1", "'USE_INPUT_COMPRESSION' is not enabled"
+
+    compressed_size = fhe_circuit_compressed.size_of_inputs
+
+    with pytest.MonkeyPatch.context() as mp_context:
+
+        # Disable input ciphertext compression
+        mp_context.setenv("USE_INPUT_COMPRESSION", "0")
+
+        # Check that input ciphertext compression is disabled
+        assert (
+            os.environ.get("USE_INPUT_COMPRESSION") == "0"
+        ), "'USE_INPUT_COMPRESSION' is not disabled"
+
+        if is_torch:
+            fhe_circuit_uncompressed = compile_torch_model(model, **compilation_kwargs).fhe_circuit
+        else:
+            fhe_circuit_uncompressed = model.compile(**compilation_kwargs)
+
+        uncompressed_size = fhe_circuit_uncompressed.size_of_inputs
+
+    assert compressed_size < uncompressed_size, (
+        "Compressed input ciphertext's is not smaller than the uncompressed input ciphertext. Got "
+        f"{compressed_size} bytes (compressed) and {uncompressed_size} bytes (uncompressed)."
+    )
