@@ -2,7 +2,6 @@
 """Check links to local files."""
 
 import json
-import os
 import re
 import sys
 import tempfile
@@ -153,21 +152,22 @@ def main():
                     errors += check_content_for_dead_links(markdown_cell, path, cell_id)
                     cell_id += 1
 
-                    tmp_file_name = tempfile.mktemp()
-                    with open(tmp_file_name, "wt", encoding="utf-8") as fptr:
+                    with tempfile.NamedTemporaryFile(
+                        delete=False, mode="wt", encoding="utf-8"
+                    ) as fptr:
                         fptr.write(markdown_cell)
-                    bad = lc.check_links(tmp_file_name, ext=".*")
-                    if bad:
-                        for err_link in bad:
-                            # Skip links to CML internal issues
-                            if "zama-ai/concrete-ml-internal" in err_link[1]:
-                                continue
+                        fptr.close()
+                        bad = lc.check_links(fptr.name, ext=".*")
+                        if bad:
+                            for err_link in bad:
+                                # Skip links to CML internal issues
+                                if "zama-ai/concrete-ml-internal" in err_link[1]:
+                                    continue
 
-                            errors.append(
-                                f"{path}/cell:{cell_id} contains "
-                                f"a link to file '{err_link[1]}' that can't be found"
-                            )
-                    os.unlink(tmp_file_name)
+                                errors.append(
+                                    f"{path}/cell:{cell_id} contains "
+                                    f"a link to file '{err_link[1]}' that can't be found"
+                                )
 
     if errors:
         sys.exit("\n".join(errors))
