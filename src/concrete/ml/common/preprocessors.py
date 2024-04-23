@@ -9,7 +9,7 @@ import numpy as np
 from concrete.fhe import Exactness, round_bit_pattern
 from concrete.fhe.dtypes import Float, Integer
 from concrete.fhe.representation import Graph, GraphProcessor, Node, Operation
-from concrete.fhe.representation.evaluator import ConstantEvaluator
+from concrete.fhe.representation.evaluator import ConstantEvaluator, GenericEvaluator
 from concrete.fhe.values.value_description import ValueDescription
 
 
@@ -101,8 +101,12 @@ class CycleDetector(GraphProcessor):
             raise Exception()
 
         for tlu_node in tlu_nodes:
-            if "subgraph" in tlu_node.evaluator.properties["kwargs"]:
-                tlu_subgraph: Graph = tlu_node.evaluator.properties["kwargs"]["subgraph"]
+            evaluator = tlu_node.evaluator
+            assert isinstance(evaluator, GenericEvaluator)
+
+            # We check only on subgraphs
+            if "subgraph" in evaluator.properties["kwargs"]:
+                tlu_subgraph: Graph = evaluator.properties["kwargs"]["subgraph"]
                 cycles = nx.recursive_simple_cycles(tlu_subgraph.graph)
                 if cycles:
                     raise Exception()
@@ -112,7 +116,7 @@ def vectorized_graph_eval(
     graph: Graph,
     *inputs: np.ndarray,
     sorted_nodes: List,
-    input_indices: np.ndarray = None,
+    input_indices: Union[None, int, np.ndarray] = None,
 ) -> Union[Any, np.ndarray]:
     """Compute the output of a subgraph on a tensor input.
 
@@ -120,7 +124,7 @@ def vectorized_graph_eval(
         graph (Graph): the computation graph to evaluate
         inputs (Tuple[np.ndarray,...]): list of inputs to the graph
         sorted_nodes (List): the graph nodes in sorted order
-        input_indices (np.ndarray): indices that map the input list to the graph inputs
+        input_indices (Optional[np.ndarray]): indices that map the input list to the graph inputs
 
     Returns:
         Union[Any, np.ndarray]: tensor with the result of the graph on the inputs
@@ -143,6 +147,7 @@ def vectorized_graph_eval(
         node_results[node] = node.evaluator(*pred_results)
 
     result = tuple(node_results[node] for node in graph.ordered_outputs())
+    assert len(result) > 0, "Empty results"
     return result if len(result) > 1 else result[0]
 
 
@@ -228,12 +233,12 @@ def add_rounding_node(
     graph.add_edge(a_node, rounding_node, input_idx=0)
 
     # Replace a -> o_i by rounding_node -> o_i
-    edges = list(graph.out_edges(a_node))
+    edges = list(graph.out_edges(nbunch=a_node))  # type: ignore
     for in_node, out_node in edges:
         if out_node == rounding_node:
             continue
         # We should preserve the input_idx
-        edge_data = dict(graph.get_edge_data(in_node, out_node))
+        edge_data: Dict[int, Dict[str, int]] = dict(graph.get_edge_data(in_node, out_node))
         graph.remove_edge(in_node, out_node)
         input_idx: int = edge_data[0]["input_idx"]
         graph.add_edge(rounding_node, out_node, input_idx=input_idx)
@@ -267,7 +272,7 @@ def add_leveled_op_with_cst(
     # When processing a single subgraph b is a float scalar, but when
     # we're processing the main graph, b is an int or an array corresponding
     # to a broadcasted value
-    assert isinstance(b, (np.float64, np.int64)) or (
+    assert isinstance(b, (float, int)) or (
         isinstance(b, np.ndarray) and b.dtype in (np.float64, np.int64)
     ), f"Constant {b} should be of dtype np.int64 or np.float64, not {b.dtype}"
 
@@ -296,6 +301,8 @@ def add_leveled_op_with_cst(
         )
         constant_dtype = Integer.that_can_represent(b)
         result_dtype = Integer.that_can_represent(results.astype(np.int64))
+    else:
+        raise ValueError(f"{b.dtype=} is not supported")
 
     constant_node.output = ValueDescription(
         dtype=constant_dtype,
@@ -326,12 +333,12 @@ def add_leveled_op_with_cst(
     graph.add_edge(constant_node, new_node, input_idx=1)
 
     # Replace a -> o_i by new_node -> o_i
-    edges = list(graph.out_edges(a_node))
+    edges = list(graph.out_edges(a_node))  # type: ignore 
     for in_node, out_node in edges:
         if out_node == new_node:
             continue
         # We should preserve the input_idx
-        edge_data = dict(graph.get_edge_data(in_node, out_node))
+        edge_data: Dict[int, Dict[str, int]] = dict(graph.get_edge_data(in_node, out_node))
         graph.remove_edge(in_node, out_node)
         input_idx: int = edge_data[0]["input_idx"]
         graph.add_edge(new_node, out_node, input_idx=input_idx)
@@ -347,7 +354,7 @@ def compute_best_rounding_for_single_tlu(
     raised_bitwidth: int,
     tlu_evaluation_function: Callable,
 ) -> Tuple[int, int, int]:
-    """Asses the optimal rounding based on unidimensional outputs of a TLU.
+    """Finds the optimal rounding based on unidimensional outputs of a TLU.
 
     Args:
         x_min (int): minimal calibrated value of TLU inputs
@@ -367,11 +374,13 @@ def compute_best_rounding_for_single_tlu(
         # We can just the raised precision value down to one bit
         return (1, 0, raised_bitwidth - 1)
 
-    step_tresholds = steps_indexes[0:-1]  # all step thresholds
+    assert len(set(steps_indexes)) == len(steps_indexes), "Steps indexes are not unique"
+
+    step_thresholds = steps_indexes[0:-1]  # all step thresholds
 
     delta_axis = np.diff(steps_indexes, axis=0)  # all step sizes
 
-    assert step_tresholds.size == delta_axis.size
+    assert step_thresholds.size == delta_axis.size
 
     if len(delta_axis) == 0:
         # Single jump, we can just offset by the threshold and round to 1-bit
@@ -386,7 +395,7 @@ def compute_best_rounding_for_single_tlu(
         # Do not round
         return (1, 0, 0)
 
-    all_combinations = np.stack([step_tresholds, delta_axis]).T
+    all_combinations = np.stack([step_thresholds, delta_axis]).T
     all_a_b_r = np.zeros((all_combinations.shape[0], 3), np.int64)
     for idx, comb in enumerate(all_combinations):
         threshold, delta = comb[0], comb[1]
@@ -417,10 +426,10 @@ def delta_optimize(
     reference: np.ndarray,
     shape_: Tuple[int, ...],
     bounds: Tuple[int, int],
-    tlu_subgraph: nx.DiGraph,
+    tlu_subgraph: Graph,
     raised_bitwidth: int,
     rounding_function: Callable = round_bit_pattern,
-) -> Tuple[np.ndarray, np.ndarray, np.int64]:
+) -> Tuple[np.ndarray, np.ndarray, int]:
     """Optimize a TLU by analyzing the steps (deltas) in the output of the TLU function.
 
     Args:
@@ -449,8 +458,8 @@ def delta_optimize(
     bitwidth_input = Integer.that_can_represent([x_min, x_max]).bit_width
 
     # Initialize a and b such that no changes are done
-    best_a = np.ones((1,) + shape_[1:], dtype=np.int64)
-    best_b = np.zeros((1,) + shape_[1:], dtype=np.int64)
+    best_a = np.ones(shape_, dtype=np.int64)
+    best_b = np.zeros(shape_, dtype=np.int64)
 
     ref_diff = np.diff(reference, axis=0).astype(bool)
 
@@ -463,17 +472,18 @@ def delta_optimize(
     ).astype(bool)
 
     # Some accumulators
-    n_rounds = np.ones(shape_[1:], dtype=np.int64)
+    n_rounds = np.ones(shape_, dtype=np.int64)
 
     per_tensor_a = 2 ** (raised_bitwidth - bitwidth_input)
 
-    for indexes in product(*[range(elt) for elt in shape_[1:]]):
-        selection = tuple([slice(0, reference.shape[0]), *indexes])
-        best_indexes = tuple([0, *indexes])
+    for indexes in product(*[range(elt) for elt in shape_]):
+        selection = tuple([slice(0, reference.shape[0]), *indexes[1:]])
+        best_indexes = tuple([*indexes])
 
         subgraph_inputs_selected = subgraph_inputs[selection]
         change_mask_selected = change_mask[selection]
         steps_indexes = subgraph_inputs_selected[change_mask_selected]
+        assert len(steps_indexes) == len(np.unique(steps_indexes)), "not unique steps"
 
         def evaluate_tlu(a, b, r_bits):
             rounded_output = eval_subgraph_on_rounded_inputs(
@@ -500,7 +510,7 @@ def delta_optimize(
         best_a[::] = best_a.flatten()[n_round_idx]
     else:
         n_round = n_rounds
-
+    n_round = int(n_round)
     return best_a, best_b, n_round
 
 
@@ -694,6 +704,7 @@ def get_tlu_node_subgraph_input_node(graph: Graph, tlu_node: Node) -> Node:
     return variable_input_node
 
 
+# TODO: the issue is HERE or in the usage of this function
 def make_subgraph_input_tensor(
     min_bound: np.int64,
     max_bound: np.int64,
@@ -715,13 +726,15 @@ def make_subgraph_input_tensor(
     subgraph_inputs = np.array(list(range(int(min_bound), int(max_bound) + 1)))
     subgraph_input_shape = tuple([len(subgraph_inputs), *orig_shape_[1:]])
 
+    print(f"{subgraph_input_shape=}")
+
     if len(expected_shape) > 1:
         subgraph_inputs = np.tile(
             subgraph_inputs[
                 tuple(
                     [
                         slice(0, len(subgraph_inputs), 1),
-                        *[np.newaxis for _ in range(len(expected_shape))],
+                        *[np.newaxis for _ in range(len(expected_shape[1:]))],
                     ]
                 )
             ],
@@ -730,6 +743,7 @@ def make_subgraph_input_tensor(
 
         subgraph_inputs = subgraph_inputs[tuple(slice(0, elt, 1) for elt in subgraph_input_shape)]
 
+    print(f"{subgraph_inputs.shape=}")
     return subgraph_inputs
 
 
@@ -811,7 +825,7 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
         self.rounding_function = round_bit_pattern
         self.internal_bit_width_target = internal_bit_width_target
         # Store per PBS statistics to see how bitwidths were reduced
-        self.statistics: Dict[Node, Dict[str, Union[int, np.ndarray]]] = {}
+        self.statistics: Dict[Node, Dict[str, Union[int, np.ndarray, Tuple[int, ...]]]] = {}
 
     def apply(self, graph: Graph) -> None:
         """Apply the TLU optimization to a Graph for all TLUs.
@@ -819,6 +833,7 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
         Args:
             graph (Graph): The executable graph containing TLU nodes
         """
+        # Get all nodes in the graph that will be converted to a TLU
         tlu_nodes = graph.query_nodes(
             custom_filter=is_node_tlu,  # TLU filter function
             ordered=True,  # Not strictly necessary but easier to debug
@@ -829,29 +844,43 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
             # 1. Optimize a and b for the subgraph
             # 2. Insert a and b in the graph
             # 3. Insert rounding to the graph
-            # 4. Insert a and b in the subgraph
-
+            # 4. Insert a and b in the subgraph of the TLU
+            #   We could also just modify the evalutor function to
+            #   include the scale-up.
+            #   That would require another way to do the optimization
+            #   since we rely on the subgraph to reduce the dimension
+            #   of the TLU.
+            
             # Get TLU sub-graph
-            if "subgraph" not in tlu_node.evaluator.properties["kwargs"]:
+            evaluator = tlu_node.evaluator
+            assert isinstance(evaluator, GenericEvaluator)
+
+            if "subgraph" not in evaluator.properties["kwargs"]:
+                # Not supported for now
                 continue
-            tlu_subgraph: Graph = tlu_node.evaluator.properties["kwargs"]["subgraph"]
+            tlu_subgraph: Graph = evaluator.properties["kwargs"]["subgraph"]
 
             # TLU input node (multiple inputs using the same subgraph is not supported)
             variable_input_node = get_tlu_node_subgraph_input_node(graph, tlu_node)
 
+            # Bounds are per-tensor for now.
+            # Using per-element bounds would allow us to improve the optimization
             min_bound, max_bound = extract_tlu_input_bounds(variable_input_node)
 
             # Create input with proper shape on the bounds for optimization
             expected_shape = variable_input_node.output.shape
 
+            # We reduce to 1 the dimension of the axis if no constant rely on it
+            # This allows the computation to be done on less elements
             shape_, orig_shape_ = compute_tlu_output_shapes(
                 tlu_subgraph,
             )
 
             # Create an input which the full input range
             subgraph_inputs = make_subgraph_input_tensor(
-                min_bound, max_bound, orig_shape_, expected_shape
+                min_bound, max_bound, orig_shape_, tuple([max_bound - min_bound, *shape_[1:]]),
             )
+            # shape_ -> expected_shape
 
             # Compute TLU output on bounds without rounding or calibration for reference
             sorted_nodes = list(nx.topological_sort(tlu_subgraph.graph))
@@ -917,7 +946,7 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
         variable_input_node: Node,
         a: np.ndarray,
         b: np.ndarray,
-        n_round: np.int64,
+        n_round: int,
     ):
         """Modify a graph to add rounding before a TLU.
 

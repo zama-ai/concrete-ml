@@ -110,10 +110,49 @@ def make_tlu_optimizer_function(execution_number: int, function_name: str):
         f = make_random_function(x_min, x_max)
     elif function_name == "division":
         f = make_division()
+        # TODO: set values here
+        x_min, x_max = 1., 2.
     else:
         raise AssertionError(f"Invalid function to test for TLU optimization {function_name}")
 
     return f, x_min, x_max
+
+@pytest.mark.parametrize("execution_number", [1, 2, 4])
+@pytest.mark.parametrize(
+    "function_name", ["staircase_pot", "staircase", "identity", "random", "division"]
+)
+@pytest.mark.parametrize("shape", [(1,), (2, 2), (2, 2, 2), (2, 3, 1, 4)])
+def test_cycle_finder(execution_number: int, function_name: str, shape: Tuple[int, ...]): # pylint: disable=too-many-locals
+    """Tests the tlu optimizer with various functions."""
+
+    curr_seed = numpy.random.randint(0, 2**32)
+    numpy.random.seed(curr_seed + execution_number)
+
+    f, x_min, x_max = make_tlu_optimizer_function(execution_number, function_name)
+
+    tile_shape = (*shape, 1)
+    # Function definition bounds
+    vals = numpy.arange(x_min, x_max + 1, 1, dtype=numpy.int64)
+    input_set = numpy.moveaxis(numpy.tile(vals, tile_shape), -1, 0)
+    input_set_as_list_of_array = [numpy.array([elt]) for elt in input_set]
+
+    # Optim, Rounding
+    cycle_detector = CycleDetector()
+    additional_pre_processors: List[GraphProcessor] = []
+    additional_post_processors: List[GraphProcessor] = [cycle_detector]
+    compilation_configuration = Configuration(
+        additional_pre_processors=additional_pre_processors,
+        additional_post_processors=additional_post_processors,
+    )
+    compiler = Compiler(
+        f,
+        parameter_encryption_statuses={"x": "encrypted"},
+    )
+
+    compiler.compile(
+        input_set_as_list_of_array,
+        configuration=compilation_configuration,
+    )
 
 
 @pytest.mark.parametrize("execution_number", [1, 2, 4])
@@ -188,17 +227,21 @@ def test_tlu_optimizer(execution_number: int, function_name: str, shape: Tuple[i
         assert circuit.mlir == circuit_no_optim_no_rounding.mlir
         return
 
-    simulated = numpy.array([circuit.simulate(numpy.array([elt])) for elt in input_set])[..., 0]
-    simulated_no_optim_no_rounding = numpy.array(
+    simulated = numpy.vstack([circuit.simulate(numpy.array([elt])) for elt in input_set])
+    simulated_no_optim_no_rounding = numpy.vstack(
         [circuit_no_optim_no_rounding.simulate(numpy.array([elt])) for elt in input_set]
-    )[..., 0]
+    )
 
-    graph_res = numpy.array([circuit.graph(numpy.array([elt])) for elt in input_set])[..., 0]
-    graph_res_no_optim_no_rounding = numpy.array(
+    graph_res = numpy.vstack([circuit.graph(numpy.array([elt])) for elt in input_set])
+    graph_res_no_optim_no_rounding = numpy.vstack(
         [circuit_no_optim_no_rounding.graph(numpy.array([elt])) for elt in input_set]
-    )[..., 0]
+    )
+
+    assert reference.shape == simulated.shape, f"{reference.shape=} != {simulated.shape=}"
 
     not_equal = reference != simulated
+    assert isinstance(not_equal, numpy.ndarray)
+
     if not_equal.sum() > 0 and function_name == "staircase_pot":
         raise Exception(
             f"TLU Optimizer is not exact: "
@@ -210,3 +253,4 @@ def test_tlu_optimizer(execution_number: int, function_name: str, shape: Tuple[i
             f"{circuit.graph.format()}\n{'#'*20}\n"
             f"{circuit_no_optim_no_rounding.graph.format()}\n"
         )
+
