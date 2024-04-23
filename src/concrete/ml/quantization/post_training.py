@@ -517,7 +517,11 @@ class ONNXConverter:
             assert_true(len(node.output) == 1)
 
             output_name = node.output[0]
-            if op_type == "Constant":
+
+            # 'ConstantOfShape' ONNX nodes appear when using torch operators like `zeros_like`.
+            # Most of the time, ONNX seems to optimize the graph and remove them from it. However,
+            # that is not always the case and we need to identify them as constant values as well
+            if op_type in ["Constant", "ConstantOfShape"]:
                 constant_values = ONNX_OPS_TO_NUMPY_IMPL["Constant"](**attributes)[0]
                 node_results[output_name] = constant_values
                 constants.add(output_name)

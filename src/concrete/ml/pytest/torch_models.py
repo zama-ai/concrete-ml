@@ -1564,3 +1564,35 @@ class Conv1dModel(nn.Module):
         x = self.bn1(x)
         x = self.fc1(x)
         return x
+
+
+class ConstantOfShapeModel(nn.Module):
+    """Small model that uses a 'ConstantOfShape' ONNX node.
+
+    'ConstantOfShape' ONNX nodes appear when using torch operators like `zeros_like`. Most of the
+    time, ONNX seems to optimize the graph and remove them from it. This model is a specific case
+    where this optimization is not applied.
+    """
+
+    # pylint: disable-next=unused-argument
+    def __init__(self, input_output, activation_function, n_bits=2):
+        super().__init__()
+
+        self.quant = qnn.QuantIdentity(bit_width=n_bits)
+        self.conv = qnn.QuantConv2d(1, 1, 3, stride=1, bias=True, weight_bit_width=n_bits)
+
+    def forward(self, x):
+        """Forward pass.
+
+        Args:
+            x (torch.Tensor): The model's input.
+
+        Returns:
+            torch.Tensor: The model's output.
+
+        """
+        x = self.quant(x)
+        x = self.conv(x)
+        x = x + torch.zeros_like(x, dtype=torch.float32, requires_grad=True)
+
+        return x

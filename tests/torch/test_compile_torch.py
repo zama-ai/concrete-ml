@@ -31,6 +31,7 @@ from concrete.ml.pytest.torch_models import (
     CNNGrouped,
     CNNOther,
     ConcatFancyIndexing,
+    ConstantOfShapeModel,
     Conv1dModel,
     DoubleQuantQATMixNet,
     EncryptedMatrixMultiplicationModel,
@@ -625,7 +626,10 @@ def test_compile_torch_qat(
 
 @pytest.mark.parametrize(
     "model_class, input_output_feature, is_brevitas_qat",
-    [pytest.param(partial(MultiInputNNDifferentSize, is_brevitas_qat=True), [5, 10], True)],
+    [
+        pytest.param(partial(MultiInputNNDifferentSize, is_brevitas_qat=True), [5, 10], True),
+        pytest.param(ConstantOfShapeModel, (1, 8, 8), True),
+    ],
 )
 @pytest.mark.parametrize(
     "n_bits",
