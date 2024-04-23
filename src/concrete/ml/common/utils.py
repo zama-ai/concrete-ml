@@ -636,7 +636,8 @@ def process_rounding_threshold_bits(rounding_threshold_bits):
             valid_keys = {"n_bits", "method"}
             if not valid_keys.issuperset(rounding_threshold_bits.keys()):
                 raise KeyError(
-                    f"Invalid keys in rounding_threshold_bits. Allowed keys are {valid_keys}."
+                    f"Invalid keys in rounding_threshold_bits. "
+                    f"Allowed keys are {sorted(valid_keys)}."
                 )
             n_bits_rounding = rounding_threshold_bits.get("n_bits")
             if n_bits_rounding == "auto":

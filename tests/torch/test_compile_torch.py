@@ -1423,7 +1423,7 @@ def test_onnx_no_input():
         (
             {"invalid_key": 4},
             KeyError,
-            "Invalid keys in rounding_threshold_bits. Allowed keys are {'n_bits', 'method'}.",
+            "Invalid keys in rounding_threshold_bits. Allowed keys are \\['method', 'n_bits'\\].",
         ),
         (
             {"n_bits": "not_an_int"},
