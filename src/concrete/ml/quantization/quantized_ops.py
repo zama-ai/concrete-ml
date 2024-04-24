@@ -717,11 +717,10 @@ class QuantizedReshape(QuantizedOp):
     def can_fuse(self) -> bool:
         """Determine if this op can be fused.
 
-        Max Pooling operation can not be fused since it must be performed over integer tensors and
-        it combines different elements of the input tensors.
+        Reshape operation can not be fused since it must be performed over integer tensors.
 
         Returns:
-            bool: False, this operation can not be fused as it adds different encrypted integers
+            bool: False, this operation can not be fused.
         """
         return False
 
