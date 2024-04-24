@@ -74,8 +74,7 @@ tqdm, 4.66.2, MIT License; Mozilla Public License 2.0 (MPL 2.0)
 transformers, 4.40.0, Apache Software License
 typing_extensions, 4.5.0, Python Software Foundation License
 tzdata, 2024.1, Apache Software License
-urllib3, 1.26.18, MIT License
+urllib3, 2.2.1, MIT License
 uvicorn, 0.21.1, BSD License
 xgboost, 1.6.2, Apache Software License
 z3-solver, 4.13.0.0, MIT License
-zipp, 3.18.1, MIT License
