@@ -192,7 +192,7 @@ spcc:
 PCC_DEPS := check_python_format check_finalize_nb python_linting mypy_ci pydocstyle shell_lint
 PCC_DEPS += check_version_coherence check_licenses check_nbqa check_supported_ops
 PCC_DEPS += check_refresh_notebooks_list check_refresh_use_cases_list check_mdformat
-PCC_DEPS += check_unused_images check_utils_use_case gitleaks
+PCC_DEPS += check_unused_images check_utils_use_case gitleaks check_symlinks
 
 .PHONY: pcc_internal
 pcc_internal: $(PCC_DEPS)
@@ -798,3 +798,12 @@ check_utils_use_case:
 .PHONY: update_encrypted_dataframe # Update encrypted data-frame's development files
 update_encrypted_dataframe:
 	poetry run python ./script/make_utils/update_encrypted_dataframe_files.py
+
+.PHONY: check_symlinks # Check that no utils.py are found in use_case_examples
+check_symlinks:
+	if [[ -z $$(find . -xtype l -name abc) ]]; then \
+		echo "All symlinks point to exiting files"; \
+	else \
+		echo "Bad symlinks found: " && echo $$(find . -xtype l) && \
+		exit 1; \
+	fi
