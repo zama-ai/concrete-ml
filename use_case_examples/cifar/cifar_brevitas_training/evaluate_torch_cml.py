@@ -10,6 +10,7 @@ from tqdm import tqdm
 from trainer import accuracy, get_test_set, get_train_set
 
 from concrete.ml.torch.compile import compile_brevitas_qat_model
+from concrete.ml.common.preprocessors import TLUDeltaBasedOptimizer
 
 CURRENT_DIR = Path(__file__).resolve().parent
 
@@ -103,9 +104,13 @@ def main(args):
     model.eval()
 
     # Multi-parameter strategy is used in order to speed-up the FHE executions
+    tlu_optimizer = TLUDeltaBasedOptimizer(internal_bit_width_target = 20)
     cfg = Configuration(
         verbose=True,
         show_optimizer=args.show_optimizer,
+        additional_pre_processors=[
+            # tlu_optimizer,
+        ],
     )
 
     for rounding_threshold_bits in rounding_threshold_bits_list:

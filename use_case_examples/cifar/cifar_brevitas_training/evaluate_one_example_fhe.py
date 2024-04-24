@@ -9,7 +9,6 @@ import numpy as np
 import torch
 from concrete.fhe import Exactness
 from concrete.fhe.compilation.configuration import Configuration
-from concrete.fhe.mlir.processors import ProcessRounding
 from models import cnv_2w2a
 from torch.utils.data import DataLoader
 from trainer import get_test_set
@@ -95,7 +94,6 @@ configuration = Configuration(
     ],
     fhe_simulation=SIMULATE_ONLY,
     fhe_execution=not SIMULATE_ONLY
-    # additional_processors=[InsertRounding(4)]
 )
 
 print("Compiling the model.")
