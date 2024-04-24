@@ -1976,7 +1976,7 @@ def numpy_shape(x: numpy.ndarray) -> Tuple[numpy.ndarray]:
     return (numpy.asarray(x.shape, numpy.int64).view(RawOpOutput),)
 
 
-@onnx_func_raw_args("shape", "value", output_is_raw=True)
+@onnx_func_raw_args("shape", "value")
 def numpy_constant_of_shape(shape: numpy.ndarray, *, value=0.0) -> Tuple[numpy.ndarray]:
     """Create a constant tensor with a specified shape.
 
@@ -1989,9 +1989,23 @@ def numpy_constant_of_shape(shape: numpy.ndarray, *, value=0.0) -> Tuple[numpy.n
     Returns:
         result(Tuple[numpy.ndarray]): the constant tensor
     """
+    
+    # If the input shape is a RawOpOutput, that means the ConstantOfShape node is considering a 
+    # dynamic shape input (following a 'Shape' node). Since dynamic shape is not supported by 
+    # Concrete ML, we need to manually set this shape as a constant shape with batch size 1
+    # We also need to make sure the output is not a RawOpOutput in order to make sure the 
+    if isinstance(shape, RawOpOutput):
+        input_shape = tuple(shape)
+        batched_input_shape = (1, ) + (input_shape[1:] if len(input_shape) > 1 else ())
+                
+        batched_input_shape = numpy.array(batched_input_shape)
+        
+        constant_of_shape = (numpy.ones(batched_input_shape, dtype=numpy.int64) * value)
 
-    return (numpy.ones(shape, dtype=numpy.int64) * value,)
+    else:
+        constant_of_shape = (numpy.ones(shape, dtype=numpy.int64) * value).view(RawOpOutput)
 
+    return (constant_of_shape,)
 
 @onnx_func_raw_args("starts", "ends", "steps", "axes")
 def numpy_slice(

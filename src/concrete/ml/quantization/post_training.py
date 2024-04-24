@@ -517,23 +517,34 @@ class ONNXConverter:
             assert_true(len(node.output) == 1)
 
             output_name = node.output[0]
-
-            # 'ConstantOfShape' ONNX nodes appear when using torch operators like `zeros_like`.
-            # Most of the time, ONNX seems to optimize the graph and remove them from it. However,
-            # that is not always the case and we need to identify them as constant values as well
-            if op_type in ["Constant", "ConstantOfShape"]:
-                constant_values = ONNX_OPS_TO_NUMPY_IMPL["Constant"](**attributes)[0]
+            if op_type == "Constant":
+                constant_values = ONNX_OPS_TO_NUMPY_IMPL[op_type](**attributes)[0]
                 node_results[output_name] = constant_values
                 constants.add(output_name)
                 continue
-
-            quantized_op_class = ONNX_OPS_TO_QUANTIZED_IMPL[op_type]
 
             # All inputs, allow optional constants (they become None)
             # Note that input of a node can be duplicated, e.g., (%a, %a, %b)
             curr_inputs = [
                 (input_name, node_results.get(input_name, None)) for input_name in node.input
             ]
+            
+            # 'ConstantOfShape' ONNX nodes with dynamic shape input appear when using torch 
+            # operators like `zeros_like`. Dynamic shape is not supported by Concrete ML, so we need 
+            # to make the shape input static, with batch size 1
+            if op_type == "ConstantOfShape":
+                assert len(curr_inputs) == 1, (
+                    f"Node {node.name} of type {op_type} should have exactly one input."
+                )
+                
+                input_shape = curr_inputs[0][1]
+                
+                constant_shape = ONNX_OPS_TO_NUMPY_IMPL[op_type](input_shape, **attributes)[0]
+                node_results[output_name] = constant_shape
+                constants.add(output_name)
+                continue
+
+            quantized_op_class = ONNX_OPS_TO_QUANTIZED_IMPL[op_type]
 
             # Constant inputs
             curr_cst_inputs: Dict[int, ONNXOpInputOutputType] = {}
