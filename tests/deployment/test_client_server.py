@@ -66,6 +66,9 @@ class OnDiskNetwork:
         self.dev_dir.cleanup()
 
 
+# This is a known flaky test
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4014
+@pytest.mark.flaky
 @pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
 @pytest.mark.parametrize("n_bits", [2])
 def test_client_server_sklearn(
