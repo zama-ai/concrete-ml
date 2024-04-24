@@ -2,7 +2,7 @@
 
 from copy import deepcopy
 from itertools import product
-from typing import Any, Callable, Dict, List, Tuple, Union
+from typing import Any, Callable, Dict, List, Tuple, Union, Optional
 
 import networkx as nx
 import numpy as np
@@ -197,6 +197,7 @@ def add_rounding_node(
     """
 
     if lsbs_to_remove <= 0:
+        print(f"No  rounding node to add because {lsbs_to_remove=}")
         return a_node
 
     assert isinstance(a_node.output.dtype, Integer)
@@ -242,6 +243,8 @@ def add_rounding_node(
         graph.remove_edge(in_node, out_node)
         input_idx: int = edge_data[0]["input_idx"]
         graph.add_edge(rounding_node, out_node, input_idx=input_idx)
+
+    print(f"Added rounding node")
     return rounding_node
 
 
@@ -272,7 +275,7 @@ def add_leveled_op_with_cst(
     # When processing a single subgraph b is a float scalar, but when
     # we're processing the main graph, b is an int or an array corresponding
     # to a broadcasted value
-    assert isinstance(b, (float, int)) or (
+    assert isinstance(b, (float, int, np.int64, np.float64)) or (
         isinstance(b, np.ndarray) and b.dtype in (np.float64, np.int64)
     ), f"Constant {b} should be of dtype np.int64 or np.float64, not {b.dtype}"
 
@@ -526,7 +529,16 @@ def modify_subgraph_for_rounded_inputs(tlu_subgraph: Graph, a: np.ndarray, c: np
         c (np.ndarray): the offset of the rounding approximation
     """
 
+
     previous_node = get_subgraph_input(tlu_subgraph)
+
+    if not previous_node.output.shape:
+        assert a.shape == (1,) or a.shape == tuple(), f"{a.shape=}"
+        assert c.shape == (1,) or c.shape == tuple(), f"{c.shape=}"
+        if a.shape == (1,):
+            a = a[0]
+        if c.shape == (1,):
+            c = c[0]
 
     # Use floats in the subgraph
     a = a.astype(np.float64)
@@ -787,6 +799,95 @@ def reduce_output_tensor(
     return subgraph_inputs, reference
 
 
+class InsertRounding(GraphProcessor):
+    """
+    InsertRounding graph processor, to add rounding before TLUs if desired.
+    """
+
+    rounding_threshold: Optional[int]
+
+    def __init__(
+        self,
+        threshold: Optional[int],
+        exactness: Exactness = Exactness.EXACT,
+        overflow_protection: bool = True,
+    ):
+        self.rounding_threshold = threshold
+        self.exactness = exactness
+        self.overflow_protection = overflow_protection
+
+    def apply(self, graph: Graph):
+        if self.rounding_threshold is None:
+            # No rounding
+            return
+
+        # Get all nodes that will be converted to LUTs
+        tlu_nodes = graph.query_nodes(
+            custom_filter=is_node_tlu,
+        )
+        for tlu_node in tlu_nodes:
+            # Predecessor nodes
+            pred_nodes = graph.ordered_preds_of(tlu_node)
+
+            # Only take into accound predecessor's that aren't constants
+            variable_input_indices = []
+            for pred_index, pred_node in enumerate(pred_nodes):
+                if pred_node.operation != Operation.Constant:
+                    variable_input_indices.append(pred_index)
+
+            # Only one input should be non-constant per LUT
+            # TODO: verify this is actually true
+            if len(variable_input_indices) != 1:
+                continue
+
+            # Get variable input
+            variable_input_index = variable_input_indices[0]
+            variable_input_node = pred_nodes[variable_input_index]
+            variable_input_dtype = variable_input_node.output.dtype
+
+            if not isinstance(variable_input_dtype, Integer):
+                raise ValueError(f"{variable_input_dtype=} is not 'Integer'")
+
+            variable_input_bit_width = variable_input_dtype.bit_width
+            if variable_input_bit_width <= self.rounding_threshold:
+                # No need to do anything if the bit-width is actually lower or equal
+                # to the rounding threshold value
+                continue
+
+            # Compute lsbs to remove
+            lsbs_to_remove = variable_input_bit_width - self.rounding_threshold
+
+            # Rounding node
+            rounding_node = Node.generic(
+                "round_bit_pattern",
+                [deepcopy(variable_input_node.output)],
+                deepcopy(variable_input_node.output),
+                round_bit_pattern,
+                kwargs={
+                    "lsbs_to_remove": lsbs_to_remove,
+                    "overflow_protection": self.overflow_protection,
+                    "exactness": self.exactness,
+                },
+                attributes={
+                    "overflow_protection": self.overflow_protection,
+                },
+            )
+            rounding_node.properties["final_lsbs_to_remove"] = lsbs_to_remove
+            rounding_node.properties["resulting_bit_width"] = self.rounding_threshold
+            rounding_node.properties["overflow_protection"] = self.overflow_protection
+            rounding_node.properties["overflow_detected"] = False
+            rounding_node.properties["exactness"] = self.exactness
+
+            nx_graph = graph.graph
+            nx_graph.add_edge(variable_input_node, rounding_node, input_idx=0)
+
+            edge_data = nx_graph.get_edge_data(variable_input_node, tlu_node).values()
+            for data in list(edge_data):
+                input_idx = data["input_idx"]
+                nx_graph.add_edge(rounding_node, tlu_node, input_idx=input_idx)
+
+            nx_graph.remove_edge(variable_input_node, tlu_node)
+
 class TLUDeltaBasedOptimizer(GraphProcessor):
     """TLU Step-based optimizer.
 
@@ -840,6 +941,7 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
         )
 
         for tlu_node in tlu_nodes:
+            print("COUCOU")
             # On each tlu we do:
             # 1. Optimize a and b for the subgraph
             # 2. Insert a and b in the graph
@@ -857,7 +959,9 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
 
             if "subgraph" not in evaluator.properties["kwargs"]:
                 # Not supported for now
+                print("skipping because tlu is not a subgraph")
                 continue
+
             tlu_subgraph: Graph = evaluator.properties["kwargs"]["subgraph"]
 
             # TLU input node (multiple inputs using the same subgraph is not supported)
@@ -867,8 +971,8 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
             # Using per-element bounds would allow us to improve the optimization
             min_bound, max_bound = extract_tlu_input_bounds(variable_input_node)
 
-            # Create input with proper shape on the bounds for optimization
-            expected_shape = variable_input_node.output.shape
+            # # Create input with proper shape on the bounds for optimization
+            # expected_shape = variable_input_node.output.shape
 
             # We reduce to 1 the dimension of the axis if no constant rely on it
             # This allows the computation to be done on less elements
@@ -878,7 +982,7 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
 
             # Create an input which the full input range
             subgraph_inputs = make_subgraph_input_tensor(
-                min_bound, max_bound, orig_shape_, tuple([max_bound - min_bound, *shape_[1:]]),
+                min_bound, max_bound, orig_shape_, tuple([int(max_bound - min_bound), *shape_[1:]]),
             )
             # shape_ -> expected_shape
 
@@ -913,6 +1017,7 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
             all_multipliers_are_1 = np.all(best_a == 1)
             all_offsets_are_0 = np.all(best_b == 0)
             if (all_multipliers_are_1 and all_offsets_are_0) or n_round == 0:
+                print("Skipping because there is no benefit to upscaling")
                 continue
 
             # We need to make sure that we have the correct shape when adding constants in the graph
@@ -964,8 +1069,16 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
             n_round (np.int64): The number of bits to round off
 
         """
-        assert a.shape == variable_input_node.output.shape
-        assert b.shape == variable_input_node.output.shape
+
+        if variable_input_node.output.shape:
+            assert a.shape == variable_input_node.output.shape, f"{a.shape=} != {variable_input_node.output.shape=}"
+            assert b.shape == variable_input_node.output.shape, f"{b.shape=} != {variable_input_node.output.shape=}"
+        else:
+            assert a.shape == (1,)
+            assert b.shape == (1,)
+
+            a = a[0]
+            b = b[0]
 
         # Subtract offset that matches step threshold to rounding step treshold
         previous_node = add_leveled_op_with_cst(
@@ -996,3 +1109,4 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
             exactness=self.exactness,
             overflow_protection=self.overflow_protection,
         )
+        # breakpoint()
