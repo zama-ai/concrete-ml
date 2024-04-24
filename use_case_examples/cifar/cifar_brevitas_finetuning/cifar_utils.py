@@ -97,6 +97,7 @@ DATASETS_ARGS = {
         "std": (0.5),
         "train_transform": transforms.Compose(
             [
+                transforms.Pad(1, padding_mode='edge'),
                 transforms.ToTensor(),
                 transforms.Normalize((0.5,), (0.5,)),
                 # transforms.RandomRotation(5, fill=(1,)),
@@ -107,6 +108,7 @@ DATASETS_ARGS = {
         ),
         "test_transform": transforms.Compose(
             [
+                transforms.Pad(1, padding_mode='edge'),
                 transforms.ToTensor(),
                 transforms.Normalize((0.5,), (0.5,)),
                 # transforms.Resize(20),
@@ -468,12 +470,24 @@ def torch_inference(
     return np.mean(np.vstack(correct), dtype="float64")
 
 
-def fhe_compatibility(model: Callable, data: DataLoader) -> Callable:
+
+def fhe_compatibility(
+    model: Callable,
+    data: DataLoader,
+    rounding_threshold_bits: Optional[int] = None,
+    show_mlir: bool = False,
+    output_onnx_file: str = "test.onnx") -> Callable:
     """Test if the model is FHE-compatible.
 
     Args:
         model (Callable): The Brevitas model.
         data (DataLoader): The data loader.
+        rounding_threshold_bits (Optiona[int]): if not None, every accumulators in the model are 
+            rounded down to the given bits of precision.
+        show_mlir (bool): if set, the MLIR produced by the converter and which is going
+            to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo.
+        output_onnx_file (str): temporary file to store ONNX model. If None a temporary file
+            is generated.
 
     Returns:
         Callable: Quantized model.
@@ -483,8 +497,9 @@ def fhe_compatibility(model: Callable, data: DataLoader) -> Callable:
         model.to("cpu"),
         # Training
         torch_inputset=data,
-        show_mlir=False,
-        output_onnx_file="test.onnx",
+        show_mlir=show_mlir,
+        output_onnx_file=output_onnx_file,
+        rounding_threshold_bits=rounding_threshold_bits,
     )
 
     return qmodel
