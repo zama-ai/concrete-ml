@@ -431,6 +431,8 @@ def train(
         model.state_dict(), f"{dir}/{param['dataset_name']}_{param['training']}_state_dict.pt"
     )
 
+    print("Save in:", f"{dir}/{param['dataset_name']}_{param['training']}_state_dict.pt")
+
     with open(f"{dir}/{param['dataset_name']}_history.pkl", "wb") as f:
         pkl.dump(param, f)
 
