@@ -67,13 +67,42 @@ def test_init_error_raises(n_bits, parameter_min_max):
             fit_intercept=True,
         )
 
-    SGDClassifier(
-        n_bits=n_bits,
-        fit_encrypted=True,
-        random_state=random_state,
-        parameters_range=parameters_range,
-        fit_intercept=False,
-    )
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Only 'log_loss' is currently supported if FHE training is enabled"
+            " (fit_encrypted=True). Got loss='perceptron'"
+        ),
+    ):
+        SGDClassifier(
+            n_bits=n_bits,
+            fit_encrypted=True,
+            loss="perceptron",
+            random_state=random_state,
+            parameters_range=parameters_range,
+        )
+
+    with pytest.raises(
+        ValueError, match="Setting 'parameter_range' is mandatory if FHE training is enabled."
+    ):
+        SGDClassifier(
+            n_bits=n_bits,
+            fit_encrypted=True,
+            random_state=random_state,
+            parameters_range=None,
+            fit_intercept=True,
+        )
+
+    with pytest.raises(
+        ValueError, match="Early stopping is not possible when training in FHE.*"
+    ):
+        SGDClassifier(
+            n_bits=n_bits,
+            fit_encrypted=True,
+            random_state=random_state,
+            parameters_range=parameters_range,
+            early_stopping=True,
+        )
 
 
 @pytest.mark.parametrize("n_classes", [1, 3])

@@ -561,28 +561,32 @@ class QuantizedModule:
             return q_results[0]
         return q_results
 
-    def quantize_input(self, *x: numpy.ndarray) -> Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]:
+    def quantize_input(self, *x: Optional[numpy.ndarray]) -> Union[numpy.ndarray, Tuple[Optional[numpy.ndarray], ...]]:
         """Take the inputs in fp32 and quantize it using the learned quantization parameters.
 
         Args:
-            x (numpy.ndarray): Floating point x.
+            x (Optional[numpy.ndarray]): Floating point x or None.
 
         Returns:
-            Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]: Quantized (numpy.int64) x.
+            Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]: Quantized (numpy.int64) x, or None if
+                the corresponding input is None.
         """
         n_inputs = len(self.input_quantizers)
         n_values = len(x)
+        
         assert_true(
             n_values == n_inputs,
             f"Got {n_values} inputs, expected {n_inputs}. Either the quantized module has not been "
             "properly initialized or the input data has been changed since its initialization.",
             ValueError,
         )
+        
+        assert not all(x_i is None for x_i in x), "Please provide at least one input to quantize."
 
-        q_x = tuple(self.input_quantizers[idx].quant(x[idx]) for idx in range(len(x)))
+        q_x = tuple(self.input_quantizers[idx].quant(x[idx]) if x[idx] is not None else None for idx in range(len(x)))
 
         # Make sure all inputs are quantized to int64
-        assert all_values_are_of_dtype(*q_x, dtypes="int64"), "Inputs were not quantized to int64"
+        assert all_values_are_of_dtype(*q_x, dtypes="int64", allow_none=True), "Inputs were not quantized to int64"
 
         return q_x[0] if len(q_x) == 1 else q_x
 

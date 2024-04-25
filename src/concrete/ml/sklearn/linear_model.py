@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional, Union
 
 import numpy
 import sklearn.linear_model
+from concrete.fhe import Configuration
 from sklearn.preprocessing import LabelEncoder
 
 from ..common.utils import FheMode
@@ -249,6 +250,13 @@ class SGDClassifier(SklearnSGDClassifierMixin):
                     "Setting 'parameter_range' is mandatory if FHE training is enabled "
                     f"({fit_encrypted=}). Got {parameters_range=}"
                 )
+
+            if self.early_stopping:
+                raise ValueError(
+                    "Early stopping is not possible when training in FHE: values are encrypted "
+                    "throughout all training iterations."
+                )
+
         else:
             supported_losses = ["log_loss", "modified_huber"]
             if self.loss not in supported_losses:
@@ -340,6 +348,11 @@ class SGDClassifier(SklearnSGDClassifierMixin):
             iterations=1,
             fit_bias=self.fit_intercept,
         )
+        
+        # Enable the underlying FHE circuit to be composed with itself
+        # This feature is used in order to be able to iterate in the clear n times without having
+        # to encrypt/decrypt the weight/bias values between each loop 
+        configuration = Configuration(composable=True)
 
         # Compile the model using the compile set
         if self.verbose:
@@ -352,6 +365,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
             n_bits=self.n_bits_training,
             rounding_threshold_bits=self.rounding_training,
             p_error=self.training_p_error,
+            configuration=configuration,
             reduce_sum_copy=True,
         )
         end = time.time()
@@ -426,6 +440,11 @@ class SGDClassifier(SklearnSGDClassifierMixin):
                     f" was: {self.classes_}"
                 )
 
+            
+        n_samples, n_features = X.shape
+        weight_shape = (1, n_features, 1)
+        bias_shape = (1,1,1)
+        
         # Build the quantized module
         # In case of a partial fit, only do so if it has not been done already (which indicates
         # that this is the partial fit's first call)
@@ -498,14 +517,14 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         # Else, if warm start is activated or this is a partial fit, use some already computed
         # weight values have if there are some
         elif (self.warm_start or is_partial_fit) and self._weights_encrypted_fit is not None:
-            weights = self._weights_encrypted_fit
+            weights = self._weights_encrypted_fit.reshape(weight_shape)
 
         # Else, initialize the values randomly
         else:
             weights = self.random_number_generator.uniform(
                 low=self.parameters_range[0],
                 high=self.parameters_range[1],
-                size=(1, X.shape[1], 1),
+                size=weight_shape,
             )
 
         # If the mode should fit the bias values as well
@@ -518,95 +537,112 @@ class SGDClassifier(SklearnSGDClassifierMixin):
             # Else, if warm start is activated or this is a partial fit, use some already computed
             # bias values have if there are some
             elif (self.warm_start or is_partial_fit) and self._bias_encrypted_fit is not None:
-                bias = self._bias_encrypted_fit
+                bias = self._bias_encrypted_fit.reshape(bias_shape)
 
             # Else, initialize the values randomly
             else:
                 bias = self.random_number_generator.uniform(
                     low=self.parameters_range[0],
                     high=self.parameters_range[1],
-                    size=(1, 1, 1),
+                    size=bias_shape,
                 )
 
         # Else, initialize the bias with zeros
         else:
-            bias = numpy.zeros((1, 1, 1))
+            bias = numpy.zeros(bias_shape)
 
-        loss_value_moving_average = None
-
-        if self.verbose:
+        # Only print this verbose once if in training using `partial_fit``
+        if self.verbose and (not is_partial_fit or self.training_quantized_module is None):
             mode_string = " (simulation)" if fhe == "simulate" else ""
             print(f"Training on encrypted data{mode_string}...")
 
         # A partial fit is similar to running a fit with a single iteration
         max_iter = 1 if is_partial_fit else self.max_iter
 
-        # Iterate on the training quantized module in the clear
+        X_batches_enc, y_batches_enc = [], []
         for iteration_step in range(max_iter):
 
             # Sample the batches from X and y in the clear
             batch_indexes = self.random_number_generator.choice(
-                len(X), size=self.batch_size, replace=False
+                n_samples, size=self.batch_size, replace=False
             )
 
             # Mypy
             assert isinstance(batch_indexes, numpy.ndarray)
 
             # Build the batches
-            X_batch = X[batch_indexes].astype(float).reshape((1, len(batch_indexes), X.shape[1]))
+            X_batch = X[batch_indexes].astype(float).reshape((1, self.batch_size, n_features))
             y_batch = y[batch_indexes].reshape((1, self.batch_size, 1)).astype(float)
+            
+            # The underlying quantized module expects (X, y, weight, bias) as inputs. We thus only 
+            # quantize the input and target values using the first and second positional parameter
+            q_X_batch, q_y_batch, _, _ = self.training_quantized_module.quantize_input(X_batch, y_batch, None, None)
+            
+            # If the training is done in FHE, encrypt the input and target values
+            if fhe == "execute":
+                
+                # Similarly, the underlying FHE circuit expects (X, y, weight, bias) as inputs, and
+                # so does the encrypt method
+                X_batch_enc, y_batch_enc, _, _ = self.training_quantized_module.fhe_circuit.encrypt(q_X_batch, q_y_batch, None, None)
+                
+            else:
+                X_batch_enc, y_batch_enc = q_X_batch, q_y_batch
+            
+            X_batches_enc.append(X_batch_enc)
+            y_batches_enc.append(y_batch_enc)
 
-            weights = weights.reshape(1, X.shape[1], 1)
-            bias = bias.reshape(1, 1, 1)
+        # Similarly, we only quantize the weight and bias values using the third and fourth 
+        # position parameter
+        _, _, q_weights, q_bias = self.training_quantized_module.quantize_input(None, None, weights, bias)
 
-            # Mypy
-            assert self.training_quantized_module is not None
+        # If the training is done in FHE, encrypt the weight and bias values
+        if fhe == "execute":
+            
+            # Similarly, we only encrypt using the third and fourth position parameter
+            _, _, weights_enc, bias_enc = self.training_quantized_module.fhe_circuit.encrypt(
+                None, None, q_weights, q_bias
+            )
+        
+        else:
+            weights_enc, bias_enc = q_weights, q_bias
 
+        # Iterate on the training quantized module in the clear
+        for iteration_step in range(max_iter):
+            X_batch_enc_i, y_batch_enc_i = X_batches_enc[iteration_step], y_batches_enc[iteration_step]
+            
             # Train the model over one iteration
             inference_start = time.time()
-            weights, bias = self.training_quantized_module.forward(  # type: ignore[assignment]
-                X_batch, y_batch, weights, bias, fhe=fhe
-            )
+            
+            # If the training is done in FHE, execute the underlying FHE circuit dfzirectly on the
+            # encrypted values
+            if fhe == "execute":
+                weights_enc, bias_enc = self.training_quantized_module.fhe_circuit.run(
+                    X_batch_enc_i, y_batch_enc_i, weights_enc, bias_enc,
+                )
+            
+            # Else, use the quantized module on the quantized values (works for both quantized 
+            # clear and FHE simulation modes)
+            else:
+                weights_enc, bias_enc = self.training_quantized_module.quantized_forward(
+                    X_batch_enc_i, y_batch_enc_i, weights_enc, bias_enc, fhe=fhe
+                )
 
             if self.verbose:
                 print(
-                    f"Iteration {iteration_step} took {time.time() - inference_start:.4f} seconds."
+                    f"Iteration {iteration_step} took {time.time() - inference_start:.2f} seconds."
                 )
 
-            # Mypy
-            assert isinstance(weights, numpy.ndarray)
-            assert isinstance(bias, numpy.ndarray)
+        # If the training is done in FHE, encrypt the weight and bias values
+        if fhe == "execute":
+            q_weights, q_bias = self.training_quantized_module.fhe_circuit.decrypt(weights_enc, bias_enc)
+        
+        else:
+            q_weights, q_bias = weights_enc, bias_enc
 
-            # Reshape parameters to fit what scikit-learn expects
-            weights = weights.squeeze(0)
-            bias = bias.squeeze(0)  # pylint: disable=no-member
+        fitted_weights, fitted_bias = self.training_quantized_module.dequantize_output(q_weights, q_bias)
 
-            # If early stopping is enabled, compute the loss and stop the training if it gets under
-            # the given tolerance
-            # Additionally, there is no point in computing the following in case of a partial fit,
-            # as it only represents a single iteration
-            if self.early_stopping and not is_partial_fit:
-
-                # Evaluate the model on the full dataset and compute the loss
-                logits = ((X @ weights) + bias).squeeze()
-                loss_value = binary_cross_entropy(y_true=y, logits=logits)
-
-                # If this is the first training iteration, store the loss value computed above
-                if loss_value_moving_average is None:
-                    loss_value_moving_average = loss_value
-
-                # Else, update the value
-                else:
-                    previous_loss_value_moving_average = loss_value_moving_average
-                    loss_value_moving_average = (loss_value_moving_average + loss_value) / 2
-
-                    loss_difference = numpy.abs(
-                        previous_loss_value_moving_average - loss_value_moving_average
-                    )
-
-                    # If the loss gets under the given tolerance, stop the training
-                    if loss_difference < self.tol:
-                        break
+        # Reshape parameters to fit what scikit-learn expects
+        fitted_weights, fitted_bias = fitted_weights.squeeze(0), fitted_bias.squeeze(0)
 
         # Initialize the underlying scikit-learn model if it has not already been done
         # This model should be directly initialized in the model's __init__ method instead
@@ -619,12 +655,12 @@ class SGDClassifier(SklearnSGDClassifierMixin):
             self.sklearn_model = self.sklearn_model_class(**params)
 
         # Build the underlying scikit-learn model with the computed weight and bias values
-        self.sklearn_model.coef_ = weights.T
-        self.sklearn_model.intercept_ = bias
+        self.sklearn_model.coef_ = fitted_weights.T
+        self.sklearn_model.intercept_ = fitted_bias
 
         # Update the model's Concrete ML parameters
-        self._weights_encrypted_fit = weights
-        self._bias_encrypted_fit = bias
+        self._weights_encrypted_fit = fitted_weights
+        self._bias_encrypted_fit = fitted_bias
         self._is_fitted = True
         self._quantize_model(X)
 

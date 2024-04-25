@@ -383,6 +383,9 @@ def _get_dtype(values: Any):
         >>> _get_dtype(X_tensor)
         {'torch.float32'}
     """
+    if values is None:
+        return set((None,))
+
     # Specific case: if `values` is a Dict, return all items in a string format and in a single set
     if isinstance(values, Dict):
         return set(map(str, sum(values.items(), ())))
@@ -562,12 +565,13 @@ def all_values_are_floats(*values: Any) -> bool:
     return all(_is_of_dtype(value, SUPPORTED_FLOAT_TYPES) for value in values)
 
 
-def all_values_are_of_dtype(*values: Any, dtypes: Union[str, List[str]]) -> bool:
+def all_values_are_of_dtype(*values: Any, dtypes: Union[str, List[str]], allow_none: bool = False) -> bool:
     """Indicate if all unpacked values are of the specified dtype(s).
 
     Args:
         *values (Any): The values to consider.
         dtypes (Union[str, List[str]]): The dtype(s) to consider.
+        allow_none (bool): Indicate if the values can be None.
 
     Returns:
         bool: Whether all values are of the specified dtype(s) or not.
@@ -587,6 +591,10 @@ def all_values_are_of_dtype(*values: Any, dtypes: Union[str, List[str]]) -> bool
 
         supported_dtypes[dtype] = supported_dtype
 
+    # If the values can be None, only check the other values 
+    if allow_none:
+        return all(_is_of_dtype(value, supported_dtypes) if value is not None else True for value in values)
+    
     return all(_is_of_dtype(value, supported_dtypes) for value in values)
 
 
