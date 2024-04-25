@@ -69,11 +69,13 @@ then
     # Remove notebooks with long execution times
     for NOTEBOOK_TO_REMOVE in "${NOTEBOOKS_TO_SKIP[@]}"
     do
-        echo "${NOTEBOOK_TO_REMOVE} is skipped as its execution time is too long"
+        echo "Skipping: ${NOTEBOOK_TO_REMOVE}"
 
         # shellcheck disable=SC2206
         LIST_OF_NOTEBOOKS=(${LIST_OF_NOTEBOOKS[@]/*${NOTEBOOK_TO_REMOVE}*/})
     done
+
+    echo ""
 
     # shellcheck disable=SC2068
     for NOTEBOOK in ${LIST_OF_NOTEBOOKS[@]}
@@ -81,7 +83,7 @@ then
         echo "Refreshing ${NOTEBOOK}"
 
         START=$(date +%s)
-        if jupyter nbconvert --to notebook --inplace --execute "${NOTEBOOK}"; then
+        if jupyter nbconvert --to notebook --inplace --execute "${NOTEBOOK}" --log-level=DEBUG; then
             echo "${NOTEBOOK}" >> "${SUCCESSFUL_NOTEBOOKS}"
         else
             echo "${NOTEBOOK}" >> "${FAILED_NOTEBOOKS}"
