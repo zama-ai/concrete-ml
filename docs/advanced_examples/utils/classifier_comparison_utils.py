@@ -25,9 +25,7 @@ from concrete.ml.sklearn import DecisionTreeClassifier
 ALWAYS_USE_SIM = False
 
 # pylint: disable=too-many-locals,too-many-statements,too-many-branches,invalid-name
-def make_classifier_comparison(title, classifiers, decision_level, verbose=False, save_plot=False):
-
-    h = 0.04  # Step size in the mesh
+def make_classifier_comparison(title, classifiers, decision_level, verbose=False, save_plot=False, simulate=False, h=0.04):
     n_samples = 200
 
     X, y = make_classification(
@@ -140,13 +138,16 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
                 if verbose:
                     print(f"Key generation time: {time.time() - time_begin:.4f} seconds")
 
-            # Compute the predictions in FHE using the Concrete ML model
+            fhe = "simulate" if simulate else "execute"
+            
+            # Compute the predictions in FHE (with simulation or not) using the Concrete ML model
             time_begin = time.time()
-            concrete_y_pred = concrete_model.predict(X_test, fhe="execute")
+            concrete_y_pred = concrete_model.predict(X_test, fhe=fhe)
 
             if verbose:
                 print(
-                    f"FHE Execution time: {(time.time() - time_begin) / len(X_test):.4f} "
+                    "FHE " + "(simulation) " * simulate
+                    + f"Execution time: {(time.time() - time_begin) / len(X_test):.4f} "
                     "seconds per sample\n"
                 )
 
@@ -169,23 +170,17 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
             if not is_a_tree_based_model:
                 bitwidth = circuit.graph.maximum_integer_bit_width()
 
+            raveled_input = np.c_[xx.ravel(), yy.ravel()]
+            
             # Plot the decision boundaries.
             # For that, a color is assigned to each point in the mesh, which is obtained as a
             # cartesian product of [x_min, x_max] with [y_min, y_max].
             if hasattr(sklearn_model, "decision_function"):
-                sklearn_Z = sklearn_model.decision_function(np.c_[xx.ravel(), yy.ravel()])
-                concrete_Z = concrete_model.decision_function(
-                    np.c_[xx.ravel(), yy.ravel()],
-                    fhe="simulate",
-                )
+                sklearn_Z = sklearn_model.decision_function(raveled_input)
+                concrete_Z = concrete_model.decision_function(raveled_input, fhe="simulate")
             else:
-                sklearn_Z = sklearn_model.predict_proba(
-                    np.c_[xx.ravel(), yy.ravel()].astype(np.float32)
-                )[:, 1]
-                concrete_Z = concrete_model.predict_proba(
-                    np.c_[xx.ravel(), yy.ravel()],
-                    fhe="simulate",
-                )[:, 1]
+                sklearn_Z = sklearn_model.predict_proba(raveled_input.astype(np.float32))[:, 1]
+                concrete_Z = concrete_model.predict_proba(raveled_input, fhe="simulate")[:, 1]
 
             for k, (framework, score, Z) in enumerate(
                 zip(

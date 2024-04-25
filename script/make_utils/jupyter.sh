@@ -15,7 +15,7 @@ WHAT_TO_DO="open"
 
 # Create a list of notebooks with long execution times in order not to consider them when refreshing
 # all notebooks at the same time.
-LONG_EXECUTION_TIMES_NOTEBOOKS=("docs/advanced_examples/LogisticRegression.ipynb" "docs/advanced_examples/ClassifierComparison.ipynb" "docs/advanced_examples/QuantizationAwareTraining.ipynb" "docs/advanced_examples/ExperimentPrivacyTreePaper.ipynb")
+LONG_EXECUTION_TIMES_NOTEBOOKS=("docs/advanced_examples/ExperimentPrivacyTreePaper.ipynb")
 
 while [ -n "$1" ]
 do
@@ -63,7 +63,7 @@ then
     echo "" > "${FAILED_NOTEBOOKS}"
 
     # shellcheck disable=SC2207
-    LIST_OF_NOTEBOOKS=($(find ./docs/ -type f -name "*.ipynb" | grep -v ".nbconvert" | grep -v "_build" | grep -v "ipynb_checkpoints"))
+    LIST_OF_NOTEBOOKS=($(find ./docs -type f -name "*.ipynb" | grep -v ".nbconvert" | grep -v "_build" | grep -v "ipynb_checkpoints"))
 
     # Remove notebooks with long execution times
     for NOTEBOOK_TO_REMOVE in "${LONG_EXECUTION_TIMES_NOTEBOOKS[@]}"

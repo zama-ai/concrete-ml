@@ -4,7 +4,7 @@ from matplotlib.colors import ListedColormap
 from sklearn.metrics import accuracy_score
 
 # pylint: disable=too-many-locals
-def plot_data(axs, X_train, y_train, X_test, y_test, model, name, h = 0.04, font_size_text = 20):
+def plot_data(axs, X_train, y_train, X_test, y_test, model, name, h=0.04, font_size_text=20):
     # Train the model and retrieve both the Concrete ML model and its equivalent one from
     # scikit-learn
     concrete_model, sklearn_model = model.fit_benchmark(X_train, y_train)
@@ -29,24 +29,18 @@ def plot_data(axs, X_train, y_train, X_test, y_test, model, name, h = 0.04, font
     # pylint: disable-next=no-member
     cm = plt.cm.RdBu
     cm_bright = ListedColormap(["#FF0000", "#0000FF"])
-
+    
+    raveled_input = np.c_[xx.ravel(), yy.ravel()]
+    
     # Plot the decision boundaries.
     # For that, a color is assigned to each point in the mesh, which is obtained as a
     # cartesian product of [x_min, x_max] with [y_min, y_max].
     if hasattr(sklearn_model, "decision_function"):
-        sklearn_Z = sklearn_model.decision_function(np.c_[xx.ravel(), yy.ravel()])
-        concrete_Z = concrete_model.decision_function(
-            np.c_[xx.ravel(), yy.ravel()],
-            fhe="simulate",
-        )
+        sklearn_Z = sklearn_model.decision_function(raveled_input)
+        concrete_Z = concrete_model.decision_function(raveled_input, fhe="simulate")
     else:
-        sklearn_Z = sklearn_model.predict_proba(
-            np.c_[xx.ravel(), yy.ravel()].astype(np.float32)
-        )[:, 1]
-        concrete_Z = concrete_model.predict_proba(
-            np.c_[xx.ravel(), yy.ravel()],
-            fhe="simulate",
-        )[:, 1]
+        sklearn_Z = sklearn_model.predict_proba(raveled_input.astype(np.float32))[:, 1]
+        concrete_Z = concrete_model.predict_proba(raveled_input, fhe="simulate")[:, 1]
 
     for _, (ax, framework, score, Z) in enumerate(
         zip(
