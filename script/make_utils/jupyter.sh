@@ -83,7 +83,7 @@ then
         echo "Refreshing ${NOTEBOOK}"
 
         START=$(date +%s)
-        if jupyter nbconvert --to notebook --inplace --execute "${NOTEBOOK}" --log-level=DEBUG; then
+        if jupyter nbconvert --to notebook --inplace --execute "${NOTEBOOK}"; then
             echo "${NOTEBOOK}" >> "${SUCCESSFUL_NOTEBOOKS}"
         else
             echo "${NOTEBOOK}" >> "${FAILED_NOTEBOOKS}"
