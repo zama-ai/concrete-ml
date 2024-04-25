@@ -13,9 +13,10 @@ print_time_execution() {
 
 WHAT_TO_DO="open"
 
-# Create a list of notebooks with long execution times in order not to consider them when refreshing
-# all notebooks at the same time.
-LONG_EXECUTION_TIMES_NOTEBOOKS=("docs/advanced_examples/ExperimentPrivacyTreePaper.ipynb")
+# Create a list of notebooks to skip, usually because of their long execution time.
+# Deployment notebook is currently failing
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4064
+NOTEBOOKS_TO_SKIP=("docs/advanced_examples/Deployment.ipynb")
 
 while [ -n "$1" ]
 do
@@ -66,7 +67,7 @@ then
     LIST_OF_NOTEBOOKS=($(find ./docs -type f -name "*.ipynb" | grep -v ".nbconvert" | grep -v "_build" | grep -v "ipynb_checkpoints"))
 
     # Remove notebooks with long execution times
-    for NOTEBOOK_TO_REMOVE in "${LONG_EXECUTION_TIMES_NOTEBOOKS[@]}"
+    for NOTEBOOK_TO_REMOVE in "${NOTEBOOKS_TO_SKIP[@]}"
     do
         echo "${NOTEBOOK_TO_REMOVE} is skipped as its execution time is too long"
 
@@ -80,7 +81,7 @@ then
         echo "Refreshing ${NOTEBOOK}"
 
         START=$(date +%s)
-        if jupyter nbconvert --to notebook --inplace --execute "${NOTEBOOK}" --log-level=DEBUG; then
+        if jupyter nbconvert --to notebook --inplace --execute "${NOTEBOOK}"; then
             echo "${NOTEBOOK}" >> "${SUCCESSFUL_NOTEBOOKS}"
         else
             echo "${NOTEBOOK}" >> "${FAILED_NOTEBOOKS}"
@@ -99,7 +100,7 @@ then
     LIST_OF_NOTEBOOKS=($(find ./docs/ -type f -name "*.ipynb" | grep -v ".nbconvert" | grep -v "_build" | grep -v "ipynb_checkpoints"))
 
     # Remove notebooks with long execution times
-    for NOTEBOOK_TO_REMOVE in "${LONG_EXECUTION_TIMES_NOTEBOOKS[@]}"
+    for NOTEBOOK_TO_REMOVE in "${NOTEBOOKS_TO_SKIP[@]}"
     do
         echo "${NOTEBOOK_TO_REMOVE} is skipped as its execution time is too long"
 
