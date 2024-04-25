@@ -15,7 +15,7 @@ WHAT_TO_DO="open"
 
 # Create a list of notebooks with long execution times in order not to consider them when refreshing
 # all notebooks at the same time.
-LONG_EXECUTION_TIMES_NOTEBOOKS=()
+LONG_EXECUTION_TIMES_NOTEBOOKS=("docs/advanced_examples/LogisticRegression.ipynb" "docs/advanced_examples/ClassifierComparison.ipynb" "docs/advanced_examples/QuantizationAwareTraining.ipynb" "docs/advanced_examples/ExperimentPrivacyTreePaper.ipynb")
 
 while [ -n "$1" ]
 do
@@ -80,7 +80,7 @@ then
         echo "Refreshing ${NOTEBOOK}"
 
         START=$(date +%s)
-        if jupyter nbconvert --to notebook --inplace --execute "${NOTEBOOK}"; then
+        if jupyter nbconvert --to notebook --inplace --execute "${NOTEBOOK}" --log-level=DEBUG; then
             echo "${NOTEBOOK}" >> "${SUCCESSFUL_NOTEBOOKS}"
         else
             echo "${NOTEBOOK}" >> "${FAILED_NOTEBOOKS}"
