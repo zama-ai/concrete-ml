@@ -13,8 +13,48 @@ import torch
 from concrete.fhe import Graph as CPGraph
 from concrete.fhe.compilation import Circuit, Configuration
 from concrete.fhe.mlir.utils import MAXIMUM_TLU_BIT_WIDTH
+from concrete.fhe.representation import Graph, GraphProcessor, Node
 from sklearn.datasets import make_classification, make_regression
 from sklearn.metrics import accuracy_score
+
+
+class ChainedTLUDetector(GraphProcessor):
+    """A graph processor that checks if chained TLUs are found in graph."""
+
+    def __init__(self):
+        pass
+
+    def apply(self, graph: Graph):
+        """Check if the graph contains chained TLUs.
+        Args:
+            graph (Graph): operation graph to analyze
+        Raises:
+            Exception: if the graph contains chained TLUs
+        """
+        # Get all nodes that will be converted to LUTs
+        ignored_op_names = {"round_bit_pattern", "copy_function"}
+
+        tlu_nodes = graph.query_nodes(
+            custom_filter=lambda node: node.converted_to_table_lookup
+            and not node.evaluator.properties["name"] in ignored_op_names,
+        )
+
+        for tlu_node in tlu_nodes:
+            if tlu_node.evaluator.properties["name"] in ignored_op_names:
+                continue
+
+            preds = graph.ordered_preds_of(tlu_node)
+            for pred in preds:
+                if pred in tlu_nodes:
+                    raise AssertionError(
+                        f"Graph contains chained TLUs: {tlu_node.properties['name']} -> {pred.properties['name']}!\n"
+                        + graph.format(
+                            highlighted_nodes={
+                                tlu_node: ["This TLU node is applied on another TLU node."]
+                            }
+                        )
+                    )
+
 
 from concrete.ml.common.utils import (
     SUPPORTED_FLOAT_TYPES,
@@ -152,6 +192,7 @@ def default_configuration():
         # Simulation compilation is done lazily on circuit.simulate
         fhe_simulation=False,
         fhe_execution=True,
+        enable_tlu_fusing=False,
     )
 
 
@@ -169,6 +210,7 @@ def simulation_configuration():
         insecure_key_cache_location="ConcreteNumpyKeyCache",
         fhe_simulation=True,
         fhe_execution=False,
+        enable_tlu_fusing=False,
     )
 
 
@@ -534,9 +576,11 @@ def check_is_good_execution_for_cml_vs_circuit():
         for _ in range(n_allowed_runs):
             # Check if model is QuantizedModule
             if isinstance(model, QuantizedModule):
+                det = ChainedTLUDetector()
+                det.apply(model.fhe_circuit.graph)
+
                 y_pred_fhe = model.forward(*inputs, fhe=fhe_mode)
                 y_pred_quantized = model.forward(*inputs, fhe="disable")
-
             else:
                 assert isinstance(
                     model,

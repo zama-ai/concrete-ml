@@ -470,7 +470,7 @@ class BranchingGemmModule(nn.Module):
         Returns:
             the output of the NN
         """
-        return x + self.act(x + 1.0) - self.act(self.fc1(x * 2.0))
+        return x + self.act(self.fc1(x * 2.0)) #+ self.act(x + 1.0) x - 
 
 
 class UnivariateModule(nn.Module):
