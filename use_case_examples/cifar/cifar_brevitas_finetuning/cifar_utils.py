@@ -1,10 +1,10 @@
-import pickle as pkl
 import random
 import sys
 import warnings
 from collections import OrderedDict
 from pathlib import Path
 from time import time
+import pickle as pkl
 from typing import Callable, Dict, Optional, Tuple
 
 import matplotlib.pyplot as plt
@@ -372,6 +372,10 @@ def train(
         optimizer, milestones=param["milestones"], gamma=param["gamma"]
     )
 
+    # Save the state_dict
+    dir = Path(".") / param["dir"] / param["training"]
+    dir.mkdir(parents=True, exist_ok=True)
+
     # To avoid breaking up the tqdm bar
     with tqdm(total=param["epochs"], file=sys.stdout) as pbar:
 
@@ -424,15 +428,17 @@ def train(
                 )
                 pbar.update(step)
 
-    # Save the state_dict
-    dir = Path(".") / param["dir"] / param["training"]
-    dir.mkdir(parents=True, exist_ok=True)
-    torch.save(
-        model.state_dict(), f"{dir}/{param['dataset_name']}_{param['training']}_state_dict.pt"
-    )
+
+            torch.save(
+                model.state_dict(), f"{dir}/{param['dataset_name']}_{param['training']}_state_dict.pt"
+            )
 
     print("Save in:", f"{dir}/{param['dataset_name']}_{param['training']}_state_dict.pt")
 
+    torch.save(
+        model.state_dict(), f"{dir}/{param['dataset_name']}_{param['training']}_state_dict.pt"
+    )
+    import pickle as pkl
     with open(f"{dir}/{param['dataset_name']}_history.pkl", "wb") as f:
         pkl.dump(param, f)
 
