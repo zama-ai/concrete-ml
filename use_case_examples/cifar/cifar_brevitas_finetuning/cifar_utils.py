@@ -1,10 +1,10 @@
+import pickle as pkl
 import random
 import sys
 import warnings
 from collections import OrderedDict
 from pathlib import Path
 from time import time
-import pickle as pkl
 from typing import Callable, Dict, Optional, Tuple
 
 import matplotlib.pyplot as plt
@@ -97,7 +97,7 @@ DATASETS_ARGS = {
         "std": (0.5),
         "train_transform": transforms.Compose(
             [
-                transforms.Pad(1, padding_mode='edge'),
+                transforms.Pad(1, padding_mode="edge"),
                 transforms.ToTensor(),
                 transforms.Normalize((0.5,), (0.5,)),
                 # transforms.RandomRotation(5, fill=(1,)),
@@ -108,7 +108,7 @@ DATASETS_ARGS = {
         ),
         "test_transform": transforms.Compose(
             [
-                transforms.Pad(1, padding_mode='edge'),
+                transforms.Pad(1, padding_mode="edge"),
                 transforms.ToTensor(),
                 transforms.Normalize((0.5,), (0.5,)),
                 # transforms.Resize(20),
@@ -428,9 +428,9 @@ def train(
                 )
                 pbar.update(step)
 
-
             torch.save(
-                model.state_dict(), f"{dir}/{param['dataset_name']}_{param['training']}_state_dict.pt"
+                model.state_dict(),
+                f"{dir}/{param['dataset_name']}_{param['training']}_state_dict.pt",
             )
 
     print("Save in:", f"{dir}/{param['dataset_name']}_{param['training']}_state_dict.pt")
@@ -439,6 +439,7 @@ def train(
         model.state_dict(), f"{dir}/{param['dataset_name']}_{param['training']}_state_dict.pt"
     )
     import pickle as pkl
+
     with open(f"{dir}/{param['dataset_name']}_history.pkl", "wb") as f:
         pkl.dump(param, f)
 
@@ -478,19 +479,19 @@ def torch_inference(
     return np.mean(np.vstack(correct), dtype="float64")
 
 
-
 def fhe_compatibility(
     model: Callable,
     data: DataLoader,
     rounding_threshold_bits: Optional[int] = None,
     show_mlir: bool = False,
-    output_onnx_file: str = "test.onnx") -> Callable:
+    output_onnx_file: str = "test.onnx",
+) -> Callable:
     """Test if the model is FHE-compatible.
 
     Args:
         model (Callable): The Brevitas model.
         data (DataLoader): The data loader.
-        rounding_threshold_bits (Optiona[int]): if not None, every accumulators in the model are 
+        rounding_threshold_bits (Optiona[int]): if not None, every accumulators in the model are
             rounded down to the given bits of precision.
         show_mlir (bool): if set, the MLIR produced by the converter and which is going
             to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo.

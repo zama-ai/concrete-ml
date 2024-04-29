@@ -51,7 +51,7 @@ QUANT_ROUND_LIKE_ROUND_PBS = False
 # Enable input ciphertext compression
 # Note: This setting is fixed and cannot be altered by users
 # However, for internal testing purposes, we retain the capability to disable this feature
-os.environ["USE_INPUT_COMPRESSION"] = os.environ.get("USE_INPUT_COMPRESSION", "1")
+os.environ["USE_INPUT_COMPRESSION"] = "0" #os.environ.get("USE_INPUT_COMPRESSION", "1")
 
 
 class FheMode(str, enum.Enum):

@@ -1,0 +1,1 @@
+Compile_type,Number_of_layers,Bits,threshold,max_bits,Mean_FP32_accuracy,Mean_disable_accuracy,Mean_simulate_accuracy,FHE_timing

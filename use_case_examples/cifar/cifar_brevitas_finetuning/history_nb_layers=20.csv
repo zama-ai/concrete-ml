@@ -40,3 +40,9 @@ ptq,20,,5,-1,-1,-1,-1,-1
 ptq,20,,4,-1,-1,-1,-1,-1
 ptq,20,,Exactness.APPROXIMATE,-1,-1,-1,-1,-1
 ptq,20,,Exactness.EXACT,-1,-1,-1,-1,-1
+qat,20,3,"{'n_bits': 5, 'method': 'APPROXIMATE'}",-1,-1,-1,-1,-1
+qat,20,3,"{'n_bits': 5, 'method': 'EXACT'}",-1,-1,-1,-1,-1
+qat,20,3,"{'n_bits': 6, 'method': 'APPROXIMATE'}",-1,-1,-1,-1,-1
+qat,20,3,"{'n_bits': 6, 'method': 'EXACT'}",-1,-1,-1,-1,-1
+qat,20,3,"{'n_bits': 7, 'method': 'APPROXIMATE'}",-1,-1,-1,-1,-1
+qat,20,3,"{'n_bits': 7, 'method': 'EXACT'}",-1,-1,-1,-1,-1
