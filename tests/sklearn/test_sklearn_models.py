@@ -22,6 +22,7 @@ Generic tests test:
 """
 
 import copy
+import inspect
 import json
 import os
 import sys
@@ -2032,3 +2033,63 @@ def test_error_raise_unsupported_pandas_values(model_class, bad_value, expected_
 
     with pytest.raises(ValueError, match=expected_error):
         model.fit(x_train, y_train)
+
+
+@pytest.mark.parametrize(
+    "model_class, parameters",
+    get_sklearn_linear_models_and_datasets()
+    + get_sklearn_tree_models_and_datasets()
+    + get_sklearn_neighbors_models_and_datasets(),
+)
+def test_initialization_variables_match(model_class, parameters, load_data, is_weekly_option):
+    """Test that CML models can be initialized with the same parameters scikit-learn models."""
+    n_bits = N_BITS_THRESHOLD_FOR_SKLEARN_CORRECTNESS_TESTS
+
+    x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
+
+    # Instantiate the model
+    model = instantiate_model_generic(model_class, n_bits=n_bits)
+
+    # Fit the model to create the equivalent sklearn model
+    with warnings.catch_warnings():
+        # Sometimes, we miss convergence, which is not a problem for our test
+        warnings.simplefilter("ignore", category=ConvergenceWarning)
+        model.fit(x, y)
+
+    # Assert the sklearn model has been created
+    assert hasattr(model, "sklearn_model"), "Sklearn model not found"
+
+    # Get the constructor parameters of both the custom and sklearn models
+    cml_params = set(inspect.signature(model.__class__).parameters.keys())
+
+    # Accumulate parameters from all base classes of the sklearn model
+    def get_params(cls):
+        params = set(inspect.signature(cls).parameters.keys())
+        for base in cls.__bases__:
+            params.update(get_params(base))
+        return params
+
+    # Conditionally gather parameters from base classes for XGBClassifier and XGBRegressor
+    if model.sklearn_model.__class__.__name__ in ["XGBClassifier", "XGBRegressor"]:
+        sklearn_params = get_params(model.sklearn_model.__class__)
+    else:
+        sklearn_params = set(inspect.signature(model.sklearn_model.__class__).parameters.keys())
+
+    # Allow 'n_bits' as an additional parameter for CML models
+    expected_difference = {"n_bits"}
+
+    # Allow fit_encrypted and parameters_range for SGDClassifier
+    if model.__class__.__name__ == "SGDClassifier":
+        expected_difference.add("fit_encrypted")
+        expected_difference.add("parameters_range")
+
+    # Calculate differences
+    missing_params = sklearn_params - cml_params
+    extra_params = (cml_params - sklearn_params) - expected_difference
+
+    assert (
+        not missing_params
+    ), f"Concrete ML {model.__class__.__name__} is missing these init parameters: {missing_params}"
+    assert (
+        not extra_params
+    ), f"Concrete ML {model.__class__.__name__} has extra init parameters: {extra_params}"

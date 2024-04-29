@@ -2,10 +2,11 @@
 
 import platform
 import warnings
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy
 import xgboost.sklearn
+from xgboost.callback import TrainingCallback
 
 from ..common.debugging.custom_assert import assert_true
 from ..sklearn.tree_to_numpy import tree_to_numpy
@@ -59,6 +60,15 @@ class XGBClassifier(BaseTreeClassifierMixin):
         use_label_encoder: bool = False,
         random_state: Optional[int] = None,
         verbosity: Optional[int] = None,
+        max_bin: Optional[int] = None,
+        callbacks: Optional[List[TrainingCallback]] = None,
+        early_stopping_rounds: Optional[int] = None,
+        max_leaves: Optional[int] = None,
+        eval_metric: Optional[Union[str, List[str], Callable]] = None,
+        max_cat_to_onehot: Optional[int] = None,
+        grow_policy: Optional[str] = None,
+        sampling_method: Optional[str] = None,
+        **kwargs,
     ):
         # base_score != 0.5 or None does not seem to not pass our tests
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/474
@@ -112,7 +122,17 @@ class XGBClassifier(BaseTreeClassifierMixin):
         self.use_label_encoder = use_label_encoder
         self.random_state = random_state
         self.verbosity = verbosity
+        self.max_bin = max_bin
+        self.callbacks = callbacks
+        self.early_stopping_rounds = early_stopping_rounds
+        self.max_leaves = max_leaves
+        self.eval_metric = eval_metric
+        self.max_cat_to_onehot = max_cat_to_onehot
+        self.grow_policy = grow_policy
+        self.sampling_method = sampling_method
+        self.kwargs = kwargs
 
+    # pylint: disable=too-many-statements
     def dump_dict(self) -> Dict[str, Any]:
         metadata: Dict[str, Any] = {}
 
@@ -159,6 +179,15 @@ class XGBClassifier(BaseTreeClassifierMixin):
         metadata["use_label_encoder"] = self.use_label_encoder
         metadata["random_state"] = self.random_state
         metadata["verbosity"] = self.verbosity
+        metadata["max_bin"] = self.max_bin
+        metadata["callbacks"] = self.callbacks
+        metadata["early_stopping_rounds"] = self.early_stopping_rounds
+        metadata["max_leaves"] = self.max_leaves
+        metadata["eval_metric"] = self.eval_metric
+        metadata["max_cat_to_onehot"] = self.max_cat_to_onehot
+        metadata["grow_policy"] = self.grow_policy
+        metadata["sampling_method"] = self.sampling_method
+        metadata["kwargs"] = self.kwargs
 
         return metadata
 
@@ -217,6 +246,14 @@ class XGBClassifier(BaseTreeClassifierMixin):
         obj.use_label_encoder = metadata["use_label_encoder"]
         obj.random_state = metadata["random_state"]
         obj.verbosity = metadata["verbosity"]
+        obj.max_bin = metadata["max_bin"]
+        obj.callbacks = metadata["callbacks"]
+        obj.early_stopping_rounds = metadata["early_stopping_rounds"]
+        obj.max_leaves = metadata["max_leaves"]
+        obj.eval_metric = metadata["eval_metric"]
+        obj.max_cat_to_onehot = metadata["max_cat_to_onehot"]
+        obj.grow_policy = metadata["grow_policy"]
+        obj.sampling_method = metadata["sampling_method"]
 
         return obj
 
@@ -265,9 +302,17 @@ class XGBRegressor(BaseTreeRegressorMixin):
         validate_parameters: Optional[bool] = None,
         predictor: Optional[str] = None,
         enable_categorical: bool = False,
-        use_label_encoder: bool = False,
         random_state: Optional[int] = None,
         verbosity: Optional[int] = None,
+        eval_metric: Optional[str] = None,
+        sampling_method: Optional[str] = None,
+        max_leaves: Optional[int] = None,
+        max_bin: Optional[int] = None,
+        max_cat_to_onehot: Optional[int] = None,
+        grow_policy: Optional[str] = None,
+        callbacks: Optional[List[Callable]] = None,
+        early_stopping_rounds: Optional[int] = None,
+        **kwargs,
     ):
         # base_score != 0.5 or None does not seem to not pass our tests
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/474
@@ -318,9 +363,17 @@ class XGBRegressor(BaseTreeRegressorMixin):
         self.validate_parameters = validate_parameters
         self.predictor = predictor
         self.enable_categorical = enable_categorical
-        self.use_label_encoder = use_label_encoder
         self.random_state = random_state
         self.verbosity = verbosity
+        self.max_bin = max_bin
+        self.max_leaves = max_leaves
+        self.max_cat_to_onehot = max_cat_to_onehot
+        self.grow_policy = grow_policy
+        self.sampling_method = sampling_method
+        self.callbacks = callbacks
+        self.early_stopping_rounds = early_stopping_rounds
+        self.eval_metric = eval_metric
+        self.kwargs = kwargs
 
     def fit(self, X, y, *args, **kwargs) -> Any:
 
@@ -391,6 +444,15 @@ class XGBRegressor(BaseTreeRegressorMixin):
         metadata["use_label_encoder"] = self.use_label_encoder
         metadata["random_state"] = self.random_state
         metadata["verbosity"] = self.verbosity
+        metadata["max_bin"] = self.max_bin
+        metadata["max_leaves"] = self.max_leaves
+        metadata["max_cat_to_onehot"] = self.max_cat_to_onehot
+        metadata["grow_policy"] = self.grow_policy
+        metadata["sampling_method"] = self.sampling_method
+        metadata["callbacks"] = self.callbacks
+        metadata["early_stopping_rounds"] = self.early_stopping_rounds
+        metadata["eval_metric"] = self.eval_metric
+        metadata["kwargs"] = self.kwargs
 
         return metadata
 
@@ -446,8 +508,16 @@ class XGBRegressor(BaseTreeRegressorMixin):
         obj.validate_parameters = metadata["validate_parameters"]
         obj.predictor = metadata["predictor"]
         obj.enable_categorical = metadata["enable_categorical"]
-        obj.use_label_encoder = metadata["use_label_encoder"]
         obj.random_state = metadata["random_state"]
         obj.verbosity = metadata["verbosity"]
+        obj.max_bin = metadata["max_bin"]
+        obj.max_leaves = metadata["max_leaves"]
+        obj.max_cat_to_onehot = metadata["max_cat_to_onehot"]
+        obj.grow_policy = metadata["grow_policy"]
+        obj.sampling_method = metadata["sampling_method"]
+        obj.callbacks = metadata["callbacks"]
+        obj.early_stopping_rounds = metadata["early_stopping_rounds"]
+        obj.eval_metric = metadata["eval_metric"]
+        obj.kwargs = metadata["kwargs"]
 
         return obj
