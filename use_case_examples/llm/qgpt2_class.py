@@ -183,7 +183,9 @@ class QuantizedModel:
         compiler = fhe.Compiler(self.run_numpy, {"q_inputs": "encrypted"})
 
         # Compile the circuit on the calibration quantized data
-        self.circuit = compiler.compile(inputset, configuration=configuration)
+        self.circuit = compiler.compile(
+            inputset, configuration=configuration, compress_input_ciphertexts=True
+        )
 
         # Print the maximum bit-width reached in the circuit
         print(

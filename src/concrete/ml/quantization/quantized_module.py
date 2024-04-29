@@ -1,6 +1,7 @@
 """QuantizedModule API."""
 
 import copy
+import os
 import re
 from functools import partial
 from typing import Any, Dict, Generator, Iterable, List, Optional, Sequence, TextIO, Tuple, Union
@@ -737,8 +738,9 @@ class QuantizedModule:
         # Find the right way to set parameters for compiler, depending on the way we want to default
         p_error, global_p_error = manage_parameters_for_pbs_errors(p_error, global_p_error)
 
-        # Jit compiler is now deprecated and will soon be removed, it is thus forced to False
-        # by default
+        # Enable input ciphertext compression
+        enable_input_compression = os.environ.get("USE_INPUT_COMPRESSION", "1") == "1"
+
         self.fhe_circuit = compiler.compile(
             inputset,
             configuration=configuration,
@@ -750,6 +752,7 @@ class QuantizedModule:
             single_precision=False,
             fhe_simulation=False,
             fhe_execution=True,
+            compress_input_ciphertexts=enable_input_compression,
         )
 
         self._is_compiled = True

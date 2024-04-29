@@ -2,17 +2,17 @@ Name, Version, License
 GitPython, 3.1.41, BSD License
 PyYAML, 6.0.1, MIT License
 anyio, 3.7.1, MIT License
-boto3, 1.34.84, Apache Software License
-botocore, 1.34.84, Apache Software License
+boto3, 1.34.88, Apache Software License
+botocore, 1.34.88, Apache Software License
 brevitas, 0.8.0, UNKNOWN
 certifi, 2023.7.22, Mozilla Public License 2.0 (MPL 2.0)
 charset-normalizer, 3.3.2, MIT License
 click, 8.1.7, BSD License
 coloredlogs, 15.0.1, MIT License
-concrete-python, 2.6.0rc1, BSD-3-Clause
+concrete-python, 2024.4.19, BSD-3-Clause
 dependencies, 2.0.1, BSD License
 dill, 0.3.8, BSD License
-exceptiongroup, 1.2.0, MIT License
+exceptiongroup, 1.2.1, MIT License
 fastapi, 0.103.2, MIT License
 filelock, 3.13.4, The Unlicense (Unlicense)
 flatbuffers, 24.3.25, Apache Software License
@@ -38,7 +38,7 @@ onnxoptimizer, 0.3.13, Apache License v2.0
 onnxruntime, 1.17.3, MIT License
 packaging, 24.0, Apache Software License; BSD License
 pandas, 2.0.3, BSD License
-pluggy, 1.4.0, MIT License
+pluggy, 1.5.0, MIT License
 protobuf, 3.20.3, BSD-3-Clause
 psutil, 5.9.8, BSD License
 pydantic, 1.10.15, MIT License
@@ -47,7 +47,7 @@ pytest-json-report, 1.5.0, MIT
 pytest-metadata, 3.1.1, Mozilla Public License 2.0 (MPL 2.0)
 python-dateutil, 2.9.0.post0, Apache Software License; BSD License
 pytz, 2024.1, MIT License
-regex, 2023.12.25, Apache Software License
+regex, 2024.4.16, Apache Software License
 requests, 2.31.0, Apache Software License
 s3transfer, 0.10.1, Apache Software License
 safetensors, 0.4.3, Apache Software License
@@ -63,11 +63,11 @@ starlette, 0.27.0, BSD License
 sympy, 1.12, BSD License
 tabulate, 0.8.10, MIT License
 threadpoolctl, 3.4.0, BSD License
-tokenizers, 0.15.2, Apache Software License
+tokenizers, 0.19.1, Apache Software License
 tomli, 2.0.1, MIT License
 torch, 1.13.1, BSD License
 tqdm, 4.66.2, MIT License; Mozilla Public License 2.0 (MPL 2.0)
-transformers, 4.39.3, Apache Software License
+transformers, 4.40.0, Apache Software License
 typing_extensions, 4.5.0, Python Software Foundation License
 tzdata, 2024.1, Apache Software License
 urllib3, 2.2.1, MIT License
