@@ -14,7 +14,7 @@ from ..common.utils import FheMode
 from ..onnx.ops_impl import numpy_sigmoid
 from ..quantization import QuantizedModule
 from ..torch.compile import compile_torch_model
-from ._fhe_training_utils import LogisticRegressionTraining, binary_cross_entropy
+from ._fhe_training_utils import LogisticRegressionTraining
 from .base import (
     Data,
     SklearnLinearClassifierMixin,
@@ -180,7 +180,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         # Concrete ML attributes for FHE training
         # These values are hardcoded for now
         # We don't expose them in the __init__ arguments but they are taken
-        # into account when training, so we can just modify them manually.
+        # into account when training, so wecan just modify them manually.
         # The number of bits used for training should be adjusted according to n-bits
         # but for now we use this hardcoded values.
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4205
@@ -609,11 +609,11 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         # Iterate on the training quantized module in the clear
         for iteration_step in range(max_iter):
             X_batch_enc_i, y_batch_enc_i = X_batches_enc[iteration_step], y_batches_enc[iteration_step]
-            
+           
             # Train the model over one iteration
             inference_start = time.time()
             
-            # If the training is done in FHE, execute the underlying FHE circuit dfzirectly on the
+            # If the training is done in FHE, execute the underlying FHE circuit directly on the
             # encrypted values
             if fhe == "execute":
                 weights_enc, bias_enc = self.training_quantized_module.fhe_circuit.run(
