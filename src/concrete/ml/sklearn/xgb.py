@@ -398,6 +398,7 @@ class XGBRegressor(BaseTreeRegressorMixin):
         y_preds += 0.5
         return y_preds
 
+    # pylint: disable=too-many-statements
     def dump_dict(self) -> Dict[str, Any]:
         metadata: Dict[str, Any] = {}
 
