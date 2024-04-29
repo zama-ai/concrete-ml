@@ -565,7 +565,9 @@ def all_values_are_floats(*values: Any) -> bool:
     return all(_is_of_dtype(value, SUPPORTED_FLOAT_TYPES) for value in values)
 
 
-def all_values_are_of_dtype(*values: Any, dtypes: Union[str, List[str]], allow_none: bool = False) -> bool:
+def all_values_are_of_dtype(
+    *values: Any, dtypes: Union[str, List[str]], allow_none: bool = False
+) -> bool:
     """Indicate if all unpacked values are of the specified dtype(s).
 
     Args:
@@ -591,10 +593,12 @@ def all_values_are_of_dtype(*values: Any, dtypes: Union[str, List[str]], allow_n
 
         supported_dtypes[dtype] = supported_dtype
 
-    # If the values can be None, only check the other values 
+    # If the values can be None, only check the other values
     if allow_none:
-        return all(_is_of_dtype(value, supported_dtypes) if value is not None else True for value in values)
-    
+        return all(
+            _is_of_dtype(value, supported_dtypes) if value is not None else True for value in values
+        )
+
     return all(_is_of_dtype(value, supported_dtypes) for value in values)
 
 

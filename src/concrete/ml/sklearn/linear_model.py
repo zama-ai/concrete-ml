@@ -348,10 +348,10 @@ class SGDClassifier(SklearnSGDClassifierMixin):
             iterations=1,
             fit_bias=self.fit_intercept,
         )
-        
+
         # Enable the underlying FHE circuit to be composed with itself
         # This feature is used in order to be able to iterate in the clear n times without having
-        # to encrypt/decrypt the weight/bias values between each loop 
+        # to encrypt/decrypt the weight/bias values between each loop
         configuration = Configuration(composable=True)
 
         # Compile the model using the compile set
@@ -443,8 +443,8 @@ class SGDClassifier(SklearnSGDClassifierMixin):
             
         n_samples, n_features = X.shape
         weight_shape = (1, n_features, 1)
-        bias_shape = (1,1,1)
-        
+        bias_shape = (1, 1, 1)
+
         # Build the quantized module
         # In case of a partial fit, only do so if it has not been done already (which indicates
         # that this is the partial fit's first call)
@@ -490,9 +490,11 @@ class SGDClassifier(SklearnSGDClassifierMixin):
 
         y = self.label_encoder.transform(y)
 
+        # Mypy
+        assert self.training_quantized_module.fhe_circuit is not None
+
         # Key generation
         if fhe == "execute":  # pragma: no cover
-            assert self.training_quantized_module.fhe_circuit is not None
 
             # Generate the keys only if necessary. This is already done using the `force=False`
             # parameter, but here we also avoid printing too much verbose if activated
@@ -559,8 +561,9 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         # A partial fit is similar to running a fit with a single iteration
         max_iter = 1 if is_partial_fit else self.max_iter
 
+        # Quantize and encrypt the batches
         X_batches_enc, y_batches_enc = [], []
-        for iteration_step in range(max_iter):
+        for _ in range(max_iter):
 
             # Sample the batches from X and y in the clear
             batch_indexes = self.random_number_generator.choice(
@@ -573,54 +576,66 @@ class SGDClassifier(SklearnSGDClassifierMixin):
             # Build the batches
             X_batch = X[batch_indexes].astype(float).reshape((1, self.batch_size, n_features))
             y_batch = y[batch_indexes].reshape((1, self.batch_size, 1)).astype(float)
-            
-            # The underlying quantized module expects (X, y, weight, bias) as inputs. We thus only 
+
+            # The underlying quantized module expects (X, y, weight, bias) as inputs. We thus only
             # quantize the input and target values using the first and second positional parameter
-            q_X_batch, q_y_batch, _, _ = self.training_quantized_module.quantize_input(X_batch, y_batch, None, None)
-            
+            q_X_batch, q_y_batch, _, _ = self.training_quantized_module.quantize_input(
+                X_batch, y_batch, None, None
+            )
+
             # If the training is done in FHE, encrypt the input and target values
             if fhe == "execute":
-                
+
                 # Similarly, the underlying FHE circuit expects (X, y, weight, bias) as inputs, and
                 # so does the encrypt method
-                X_batch_enc, y_batch_enc, _, _ = self.training_quantized_module.fhe_circuit.encrypt(q_X_batch, q_y_batch, None, None)
-                
+                X_batch_enc, y_batch_enc, _, _ = self.training_quantized_module.fhe_circuit.encrypt(
+                    q_X_batch, q_y_batch, None, None
+                )
+
             else:
                 X_batch_enc, y_batch_enc = q_X_batch, q_y_batch
-            
+
             X_batches_enc.append(X_batch_enc)
             y_batches_enc.append(y_batch_enc)
 
-        # Similarly, we only quantize the weight and bias values using the third and fourth 
+        # Similarly, we only quantize the weight and bias values using the third and fourth
         # position parameter
-        _, _, q_weights, q_bias = self.training_quantized_module.quantize_input(None, None, weights, bias)
+        _, _, q_weights, q_bias = self.training_quantized_module.quantize_input(
+            None, None, weights, bias
+        )
 
         # If the training is done in FHE, encrypt the weight and bias values
         if fhe == "execute":
-            
+
             # Similarly, we only encrypt using the third and fourth position parameter
             _, _, weights_enc, bias_enc = self.training_quantized_module.fhe_circuit.encrypt(
                 None, None, q_weights, q_bias
             )
-        
+
         else:
             weights_enc, bias_enc = q_weights, q_bias
 
         # Iterate on the training quantized module in the clear
         for iteration_step in range(max_iter):
-            X_batch_enc_i, y_batch_enc_i = X_batches_enc[iteration_step], y_batches_enc[iteration_step]
-           
+            X_batch_enc_i, y_batch_enc_i = (
+                X_batches_enc[iteration_step],
+                y_batches_enc[iteration_step],
+            )
+
             # Train the model over one iteration
             inference_start = time.time()
-            
+
             # If the training is done in FHE, execute the underlying FHE circuit directly on the
             # encrypted values
             if fhe == "execute":
                 weights_enc, bias_enc = self.training_quantized_module.fhe_circuit.run(
-                    X_batch_enc_i, y_batch_enc_i, weights_enc, bias_enc,
+                    X_batch_enc_i,
+                    y_batch_enc_i,
+                    weights_enc,
+                    bias_enc,
                 )
-            
-            # Else, use the quantized module on the quantized values (works for both quantized 
+
+            # Else, use the quantized module on the quantized values (works for both quantized
             # clear and FHE simulation modes)
             else:
                 weights_enc, bias_enc = self.training_quantized_module.quantized_forward(
@@ -634,12 +649,16 @@ class SGDClassifier(SklearnSGDClassifierMixin):
 
         # If the training is done in FHE, encrypt the weight and bias values
         if fhe == "execute":
-            q_weights, q_bias = self.training_quantized_module.fhe_circuit.decrypt(weights_enc, bias_enc)
-        
+            q_weights, q_bias = self.training_quantized_module.fhe_circuit.decrypt(
+                weights_enc, bias_enc
+            )
+
         else:
             q_weights, q_bias = weights_enc, bias_enc
 
-        fitted_weights, fitted_bias = self.training_quantized_module.dequantize_output(q_weights, q_bias)
+        fitted_weights, fitted_bias = self.training_quantized_module.dequantize_output(
+            q_weights, q_bias
+        )
 
         # Reshape parameters to fit what scikit-learn expects
         fitted_weights, fitted_bias = fitted_weights.squeeze(0), fitted_bias.squeeze(0)

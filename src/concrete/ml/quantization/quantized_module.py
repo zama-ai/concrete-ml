@@ -561,7 +561,9 @@ class QuantizedModule:
             return q_results[0]
         return q_results
 
-    def quantize_input(self, *x: Optional[numpy.ndarray]) -> Union[numpy.ndarray, Tuple[Optional[numpy.ndarray], ...]]:
+    def quantize_input(
+        self, *x: Optional[numpy.ndarray]
+    ) -> Union[numpy.ndarray, Tuple[Optional[numpy.ndarray], ...]]:
         """Take the inputs in fp32 and quantize it using the learned quantization parameters.
 
         Args:
@@ -573,22 +575,38 @@ class QuantizedModule:
         """
         n_inputs = len(self.input_quantizers)
         n_values = len(x)
-        
+
         assert_true(
             n_values == n_inputs,
             f"Got {n_values} inputs, expected {n_inputs}. Either the quantized module has not been "
             "properly initialized or the input data has been changed since its initialization.",
             ValueError,
         )
-        
+
         assert not all(x_i is None for x_i in x), "Please provide at least one input to quantize."
 
-        q_x = tuple(self.input_quantizers[idx].quant(x[idx]) if x[idx] is not None else None for idx in range(len(x)))
+        # Ignore [arg-type] check from mypy as it is not able to see that the input to `quant`
+        # cannot be None
+        q_x = tuple(
+            (
+                self.input_quantizers[idx].quant(x[idx])  # type: ignore[arg-type]
+                if x[idx] is not None
+                else None
+            )
+            for idx in range(len(x))
+        )
 
         # Make sure all inputs are quantized to int64
-        assert all_values_are_of_dtype(*q_x, dtypes="int64", allow_none=True), "Inputs were not quantized to int64"
+        assert all_values_are_of_dtype(
+            *q_x, dtypes="int64", allow_none=True
+        ), "Inputs were not quantized to int64"
 
-        return q_x[0] if len(q_x) == 1 else q_x
+        if len(q_x) == 1:
+            assert q_x[0] is not None
+
+            return q_x[0]
+
+        return q_x
 
     def dequantize_output(
         self, *q_y_preds: numpy.ndarray
@@ -734,8 +752,15 @@ class QuantizedModule:
         # Quantize the inputs
         q_inputs = self.quantize_input(*inputs)
 
+        # Make sure all inputs are quantized to int64 and are not None
+        assert all_values_are_of_dtype(
+            *to_tuple(q_inputs), dtypes="int64", allow_none=False
+        ), "Inputs were not quantized to int64"
+
         # Generate the input-set with proper dimensions
-        inputset = _get_inputset_generator(q_inputs)
+        # Ignore [arg-type] check from mypy as it is not able to see that no values in `q_inputs`
+        # is None
+        inputset = _get_inputset_generator(q_inputs)  # type: ignore[arg-type]
 
         # Check that p_error or global_p_error is not set in both the configuration and in the
         # direct parameters
