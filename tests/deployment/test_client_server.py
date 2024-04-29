@@ -331,7 +331,10 @@ def check_input_compression(model, fhe_circuit_compressed, is_torch, **compilati
 
         uncompressed_size = fhe_circuit_uncompressed.size_of_inputs
 
-    assert compressed_size < uncompressed_size, (
+    # Make sure inputs are compressed by a given important factor
+    input_compression_factor = 50
+
+    assert input_compression_factor * compressed_size < uncompressed_size, (
         "Compressed input ciphertext's is not smaller than the uncompressed input ciphertext. Got "
         f"{compressed_size} bytes (compressed) and {uncompressed_size} bytes (uncompressed)."
     )
