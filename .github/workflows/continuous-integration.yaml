@@ -221,6 +221,9 @@ jobs:
           echo "needs-310-linux-runner=${NEEDS_LINUX_310_RUNNER}" >> $GITHUB_OUTPUT
           echo "instance-type=${INSTANCE_TYPE}" >> $GITHUB_OUTPUT
 
+          send_slack_report=${{ fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_PUSH_TO_MAIN) || fromJSON(env.IS_PUSH_TO_RELEASE) }}
+          echo "send_slack_report=${send_slack_report}" >> $GITHUB_OUTPUT
+
   start-runner-linux:
     needs: [matrix-preparation]
     name: Start EC2 runner
@@ -724,7 +727,8 @@ jobs:
           	poetry run python ./script/actions_utils/pytest_failed_test_report.py \
             --pytest-input-report "pytest_report.json" \
             --failed-tests-report "failed_tests_report.json" \
-            --failed-tests-comment "failed_tests_comment.txt"
+            --failed-tests-comment "failed_tests_comment_${{ matrix.python_version }}.txt"
+            --failed-tests-list "failed_tests_slack_list_${{ matrix.python_version }}.txt"
 
             # Check if all failed tests are known flaky tests
             FAILED_TESTS_ARE_FLAKY=$(jq .all_failed_tests_are_flaky "failed_tests_report.json")
@@ -749,7 +753,7 @@ jobs:
         with:
           header: flaky-test
           recreate: true
-          path: failed_tests_comment.txt
+          path: failed_tests_comment_${{ matrix.python_version }}.txt
 
       # If regular pytest step has been skipped but some changes has been detected in test files, 
       # meaning there was no other changed impacting our testing suite, we only need to run these 
@@ -774,22 +778,37 @@ jobs:
         id: pytest_weekly
         if: ${{ fromJSON(env.IS_WEEKLY) && steps.conformance.outcome == 'success' && !cancelled() }}
         run: |
-          make pytest PYTEST_OPTIONS=--weekly
+          make pytest_and_report PYTEST_OPTIONS=--weekly
 
-      # Run Pytest on all of our tests on a weekly basis using PyPI's local wheel
-      - name: PyTest with PyPI local wheel of Concrete ML (weekly)
-        if: |
-          fromJSON(env.IS_WEEKLY)
-          && steps.conformance.outcome == 'success' 
-          && !cancelled()
-        run: |
-          make pytest_pypi_wheel_cml
+          # If weekly tests failed, check for flaky tests
+          if [ $? -ne 0 ]; then
 
-      # Run Pytest on all of our tests (except flaky ones) using PyPI's local wheel during the 
-      # release process
-      - name: PyTest (no flaky) with PyPI local wheel of Concrete ML (release)
+            # Convert pytest report to formatted report with only information about failed tests
+          	poetry run python ./script/actions_utils/pytest_failed_test_report.py \
+            --pytest-input-report "pytest_report.json" \
+            --failed-tests-report "failed_tests_report.json" \
+            --failed-tests-list "failed_tests_slack_list_${{ matrix.python_version }}.txt"
+
+            # Check if all failed tests are known flaky tests
+            FAILED_TESTS_ARE_FLAKY=$(jq .all_failed_tests_are_flaky "failed_tests_report.json")
+
+            echo "FAILED_TESTS_ARE_FLAKY=${FAILED_TESTS_ARE_FLAKY}" >> "$GITHUB_ENV"
+
+            # If all failed tests are known flaky tests, try to rerun them
+            if [[ "${FAILED_TESTS_ARE_FLAKY}" == "true" ]]; then
+              make pytest_run_last_failed
+            
+            # Else, return exit status 1 in order to make this step fail
+            else
+              exit 1
+            fi
+          fi
+
+      # Run Pytest on all of our tests (except flaky ones) using PyPI's local wheel in the weekly 
+      # or during the release process
+      - name: PyTest (no flaky) with PyPI local wheel of Concrete ML (weekly, release)
         if: |
-          fromJSON(env.IS_RELEASE)
+          (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
           && steps.conformance.outcome == 'success' 
           && !cancelled()
         run: |
@@ -936,7 +955,7 @@ jobs:
     needs: [build-linux]
     runs-on: ubuntu-20.04
     timeout-minutes: 2
-    if: ${{ always() }}
+    if: success() || failure()
     steps:
       - name: Fail on unsuccessful Linux build
         shell: bash
@@ -1080,12 +1099,21 @@ jobs:
       # macOS builds are already long, so we decide not to use --weekly on them, it could be
       # changed. Remark also that, for mac, due to unexpected issues with GitHub, we have a
       # slightly different way to launch pytest
+      # Add support for re-running flaky tests on macOS (intel) CI 
+      # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4428
       - name: PyTest Source Code
         run: |
           make pytest_macOS_for_GitHub
 
+
+  # Only send a report for the following CI:
+  # - when pushing to main
+  # - when pushing to a release branch
+  # - when running weekly tests
+  # Side note: environmental variables cannot be used for jobs conditions, so we need to store the 
+  # status as an previous job's output
   send-report:
-    if: ${{ always() }}
+    if: (success() || failure()) && fromJSON(needs.matrix-preparation.outputs.send_slack_report)
     timeout-minutes: 2
     needs:
       [
@@ -1102,8 +1130,6 @@ jobs:
       - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
 
       - name: Prepare whole job status
-        if: ${{ always() }}
-        continue-on-error: true
         env:
           NEEDS_JSON: ${{ toJSON(needs) }}
         run: |
@@ -1112,20 +1138,48 @@ jobs:
           --needs_context_json /tmp/needs_context.json)
           echo "JOB_STATUS=${JOB_STATUS}" >> "$GITHUB_ENV"
 
+      - name: Set message title
+        run: |
+          if [[ "${{ fromJSON(env.IS_WEEKLY) }}" == "true" ]]; then
+            TITLES_START="Weekly Tests"
+          elif [[ "${{ fromJSON(env.IS_PUSH_TO_MAIN) || fromJSON(env.IS_PUSH_TO_RELEASE) }}" == "true" ]]; then
+            TITLES_START="Push to '${{ github.ref_name }}'"
+          fi
+
+          echo "SLACK_TITLE=${TITLES_START}: ${{ env.JOB_STATUS || 'failure' }}" >> "$GITHUB_ENV"
+
+      # Add support for re-running flaky tests on macOS (intel) CI 
+      # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4428
+      - name: Set message body
+        run: |
+          SLACK_BODY="[Action URL](${{ env.ACTION_RUN_URL }})\n\
+            * build-linux: ${{ needs.build-linux.result || 'Did not run.' }}\n\n\
+            * build-macos: ${{ needs.build-macos.result || 'Did not run.' }}\n\n"
+
+          PYTHON_VERSIONS = ("3.8" "3.9" "3.10")
+
+          for python_version in ${PYTHON_VERSIONS[@]}; do
+            file_name="failed_tests_slack_list_${python_version}.txt"
+
+            if [ -f ${file_name} ]; then
+              SLACK_BODY+="Linux failed tests (Python ${python_version}):\n"
+              SLACK_BODY+="$(cat ${file_name})"
+              SLACK_BODY+="\n\n"
+            fi
+          done
+
+          echo "SLACK_BODY=${SLACK_BODY}" >> "$GITHUB_ENV"
+
       - name: Slack Notification
-        if: ${{ always() }}
-        continue-on-error: true
+        if: fromJSON(env.RUN_JOB)
         uses: rtCamp/action-slack-notify@4e5fb42d249be6a45a298f3c9543b111b02f7907
         env:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: ${{ env.JOB_STATUS || 'failure' }}
-          SLACK_MESSAGE: "Full run finished with status ${{ env.JOB_STATUS || 'failure' }} \
-            (${{ env.ACTION_RUN_URL }})\n\
-            - matrix-preparation: ${{ needs.matrix-preparation.result || 'Did not run.'}}\n\n\
-            - start-runner-linux: ${{ needs.start-runner-linux.result || 'Did not run.'}}\n\n\
-            - build-linux: ${{ needs.build-linux.result || 'Did not run.' }}\n\n\
-            - stop-runner-linux: ${{ needs.stop-runner-linux.result || 'Did not run.'}}\n\n\
-            - build-macos: ${{ needs.build-macos.result || 'Did not run.' }}"
+          SLACK_TITLE: ${{ env.SLACK_TITLE || 'Unexpected CI' }}
+          SLACK_MESSAGE: ${{ env.SLACK_BODY || 'Unexpected CI' }}
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACKIFY_MARKDOWN: true
+
