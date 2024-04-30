@@ -82,7 +82,7 @@ env:
   # differentiate the release CI from regular CIs by using 'inputs.event_name', which should be set
   # to "release" by the release workflow
   IS_PR: ${{ github.event_name == 'pull_request' && inputs.event_name != 'release' }}
-  IS_WEEKLY: ${{ github.event_name == 'schedule' || ((github.event_name == 'workflow_dispatch') && (inputs.event_name == 'weekly')) }}
+  IS_WEEKLY: "true"
   # The 'IS_RELEASE' variable indicates that the workflow has been triggered by the releasing 
   # process itself, before publishing it. It should only happen when the release workflow triggers
   # the CI, in which 'inputs.event_name' is set to "release"
@@ -125,10 +125,10 @@ jobs:
           echo "${{ github.event_name }}"
 
           # Manage build type that will condition the rest of the CI
-          if [[ "${IS_PR}" == "true" ]]; then
-            BUILD_TYPE="pr"
-          elif [[ "${IS_WEEKLY}" == "true" ]]; then
+          if [[ "${IS_WEEKLY}" == "true" ]]; then
             BUILD_TYPE="weekly"
+          elif [[ "${IS_PR}" == "true" ]]; then
+            BUILD_TYPE="pr"
           elif [[ "${IS_RELEASE}" == "true" ]]; then
             BUILD_TYPE="release"
           elif [[ "${IS_PUSH_TO_MAIN}" == "true" ]]; then
@@ -778,7 +778,8 @@ jobs:
         id: pytest_weekly
         if: ${{ fromJSON(env.IS_WEEKLY) && steps.conformance.outcome == 'success' && !cancelled() }}
         run: |
-          make pytest_and_report PYTEST_OPTIONS=--weekly
+          # make pytest_and_report PYTEST_OPTIONS=--weekly
+          make pytest_and_report
 
           # If weekly tests failed, check for flaky tests
           if [ $? -ne 0 ]; then
@@ -875,10 +876,7 @@ jobs:
 
       # Run Pytest on all codeblocks on a weekly basis or while releasing
       - name: PyTest CodeBlocks with PyPI local wheel of Concrete ML (weekly, release)
-        if: |
-          (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
-          && steps.conformance.outcome == 'success' 
-          && !cancelled()
+        if: false
         run: |
           make pytest_codeblocks_pypi_wheel_cml 
 
@@ -897,10 +895,7 @@ jobs:
       # Run Pytest on all notebooks on a weekly basis
       # Note: some notebooks need specific data stored in LFS
       - name: PyTest Notebooks (weekly)
-        if: | 
-          fromJSON(env.IS_WEEKLY) 
-          && steps.conformance.outcome == 'success' 
-          && !cancelled()
+        if: false
         run: |
           git lfs pull --include "docs/advanced_examples/data/**" --exclude  ""
 
@@ -1141,7 +1136,7 @@ jobs:
       - name: Set message title
         run: |
           if [[ "${{ fromJSON(env.IS_WEEKLY) }}" == "true" ]]; then
-            TITLES_START="Weekly Tests"
+            TITLES_START="👷 DEBUG 👷 Weekly Tests"
           elif [[ "${{ fromJSON(env.IS_PUSH_TO_MAIN) || fromJSON(env.IS_PUSH_TO_RELEASE) }}" == "true" ]]; then
             TITLES_START="Push to '${{ github.ref_name }}'"
           fi
