@@ -22,11 +22,11 @@ from concrete.ml.pandas._utils import (
     serialize_value,
 )
 
-_SERVER = load_server()
-
 
 class EncryptedDataFrame:
     """Define an encrypted data-frame framework that supports Pandas operators and parameters."""
+
+    _SERVER: fhe.Server = None
 
     def __init__(
         self,
@@ -37,6 +37,9 @@ class EncryptedDataFrame:
         dtype_mappings: Dict,
         api_version: int,
     ):
+        if EncryptedDataFrame._SERVER is None:
+            EncryptedDataFrame._SERVER = load_server()
+
         self._encrypted_values = encrypted_values
         self._encrypted_nan = encrypted_nan
         self._evaluation_keys = evaluation_keys
@@ -229,7 +232,7 @@ class EncryptedDataFrame:
         joined_array, joined_column_names, joined_dtype_mappings = encrypted_merge(
             self,
             other,
-            _SERVER,
+            EncryptedDataFrame._SERVER,
             how=how,
             on=on,
             left_on=left_on,

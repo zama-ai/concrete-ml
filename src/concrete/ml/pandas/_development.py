@@ -7,18 +7,85 @@ from typing import Dict, List, Tuple, Union
 
 from concrete.fhe import Configuration
 from concrete.fhe.tracing import Tracer
+import numpy
 
 from concrete import fhe
+from ..quantization.quantized_module import _get_inputset_generator
 
 script_dir = Path(__file__).parent
 
+
+CURRENT_API_VERSION = 2
+
+API_VERSION_SPECS = {
+    1: {"configuration": Configuration()},
+    2: {
+        "configuration": Configuration(
+            compress_input_ciphertexts=True, compress_evaluation_keys=True
+        )
+    },
+}
+
 # The paths where to find and save the client/server files
-CLIENT_SERVER_DIR = script_dir / "_client_server_files"
+CLIENT_SERVER_DIR = script_dir / "_client_server_files" / f"api_{CURRENT_API_VERSION}"
 CLIENT_PATH = CLIENT_SERVER_DIR / "client.zip"
 SERVER_PATH = CLIENT_SERVER_DIR / "server.zip"
 
 N_BITS_PANDAS = 4
 
+from ..sklearn._fhe_training_utils  import LogisticRegressionTraining, make_training_inputset
+from ..torch.compile import build_quantized_module
+from ..common.utils import generate_proxy_function
+
+@fhe.module()
+class DFApiV2:
+    _N_DIMS_TRAINING = 4
+
+    _training_input_set = make_training_inputset(
+        numpy.zeros((_N_DIMS_TRAINING, )), 
+        numpy.ones((_N_DIMS_TRAINING, )) * 2**N_BITS_PANDAS, 
+        0, 
+        2**N_BITS_PANDAS, 
+        8, True
+    )
+    # Build the quantized module
+    _training_module = build_quantized_module(
+        model=LogisticRegressionTraining(
+            learning_rate=1,
+            iterations=1,
+            fit_bias=False,
+        ),
+        torch_inputset=_training_input_set,
+        import_qat=False,
+        n_bits=N_BITS_PANDAS,
+        rounding_threshold_bits=6,
+    )
+
+    _forward_proxy, _orig_args_to_proxy_func_args = generate_proxy_function(
+        _training_module._clear_forward, _training_module.ordered_module_input_names
+    )
+
+    @fhe.function(
+        {"val_1": "encrypted", "val_2": "encrypted", "left_key": "encrypted", "right_key": "encrypted"}
+    )
+    def train_log_reg(
+        val_1: Union[Tracer, int],
+        val_2: Union[Tracer, int],
+        left_key: Union[Tracer, int],
+        right_key: Union[Tracer, int],
+    ):
+        return DFApiV2._forward_proxy(val_1, val_2, left_key, right_key)
+
+    @fhe.function(
+        {"val_1": "encrypted", "val_2": "encrypted", "left_key": "encrypted", "right_key": "encrypted"}
+    )
+    def left_right_join_to_compile(
+        val_1: Union[Tracer, int],
+        val_2: Union[Tracer, int],
+        left_key: Union[Tracer, int],
+        right_key: Union[Tracer, int],
+    ) -> Union[Tracer, int]:
+        return _left_right_join_to_compile_internal(val_1, val_2, left_key, right_key)
 
 def identity_pbs(value: Union[Tracer, int]) -> Union[Tracer, int]:
     """Define an identity TLU.
@@ -41,7 +108,25 @@ def left_right_join_to_compile(
     left_key: Union[Tracer, int],
     right_key: Union[Tracer, int],
 ) -> Union[Tracer, int]:
-    """Define the atomic function to consider for running a left/right join in FHE.
+    """Runs the atomic left/right join in FHE.
+    Args:
+        val_1 (Union[Tracer, int]): The value used for accumulating the sum.
+        val_2 (Union[Tracer, int]): The value to add if the keys match.
+        left_key (Union[Tracer, int]): The left data-frame's encrypted key to consider.
+        right_key (Union[Tracer, int]): The right data-frame's encrypted key to consider.
+
+    Returns:
+        Union[Tracer, int]): The new accumulated sum.
+    """
+    return _left_right_join_to_compile_internal(val_1, val_2, left_key, right_key)
+
+def _left_right_join_to_compile_internal(
+    val_1: Union[Tracer, int],
+    val_2: Union[Tracer, int],
+    left_key: Union[Tracer, int],
+    right_key: Union[Tracer, int],
+) -> Union[Tracer, int]:
+    """Runs the atomic left/right join in FHE.
 
     This function is going to be composed with itself as part of the encrypted merge algorithm,
     which is explained in the '_operators.py' file. Here, the function takes two keys and two
@@ -107,19 +192,28 @@ def get_left_right_join_inputset(n_bits: int) -> List:
 
     return inputset
 
+def get_training_inputset():
+    return _get_inputset_generator(DFApiV2._training_input_set)
 
 # Store the configuration functions and parameters to their associated operator
 PANDAS_OPS_TO_CIRCUIT_CONFIG = {
-    "left_right_join": {
+    1: {
         "get_inputset": partial(get_left_right_join_inputset, n_bits=N_BITS_PANDAS),
         "to_compile": left_right_join_to_compile,
         "encrypt_config": {
             "n": 4,
             "pos": 1,
         },
+    },
+    2: {
+        "get_inputset": { "left_right_join_to_compile": partial(get_left_right_join_inputset, n_bits=N_BITS_PANDAS), "train_log_reg": get_training_inputset},
+        "to_compile": DFApiV2,
+        "encrypt_config": {
+            "n": 4,
+            "pos": 1,
+        },
     }
 }
-
 
 def get_encrypt_config() -> Dict:
     """Get the configuration parameters to use when encrypting the input values.
@@ -130,7 +224,7 @@ def get_encrypt_config() -> Dict:
     Returns:
         Dict: The configuration parameters for encryption.
     """
-    return PANDAS_OPS_TO_CIRCUIT_CONFIG["left_right_join"]["encrypt_config"]
+    return PANDAS_OPS_TO_CIRCUIT_CONFIG[CURRENT_API_VERSION]["encrypt_config"]
 
 
 # Allow 0 values once NaN values are not represented by it anymore
@@ -159,10 +253,14 @@ def save_client_server(client_path: Path = CLIENT_PATH, server_path: Path = SERV
     client_path.parent.mkdir(parents=True, exist_ok=True)
     server_path.parent.mkdir(parents=True, exist_ok=True)
 
-    config = PANDAS_OPS_TO_CIRCUIT_CONFIG["left_right_join"]
+    config = PANDAS_OPS_TO_CIRCUIT_CONFIG[CURRENT_API_VERSION]
 
     # Get the input-set and circuit generating functions
-    inputset = config["get_inputset"]()
+    if isinstance(config["get_inputset"], dict):
+        inputset = {func: config["get_inputset"][func]() for func in config["get_inputset"].keys()}
+    else:
+        inputset = config["get_inputset"]()
+
     cp_func = config["to_compile"]
     compilation_configuration = Configuration(compress_evaluation_keys=True)
 

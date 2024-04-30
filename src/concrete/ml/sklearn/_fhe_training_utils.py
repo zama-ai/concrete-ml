@@ -1,7 +1,7 @@
 """Utility functions for FHE training."""
 
 from typing import Tuple
-
+import itertools
 import numpy
 import torch
 from torch.nn.functional import binary_cross_entropy_with_logits
@@ -18,6 +18,59 @@ def binary_cross_entropy(y_true: numpy.ndarray, logits: numpy.ndarray):
         The binary cross entropy loss value.
     """
     return binary_cross_entropy_with_logits(torch.Tensor(logits), torch.Tensor(y_true)).item()
+
+def make_training_inputset(x_min, x_max, param_min, param_max, batch_size, fit_intercept):
+    """Get the quantized module for FHE training.
+
+    This method builds the quantized module and fhe-circuit needed to train the model in FHE.
+
+    Args:
+        x_min (numpy.ndarray): The minimum value to consider for each feature over the samples.
+        x_max (numpy.ndarray): The maximum value to consider for each feature over the samples.
+
+    Returns:
+        (QuantizedModule): The quantized module containing the FHE circuit for training.
+    """
+    
+    combinations = list(
+        itertools.product(
+            [1.0, 0.0],  # Labels
+            [x_min, x_max, numpy.zeros(x_min.shape)],  # Data-range
+            [param_min, param_max],  # Weights
+            [param_min, param_max],  # Bias
+        )
+    )
+
+    compile_size = len(combinations)
+    n_targets = 1
+
+    # Generate the input values to consider for compilation
+    x_compile_set = numpy.empty((compile_size, batch_size, x_min.shape[0]))
+
+    # Generate the target values to consider for compilation
+    # Update this once we support multi-class
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4182
+    y_compile_set = numpy.empty((compile_size, batch_size, n_targets))
+
+    # Generate the weight values to consider for compilation
+    weights_compile_set = numpy.empty((compile_size, x_min.shape[0], n_targets))
+
+    # Generate the bias values to consider for compilation
+    bias_compile_set = numpy.empty((compile_size, 1, n_targets))
+
+    compile_set = (x_compile_set, y_compile_set, weights_compile_set, bias_compile_set)
+
+    # Bound values are hard-coded in order to make sure that the circuit never overflows
+    for index, (label, x_value, coef_value, bias_value) in enumerate(combinations):
+        compile_set[0][index] = x_value
+        compile_set[1][index] = label
+        compile_set[2][index] = coef_value
+
+        if not fit_intercept:
+            bias_value *= 0.0
+
+        compile_set[3][index] = bias_value
+    return compile_set
 
 
 class LogisticRegressionTraining(torch.nn.Module):
