@@ -33,7 +33,7 @@ class XGBClassifier(BaseTreeClassifierMixin):
         max_depth: Optional[int] = 3,
         learning_rate: Optional[float] = None,
         n_estimators: Optional[int] = 20,
-        objective: Optional[str] = "binary:logistic",
+        objective: Optional[str] = None,
         booster: Optional[str] = None,
         tree_method: Optional[str] = None,
         n_jobs: Optional[int] = None,
@@ -278,7 +278,7 @@ class XGBRegressor(BaseTreeRegressorMixin):
         max_depth: Optional[int] = 3,
         learning_rate: Optional[float] = None,
         n_estimators: Optional[int] = 20,
-        objective: Optional[str] = "reg:squarederror",
+        objective: Optional[str] = None,
         booster: Optional[str] = None,
         tree_method: Optional[str] = None,
         n_jobs: Optional[int] = None,
@@ -450,10 +450,14 @@ class XGBRegressor(BaseTreeRegressorMixin):
         metadata["max_cat_to_onehot"] = self.max_cat_to_onehot
         metadata["grow_policy"] = self.grow_policy
         metadata["sampling_method"] = self.sampling_method
-        metadata["callbacks"] = self.callbacks
         metadata["early_stopping_rounds"] = self.early_stopping_rounds
         metadata["eval_metric"] = self.eval_metric
-        metadata["kwargs"] = self.kwargs
+
+        # Callables are not serializable
+        assert not self.kwargs, "kwargs are not supported for serialization"
+        assert not self.callbacks, "callbacks are not supported for serialization"
+        metadata["kwargs"] = None
+        metadata["callbacks"] = None
 
         return metadata
 
