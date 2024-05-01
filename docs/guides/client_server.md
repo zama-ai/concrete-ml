@@ -15,7 +15,6 @@ The compiled model (`server.zip`) is deployed to a server and the cryptographic 
 
 > **Important Note:** In a client-server production using FHE, the server's output format depends on the model type. For regressors, the output matches the `predict()` method from scikit-learn, providing direct predictions. For classifiers, the output uses the `predict_proba()` method format, offering probability scores for each class, which allows clients to determine class membership by applying a threshold (commonly 0.5).
 
-
 ### Using the API Classes
 
 The `FHEModelDev`, `FHEModelClient`, and `FHEModelServer` classes in the `concrete.ml.deployment` module make it easy to deploy and interact between the client and server:
@@ -29,6 +28,7 @@ The `FHEModelDev`, `FHEModelClient`, and `FHEModelServer` classes in the `concre
 ### Example Usage
 
 <!--pytest-codeblocks:skip-->
+
 ```python
 # Development machine
 dev = FHEModelDev(path_dir='path/to/save', model=my_trained_model)
