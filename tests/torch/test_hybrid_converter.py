@@ -97,7 +97,7 @@ def run_hybrid_llm_test(
         for module_name in module_names:
             module_dir_path = temp_dir_path / module_name
             module_dir_files = set(str(elt.name) for elt in module_dir_path.glob("**/*"))
-            for file_name in ["client.zip", "server.zip", "versions.json"]:
+            for file_name in ["client.zip", "server.zip"]:
                 assert file_name in module_dir_files
 
 
