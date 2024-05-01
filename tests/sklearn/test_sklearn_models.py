@@ -2082,12 +2082,14 @@ def test_initialization_variables_and_defaults_match(
         if cls.__name__ in ["XGBClassifier", "XGBRegressor"]:
             params = {}
 
-            # Recursively gather parameters from all base classes
+            # Recursively gather parameters from all base classes, starting from the current class
             def gather_params(c):
-                sig = inspect.signature(c)
-                params.update({k: v.default for k, v in sig.parameters.items()})
+                # First, recursively gather from base classes so child class can overwrite
                 for base in c.__bases__:
                     gather_params(base)
+                # Update with the current class's parameters
+                sig = inspect.signature(c)
+                params.update({k: v.default for k, v in sig.parameters.items()})
 
             gather_params(cls)
             return params
@@ -2140,3 +2142,21 @@ def test_initialization_variables_and_defaults_match(
         f"Expected: {[sklearn_params_defaults[param] for param in differing_defaults]}, "
         f"Found: {[cml_params_defaults[param] for param in differing_defaults]}"
     )
+
+
+@pytest.mark.parametrize("model_class", _get_sklearn_tree_models())
+@pytest.mark.parametrize(
+    "param, error_message",
+    [
+        ({"eval_metric": lambda x: x}, "Callable eval_metric is not supported for serialization"),
+        ({"kwargs": {"extra": "param"}}, "kwargs are not supported for serialization"),
+        ({"callbacks": [lambda x: x]}, "callbacks are not supported for serialization"),
+    ],
+)
+def test_xgb_serialization_errors(model_class, param, error_message):
+    """Test that XGBoost models with unsupported parameters raise errors on serialization."""
+    model_name = get_model_name(model_class)
+    if model_name in ["XGBClassifier", "XGBRegressor"]:
+        with pytest.raises(NotImplementedError, match=error_message):
+            model = instantiate_model_generic(model_class, 5, **param)
+            model.dumps()

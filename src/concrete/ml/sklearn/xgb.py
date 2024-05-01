@@ -2,10 +2,11 @@
 
 import platform
 import warnings
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Union
 
 import numpy
 import xgboost.sklearn
+from numpy.random import RandomState
 from xgboost.callback import TrainingCallback
 
 from ..common.debugging.custom_assert import assert_true
@@ -33,7 +34,7 @@ class XGBClassifier(BaseTreeClassifierMixin):
         max_depth: Optional[int] = 3,
         learning_rate: Optional[float] = None,
         n_estimators: Optional[int] = 20,
-        objective: Optional[str] = None,
+        objective: Optional[str] = "binary:logistic",
         booster: Optional[str] = None,
         tree_method: Optional[str] = None,
         n_jobs: Optional[int] = None,
@@ -51,7 +52,7 @@ class XGBClassifier(BaseTreeClassifierMixin):
         missing: float = numpy.nan,
         num_parallel_tree: Optional[int] = None,
         monotone_constraints: Optional[Union[Dict[str, int], str]] = None,
-        interaction_constraints: Optional[Union[str, List[Tuple[str]]]] = None,
+        interaction_constraints: Optional[Union[str, Sequence[Sequence[str]]]] = None,
         importance_type: Optional[str] = None,
         gpu_id: Optional[int] = None,
         validate_parameters: Optional[bool] = None,
@@ -180,14 +181,24 @@ class XGBClassifier(BaseTreeClassifierMixin):
         metadata["random_state"] = self.random_state
         metadata["verbosity"] = self.verbosity
         metadata["max_bin"] = self.max_bin
-        metadata["callbacks"] = self.callbacks
         metadata["early_stopping_rounds"] = self.early_stopping_rounds
         metadata["max_leaves"] = self.max_leaves
-        metadata["eval_metric"] = self.eval_metric
         metadata["max_cat_to_onehot"] = self.max_cat_to_onehot
         metadata["grow_policy"] = self.grow_policy
         metadata["sampling_method"] = self.sampling_method
-        metadata["kwargs"] = self.kwargs
+
+        if callable(self.eval_metric):
+            raise NotImplementedError("Callable eval_metric is not supported for serialization")
+
+        if self.kwargs:
+            raise NotImplementedError("kwargs are not supported for serialization")
+
+        if self.callbacks:
+            raise NotImplementedError("callbacks are not supported for serialization")
+
+        metadata["eval_metric"] = self.eval_metric
+        metadata["kwargs"] = None
+        metadata["callbacks"] = None
 
         return metadata
 
@@ -277,8 +288,8 @@ class XGBRegressor(BaseTreeRegressorMixin):
         n_bits: Union[int, Dict[str, int]] = 6,
         max_depth: Optional[int] = 3,
         learning_rate: Optional[float] = None,
-        n_estimators: Optional[int] = 20,
-        objective: Optional[str] = None,
+        n_estimators: int = 20,
+        objective: Optional[str] = "reg:squarederror",
         booster: Optional[str] = None,
         tree_method: Optional[str] = None,
         n_jobs: Optional[int] = None,
@@ -296,23 +307,23 @@ class XGBRegressor(BaseTreeRegressorMixin):
         missing: float = numpy.nan,
         num_parallel_tree: Optional[int] = None,
         monotone_constraints: Optional[Union[Dict[str, int], str]] = None,
-        interaction_constraints: Optional[Union[str, List[Tuple[str]]]] = None,
+        interaction_constraints: Optional[Union[str, Sequence[Sequence[str]]]] = None,
         importance_type: Optional[str] = None,
         gpu_id: Optional[int] = None,
         validate_parameters: Optional[bool] = None,
         predictor: Optional[str] = None,
         enable_categorical: bool = False,
-        random_state: Optional[int] = None,
+        random_state: Optional[Union[RandomState, int]] = None,
         verbosity: Optional[int] = None,
-        eval_metric: Optional[str] = None,
+        eval_metric: Optional[Union[str, List[str], Callable]] = None,
         sampling_method: Optional[str] = None,
         max_leaves: Optional[int] = None,
         max_bin: Optional[int] = None,
         max_cat_to_onehot: Optional[int] = None,
         grow_policy: Optional[str] = None,
-        callbacks: Optional[List[Callable]] = None,
+        callbacks: Optional[List[TrainingCallback]] = None,
         early_stopping_rounds: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         # base_score != 0.5 or None does not seem to not pass our tests
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/474
@@ -442,7 +453,6 @@ class XGBRegressor(BaseTreeRegressorMixin):
         metadata["validate_parameters"] = self.validate_parameters
         metadata["predictor"] = self.predictor
         metadata["enable_categorical"] = self.enable_categorical
-        metadata["use_label_encoder"] = self.use_label_encoder
         metadata["random_state"] = self.random_state
         metadata["verbosity"] = self.verbosity
         metadata["max_bin"] = self.max_bin
@@ -451,11 +461,17 @@ class XGBRegressor(BaseTreeRegressorMixin):
         metadata["grow_policy"] = self.grow_policy
         metadata["sampling_method"] = self.sampling_method
         metadata["early_stopping_rounds"] = self.early_stopping_rounds
-        metadata["eval_metric"] = self.eval_metric
 
-        # Callables are not serializable
-        assert not self.kwargs, "kwargs are not supported for serialization"
-        assert not self.callbacks, "callbacks are not supported for serialization"
+        if callable(self.eval_metric):
+            raise NotImplementedError("Callable eval_metric is not supported for serialization")
+
+        if self.kwargs:
+            raise NotImplementedError("kwargs are not supported for serialization")
+
+        if self.callbacks:
+            raise NotImplementedError("callbacks are not supported for serialization")
+
+        metadata["eval_metric"] = self.eval_metric
         metadata["kwargs"] = None
         metadata["callbacks"] = None
 
