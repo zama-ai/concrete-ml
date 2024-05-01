@@ -222,6 +222,7 @@ class FHEModelDev:
         with zipfile.ZipFile(path_circuit_client, "a") as zip_file:
             zip_file.write(filename=versions_path, arcname="versions.json")
 
+        versions_path.unlink()
         json_path.unlink()
 
 
