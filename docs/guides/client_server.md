@@ -13,7 +13,38 @@ The diagram above shows the steps that a developer goes through to prepare a mod
 
 The compiled model (`server.zip`) is deployed to a server and the cryptographic parameters (`client.zip`) are shared with the clients. In some settings, such as a phone application, the `client.zip` can be directly deployed on the client device and the server does not need to host it.
 
-Note that for built-in models, the server output + post-processing adheres to the following guidelines: if the model is a regressor, the output follows the format of the scikit-learn `.predict()` method; if the model is a classifier, the output follows the format of the scikit-learn `.predict_proba()` method.
+> **Important Note:** In a client-server production using FHE, the server's output format depends on the model type. For regressors, the output matches the `predict()` method from scikit-learn, providing direct predictions. For classifiers, the output uses the `predict_proba()` method format, offering probability scores for each class, which allows clients to determine class membership by applying a threshold (commonly 0.5).
+
+
+### Using the API Classes
+
+The `FHEModelDev`, `FHEModelClient`, and `FHEModelServer` classes in the `concrete.ml.deployment` module make it easy to deploy and interact between the client and server:
+
+- **`FHEModelDev`**: This class is used during the development phase to prepare and save the model artifacts (`client.zip` and `server.zip`). It handles the serialization of model parameters and adds versioning information to ensure compatibility between the client and server components.
+
+- **`FHEModelClient`**: This class is used on the client side to manage cryptographic keys, encrypt data before sending it to the server, and decrypt results received from the server. It also handles the loading of quantization parameters and pre/post-processing from `serialized_processing.json`.
+
+- **`FHEModelServer`**: This class is used on the server side to load the FHE circuit from `server.zip` and execute the model on encrypted data received from the client.
+
+### Example Usage
+
+<!--pytest-codeblocks:skip-->
+```python
+# Development machine
+dev = FHEModelDev(path_dir='path/to/save', model=my_trained_model)
+dev.save()
+
+# Client machine
+client = FHEModelClient(path_dir='path/to/client/zip', key_dir='path/to/keys')
+client.load()
+encrypted_data = client.quantize_encrypt_serialize(my_data)
+result = client.deserialize_decrypt_dequantize(encrypted_result)
+
+# Server machine
+server = FHEModelServer(path_dir='path/to/server/zip')
+server.load()
+encrypted_result = server.run(encrypted_data, evaluation_keys)
+```
 
 ## Serving
 
