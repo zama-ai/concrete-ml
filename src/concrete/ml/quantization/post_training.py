@@ -177,12 +177,12 @@ def get_n_bits_dict(n_bits: Union[int, Dict[str, int]]) -> Dict[str, int]:
 
         n_bits_dict.update(n_bits)
 
-    assert_true(
-        n_bits_dict["model_outputs"] >= n_bits_dict["op_inputs"],
-        "Using fewer bits to represent the model_outputs than the op inputs is not "
-        f"recommended. Got model_outputs: {n_bits_dict['model_outputs']} and op_inputs: "
-        f"{n_bits_dict['op_inputs']}",
-    )
+    # assert_true(
+    #     n_bits_dict["model_outputs"] >= n_bits_dict["op_inputs"],
+    #     "Using fewer bits to represent the model_outputs than the op inputs is not "
+    #     f"recommended. Got model_outputs: {n_bits_dict['model_outputs']} and op_inputs: "
+    #     f"{n_bits_dict['op_inputs']}",
+    # )
 
     return n_bits_dict
 
