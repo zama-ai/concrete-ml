@@ -1,0 +1,22 @@
+name: Weekly Tests
+on:
+  workflow_dispatch:
+
+  schedule:
+    # * is a special character in YAML so you have to quote this string
+    # At 22:00 on Sunday
+    # Timezone is UTC, so Paris time is +2 during the summer and +1 during winter
+    - cron: '0 22 * * 0'
+
+concurrency:
+  group: "${{ github.ref }}-${{ github.event_name }}-${{ github.workflow }}"
+  cancel-in-progress: true
+
+jobs:
+  # The caller workflow's job (here 'weekly-tests') does not need to run on the current runner as 
+  # the reusable workflow (here 'continuous-integration.yaml') uses its own runner
+  weekly-tests:
+    name: Run weekly tests
+    uses: ./.github/workflows/continuous-integration.yaml
+    with:
+      event_name: "weekly"

@@ -1,4 +1,4 @@
-name: CML builds (weekly or not)
+name: Concrete ML Tests
 on:
   pull_request:
 
@@ -10,40 +10,38 @@ on:
   release:
     types: [published]
 
-  # Workflow dispatch and schedule refer to the weekly build
   workflow_dispatch:
     inputs:
       event_name:
         description: "Event that triggers the workflow"
         required: true
         type: choice
-        default: weekly
+        default: pr
         options:
-          - weekly
           - pr
-          - push_to_main
-          - push_to_release
 
       linux_python_versions:
         description: "Space separated list of python versions (3.8, 3.9, 3.10 are supported) to launch on linux"
         required: false
         type: string
-        default: "3.8 3.9"
+        default: "3.8"
+
       macos_python_versions:
-        description: "Space separated list of python versions (3.8, 3.9, 3.10 are supported) to launch on macos"
+        description: "Space separated list of python versions (3.8, 3.9, 3.10 are supported) to launch on macos (intel)"
         required: false
         type: string
-        default: "3.8 3.9"
+        default: "3.8"
+
       manual_call:
         description: "Do not uncheck this"
         type: boolean
         required: false
         default: true
   
-  # Workflow call refers to the release process (it enables the current CI workflow to be called by
-  # another workflow from the same repository, in this case the release one)
-  # The "release" event is not put by default in order to avoid running the following CI without
-  # explicitly indicating it in the caller workflow
+  # Workflow call refers to the weekly or release process (it enables the current CI workflow to be 
+  # called by another workflow from the same repository, in this case the release one)
+  # No default value is put in order to avoid running the following CI without explicitly 
+  # indicating it in the caller workflow
   # Besides, GitHub actions are not able to differentiate 'workflow_dispatch' from 'workflow_call'
   # based on 'github.event_name' and both are set to 'workflow_dispatch'. Therefore, an optional 
   # input 'manual_call' with proper default values is added to both as a workaround, following one 
@@ -60,12 +58,6 @@ on:
         type: boolean
         required: false
         default: false
-  
-  schedule:
-    # * is a special character in YAML so you have to quote this string
-    # At 22:00 on Sunday
-    # Timezone is UTC, so Paris time is +2 during the summer and +1 during winter
-    - cron: '0 22 * * 0'
 
 concurrency:
   # Add event_name in the group as workflow dispatch means we could run this in addition to other
@@ -82,7 +74,9 @@ env:
   # differentiate the release CI from regular CIs by using 'inputs.event_name', which should be set
   # to "release" by the release workflow
   IS_PR: ${{ github.event_name == 'pull_request' && inputs.event_name != 'release' }}
-  IS_WEEKLY: "true"
+  # Run the weekly CI if it has been triggered manually by the weekly workflow, meaning 
+  # 'inputs.event_name' is set to "weekly" or automatically by the schedule configuration
+  IS_WEEKLY: ${{ inputs.event_name == 'weekly' || github.event_name == 'schedule' }}
   # The 'IS_RELEASE' variable indicates that the workflow has been triggered by the releasing 
   # process itself, before publishing it. It should only happen when the release workflow triggers
   # the CI, in which 'inputs.event_name' is set to "release"
