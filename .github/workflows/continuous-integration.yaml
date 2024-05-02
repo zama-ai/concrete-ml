@@ -758,6 +758,18 @@ jobs:
             fi
           fi
 
+      # Upload the list of flaky tests that have been re-run (if the only failed tests were flaky)
+      - name: Upload flaky tests list (weekly)
+        uses: actions/upload-artifact@v4
+        if: |
+          fromJSON(env.IS_WEEKLY) 
+          && steps.pytest.outcome == 'success' 
+          && fromJSON(env.FAILED_TESTS_ARE_FLAKY) 
+          && !cancelled()
+        with:
+          name: failed_flaky_${{ matrix.python_version }}
+          path: failed_tests_slack_list_${{ matrix.python_version }}.txt
+
       # If regular tests passed but at least one known flaky test have been rerun, a warning
       # comment is published in the PR and all flaky tests that initially failed are listed
       - name: Warn PR with flaky tests
@@ -1131,6 +1143,14 @@ jobs:
           fi
 
           echo "SLACK_TITLE=${TITLES_START}: ${{ env.JOB_STATUS || 'failure' }}" >> "$GITHUB_ENV"
+        
+      # Retrieve the list of flaky tests that have been re-run if they were some
+      # Enable 'merge-multiple' to download all files in the root directory
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          pattern: failed_flaky_*
 
       # Add support for re-running flaky tests on macOS (intel) CI 
       # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4428
