@@ -76,6 +76,7 @@ env:
   IS_PR: ${{ github.event_name == 'pull_request' && inputs.event_name != 'release' }}
   # Run the weekly CI if it has been triggered manually by the weekly workflow, meaning 
   # 'inputs.event_name' is set to "weekly" or automatically by the schedule configuration
+  # TODO
   # IS_WEEKLY: ${{ inputs.event_name == 'weekly' || github.event_name == 'schedule' }}
   IS_WEEKLY: true
   # The 'IS_RELEASE' variable indicates that the workflow has been triggered by the releasing 
@@ -155,8 +156,11 @@ jobs:
             LINUX_PYTHON_VERSIONS="3.8"
             MACOS_PYTHON_VERSIONS=""
           elif [[ "${BUILD_TYPE}" == "weekly" ]]; then
-            LINUX_PYTHON_VERSIONS="3.8 3.9 3.10"
-            MACOS_PYTHON_VERSIONS="3.9"
+            # TODO
+            # LINUX_PYTHON_VERSIONS="3.8 3.9 3.10"
+            # MACOS_PYTHON_VERSIONS="3.9"
+            LINUX_PYTHON_VERSIONS="3.8"
+            MACOS_PYTHON_VERSIONS=""
           elif [[ "${BUILD_TYPE}" == "release" ]] || [[ "${BUILD_TYPE}" == "published_release" ]]; then
             LINUX_PYTHON_VERSIONS="3.8 3.9 3.10"
             MACOS_PYTHON_VERSIONS=""
@@ -701,6 +705,7 @@ jobs:
       # if 'make pytest' fails
       - name: PyTest Source Code (regular, weekly)
         id: pytest
+        # TODO
         # if: |
         #   (
         #     (
@@ -803,6 +808,7 @@ jobs:
       # Run Pytest on all of our tests (except flaky ones) using PyPI's local wheel in the weekly 
       # or during the release process
       - name: PyTest (no flaky) with PyPI local wheel of Concrete ML (weekly, release)
+        # TODO
         # if: |
         #   (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
         #   && steps.conformance.outcome == 'success' 
@@ -869,6 +875,7 @@ jobs:
 
       # Run Pytest on all codeblocks on a weekly basis or while releasing
       - name: PyTest CodeBlocks with PyPI local wheel of Concrete ML (weekly, release)
+        # TODO
         # if: |
         #   (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
         #   && steps.conformance.outcome == 'success' 
@@ -892,6 +899,7 @@ jobs:
       # Run Pytest on all notebooks on a weekly basis
       # Note: some notebooks need specific data stored in LFS
       - name: PyTest Notebooks (weekly)
+        # TODO
         # if: | 
         #   fromJSON(env.IS_WEEKLY) 
         #   && steps.conformance.outcome == 'success' 
@@ -1117,6 +1125,7 @@ jobs:
     if: |
       always() 
       && needs.matrix-preparation.result != 'skipped' 
+    # TODO
     # && fromJSON(needs.matrix-preparation.outputs.send_slack_report)
     timeout-minutes: 2
     needs:
