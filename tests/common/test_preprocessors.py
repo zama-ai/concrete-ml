@@ -111,18 +111,21 @@ def make_tlu_optimizer_function(execution_number: int, function_name: str):
     elif function_name == "division":
         f = make_division()
         # TODO: set values here
-        x_min, x_max = 1., 2.
+        x_min, x_max = 1.0, 2.0
     else:
         raise AssertionError(f"Invalid function to test for TLU optimization {function_name}")
 
     return f, x_min, x_max
+
 
 @pytest.mark.parametrize("execution_number", [1, 2, 4])
 @pytest.mark.parametrize(
     "function_name", ["staircase_pot", "staircase", "identity", "random", "division"]
 )
 @pytest.mark.parametrize("shape", [(1,), (2, 2), (2, 2, 2), (2, 3, 1, 4)])
-def test_cycle_finder(execution_number: int, function_name: str, shape: Tuple[int, ...]): # pylint: disable=too-many-locals
+def test_cycle_finder(
+    execution_number: int, function_name: str, shape: Tuple[int, ...]
+):  # pylint: disable=too-many-locals
     """Tests the tlu optimizer with various functions."""
 
     curr_seed = numpy.random.randint(0, 2**32)
@@ -160,7 +163,9 @@ def test_cycle_finder(execution_number: int, function_name: str, shape: Tuple[in
     "function_name", ["staircase_pot", "staircase", "identity", "random", "division"]
 )
 @pytest.mark.parametrize("shape", [(1,), (2, 2), (2, 2, 2), (2, 3, 1, 4)])
-def test_tlu_optimizer(execution_number: int, function_name: str, shape: Tuple[int, ...]): # pylint: disable=too-many-locals
+def test_tlu_optimizer(
+    execution_number: int, function_name: str, shape: Tuple[int, ...], request,
+):  # pylint: disable=too-many-locals
     """Tests the tlu optimizer with various functions."""
 
     curr_seed = numpy.random.randint(0, 2**32)
@@ -183,12 +188,12 @@ def test_tlu_optimizer(execution_number: int, function_name: str, shape: Tuple[i
         additional_pre_processors=additional_pre_processors,
         additional_post_processors=additional_post_processors,
     )
-    compiler = Compiler(
+    compiler_no_optim_no_rounding = Compiler(
         f,
         parameter_encryption_statuses={"x": "encrypted"},
     )
 
-    circuit = compiler.compile(
+    circuit = compiler_no_optim_no_rounding.compile(
         input_set_as_list_of_array,
         configuration=compilation_configuration,
     )
@@ -206,15 +211,17 @@ def test_tlu_optimizer(execution_number: int, function_name: str, shape: Tuple[i
     lsbs_to_remove = tlu_node.properties["attributes"].get("lsbs_to_remove", 0)
 
     # No-optim, no-rounding
-    compiler = Compiler(
+    compiler_no_optim_no_rounding = Compiler(
         f,
         parameter_encryption_statuses={"x": "encrypted"},
     )
-    circuit_no_optim_no_rounding = compiler.compile(
+    circuit_no_optim_no_rounding = compiler_no_optim_no_rounding.compile(
         input_set_as_list_of_array,
     )
 
     reference = f(input_set)
+
+    # TODO: also check that we are better than raw rounding
 
     if function_name in ["staircase_pot", "staircase"] and execution_number == 0:
         # TODO: round to 1b or eliminate these TLUs entirely
@@ -243,6 +250,18 @@ def test_tlu_optimizer(execution_number: int, function_name: str, shape: Tuple[i
     assert isinstance(not_equal, numpy.ndarray)
 
     if not_equal.sum() > 0 and function_name == "staircase_pot":
+        import matplotlib.pyplot as plt
+        from pathlib import Path
+        from itertools import product
+        for axis in product([slice(0, len(input_set))], *(list(range(axis_len)) for axis_len in simulated.shape[1:])):
+            path_to_debug_plot = Path(f"debug_{request.node.name}_{axis}.png")
+            plt.figure()
+            plt.plot(input_set[axis], reference[axis], label="target")
+            plt.plot(input_set[axis], simulated[axis], label="optimized")
+            plt.legend()
+            plt.savefig(path_to_debug_plot)
+            plt.close()
+
         raise Exception(
             f"TLU Optimizer is not exact: "
             f"{not_equal.mean()=} = {not_equal.sum()}/{not_equal.size}\n"
@@ -252,5 +271,5 @@ def test_tlu_optimizer(execution_number: int, function_name: str, shape: Tuple[i
             f"{(simulated_no_optim_no_rounding == graph_res_no_optim_no_rounding).mean()=}\n"
             f"{circuit.graph.format()}\n{'#'*20}\n"
             f"{circuit_no_optim_no_rounding.graph.format()}\n"
+            f"Debug plot: {path_to_debug_plot.resolve()}"
         )
-

@@ -9,8 +9,9 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from trainer import accuracy, get_test_set, get_train_set
 
-from concrete.ml.torch.compile import compile_brevitas_qat_model
+from concrete import fhe
 from concrete.ml.common.preprocessors import TLUDeltaBasedOptimizer
+from concrete.ml.torch.compile import compile_brevitas_qat_model
 
 CURRENT_DIR = Path(__file__).resolve().parent
 
@@ -104,12 +105,14 @@ def main(args):
     model.eval()
 
     # Multi-parameter strategy is used in order to speed-up the FHE executions
-    tlu_optimizer = TLUDeltaBasedOptimizer(internal_bit_width_target = 20)
+    tlu_optimizer = TLUDeltaBasedOptimizer(
+        internal_bit_width_target=24, exactness=fhe.Exactness.EXACT
+    )
     cfg = Configuration(
         verbose=True,
         show_optimizer=args.show_optimizer,
         additional_pre_processors=[
-            # tlu_optimizer,
+            tlu_optimizer,
         ],
     )
 

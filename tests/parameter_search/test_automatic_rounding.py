@@ -108,7 +108,7 @@ def test_tlu_analysis_optimization(load_data, n_bits):
     # Remove rounding in the network to perform inference without the optimization.
     # We expect a network that was optimized with the power-of-two adapter
     # to be exactly correct to the non-optimized one
-    for (_, node_op) in model.quantized_module_.quant_layers_dict.values():
+    for _, node_op in model.quantized_module_.quant_layers_dict.values():
         if isinstance(node_op, QuantizedMixingOp):
             node_op.rounding_threshold_bits = None
             node_op.lsbs_to_remove = None
@@ -159,7 +159,9 @@ def test_tlu_analysis_optimization(load_data, n_bits):
         if "apply_lookup_table" in line:
             count_tlu += 1
 
-    assert count_reinterpret > 0, f"Could not find reinterpret_cast nodes in graph to analyze\n\n{mlir}"
+    assert (
+        count_reinterpret > 0
+    ), f"Could not find reinterpret_cast nodes in graph to analyze\n\n{mlir}"
     assert count_tlu == 1, f"This model should compile to an MLIR with a single PBS layer\n\n{mlir}"
 
 

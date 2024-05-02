@@ -93,7 +93,7 @@ configuration = Configuration(
         tlu_optimizer,
     ],
     fhe_simulation=SIMULATE_ONLY,
-    fhe_execution=not SIMULATE_ONLY
+    fhe_execution=not SIMULATE_ONLY,
 )
 
 print("Compiling the model.")
