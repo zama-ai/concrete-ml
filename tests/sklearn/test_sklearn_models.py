@@ -2045,6 +2045,7 @@ def test_error_raise_unsupported_pandas_values(model_class, bad_value, expected_
     with pytest.raises(ValueError, match=expected_error):
         model.fit(x_train, y_train)
 
+
 # Add QNNs in this test
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4436
 @pytest.mark.parametrize(
