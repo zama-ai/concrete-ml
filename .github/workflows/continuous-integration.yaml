@@ -76,7 +76,8 @@ env:
   IS_PR: ${{ github.event_name == 'pull_request' && inputs.event_name != 'release' }}
   # Run the weekly CI if it has been triggered manually by the weekly workflow, meaning 
   # 'inputs.event_name' is set to "weekly" or automatically by the schedule configuration
-  IS_WEEKLY: ${{ inputs.event_name == 'weekly' || github.event_name == 'schedule' }}
+  # IS_WEEKLY: ${{ inputs.event_name == 'weekly' || github.event_name == 'schedule' }}
+  IS_WEEKLY: true
   # The 'IS_RELEASE' variable indicates that the workflow has been triggered by the releasing 
   # process itself, before publishing it. It should only happen when the release workflow triggers
   # the CI, in which 'inputs.event_name' is set to "release"
