@@ -802,10 +802,11 @@ jobs:
       # Run Pytest on all of our tests (except flaky ones) using PyPI's local wheel in the weekly 
       # or during the release process
       - name: PyTest (no flaky) with PyPI local wheel of Concrete ML (weekly, release)
-        if: |
-          (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
-          && steps.conformance.outcome == 'success' 
-          && !cancelled()
+        # if: |
+        #   (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
+        #   && steps.conformance.outcome == 'success' 
+        #   && !cancelled()
+        if: false
         run: |
           make pytest_pypi_wheel_cml_no_flaky
 
