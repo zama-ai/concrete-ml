@@ -218,7 +218,7 @@ jobs:
 
           SEND_SLACK_REPORT=${{ fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_PUSH_TO_MAIN) || fromJSON(env.IS_PUSH_TO_RELEASE) }}
 
-          echo -e "\nSend Slack report"
+          echo -e "\nSend Slack report:"
           echo "${SEND_SLACK_REPORT}"
 
           echo "send_slack_report=${SEND_SLACK_REPORT}" >> $GITHUB_OUTPUT
@@ -723,8 +723,9 @@ jobs:
           if [[ "${env.IS_WEEKLY}" == "true" ]]; then
             # PYTEST_OPTIONS="--weekly"
             PYTEST_OPTIONS=""
-          else:
+          else
             PYTEST_OPTIONS=""
+          fi
           
           make pytest_and_report PYTEST_OPTIONS=${PYTEST_OPTIONS}
 
@@ -866,6 +867,10 @@ jobs:
 
       # Run Pytest on all codeblocks on a weekly basis or while releasing
       - name: PyTest CodeBlocks with PyPI local wheel of Concrete ML (weekly, release)
+        # if: |
+        #   (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
+        #   && steps.conformance.outcome == 'success' 
+        #   && !cancelled()
         if: false
         run: |
           make pytest_codeblocks_pypi_wheel_cml 
@@ -885,6 +890,10 @@ jobs:
       # Run Pytest on all notebooks on a weekly basis
       # Note: some notebooks need specific data stored in LFS
       - name: PyTest Notebooks (weekly)
+        # if: | 
+        #   fromJSON(env.IS_WEEKLY) 
+        #   && steps.conformance.outcome == 'success' 
+        #   && !cancelled()
         if: false
         run: |
           git lfs pull --include "docs/advanced_examples/data/**" --exclude  ""
@@ -1101,10 +1110,12 @@ jobs:
   # Side note: environmental variables cannot be used for jobs conditions, so we need to determine 
   # if the job should be run or not in an previous job and store it in its output
   send-report:
+    name: Send Slack notification
+    runs-on: ubuntu-20.04
     if: |
       always() 
       && needs.matrix-preparation.result != 'skipped' 
-      && needs.matrix-preparation.outputs.send_slack_report
+      && fromJSON(needs.matrix-preparation.outputs.send_slack_report)
     timeout-minutes: 2
     needs:
       [
@@ -1115,8 +1126,6 @@ jobs:
         build-macos-intel,
       ]
 
-    name: Send Slack notification
-    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
 
