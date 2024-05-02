@@ -726,7 +726,8 @@ jobs:
         shell: bash +e {0}
         run: |
           if [[ "${env.IS_WEEKLY}" == "true" ]]; then
-            PYTEST_OPTIONS="--weekly"
+            # PYTEST_OPTIONS="--weekly"
+            PYTEST_OPTIONS=""
           else:
             PYTEST_OPTIONS=""
           
