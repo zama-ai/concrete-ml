@@ -2,7 +2,7 @@
 
 from copy import deepcopy
 from itertools import product
-from typing import Any, Callable, Dict, List, Tuple, Union, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import networkx as nx
 import numpy as np
@@ -200,6 +200,9 @@ def add_rounding_node(
         print(f"No  rounding node to add because {lsbs_to_remove=}")
         return a_node
 
+    # DEBUG
+    print(f"Adding rounding node with {lsbs_to_remove=}")
+
     assert isinstance(a_node.output.dtype, Integer)
     rounding_kwargs = {
         "lsbs_to_remove": lsbs_to_remove,
@@ -336,7 +339,7 @@ def add_leveled_op_with_cst(
     graph.add_edge(constant_node, new_node, input_idx=1)
 
     # Replace a -> o_i by new_node -> o_i
-    edges = list(graph.out_edges(a_node))  # type: ignore 
+    edges = list(graph.out_edges(a_node))  # type: ignore
     for in_node, out_node in edges:
         if out_node == new_node:
             continue
@@ -349,12 +352,18 @@ def add_leveled_op_with_cst(
     return new_node
 
 
+def argmin(d):
+    if not d:
+        return None
+    min_val = min(d.values())
+    return [k for k in d if d[k] == min_val][0]
+
+
 def compute_best_rounding_for_single_tlu(
     x_min: int,
     x_max: int,
-    steps_indexes: np.ndarray,
-    per_tensor_a: np.int64,
-    raised_bitwidth: int,
+    thresholds: np.ndarray,
+    target_bitwidth: int,
     tlu_evaluation_function: Callable,
 ) -> Tuple[int, int, int]:
     """Finds the optimal rounding based on unidimensional outputs of a TLU.
@@ -362,9 +371,8 @@ def compute_best_rounding_for_single_tlu(
     Args:
         x_min (int): minimal calibrated value of TLU inputs
         x_max (int): maximal calibrated value of TLU inputs
-        steps_indexes (np.ndarray): the indices of the TLU output changes
-        per_tensor_a (np.int64): the scaling factor that raises precision to the desired one
-        raised_bitwidth (int): the desired raised precision
+        thresholds (np.ndarray): the indices of the TLU output changes
+        target_bitwidth (int): the desired raised precision
         tlu_evaluation_function (Callable): the function that computes the error incurred
             when rounding this TLU with a certain scale and offset
 
@@ -372,58 +380,107 @@ def compute_best_rounding_for_single_tlu(
         res: tuple containing the scale, offset and rounding bits
     """
 
-    if len(steps_indexes) == 0:
+    # raised_bitwidth -> target bit-width
+    original_input_repr = Integer.that_can_represent([x_min, x_max])
+    original_bitwidth = original_input_repr.bit_width
+
+    # This should be done after offsetting btw
+    # We should also check that the target bit-width is in fact higher than the offsetted bit-width
+    # and that the offsetted bit-width is lower or equal than the other one
+
+    if len(thresholds) == 0:
         # The function is constant so nothing to do here
-        # We can just the raised precision value down to one bit
-        return (1, 0, raised_bitwidth - 1)
+        # We can just round down to one bit
+        print("rounding to 1-bit because constant")
+        return (1, 0, original_bitwidth - 1)
 
-    assert len(set(steps_indexes)) == len(steps_indexes), "Steps indexes are not unique"
+    assert len(set(thresholds)) == len(
+        thresholds
+    ), "Steps indexes are not unique, something went wrong"
 
-    step_thresholds = steps_indexes[0:-1]  # all step thresholds
+    step_thresholds = thresholds[0:-1]  # all step thresholds
+    # We need to remove the last threshold because it's the step that goes from t_n to x_max
+    # Thus why we don't optimize for it
 
-    delta_axis = np.diff(steps_indexes, axis=0)  # all step sizes
+    deltas = np.diff(thresholds, axis=0)  # all step sizes
 
-    assert step_thresholds.size == delta_axis.size
+    print(f"{deltas=}, {thresholds=}")
 
-    if len(delta_axis) == 0:
+    assert step_thresholds.size == deltas.size
+
+    if len(deltas) == 0:
         # Single jump, we can just offset by the threshold and round to 1-bit
-        return (1, steps_indexes[0], raised_bitwidth - 1)
+        # TODO: verify
+        # DEBUG: verify
+        # This is true for truncation, might need to offset more for rounding
+        print("rounding to 1-bit because single jump")
+        return (1, thresholds[0], original_bitwidth - 1)
 
-    low_side_step_size = steps_indexes[0] - x_min
-    high_side_step_size = x_max - steps_indexes[-1]
-    min_side_step_size = min(low_side_step_size, high_side_step_size)
-    delta_axis = np.minimum(delta_axis, min_side_step_size)
+    # low_side_step_size = steps_indexes[0] - x_min
+    # high_side_step_size = x_max - steps_indexes[-1]
+    # min_side_step_size = min(low_side_step_size, high_side_step_size)
+    # delta_axis = np.minimum(delta_axis, min_side_step_size)
 
-    if np.all(delta_axis <= 1):
-        # Do not round
+    if np.all(deltas <= 1):
+        # Do not round because we can't really do anything in this scenario
+        # where all deltas are 1
+        print("no rounding because delta<=1")
         return (1, 0, 0)
 
-    all_combinations = np.stack([step_thresholds, delta_axis]).T
-    all_a_b_r = np.zeros((all_combinations.shape[0], 3), np.int64)
-    for idx, comb in enumerate(all_combinations):
-        threshold, delta = comb[0], comb[1]
+    a_candidates = set()
+    b_candidates = set()
+    msbs_to_keep_candidates = set()
+    mses = {}
 
-        b = threshold
+    for index in range(deltas.size):
+        threshold, delta = thresholds[index], deltas[index]
+        assert delta > 0.0, f"Delta should be strictly positive but got {delta=}."
 
-        r_bits = int(np.ceil(np.log2(per_tensor_a * delta)))
+        # Compute msbs needed
+        msbs_to_keep = np.ceil(np.log2(np.ceil((x_max - x_min) / delta))).astype(np.int64)
+        msbs_to_keep_candidates.add(msbs_to_keep)
 
-        all_a_b_r[idx, 0] = per_tensor_a
-        all_a_b_r[idx, 1] = b
-        all_a_b_r[idx, 2] = r_bits
+        # Compute a
+        a = np.floor(2 ** (target_bitwidth - msbs_to_keep) / delta).astype(np.int64)
+        a_candidates.add(a)
 
-    unique_a_b_r = np.unique(all_a_b_r, axis=0)
+        # TODO: should we do this only for the current threshold?
+        scaled_repr = Integer.that_can_represent(np.array([x_min, x_max], dtype=np.int64) * a)
+        scaled_bit_width = scaled_repr.bit_width
+        scaled_lsbs = scaled_bit_width - msbs_to_keep
+        scaled_thresholds = thresholds * a
 
-    all_comb_mse = np.zeros((unique_a_b_r.shape[0],))
-    for idx, comb in enumerate(unique_a_b_r):
-        a, b, r_bits = comb[0], comb[1], comb[2]
-        mse = tlu_evaluation_function(a, b, r_bits)
-        all_comb_mse[idx] = mse
+        b_candidates_array = (
+            round_bit_pattern(scaled_thresholds, lsbs_to_remove=int(scaled_bit_width))
+            - scaled_thresholds
+        )
+        b_candidates_array  -= 2 ** (scaled_lsbs - 1)
+        b_candidates_array  *= -1
+        b_candidates |= set(b_candidates_array)
 
-    best_a_b_r = np.argmin(all_comb_mse)
+    print(f"{a_candidates=}, {b_candidates=}, {msbs_to_keep_candidates=}")
+    for a in a_candidates:
+        for b, msbs_to_keep in product(range(min(b_candidates), max(b_candidates), a), msbs_to_keep_candidates):
+            lsbs = (
+                Integer.that_can_represent(
+                    (np.array([x_min, x_max], dtype=np.int64) * a) - b
+                ).bit_width
+                - msbs_to_keep
+            )
+            config = (a, b, lsbs)
+            mse = tlu_evaluation_function(a, b, lsbs)
+            if mse == 0:
+                print(f"Returning early because {config=} reached {mse=}")
+                return config
+            mses[config] = mse
 
-    return (unique_a_b_r[best_a_b_r, 0], unique_a_b_r[best_a_b_r, 1], unique_a_b_r[best_a_b_r, 2])
+    best_config = argmin(mses)
+    assert best_config is not None
+    print(f"{best_config=} reached {mses[best_config]=}")
+    return best_config
 
 
+# TODO: fix this
 def delta_optimize(
     subgraph_inputs: np.ndarray,
     reference: np.ndarray,
@@ -477,7 +534,7 @@ def delta_optimize(
     # Some accumulators
     n_rounds = np.ones(shape_, dtype=np.int64)
 
-    per_tensor_a = 2 ** (raised_bitwidth - bitwidth_input)
+    # per_tensor_a = 2 ** (raised_bitwidth - bitwidth_input)
 
     for indexes in product(*[range(elt) for elt in shape_]):
         selection = tuple([slice(0, reference.shape[0]), *indexes[1:]])
@@ -488,9 +545,9 @@ def delta_optimize(
         steps_indexes = subgraph_inputs_selected[change_mask_selected]
         assert len(steps_indexes) == len(np.unique(steps_indexes)), "not unique steps"
 
-        def evaluate_tlu(a, b, r_bits):
+        def evaluate_tlu(a, b, lsbs_to_remove):
             rounded_output = eval_subgraph_on_rounded_inputs(
-                tlu_subgraph, subgraph_inputs, rounding_function, a, b, r_bits
+                tlu_subgraph, subgraph_inputs, rounding_function, a, b, lsbs_to_remove
             )
             return np.sqrt(np.sum((rounded_output - reference) ** 2))
 
@@ -499,7 +556,13 @@ def delta_optimize(
             best_b[best_indexes],
             n_rounds[indexes],
         ) = compute_best_rounding_for_single_tlu(
-            x_min, x_max, steps_indexes, per_tensor_a, raised_bitwidth, evaluate_tlu
+            x_min, x_max, steps_indexes, raised_bitwidth, evaluate_tlu
+        )
+
+        print(
+            f"{best_a[best_indexes]=}",
+            f"{best_b[best_indexes]=}",
+            f"{n_rounds[indexes]=}",
         )
 
     # As rounding can be applied only for the entire tensor,
@@ -529,10 +592,14 @@ def modify_subgraph_for_rounded_inputs(tlu_subgraph: Graph, a: np.ndarray, c: np
         c (np.ndarray): the offset of the rounding approximation
     """
 
-
     previous_node = get_subgraph_input(tlu_subgraph)
 
     if not previous_node.output.shape:
+        if not isinstance(a, np.ndarray):
+            a = np.array(a, dtype=np.int64)
+        if not isinstance(c, np.ndarray):
+            c = np.array(c, dtype=np.int64)
+
         assert a.shape == (1,) or a.shape == tuple(), f"{a.shape=}"
         assert c.shape == (1,) or c.shape == tuple(), f"{c.shape=}"
         if a.shape == (1,):
@@ -541,14 +608,14 @@ def modify_subgraph_for_rounded_inputs(tlu_subgraph: Graph, a: np.ndarray, c: np
             c = c[0]
 
     # Use floats in the subgraph
-    a = a.astype(np.float64)
-    c = c.astype(np.float64)
-
-    # Divide by scaling factor
-    previous_node = add_leveled_op_with_cst(previous_node, a, divide, graph=tlu_subgraph.graph)
+    a = np.array(a).astype(np.float64)
+    c = np.array(c).astype(np.float64)
 
     # Add threshold offset
     previous_node = add_leveled_op_with_cst(previous_node, c, add, graph=tlu_subgraph.graph)
+
+    # Divide by scaling factor
+    previous_node = add_leveled_op_with_cst(previous_node, a, divide, graph=tlu_subgraph.graph)
 
 
 def eval_subgraph_on_rounded_inputs(
@@ -579,10 +646,15 @@ def eval_subgraph_on_rounded_inputs(
     tlu_subgraph_copy = deepcopy(tlu_subgraph)
     modify_subgraph_for_rounded_inputs(tlu_subgraph_copy, a, b)
 
-    rounded_inputs = rounding_function(
-        (subgraph_inputs - b) * a - 2 ** (lsbs_to_remove - 1),
-        lsbs_to_remove=int(lsbs_to_remove),
-    ).astype(np.float64)
+    # TODO: find a way to make sure that scaling is always the same in the code
+    # i.e. not mix x * a - b and x - b * a
+    rounded_inputs = (
+        rounding_function(
+            (subgraph_inputs * a) - b,
+            lsbs_to_remove=int(lsbs_to_remove),
+        ).astype(np.float64)
+        + b
+    ) / a
 
     # Get the input indices of the original graph
     sorted_nodes = list(nx.topological_sort(tlu_subgraph.graph))
@@ -705,9 +777,6 @@ def get_tlu_node_subgraph_input_node(graph: Graph, tlu_node: Node) -> Node:
             variable_input_indices.append(pred_index)
 
     assert len(variable_input_indices) == 1, "TLU node got more than one variable input"
-
-    # TODO: assert that there isn't any rounding nodes before
-
     variable_input_index = variable_input_indices[0]
     variable_input_node: Node = pred_nodes[variable_input_index]
     assert isinstance(
@@ -716,7 +785,6 @@ def get_tlu_node_subgraph_input_node(graph: Graph, tlu_node: Node) -> Node:
     return variable_input_node
 
 
-# TODO: the issue is HERE or in the usage of this function
 def make_subgraph_input_tensor(
     min_bound: np.int64,
     max_bound: np.int64,
@@ -836,7 +904,6 @@ class InsertRounding(GraphProcessor):
                     variable_input_indices.append(pred_index)
 
             # Only one input should be non-constant per LUT
-            # TODO: verify this is actually true
             if len(variable_input_indices) != 1:
                 continue
 
@@ -887,6 +954,7 @@ class InsertRounding(GraphProcessor):
                 nx_graph.add_edge(rounding_node, tlu_node, input_idx=input_idx)
 
             nx_graph.remove_edge(variable_input_node, tlu_node)
+
 
 class TLUDeltaBasedOptimizer(GraphProcessor):
     """TLU Step-based optimizer.
@@ -941,7 +1009,7 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
         )
 
         for tlu_node in tlu_nodes:
-            print("COUCOU")
+            print("DETECTED A TLU")
             # On each tlu we do:
             # 1. Optimize a and b for the subgraph
             # 2. Insert a and b in the graph
@@ -952,7 +1020,7 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
             #   That would require another way to do the optimization
             #   since we rely on the subgraph to reduce the dimension
             #   of the TLU.
-            
+
             # Get TLU sub-graph
             evaluator = tlu_node.evaluator
             assert isinstance(evaluator, GenericEvaluator)
@@ -982,7 +1050,10 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
 
             # Create an input which the full input range
             subgraph_inputs = make_subgraph_input_tensor(
-                min_bound, max_bound, orig_shape_, tuple([int(max_bound - min_bound), *shape_[1:]]),
+                min_bound,
+                max_bound,
+                orig_shape_,
+                tuple([int(max_bound - min_bound), *shape_[1:]]),
             )
             # shape_ -> expected_shape
 
@@ -1016,7 +1087,7 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
 
             all_multipliers_are_1 = np.all(best_a == 1)
             all_offsets_are_0 = np.all(best_b == 0)
-            if (all_multipliers_are_1 and all_offsets_are_0) or n_round == 0:
+            if (all_multipliers_are_1 and all_offsets_are_0) and n_round == 0:
                 print("Skipping because there is no benefit to upscaling")
                 continue
 
@@ -1071,8 +1142,12 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
         """
 
         if variable_input_node.output.shape:
-            assert a.shape == variable_input_node.output.shape, f"{a.shape=} != {variable_input_node.output.shape=}"
-            assert b.shape == variable_input_node.output.shape, f"{b.shape=} != {variable_input_node.output.shape=}"
+            assert (
+                a.shape == variable_input_node.output.shape
+            ), f"{a.shape=} != {variable_input_node.output.shape=}"
+            assert (
+                b.shape == variable_input_node.output.shape
+            ), f"{b.shape=} != {variable_input_node.output.shape=}"
         else:
             assert a.shape == (1,)
             assert b.shape == (1,)
@@ -1081,22 +1156,22 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
             b = b[0]
 
         # Subtract offset that matches step threshold to rounding step treshold
-        previous_node = add_leveled_op_with_cst(
-            variable_input_node, b.astype(np.int64), subtract, graph.graph
-        )
 
         # Multiply to match step size to rounding step size
         previous_node = add_leveled_op_with_cst(
-            previous_node, a.astype(np.int64), multiply, graph.graph
+            variable_input_node, a.astype(np.int64), multiply, graph.graph
+        )
+        previous_node = add_leveled_op_with_cst(
+            previous_node, b.astype(np.int64), subtract, graph.graph
         )
 
-        # Compute the offset needed to cancel out the rounding offset
-        # Then broadcast it to match the rounded tensor shape
-        round_offset_scalar = np.int64(2 ** (n_round - 1))
-        round_offset = np.broadcast_to(round_offset_scalar, shape=b.shape)
+        # # Compute the offset needed to cancel out the rounding offset
+        # # Then broadcast it to match the rounded tensor shape
+        # round_offset_scalar = np.int64(2 ** (n_round - 1))
+        # round_offset = np.broadcast_to(round_offset_scalar, shape=b.shape)
 
         # Add offset for rounding correctness
-        previous_node = add_leveled_op_with_cst(previous_node, round_offset, subtract, graph.graph)
+        # previous_node = add_leveled_op_with_cst(previous_node, round_offset, subtract, graph.graph)
 
         # Round by n_round
         assert isinstance(previous_node.output.dtype, Integer)
@@ -1109,4 +1184,3 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
             exactness=self.exactness,
             overflow_protection=self.overflow_protection,
         )
-        # breakpoint()

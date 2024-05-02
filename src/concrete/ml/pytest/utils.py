@@ -779,6 +779,8 @@ def pandas_dataframe_are_equal(
     string_equal = df_1.eq(df_2).all().all()
 
     return float_equal and string_equal
+
+
 def forward_test_torch(net, test_loader):
     """Test the network: measure accuracy on the test set.
 
