@@ -225,7 +225,7 @@ jobs:
 
   start-runner-linux:
     needs: [matrix-preparation]
-    name: Start EC2 runner
+    name: Start EC2 runner (Linux)
     runs-on: ubuntu-20.04
     timeout-minutes: 15
     outputs:
@@ -979,7 +979,7 @@ jobs:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
   stop-runner-linux:
-    name: Stop EC2 runner
+    name: Stop EC2 runner (Linux)
     needs: [build-linux, start-runner-linux]
     runs-on: ubuntu-20.04
     timeout-minutes: 2
@@ -1117,7 +1117,7 @@ jobs:
     if: |
       always() 
       && needs.matrix-preparation.result != 'skipped' 
-      && fromJSON(needs.matrix-preparation.outputs.send_slack_report)
+    # && fromJSON(needs.matrix-preparation.outputs.send_slack_report)
     timeout-minutes: 2
     needs:
       [
