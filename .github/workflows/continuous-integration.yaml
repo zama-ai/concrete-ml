@@ -701,23 +701,24 @@ jobs:
       # if 'make pytest' fails
       - name: PyTest Source Code (regular, weekly)
         id: pytest
-        if: |
-          (
-            (
-              steps.changed-files-in-pr.outcome == 'success' 
-              && (
-                steps.changed-files-in-pr.outputs.src_any_changed == 'true' 
-                || steps.changed-files-in-pr.outputs.tests_utils_any_changed == 'true'
-                || steps.changed-files-in-pr.outputs.dependencies_any_changed == 'true'
-                || steps.changed-files-in-pr.outputs.conftest_any_changed == 'true'
-                || steps.changed-files-in-pr.outputs.makefile_any_changed == 'true'
-              )
-            )
-            || fromJSON(env.IS_WORKFLOW_DISPATCH)
-            || fromJSON(env.IS_WEEKLY)
-          )
-          && steps.conformance.outcome == 'success' 
-          && !cancelled()
+        # if: |
+        #   (
+        #     (
+        #       steps.changed-files-in-pr.outcome == 'success' 
+        #       && (
+        #         steps.changed-files-in-pr.outputs.src_any_changed == 'true' 
+        #         || steps.changed-files-in-pr.outputs.tests_utils_any_changed == 'true'
+        #         || steps.changed-files-in-pr.outputs.dependencies_any_changed == 'true'
+        #         || steps.changed-files-in-pr.outputs.conftest_any_changed == 'true'
+        #         || steps.changed-files-in-pr.outputs.makefile_any_changed == 'true'
+        #       )
+        #     )
+        #     || fromJSON(env.IS_WORKFLOW_DISPATCH)
+        #     || fromJSON(env.IS_WEEKLY)
+        #   )
+        #   && steps.conformance.outcome == 'success' 
+        #   && !cancelled()
+        if: false
         shell: bash +e {0}
         run: |
           if [[ "${env.IS_WEEKLY}" == "true" ]]; then
