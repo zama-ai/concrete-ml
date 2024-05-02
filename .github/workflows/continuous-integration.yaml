@@ -721,7 +721,7 @@ jobs:
         if: false
         shell: bash +e {0}
         run: |
-          if [[ "${env.IS_WEEKLY}" == "true" ]]; then
+          if [[ "${{ env.IS_WEEKLY }}" == "true" ]]; then
             # PYTEST_OPTIONS="--weekly"
             PYTEST_OPTIONS=""
           else
@@ -1142,7 +1142,7 @@ jobs:
 
       - name: Set message title
         run: |
-          if [[ "${env.IS_WEEKLY}" == "true" ]]; then
+          if [[ "${{ env.IS_WEEKLY }}" == "true" ]]; then
             TITLES_START="👷 DEBUG 👷 Weekly Tests"
           elif [[ "${{ fromJSON(env.IS_PUSH_TO_MAIN) || fromJSON(env.IS_PUSH_TO_RELEASE) }}" == "true" ]]; then
             TITLES_START="Push to '${{ github.ref_name }}'"
