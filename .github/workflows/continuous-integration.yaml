@@ -1089,10 +1089,15 @@ jobs:
   # - when pushing to main
   # - when pushing to a release branch
   # - when running weekly tests
-  # Side note: environmental variables cannot be used for jobs conditions, so we need to store the 
-  # status as an previous job's output
+  # In these cases, we want to send the report whenever one of the step was triggered, which is 
+  # basically when the `matrix-preparation` has not been skipped
+  # Side note: environmental variables cannot be used for jobs conditions, so we need to determine 
+  # if the job should be run or not in an previous job and store it in its output
   send-report:
-    if: (success() || failure()) && needs.matrix-preparation.outputs.send_slack_report
+    if: |
+      always() 
+      && needs.matrix-preparation.result != 'skipped' 
+      && needs.matrix-preparation.outputs.send_slack_report
     timeout-minutes: 2
     needs:
       [
