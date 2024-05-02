@@ -19,9 +19,9 @@ The compiled model (`server.zip`) is deployed to a server and the cryptographic 
 
 The `FHEModelDev`, `FHEModelClient`, and `FHEModelServer` classes in the `concrete.ml.deployment` module make it easy to deploy and interact between the client and server:
 
-- **`FHEModelDev`**: This class is used during the development phase to prepare and save the model artifacts (`client.zip` and `server.zip`). It handles the serialization of model parameters and adds versioning information to ensure compatibility between the client and server components.
+- **`FHEModelDev`**: This class is used during the development phase to prepare and save the model artifacts (`client.zip` and `server.zip`). It handles the serialization of the underlying FHE circuit as well as the crypto-parameters used for generating the keys.
 
-- **`FHEModelClient`**: This class is used on the client side to manage cryptographic keys, encrypt data before sending it to the server, and decrypt results received from the server. It also handles the loading of quantization parameters and pre/post-processing from `serialized_processing.json`.
+- **`FHEModelClient`**: This class is used on the client side to generate and serialize the cryptographic keys, encrypt the data before sending it to the server, and decrypt the results received from the server. It also handles the loading of quantization parameters and pre/post-processing from `serialized_processing.json`.
 
 - **`FHEModelServer`**: This class is used on the server side to load the FHE circuit from `server.zip` and execute the model on encrypted data received from the client.
 
@@ -36,15 +36,29 @@ dev.save()
 
 # Client machine
 client = FHEModelClient(path_dir='path/to/client/zip', key_dir='path/to/keys')
-client.load()
+client.generate_private_and_evaluation_keys()
+serialized_evaluation_keys = client.get_serialized_evaluation_keys()
+# The client encrypts the data to be sent to the server for processing.
 encrypted_data = client.quantize_encrypt_serialize(my_data)
-result = client.deserialize_decrypt_dequantize(encrypted_result)
 
 # Server machine
 server = FHEModelServer(path_dir='path/to/server/zip')
 server.load()
-encrypted_result = server.run(encrypted_data, evaluation_keys)
+
+# Run the FHE execution on the encrypted data.
+encrypted_result = server.run(encrypted_data, serialized_evaluation_keys)
+
+# Back to Client machine
+# The client decrypts the result.
+result = client.deserialize_decrypt_dequantize(encrypted_result)
 ```
+
+> **Data Transfer Overview:**
+>
+> - **From Client to Server:** `serialized_evaluation_keys`, `encrypted_data`.
+> - **From Server to Client:** `encrypted_result`.
+
+These objects are serialized into bytes to streamline the data transfer between the client and server.
 
 ## Serving
 
