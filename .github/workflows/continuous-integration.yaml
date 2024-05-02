@@ -343,7 +343,7 @@ jobs:
           echo "linux-matrix=${MATRIX}" >> $GITHUB_OUTPUT
 
   build-linux:
-    name: Build Linux (Python ${{ matrix.python_version }})
+    name: Python ${{ matrix.python_version }}
     needs: [start-runner-linux]
     runs-on: ${{ matrix.runs_on }}
     # Run in a clean container
@@ -1001,8 +1001,8 @@ jobs:
           ec2-instance-id: ${{ needs.start-runner-linux.outputs.ec2-instance-id-310 }}
           mode: stop
 
-  build-macos:
-    name: Build macOS intel (Python ${{ matrix.python_version }})
+  build-macos-intel:
+    name: Python ${{ matrix.python_version }}
     needs: [matrix-preparation]
     if: ${{ needs.matrix-preparation.outputs.macos-matrix != '[]' }}
 
@@ -1100,7 +1100,7 @@ jobs:
         start-runner-linux,
         build-linux,
         stop-runner-linux,
-        build-macos,
+        build-macos-intel,
       ]
 
     name: Send Slack notification
@@ -1133,7 +1133,7 @@ jobs:
         run: |
           SLACK_BODY="[Action URL](${{ env.ACTION_RUN_URL }})\n\
             * build-linux: ${{ needs.build-linux.result || 'Did not run.' }}\n\n\
-            * build-macos: ${{ needs.build-macos.result || 'Did not run.' }}\n\n"
+            * build-macos-intel: ${{ needs.build-macos-intel.result || 'Did not run.' }}\n\n"
 
           PYTHON_VERSIONS = ("3.8" "3.9" "3.10")
 
