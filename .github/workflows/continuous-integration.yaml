@@ -216,7 +216,7 @@ jobs:
           echo "needs-310-linux-runner=${NEEDS_LINUX_310_RUNNER}" >> $GITHUB_OUTPUT
           echo "instance-type=${INSTANCE_TYPE}" >> $GITHUB_OUTPUT
 
-          SEND_SLACK_REPORT=${{ fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_PUSH_TO_MAIN) || fromJSON(env.IS_PUSH_TO_RELEASE) }}
+          SEND_SLACK_REPORT="${{ fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_PUSH_TO_MAIN) || fromJSON(env.IS_PUSH_TO_RELEASE) }}"
 
           echo -e "\nSend Slack report:"
           echo "${SEND_SLACK_REPORT}"
@@ -338,7 +338,7 @@ jobs:
           echo "linux-matrix=${MATRIX}" >> $GITHUB_OUTPUT
 
   build-linux:
-    name: Python ${{ matrix.python_version }}
+    name: Python ${{ matrix.python_version }} (Linux)
     needs: [start-runner-linux]
     runs-on: ${{ matrix.runs_on }}
     # Run in a clean container
@@ -768,7 +768,7 @@ jobs:
 
       # If regular tests passed but at least one known flaky test have been rerun, a warning
       # comment is published in the PR and all flaky tests that initially failed are listed
-      - name: Warn PR with flaky tests
+      - name: Warn PR with flaky tests (regular)
         uses: marocchino/sticky-pull-request-comment@331f8f5b4215f0445d3c07b4967662a32a2d3e31
         if: |
           fromJSON(env.IS_PR) 
@@ -1019,7 +1019,7 @@ jobs:
           mode: stop
 
   build-macos-intel:
-    name: Python ${{ matrix.python_version }}
+    name: Python ${{ matrix.python_version }} (macOS, intel)
     needs: [matrix-preparation]
     if: ${{ needs.matrix-preparation.outputs.macos-matrix != '[]' }}
 
