@@ -221,8 +221,12 @@ jobs:
           echo "needs-310-linux-runner=${NEEDS_LINUX_310_RUNNER}" >> $GITHUB_OUTPUT
           echo "instance-type=${INSTANCE_TYPE}" >> $GITHUB_OUTPUT
 
-          send_slack_report=${{ fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_PUSH_TO_MAIN) || fromJSON(env.IS_PUSH_TO_RELEASE) }}
-          echo "send_slack_report=${send_slack_report}" >> $GITHUB_OUTPUT
+          SEND_SLACK_REPORT=${{ fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_PUSH_TO_MAIN) || fromJSON(env.IS_PUSH_TO_RELEASE) }}
+
+          echo -e "\nSend Slack report"
+          echo "${SEND_SLACK_REPORT}"
+
+          echo "send_slack_report=${SEND_SLACK_REPORT}" >> $GITHUB_OUTPUT
 
   start-runner-linux:
     needs: [matrix-preparation]
@@ -339,6 +343,7 @@ jobs:
           echo "linux-matrix=${MATRIX}" >> $GITHUB_OUTPUT
 
   build-linux:
+    name: Build Linux (Python ${{ matrix.python_version }})
     needs: [start-runner-linux]
     runs-on: ${{ matrix.runs_on }}
     # Run in a clean container
@@ -684,22 +689,23 @@ jobs:
           name: py3-wheel
           path: dist/*.whl
       
-      # Run Pytest on a subset of our tests if :
-      # - the current workflow does no take place in a weekly or release CI
+      # Run pytest if :
+      # - the current workflow does no take place release CI
       # - if the CI has been triggered manually (through GitHub's Action interface)
       # - the source code has been changed
       # - any tests utils (pytest, data) has been changed
       # - any dependency has been updated 
       # - conftest.py has been changed
       # - Makefile has been changed
+      # If the workflow takes place in a release CI, an option is added to take into account more tests
       # If only some test files were changed, this step is skipped and each associated tests will be
       # run individually in a following step (pytest_modified_tests_only)
       # If regular tests failed, a following script checks for flaky tests. If all failed tests 
       # are known flaky tests, they are rerun. Otherwise, the step exits with status 1.
       # The 'bash +e {0}' is added here in order to make sure that the step does not exit directly 
       # if 'make pytest' fails
-      - name: PyTest Source Code (regular)
-        id: pytest_regular
+      - name: PyTest Source Code (regular, weekly)
+        id: pytest
         if: |
           (
             (
@@ -713,12 +719,18 @@ jobs:
               )
             )
             || fromJSON(env.IS_WORKFLOW_DISPATCH)
+            || fromJSON(env.IS_WEEKLY)
           )
           && steps.conformance.outcome == 'success' 
           && !cancelled()
         shell: bash +e {0}
         run: |
-          make pytest_and_report
+          if [[ "${env.IS_WEEKLY}" == "true" ]]; then
+            PYTEST_OPTIONS="--weekly"
+          else:
+            PYTEST_OPTIONS=""
+          
+          make pytest_and_report PYTEST_OPTIONS=${PYTEST_OPTIONS}
 
           # If regular tests failed, check for flaky tests
           if [ $? -ne 0 ]; then
@@ -749,22 +761,27 @@ jobs:
       # comment is published in the PR and all flaky tests that initially failed are listed
       - name: Warn PR with flaky tests
         uses: marocchino/sticky-pull-request-comment@331f8f5b4215f0445d3c07b4967662a32a2d3e31
-        if: steps.pytest_regular.outcome == 'success' && fromJSON(env.FAILED_TESTS_ARE_FLAKY) && !cancelled()
+        if: |
+          fromJSON(env.IS_PR) 
+          && steps.pytest.outcome == 'success' 
+          && fromJSON(env.FAILED_TESTS_ARE_FLAKY) 
+          && !cancelled()
         with:
           header: flaky-test
           recreate: true
           path: failed_tests_comment_${{ matrix.python_version }}.txt
 
-      # If regular pytest step has been skipped but some changes has been detected in test files, 
+      # If pytest step has been skipped but some changes has been detected in test files, 
       # meaning there was no other changed impacting our testing suite, we only need to run these 
       # modified tests
-      # Note that if pytest utils or test data are changed, the regular pytest step should have been
+      # Note that if pytest utils or test data are changed, the pytest step should have been
       # triggered instead
       - name: PyTest on modified tests only
         id: pytest_modified_tests_only
         if: |
-          steps.changed-files-in-pr.outcome == 'success'
-          && steps.pytest_regular.outcome == 'skipped'
+          fromJSON(env.IS_PR)
+          && steps.changed-files-in-pr.outcome == 'success'
+          && steps.pytest.outcome == 'skipped'
           && steps.changed-files-in-pr.outputs.tests_any_changed == 'true'
           && steps.conformance.outcome == 'success' 
           && !cancelled()
@@ -772,38 +789,6 @@ jobs:
           for file in ${{ steps.changed-files-in-pr.outputs.tests_all_changed_files }}; do
               make pytest_one TEST="$file"
           done
-
-      # Run Pytest on all of our tests on a weekly basis
-      - name: PyTest Source Code (weekly)
-        id: pytest_weekly
-        if: ${{ fromJSON(env.IS_WEEKLY) && steps.conformance.outcome == 'success' && !cancelled() }}
-        run: |
-          # make pytest_and_report PYTEST_OPTIONS=--weekly
-          make pytest_and_report
-
-          # If weekly tests failed, check for flaky tests
-          if [ $? -ne 0 ]; then
-
-            # Convert pytest report to formatted report with only information about failed tests
-          	poetry run python ./script/actions_utils/pytest_failed_test_report.py \
-            --pytest-input-report "pytest_report.json" \
-            --failed-tests-report "failed_tests_report.json" \
-            --failed-tests-list "failed_tests_slack_list_${{ matrix.python_version }}.txt"
-
-            # Check if all failed tests are known flaky tests
-            FAILED_TESTS_ARE_FLAKY=$(jq .all_failed_tests_are_flaky "failed_tests_report.json")
-
-            echo "FAILED_TESTS_ARE_FLAKY=${FAILED_TESTS_ARE_FLAKY}" >> "$GITHUB_ENV"
-
-            # If all failed tests are known flaky tests, try to rerun them
-            if [[ "${FAILED_TESTS_ARE_FLAKY}" == "true" ]]; then
-              make pytest_run_last_failed
-            
-            # Else, return exit status 1 in order to make this step fail
-            else
-              exit 1
-            fi
-          fi
 
       # Run Pytest on all of our tests (except flaky ones) using PyPI's local wheel in the weekly 
       # or during the release process
@@ -832,10 +817,7 @@ jobs:
         id: coverage
         if: |
           fromJSON(env.IS_REF_BUILD) 
-          && (
-            steps.pytest_regular.outcome != 'skipped' 
-            || steps.pytest_weekly.outcome != 'skipped'
-          ) 
+          && steps.pytest.outcome != 'skipped'
           && !cancelled()
         run: |
           ./script/actions_utils/coverage.sh global-coverage-infos.json
@@ -1019,6 +1001,7 @@ jobs:
           mode: stop
 
   build-macos:
+    name: Build macOS intel (Python ${{ matrix.python_version }})
     needs: [matrix-preparation]
     if: ${{ needs.matrix-preparation.outputs.macos-matrix != '[]' }}
 
@@ -1108,7 +1091,7 @@ jobs:
   # Side note: environmental variables cannot be used for jobs conditions, so we need to store the 
   # status as an previous job's output
   send-report:
-    if: (success() || failure()) && fromJSON(needs.matrix-preparation.outputs.send_slack_report)
+    if: (success() || failure()) && needs.matrix-preparation.outputs.send_slack_report
     timeout-minutes: 2
     needs:
       [
@@ -1135,7 +1118,7 @@ jobs:
 
       - name: Set message title
         run: |
-          if [[ "${{ fromJSON(env.IS_WEEKLY) }}" == "true" ]]; then
+          if [[ "${env.IS_WEEKLY}" == "true" ]]; then
             TITLES_START="👷 DEBUG 👷 Weekly Tests"
           elif [[ "${{ fromJSON(env.IS_PUSH_TO_MAIN) || fromJSON(env.IS_PUSH_TO_RELEASE) }}" == "true" ]]; then
             TITLES_START="Push to '${{ github.ref_name }}'"
