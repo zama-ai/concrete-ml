@@ -37,15 +37,14 @@ from ..sklearn._fhe_training_utils  import LogisticRegressionTraining, make_trai
 from ..torch.compile import build_quantized_module
 from ..common.utils import generate_proxy_function
 
-@fhe.module()
-class DFApiV2:
-    _N_DIMS_TRAINING = 4
+class DFApiV2Helper:
+    _N_DIMS_TRAINING = 1
 
     _training_input_set = make_training_inputset(
-        numpy.zeros((_N_DIMS_TRAINING, )), 
-        numpy.ones((_N_DIMS_TRAINING, )) * 2**N_BITS_PANDAS, 
+        numpy.zeros((_N_DIMS_TRAINING, ), dtype=numpy.int64), 
+        numpy.ones((_N_DIMS_TRAINING, ) , dtype=numpy.int64) * 2**N_BITS_PANDAS - 1, 
         0, 
-        2**N_BITS_PANDAS, 
+        2**N_BITS_PANDAS-1, 
         8, True
     )
     # Build the quantized module
@@ -65,6 +64,9 @@ class DFApiV2:
         _training_module._clear_forward, _training_module.ordered_module_input_names
     )
 
+
+@fhe.module()
+class DFApiV2:
     @fhe.function(
         {"val_1": "encrypted", "val_2": "encrypted", "left_key": "encrypted", "right_key": "encrypted"}
     )
@@ -74,7 +76,7 @@ class DFApiV2:
         left_key: Union[Tracer, int],
         right_key: Union[Tracer, int],
     ):
-        return DFApiV2._forward_proxy(val_1, val_2, left_key, right_key)
+        return DFApiV2Helper._forward_proxy(val_1, val_2, left_key, right_key)
 
     @fhe.function(
         {"val_1": "encrypted", "val_2": "encrypted", "left_key": "encrypted", "right_key": "encrypted"}
@@ -193,7 +195,7 @@ def get_left_right_join_inputset(n_bits: int) -> List:
     return inputset
 
 def get_training_inputset():
-    return _get_inputset_generator(DFApiV2._training_input_set)
+    return _get_inputset_generator(tuple(map(lambda x: x.astype(numpy.int64), DFApiV2Helper._training_input_set)))
 
 # Store the configuration functions and parameters to their associated operator
 PANDAS_OPS_TO_CIRCUIT_CONFIG = {
@@ -262,11 +264,14 @@ def save_client_server(client_path: Path = CLIENT_PATH, server_path: Path = SERV
         inputset = config["get_inputset"]()
 
     cp_func = config["to_compile"]
-    compilation_configuration = Configuration(compress_evaluation_keys=True)
+
+    # Configuration used for this API version
+    cfg = API_VERSION_SPECS[CURRENT_API_VERSION]["configuration"]
+    cfg.parameter_selection_strategy = "v0"
 
     # Compile the circuit and allow it to be composable with itself
     merge_circuit = cp_func.compile(
-        inputset, composable=True, configuration=compilation_configuration
+        inputset, composable=True, configuration=cfg
     )
 
     # Save the client and server files using the MLIR
