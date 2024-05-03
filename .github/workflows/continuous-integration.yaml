@@ -159,11 +159,8 @@ jobs:
             LINUX_PYTHON_VERSIONS="3.8"
             MACOS_PYTHON_VERSIONS=""
           elif [[ "${BUILD_TYPE}" == "weekly" ]]; then
-            # TODO
-            # LINUX_PYTHON_VERSIONS="3.8 3.9 3.10"
-            # MACOS_PYTHON_VERSIONS="3.9"
-            LINUX_PYTHON_VERSIONS="3.8"
-            MACOS_PYTHON_VERSIONS=""
+            LINUX_PYTHON_VERSIONS="3.8 3.9 3.10"
+            MACOS_PYTHON_VERSIONS="3.9"
           elif [[ "${BUILD_TYPE}" == "release" ]] || [[ "${BUILD_TYPE}" == "published_release" ]]; then
             LINUX_PYTHON_VERSIONS="3.8 3.9 3.10"
             MACOS_PYTHON_VERSIONS=""
@@ -706,25 +703,23 @@ jobs:
       # if 'make pytest' fails
       - name: PyTest Source Code (regular, weekly)
         id: pytest
-        # TODO
-        # if: |
-        #   (
-        #     (
-        #       steps.changed-files-in-pr.outcome == 'success' 
-        #       && (
-        #         steps.changed-files-in-pr.outputs.src_any_changed == 'true' 
-        #         || steps.changed-files-in-pr.outputs.tests_utils_any_changed == 'true'
-        #         || steps.changed-files-in-pr.outputs.dependencies_any_changed == 'true'
-        #         || steps.changed-files-in-pr.outputs.conftest_any_changed == 'true'
-        #         || steps.changed-files-in-pr.outputs.makefile_any_changed == 'true'
-        #       )
-        #     )
-        #     || fromJSON(env.IS_WORKFLOW_DISPATCH)
-        #     || fromJSON(env.IS_WEEKLY)
-        #   )
-        #   && steps.conformance.outcome == 'success' 
-        #   && !cancelled()
-        if: false
+        if: |
+          (
+            (
+              steps.changed-files-in-pr.outcome == 'success' 
+              && (
+                steps.changed-files-in-pr.outputs.src_any_changed == 'true' 
+                || steps.changed-files-in-pr.outputs.tests_utils_any_changed == 'true'
+                || steps.changed-files-in-pr.outputs.dependencies_any_changed == 'true'
+                || steps.changed-files-in-pr.outputs.conftest_any_changed == 'true'
+                || steps.changed-files-in-pr.outputs.makefile_any_changed == 'true'
+              )
+            )
+            || fromJSON(env.IS_WORKFLOW_DISPATCH)
+            || fromJSON(env.IS_WEEKLY)
+          )
+          && steps.conformance.outcome == 'success' 
+          && !cancelled()
         shell: bash +e {0}
         run: |
           if [[ "${{ env.IS_WEEKLY }}" == "true" ]]; then
@@ -809,12 +804,10 @@ jobs:
       # Run Pytest on all of our tests (except flaky ones) using PyPI's local wheel in the weekly 
       # or during the release process
       - name: PyTest (no flaky) with PyPI local wheel of Concrete ML (weekly, release)
-        # TODO
-        # if: |
-        #   (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
-        #   && steps.conformance.outcome == 'success' 
-        #   && !cancelled()
-        if: false
+        if: |
+          (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
+          && steps.conformance.outcome == 'success' 
+          && !cancelled()
         run: |
           make pytest_pypi_wheel_cml_no_flaky
 
@@ -876,12 +869,10 @@ jobs:
 
       # Run Pytest on all codeblocks on a weekly basis or while releasing
       - name: PyTest CodeBlocks with PyPI local wheel of Concrete ML (weekly, release)
-        # TODO
-        # if: |
-        #   (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
-        #   && steps.conformance.outcome == 'success' 
-        #   && !cancelled()
-        if: false
+        if: |
+          (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
+          && steps.conformance.outcome == 'success' 
+          && !cancelled()
         run: |
           make pytest_codeblocks_pypi_wheel_cml 
 
@@ -900,12 +891,10 @@ jobs:
       # Run Pytest on all notebooks on a weekly basis
       # Note: some notebooks need specific data stored in LFS
       - name: PyTest Notebooks (weekly)
-        # TODO
-        # if: | 
-        #   fromJSON(env.IS_WEEKLY) 
-        #   && steps.conformance.outcome == 'success' 
-        #   && !cancelled()
-        if: false
+        if: | 
+          fromJSON(env.IS_WEEKLY) 
+          && steps.conformance.outcome == 'success' 
+          && !cancelled()
         run: |
           git lfs pull --include "docs/advanced_examples/data/**" --exclude  ""
 
@@ -1157,13 +1146,18 @@ jobs:
       - name: Set message title
         run: |
           if [[ "${{ env.IS_WEEKLY }}" == "true" ]]; then
-            # TODO
-            TITLES_START="👷 DEBUG 👷 Weekly Tests"
+            TITLE_START="Weekly Tests"
           elif [[ "${{ fromJSON(env.IS_PUSH_TO_MAIN) || fromJSON(env.IS_PUSH_TO_RELEASE) }}" == "true" ]]; then
-            TITLES_START="Push to '${{ github.ref_name }}'"
+            TITLE_START="Push to '${{ github.ref_name }}'"
           fi
 
-          echo "SLACK_TITLE=${TITLES_START}: ${{ env.JOB_STATUS || 'failure' }}" >> "$GITHUB_ENV"
+          if [[ "${{ env.JOB_STATUS }}" == "success" ]]; then
+            TITLE_STATUS="passed ✅"
+          else
+            TITLE_STATUS="failed ❌"
+          fi
+
+          echo "SLACK_TITLE=${TITLE_START} ${TITLE_STATUS} ([Action URL](${{ env.ACTION_RUN_URL }}))" >> "$GITHUB_ENV"
         
       # Retrieve the list of flaky tests that have been re-run if they were some
       # Enable 'merge-multiple' to download all files in the root directory
@@ -1177,9 +1171,9 @@ jobs:
       # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4428
       - name: Set message body
         run: |
-          SLACK_BODY="[Action URL](${{ env.ACTION_RUN_URL }})\n\
-            * build-linux: ${{ needs.build-linux.result || 'Did not run.' }}\n\n\
-            * build-macos-intel: ${{ needs.build-macos-intel.result || 'Did not run.' }}\n\n"
+          SLACK_BODY="Build status:\n\
+            - Linux: ${{ needs.build-linux.result }}\n\n\
+            - macOS (intel): ${{ needs.build-macos-intel.result }}\n\n"
 
           LINUX_PYTHON_VERSIONS="${{ needs.matrix-preparation.outputs.linux-python-versions }}"
 
