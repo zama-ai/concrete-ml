@@ -1012,8 +1012,8 @@ jobs:
     needs: [matrix-preparation]
     # macOS (intel) build is currently broken so there is not need to test it until Concrete fixes it
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4428
-    if: ${{ needs.matrix-preparation.outputs.macos-matrix != '[]' }} && false
-
+    # if: ${{ needs.matrix-preparation.outputs.macos-matrix != '[]' }}
+    if: false
     runs-on: ${{ matrix.runs_on }}
     defaults:
       run:
@@ -1158,7 +1158,7 @@ jobs:
           if [[ "${{ env.JOB_STATUS }}" == "success" ]]; then
             TITLE_STATUS="passed ✅"
           elif [[ "${{ env.JOB_STATUS }}" == "cancelled" ]]; then 
-            TITLE_STATUS="cancelled :warning:"
+            TITLE_STATUS="cancelled :black_square_for_stop:"
           elif [[ "${{ env.JOB_STATUS }}" == "skipped" ]]; then 
             TITLE_STATUS="skipped :fast_forward:"
           else
