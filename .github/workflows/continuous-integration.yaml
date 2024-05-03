@@ -724,9 +724,7 @@ jobs:
         shell: bash +e {0}
         run: |
           if [[ "${{ env.IS_WEEKLY }}" == "true" ]]; then
-            # TODO
-            # PYTEST_OPTIONS="--weekly"
-            PYTEST_OPTIONS=""
+            PYTEST_OPTIONS="--weekly"
           else
             PYTEST_OPTIONS=""
           fi
