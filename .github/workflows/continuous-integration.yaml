@@ -724,6 +724,7 @@ jobs:
         shell: bash +e {0}
         run: |
           if [[ "${{ env.IS_WEEKLY }}" == "true" ]]; then
+            # TODO
             # PYTEST_OPTIONS="--weekly"
             PYTEST_OPTIONS=""
           else
@@ -1009,7 +1010,9 @@ jobs:
   build-macos-intel:
     name: Python ${{ matrix.python_version }} (macOS, intel)
     needs: [matrix-preparation]
-    if: ${{ needs.matrix-preparation.outputs.macos-matrix != '[]' }}
+    # macOS (intel) build is currently broken so there is not need to test it until Concrete fixes it
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4428
+    if: ${{ needs.matrix-preparation.outputs.macos-matrix != '[]' }} && false
 
     runs-on: ${{ matrix.runs_on }}
     defaults:
@@ -1176,7 +1179,7 @@ jobs:
       # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4428
       - name: Set message body
         run: |
-          SLACK_BODY="Build status (([Action URL](${{ env.ACTION_RUN_URL }}))):\n\
+          SLACK_BODY="Build status ([Action URL](${{ env.ACTION_RUN_URL }})):\n\
             - Linux: ${{ needs.build-linux.result }}\n\n\
             - macOS (intel): ${{ needs.build-macos-intel.result }}\n\n"
 
