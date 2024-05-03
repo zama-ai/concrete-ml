@@ -22,7 +22,9 @@ Generic tests test:
 """
 
 import copy
+import inspect
 import json
+import math
 import os
 import sys
 import tempfile
@@ -104,6 +106,16 @@ N_BITS_WEEKLY_ONLY_BUILDS = [2, 8, 16]
 # N_BITS_THRESHOLD_FOR_CRT_FHE_CIRCUITS defines the threshold for which the circuit will be using
 # the CRT.
 N_BITS_THRESHOLD_FOR_CRT_FHE_CIRCUITS = 9
+
+# Expected different default parameters for some models
+EXPECTED_DIFFERENT_DEFAULT_PARAMETERS = {
+    "KNeighborsClassifier": {"n_neighbors": 3},
+    "SGDClassifier": {"loss": "log_loss"},
+    "RandomForestClassifier": {"n_estimators": 20, "max_depth": 4},
+    "RandomForestRegressor": {"n_estimators": 20, "max_depth": 4},
+    "XGBClassifier": {"n_estimators": 20, "max_depth": 3},
+    "XGBRegressor": {"n_estimators": 20, "max_depth": 3},
+}
 
 
 def get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option):
@@ -2032,3 +2044,121 @@ def test_error_raise_unsupported_pandas_values(model_class, bad_value, expected_
 
     with pytest.raises(ValueError, match=expected_error):
         model.fit(x_train, y_train)
+
+
+# Add QNNs in this test
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4436
+@pytest.mark.parametrize(
+    "model_class, parameters",
+    get_sklearn_linear_models_and_datasets()
+    + get_sklearn_tree_models_and_datasets()
+    + get_sklearn_neighbors_models_and_datasets(),
+)
+def test_initialization_variables_and_defaults_match(
+    model_class, parameters, load_data, is_weekly_option
+):
+    """Test CML models init parameters and default values vs scikit-learn models."""
+    n_bits = get_n_bits_non_correctness(model_class)
+
+    model_name = get_model_name(model_class)
+
+    x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
+
+    # Instantiate the model
+    model = instantiate_model_generic(model_class, n_bits=n_bits)
+
+    # Fit the model to create the equivalent sklearn model
+    with warnings.catch_warnings():
+        # Ignore convergence warnings
+        warnings.simplefilter("ignore", category=ConvergenceWarning)
+        model.fit(x, y)
+
+    # Assert the sklearn model has been created
+    assert hasattr(model, "sklearn_model"), "Sklearn model not found"
+
+    # Function to retrieve the parameters from any model
+    # XGBoost init params are in base classes, so we need to gather them recursively
+    def get_params(model):
+        """Get the initializer parameters of the given model."""
+        cls = get_model_class(model.sklearn_model)
+        if cls.__name__ in ["XGBClassifier", "XGBRegressor"]:
+            params = {}
+
+            # Recursively gather parameters from all base classes, starting from the current class
+            def gather_params(c):
+                # First, recursively gather from base classes so child class can overwrite
+                for base in c.__bases__:
+                    gather_params(base)
+                # Update with the current class's parameters
+                sig = inspect.signature(c)
+                params.update({k: v.default for k, v in sig.parameters.items()})
+
+            gather_params(cls)
+            return params
+
+        # Else, return parameters for non-xgboost models
+        sig = inspect.signature(cls)
+        return {k: v.default for k, v in sig.parameters.items()}
+
+    # Get the constructor parameters of both the custom and sklearn models
+    cml_params_defaults = {
+        k: v.default for k, v in inspect.signature(model.__class__).parameters.items()
+    }
+    sklearn_params_defaults = get_params(model)
+
+    # Calculate differences in parameters and defaults
+    missing_params = set(sklearn_params_defaults.keys()) - set(cml_params_defaults.keys())
+    extra_params = (set(cml_params_defaults.keys()) - set(sklearn_params_defaults.keys())) - {
+        "n_bits"
+    }
+
+    # Allow 'fit_encrypted' and 'parameters_range' for SGDClassifier
+    if model_name == "SGDClassifier":
+        extra_params -= {"fit_encrypted", "parameters_range"}
+
+    def is_nan(x):
+        """Check if a variable is nan."""
+        return isinstance(x, float) and math.isnan(x)
+
+    differing_defaults = {
+        param
+        for param in sklearn_params_defaults.keys() & cml_params_defaults.keys()
+        if not (
+            sklearn_params_defaults[param] == cml_params_defaults[param]
+            # Some parameter can be nan which can't be compared using equality
+            or (is_nan(sklearn_params_defaults[param]) and is_nan(cml_params_defaults[param]))
+        )
+    }
+
+    # Remove expected different params defaults from differing_defaults
+    expected_differences = EXPECTED_DIFFERENT_DEFAULT_PARAMETERS.get(model_name, {})
+    # For mypy
+    assert isinstance(expected_differences, dict)
+    differing_defaults.difference_update(expected_differences.keys())
+
+    # Assert parameter exist and matching defaults
+    assert not missing_params, f"{model_name} is missing these init parameters: {missing_params}"
+    assert not extra_params, f"{model_name} has extra init parameters: {extra_params}"
+    assert not differing_defaults, (
+        f"Default values do not match for: {differing_defaults}. "
+        f"Expected: {[sklearn_params_defaults[param] for param in differing_defaults]}, "
+        f"Found: {[cml_params_defaults[param] for param in differing_defaults]}"
+    )
+
+
+@pytest.mark.parametrize("model_class", _get_sklearn_tree_models())
+@pytest.mark.parametrize(
+    "param, error_message",
+    [
+        ({"eval_metric": lambda x: x}, "Callable eval_metric is not supported for serialization"),
+        ({"kwargs": {"extra": "param"}}, "kwargs are not supported for serialization"),
+        ({"callbacks": [lambda x: x]}, "callbacks are not supported for serialization"),
+    ],
+)
+def test_xgb_serialization_errors(model_class, param, error_message):
+    """Test that XGBoost models with unsupported parameters raise errors on serialization."""
+    model_name = get_model_name(model_class)
+    if model_name in ["XGBClassifier", "XGBRegressor"]:
+        with pytest.raises(NotImplementedError, match=error_message):
+            model = instantiate_model_generic(model_class, 5, **param)
+            model.dumps()
