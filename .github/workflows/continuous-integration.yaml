@@ -1154,11 +1154,15 @@ jobs:
 
           if [[ "${{ env.JOB_STATUS }}" == "success" ]]; then
             TITLE_STATUS="passed ✅"
+          elif [[ "${{ env.JOB_STATUS }}" == "cancelled" ]]; then 
+            TITLE_STATUS="cancelled :warning:"
+          elif [[ "${{ env.JOB_STATUS }}" == "skipped" ]]; then 
+            TITLE_STATUS="skipped :fast_forward:"
           else
             TITLE_STATUS="failed ❌"
           fi
 
-          echo "SLACK_TITLE=${TITLE_START} ${TITLE_STATUS} ([Action URL](${{ env.ACTION_RUN_URL }}))" >> "$GITHUB_ENV"
+          echo "SLACK_TITLE=${TITLE_START} ${TITLE_STATUS}" >> "$GITHUB_ENV"
         
       # Retrieve the list of flaky tests that have been re-run if they were some
       # Enable 'merge-multiple' to download all files in the root directory
@@ -1172,7 +1176,7 @@ jobs:
       # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4428
       - name: Set message body
         run: |
-          SLACK_BODY="Build status:\n\
+          SLACK_BODY="Build status (([Action URL](${{ env.ACTION_RUN_URL }}))):\n\
             - Linux: ${{ needs.build-linux.result }}\n\n\
             - macOS (intel): ${{ needs.build-macos-intel.result }}\n\n"
 
