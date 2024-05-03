@@ -124,6 +124,7 @@ jobs:
           echo "${{ github.event_name }}"
 
           # Manage build type that will condition the rest of the CI
+          # TODO
           if [[ "${IS_WEEKLY}" == "true" ]]; then
             BUILD_TYPE="weekly"
           elif [[ "${IS_PR}" == "true" ]]; then
