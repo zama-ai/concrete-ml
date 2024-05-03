@@ -100,6 +100,7 @@ env:
 
 jobs:
   matrix-preparation:
+    name: Prepare versions and OS
     # We skip the CI in cases of pushing to internal main (because all pushes to main internal are now from the bot)
     if: ${{ !( github.repository == 'zama-ai/concrete-ml-internal' && github.event_name == 'push' && github.ref == 'refs/heads/main' ) }}
     runs-on: ubuntu-20.04
@@ -111,6 +112,8 @@ jobs:
       needs-39-linux-runner: ${{ steps.set-matrix.outputs.needs-39-linux-runner }}
       needs-310-linux-runner: ${{ steps.set-matrix.outputs.needs-310-linux-runner }}
       instance-type: ${{ steps.set-matrix.outputs.instance-type }}
+      linux-python-versions: ${{ steps.set-matrix.outputs.linux-python-versions }}
+      macos-python-versions: ${{ steps.set-matrix.outputs.macos-python-versions }}
     steps:
       - name: Checkout code
         uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
@@ -177,6 +180,11 @@ jobs:
           
           echo "LINUX_PYTHON_VERSIONS: ${LINUX_PYTHON_VERSIONS}"
           echo "MACOS_PYTHON_VERSIONS: ${MACOS_PYTHON_VERSIONS}"
+
+          # Used for the slack report
+          echo "linux-python-versions=${LINUX_PYTHON_VERSIONS}" >> $GITHUB_OUTPUT
+          echo "macos-python-versions=${MACOS_PYTHON_VERSIONS}" >> $GITHUB_OUTPUT
+
           echo "BUILD_TYPE: ${BUILD_TYPE}"
           echo "INSTANCE_TYPE: ${INSTANCE_TYPE}"
 
@@ -219,13 +227,6 @@ jobs:
           echo "needs-39-linux-runner=${NEEDS_LINUX_39_RUNNER}" >> $GITHUB_OUTPUT
           echo "needs-310-linux-runner=${NEEDS_LINUX_310_RUNNER}" >> $GITHUB_OUTPUT
           echo "instance-type=${INSTANCE_TYPE}" >> $GITHUB_OUTPUT
-
-          SEND_SLACK_REPORT="${{ fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_PUSH_TO_MAIN) || fromJSON(env.IS_PUSH_TO_RELEASE) }}"
-
-          echo -e "\nSend Slack report:"
-          echo "${SEND_SLACK_REPORT}"
-
-          echo "send_slack_report=${SEND_SLACK_REPORT}" >> $GITHUB_OUTPUT
 
   start-runner-linux:
     needs: [matrix-preparation]
@@ -955,7 +956,7 @@ jobs:
   # This can be updated to take macOS into account but it is impractical because of long builds 
   # and therefore expensive macOS testing
   linux-build-status:
-    name: Linux build status
+    name: Build Status (Linux)
     needs: [build-linux]
     runs-on: ubuntu-20.04
     timeout-minutes: 2
@@ -973,18 +974,6 @@ jobs:
           if [[ ${{ needs.build-linux.result }} != "success" ]]; then
             exit 1
           fi
-
-      - name: Slack Notification
-        if: ${{ always() && !success() }}
-        continue-on-error: true
-        uses: rtCamp/action-slack-notify@4e5fb42d249be6a45a298f3c9543b111b02f7907
-        env:
-          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
-          SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
-          SLACK_COLOR: ${{ needs.build-linux.result }}
-          SLACK_MESSAGE: "Build finished with status ${{ needs.build-linux.result }}. (${{ env.ACTION_RUN_URL }})"
-          SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
   stop-runner-linux:
     name: Stop EC2 runner (Linux)
@@ -1110,6 +1099,22 @@ jobs:
         run: |
           make pytest_macOS_for_GitHub
 
+  decide-slack-report:
+    name: Decide Slack report
+    runs-on: ubuntu-20.04
+    outputs:
+      send_slack_report: ${{ steps.set-decision.outputs.send_slack_report }}
+    steps:
+      - name: Set decision
+        id: set-decision
+        run: |
+          SEND_SLACK_REPORT="${{ fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_PUSH_TO_MAIN) || fromJSON(env.IS_PUSH_TO_RELEASE) }}"
+
+          echo "Send Slack report:"
+          echo "${SEND_SLACK_REPORT}"
+
+          echo "send_slack_report=${SEND_SLACK_REPORT}" >> $GITHUB_OUTPUT
+
 
   # Only send a report for the following CI:
   # - when pushing to main
@@ -1120,13 +1125,12 @@ jobs:
   # Side note: environmental variables cannot be used for jobs conditions, so we need to determine 
   # if the job should be run or not in an previous job and store it in its output
   send-report:
-    name: Send Slack notification
+    name: Send Slack report
     runs-on: ubuntu-20.04
     if: |
       always() 
       && needs.matrix-preparation.result != 'skipped' 
-    # TODO
-    # && fromJSON(needs.matrix-preparation.outputs.send_slack_report)
+      && fromJSON(needs.decide-slack-report.outputs.send_slack_report)
     timeout-minutes: 2
     needs:
       [
@@ -1135,6 +1139,7 @@ jobs:
         build-linux,
         stop-runner-linux,
         build-macos-intel,
+        decide-slack-report,
       ]
 
     steps:
@@ -1152,6 +1157,7 @@ jobs:
       - name: Set message title
         run: |
           if [[ "${{ env.IS_WEEKLY }}" == "true" ]]; then
+            # TODO
             TITLES_START="👷 DEBUG 👷 Weekly Tests"
           elif [[ "${{ fromJSON(env.IS_PUSH_TO_MAIN) || fromJSON(env.IS_PUSH_TO_RELEASE) }}" == "true" ]]; then
             TITLES_START="Push to '${{ github.ref_name }}'"
@@ -1175,13 +1181,13 @@ jobs:
             * build-linux: ${{ needs.build-linux.result || 'Did not run.' }}\n\n\
             * build-macos-intel: ${{ needs.build-macos-intel.result || 'Did not run.' }}\n\n"
 
-          PYTHON_VERSIONS = ("3.8" "3.9" "3.10")
+          LINUX_PYTHON_VERSIONS="${{ needs.matrix-preparation.outputs.linux-python-versions }}"
 
-          for python_version in ${PYTHON_VERSIONS[@]}; do
-            file_name="failed_tests_slack_list_${python_version}.txt"
+          for linux_python_version in ${LINUX_PYTHON_VERSIONS}; do
+            file_name="failed_tests_slack_list_${linux_python_version}.txt"
 
             if [ -f ${file_name} ]; then
-              SLACK_BODY+="Linux failed tests (Python ${python_version}):\n"
+              SLACK_BODY+="Linux failed tests (Python ${linux_python_version}):\n"
               SLACK_BODY+="$(cat ${file_name})"
               SLACK_BODY+="\n\n"
             fi
@@ -1189,7 +1195,7 @@ jobs:
 
           echo "SLACK_BODY=${SLACK_BODY}" >> "$GITHUB_ENV"
 
-      - name: Slack Notification
+      - name: Slack report
         if: fromJSON(env.RUN_JOB)
         uses: rtCamp/action-slack-notify@4e5fb42d249be6a45a298f3c9543b111b02f7907
         env:
