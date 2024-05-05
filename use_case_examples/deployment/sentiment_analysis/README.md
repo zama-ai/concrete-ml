@@ -14,8 +14,8 @@ One can also run this example locally using Docker, or just by running the scrip
    This will result in a new folder called `./dev`.
 1. Once that's done you can use the script provided in Concrete ML in `src/concrete/ml/deployment/`, either use `deploy_to_aws.py` or `deploy_to_docker.py` according to your need.
 
-- `python -m concrete.ml.deployment.deploy_to_docker`
-- `python -m concrete.ml.deployment.deploy_to_aws`
+- `python use_case_examples/deployment/server/deploy_to_docker.py`
+- `python use_case_examples/deployment/server/deploy_to_aws.py`
   this will create and run a Docker container or an AWS EC2 instance.
 
 3. Once that's done you can launch the `build_docker_client_image.sh` script to build a client Docker image.

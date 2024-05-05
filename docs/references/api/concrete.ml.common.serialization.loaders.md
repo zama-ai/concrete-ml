@@ -8,7 +8,7 @@ Load functions for serialization.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/serialization/loaders.py#L8"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/serialization/loaders.py#L9"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `loads`
 
@@ -28,7 +28,7 @@ Load any Concrete ML object that provide a `dump_dict` method.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/serialization/loaders.py#L20"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/serialization/loaders.py#L21"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `load`
 

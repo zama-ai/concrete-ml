@@ -12,7 +12,7 @@ A torch to numpy module.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/numpy_module.py#L19"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/numpy_module.py#L20"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `NumpyModule`
 
@@ -24,7 +24,7 @@ General interface to transform a torch.nn.Module to numpy module.
 - <b>`dummy_input`</b> (Union\[torch.Tensor, Tuple\[torch.Tensor, ...\]\]):  Sample tensors for all the  module inputs, used in the ONNX export to get a simple to manipulate nn representation.
 - <b>`debug_onnx_output_file_path`</b>:  (Optional\[Union\[Path, str\]\], optional): An optional path to  indicate where to save the ONNX file exported by torch for debug.  Defaults to None.
 
-<a href="../../../src/concrete/ml/torch/numpy_module.py#L32"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/numpy_module.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -50,7 +50,7 @@ Get the ONNX model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/numpy_module.py#L78"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/numpy_module.py#L79"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 

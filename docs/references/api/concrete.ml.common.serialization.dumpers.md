@@ -8,7 +8,7 @@ Dump functions for serialization.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/serialization/dumpers.py#L8"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/serialization/dumpers.py#L9"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `dumps`
 
@@ -28,7 +28,7 @@ Dump any object as a string.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/serialization/dumpers.py#L21"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/serialization/dumpers.py#L22"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `dump`
 

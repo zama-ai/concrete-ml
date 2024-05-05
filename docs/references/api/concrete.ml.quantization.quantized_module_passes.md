@@ -8,13 +8,13 @@ Optimization passes for QuantizedModules.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module_passes.py#L29"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module_passes.py#L30"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `PowerOfTwoScalingRoundPBSAdapter`
 
 Detect neural network patterns that can be optimized with round PBS.
 
-<a href="../../../src/concrete/ml/quantization/quantized_module_passes.py#L39"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module_passes.py#L40"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -36,12 +36,12 @@ Patterns could be ignored since a number of rounding bits was set manually throu
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module_passes.py#L89"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module_passes.py#L90"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compute_op_predecessors`
 
 ```python
-compute_op_predecessors() → DefaultDict[Union[QuantizedOp, NoneType], List[Tuple[Union[QuantizedOp, NoneType], str]]]
+compute_op_predecessors() → DefaultDict[Optional[QuantizedOp], List[Tuple[Optional[QuantizedOp], str]]]
 ```
 
 Compute the predecessors for each QuantizedOp in a QuantizedModule.
@@ -54,14 +54,14 @@ Stores, for each quantized op, a list of quantized ops that produce its inputs. 
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module_passes.py#L158"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module_passes.py#L159"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `detect_patterns`
 
 ```python
 detect_patterns(
     predecessors: DefaultDict[Optional[QuantizedOp], List[Tuple[Optional[QuantizedOp], str]]]
-) → Dict[QuantizedMixingOp, Tuple[List[Union[QuantizedOp, NoneType]], Union[QuantizedOp, NoneType]]]
+) → Dict[QuantizedMixingOp, Tuple[List[Optional[QuantizedOp]], Optional[QuantizedOp]]]
 ```
 
 Detect the patterns that can be optimized with roundPBS in the QuantizedModule.
@@ -76,7 +76,7 @@ Detect the patterns that can be optimized with roundPBS in the QuantizedModule.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module_passes.py#L118"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module_passes.py#L119"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `match_path_pattern`
 
@@ -102,12 +102,12 @@ Determine if a pattern has the structure that makes it viable for roundPBS.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module_passes.py#L55"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module_passes.py#L56"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `process`
 
 ```python
-process() → Dict[QuantizedMixingOp, Tuple[List[Union[QuantizedOp, NoneType]], Union[QuantizedOp, NoneType]]]
+process() → Dict[QuantizedMixingOp, Tuple[List[Optional[QuantizedOp]], Optional[QuantizedOp]]]
 ```
 
 Analyze an ONNX graph and detect Gemm/Conv patterns that can use RoundPBS.
@@ -122,14 +122,14 @@ Nothing will be done if rounding is already specified.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module_passes.py#L222"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module_passes.py#L223"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `process_patterns`
 
 ```python
 process_patterns(
     valid_paths: Dict[QuantizedMixingOp, Tuple[List[Optional[QuantizedOp]], Optional[QuantizedOp]]]
-) → Dict[QuantizedMixingOp, Tuple[List[Union[QuantizedOp, NoneType]], Union[QuantizedOp, NoneType]]]
+) → Dict[QuantizedMixingOp, Tuple[List[Optional[QuantizedOp]], Optional[QuantizedOp]]]
 ```
 
 Configure the rounding bits of roundPBS for the optimizable operations.

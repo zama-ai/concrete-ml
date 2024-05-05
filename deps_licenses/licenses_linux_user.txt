@@ -1,80 +1,54 @@
 Name, Version, License
-GitPython, 3.1.41, BSD License
 PyYAML, 6.0.1, MIT License
-anyio, 3.7.1, MIT License
-boto3, 1.34.88, Apache Software License
-botocore, 1.34.88, Apache Software License
 brevitas, 0.8.0, UNKNOWN
-certifi, 2023.7.22, Mozilla Public License 2.0 (MPL 2.0)
+certifi, 2024.2.2, Mozilla Public License 2.0 (MPL 2.0)
 charset-normalizer, 3.3.2, MIT License
-click, 8.1.7, BSD License
 coloredlogs, 15.0.1, MIT License
 concrete-python, 2024.4.19, BSD-3-Clause
 dependencies, 2.0.1, BSD License
 dill, 0.3.8, BSD License
-exceptiongroup, 1.2.1, MIT License
-fastapi, 0.103.2, MIT License
-filelock, 3.13.4, The Unlicense (Unlicense)
+filelock, 3.14.0, The Unlicense (Unlicense)
 flatbuffers, 24.3.25, Apache Software License
 fsspec, 2024.3.1, BSD License
-gitdb, 4.0.11, BSD License
-h11, 0.14.0, MIT License
 huggingface-hub, 0.22.2, Apache Software License
 humanfriendly, 10.0, MIT License
-hummingbird-ml, 0.4.8, MIT License
+hummingbird-ml, 0.4.11, MIT License
 idna, 3.7, BSD License
 importlib_resources, 6.4.0, Apache Software License
-iniconfig, 2.0.0, MIT License
-jmespath, 1.0.1, MIT License
 joblib, 1.4.0, BSD License
 jsonpickle, 3.0.4, BSD License
 mpmath, 1.3.0, BSD License
 networkx, 3.1, BSD License
-numpy, 1.23.5, BSD License
+numpy, 1.24.3, BSD License
 nvidia-cublas-cu11, 11.10.3.66, Other/Proprietary License
 nvidia-cuda-nvrtc-cu11, 11.7.99, Other/Proprietary License
 nvidia-cuda-runtime-cu11, 11.7.99, Other/Proprietary License
 nvidia-cudnn-cu11, 8.5.0.96, Other/Proprietary License
-onnx, 1.15.0, Apache License v2.0
+onnx, 1.16.0, Apache License v2.0
 onnxconverter-common, 1.13.0, MIT License
-onnxmltools, 1.11.0, Apache Software License
+onnxmltools, 1.12.0, Apache Software License
 onnxoptimizer, 0.3.13, Apache License v2.0
 onnxruntime, 1.17.3, MIT License
 packaging, 24.0, Apache Software License; BSD License
 pandas, 2.0.3, BSD License
-pluggy, 1.5.0, MIT License
 protobuf, 3.20.3, BSD-3-Clause
 psutil, 5.9.8, BSD License
-pydantic, 1.10.15, MIT License
-pytest, 7.4.1, MIT License
-pytest-json-report, 1.5.0, MIT
-pytest-metadata, 3.1.1, Mozilla Public License 2.0 (MPL 2.0)
 python-dateutil, 2.9.0.post0, Apache Software License; BSD License
 pytz, 2024.1, MIT License
-regex, 2024.4.16, Apache Software License
 requests, 2.31.0, Apache Software License
-s3transfer, 0.10.1, Apache Software License
-safetensors, 0.4.3, Apache Software License
-scikit-learn, 1.1.3, BSD License
+scikit-learn, 1.3.2, BSD License
 scipy, 1.10.1, BSD License
 six, 1.16.0, MIT License
-skl2onnx, 1.12, Apache Software License
+skl2onnx, 1.16.0, Apache Software License
 skops, 0.5.0, MIT
 skorch, 0.11.0, new BSD 3-Clause
-smmap, 5.0.1, BSD License
-sniffio, 1.3.1, Apache Software License; MIT License
-starlette, 0.27.0, BSD License
 sympy, 1.12, BSD License
 tabulate, 0.8.10, MIT License
-threadpoolctl, 3.4.0, BSD License
-tokenizers, 0.19.1, Apache Software License
-tomli, 2.0.1, MIT License
+threadpoolctl, 3.5.0, BSD License
 torch, 1.13.1, BSD License
 tqdm, 4.66.2, MIT License; Mozilla Public License 2.0 (MPL 2.0)
-transformers, 4.40.0, Apache Software License
 typing_extensions, 4.5.0, Python Software Foundation License
 tzdata, 2024.1, Apache Software License
 urllib3, 2.2.1, MIT License
-uvicorn, 0.21.1, BSD License
-xgboost, 1.6.2, Apache Software License
+xgboost, 1.7.6, Apache Software License
 z3-solver, 4.13.0.0, MIT License

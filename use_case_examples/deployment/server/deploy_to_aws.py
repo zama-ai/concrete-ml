@@ -23,7 +23,7 @@ from typing import Any, Dict, Optional
 
 import boto3
 
-from ..deployment.utils import filter_logs, wait_for_connection_to_be_available
+from .utils_server import filter_logs, wait_for_connection_to_be_available
 
 DATE_FORMAT: str = "%Y_%m_%d_%H_%M_%S"
 # More up to date public Concrete ML AWS AMI

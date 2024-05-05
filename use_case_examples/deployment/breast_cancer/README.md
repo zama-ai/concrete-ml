@@ -10,10 +10,10 @@ One can also run this example locally using Docker, or just by running the scrip
 
 1. To train your model you can use `train.py`, or `train_with_docker.sh` to use Docker (recommended way).
    This will train a model and [serialize the FHE circuit](../../../docs/guides/client_server.md) in a new folder called `./dev`.
-1. Once that's done you can use the script provided in Concrete ML in `src/concrete/ml/deployment/`, either use `deploy_to_aws.py` or `deploy_to_docker.py` according to your need.
+1. Once that's done you can use the script provided in Concrete ML in `use_case_examples/deployment/server/`, either use `deploy_to_aws.py` or `deploy_to_docker.py` according to your need.
 
-- `python -m concrete.ml.deployment.deploy_to_docker --path-to-model ./dev`
-- `python -m concrete.ml.deployment.deploy_to_aws --path-to-model ./dev`
+- `python use_case_examples/deployment/server/deploy_to_docker.py --path-to-model ./dev`
+- `python use_case_examples/deployment/server/deploy_to_aws.py --path-to-model ./dev`
   this will create and run a Docker container or an AWS EC2 instance.
 
 3. Once that's done you can launch the `build_docker_client_image.py` script to build a client Docker image.

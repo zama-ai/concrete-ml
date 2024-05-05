@@ -15,7 +15,7 @@ Implements the conversion of a tree model to a numpy function.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L46"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L47"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_onnx_model`
 
@@ -38,7 +38,7 @@ Create ONNX model with Hummingbird convert method.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L78"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L79"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `workaround_squeeze_node_xgboost`
 
@@ -56,7 +56,7 @@ FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2778 The squeeze o
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L103"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L104"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `assert_add_node_and_constant_in_xgboost_regressor_graph`
 
@@ -72,7 +72,7 @@ Assert if an Add node with a specific constant exists in the ONNX graph.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L139"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L140"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `add_transpose_after_last_node`
 
@@ -92,7 +92,7 @@ Add transpose after last node.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L170"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L171"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `preprocess_tree_predictions`
 
@@ -116,7 +116,7 @@ Apply post-processing from the graph.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L220"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L221"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `tree_onnx_graph_preprocessing`
 
@@ -141,7 +141,7 @@ Apply pre-processing onto the ONNX graph.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L283"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L284"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `tree_values_preprocessing`
 
@@ -168,7 +168,7 @@ Pre-process tree values.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L329"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L330"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `tree_to_numpy`
 

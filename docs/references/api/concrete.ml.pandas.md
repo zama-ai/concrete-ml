@@ -13,7 +13,7 @@ Public API for encrypted data-frames.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pandas/__init__.py#L9"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pandas/__init__.py#L10"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `load_encrypted_dataframe`
 
@@ -33,7 +33,7 @@ Load a serialized encrypted data-frame.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pandas/__init__.py#L23"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pandas/__init__.py#L24"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `merge`
 
