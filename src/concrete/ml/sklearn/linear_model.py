@@ -437,7 +437,10 @@ class SGDClassifier(SklearnSGDClassifierMixin):
 
             assert isinstance(self.classes_, numpy.ndarray)
 
-            if len(self.classes_) != 2:
+            # Allow the training set to only provide a single class. This can happen, for example,
+            # when running 'partial_fit' on a small batch of values. Even with a single class, the
+            # model remains binary
+            if len(self.classes_) not in [1, 2]:
                 raise NotImplementedError(
                     f"Only binary classification is currently supported when FHE training is "
                     f"enabled. Got {len(self.classes_)} labels: {self.classes_}."
