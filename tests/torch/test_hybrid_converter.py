@@ -127,7 +127,6 @@ def test_gpt2_hybrid_mlp(list_or_str_private_modules_names, expected_accuracy):
     run_hybrid_llm_test(model, input_ids, list_or_str_private_modules_names, expected_accuracy)
 
 
-@pytest.mark.filterwarnings("ignore::FutureWarning")
 def test_hybrid_brevitas_qat_model():
     """Test GPT2 hybrid."""
     n_bits = 3
@@ -151,6 +150,7 @@ def test_hybrid_brevitas_qat_model():
 
 # Dependency 'huggingface-hub' raises a 'FutureWarning' from version 0.23.0 when calling the
 # 'from_pretrained' method
+@pytest.mark.filterwarnings("ignore::FutureWarning")
 def test_gpt2_hybrid_mlp_module_not_found():
     """Test GPT2 hybrid."""
 
