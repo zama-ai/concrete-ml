@@ -37,6 +37,7 @@ on:
         - RegressorComparison \n
         - SentimentClassification \n
         - SVMClassifier \n
+        - WhitePaperExperiments \n
         - XGBClassifier \n
         - XGBRegressor \n
         "
@@ -82,6 +83,7 @@ env:
   RegressorComparison: "docs/advanced_examples/RegressorComparison.ipynb" 
   SentimentClassification: "use_case_examples/sentiment_analysis_with_transformer/SentimentClassification.ipynb" 
   SVMClassifier: "docs/advanced_examples/SVMClassifier.ipynb" 
+  WhitePaperExperiments: "use_case_examples/white_paper_experiment/WhitePaperExperiments.ipynb" 
   XGBClassifier: "docs/advanced_examples/XGBClassifier.ipynb" 
   XGBRegressor: "docs/advanced_examples/XGBRegressor.ipynb" 
   # --- refresh_notebooks_list.py: refresh list of notebook paths currently available [END] ---
