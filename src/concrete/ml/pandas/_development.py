@@ -32,7 +32,7 @@ CLIENT_SERVER_DIR = script_dir / "_client_server_files" / f"api_{CURRENT_API_VER
 CLIENT_PATH = CLIENT_SERVER_DIR / "client.zip"
 SERVER_PATH = CLIENT_SERVER_DIR / "server.zip"
 
-N_BITS_PANDAS = 4
+N_BITS_PANDAS = 2
 
 from ..sklearn._fhe_training_utils  import LogisticRegressionTraining, make_training_inputset
 from ..torch.compile import build_quantized_module
@@ -40,13 +40,14 @@ from ..common.utils import generate_proxy_function
 
 class DFApiV2StaticHelper:
     _N_DIMS_TRAINING = 1
+    _BATCH_SIZE = 1
 
     _training_input_set = make_training_inputset(
         numpy.zeros((_N_DIMS_TRAINING, ), dtype=numpy.int64), 
         numpy.ones((_N_DIMS_TRAINING, ) , dtype=numpy.int64) * 2**N_BITS_PANDAS - 1, 
         0, 
         2**N_BITS_PANDAS-1, 
-        8, True
+        _BATCH_SIZE, True
     )
 
 def create_api_v2():
@@ -200,10 +201,12 @@ def get_left_right_join_inputset(n_bits: int) -> List:
     # integers values greater or equal to 1
     inputset = list(itertools.product([0, high], [0, high], [0, high], [0, high]))
 
+    inputset = [numpy.asarray(v).reshape(1, 1, -1) for v in inputset]
+    inputset = [numpy.repeat(v, DFApiV2StaticHelper._BATCH_SIZE, axis=1) for v in inputset]
     return inputset
 
 def get_training_inputset():
-    return _get_inputset_generator(tuple(map(lambda x: x.astype(numpy.int64), DFApiV2StaticHelper._training_input_set)))
+    return list(_get_inputset_generator(tuple(map(lambda x: x.astype(numpy.int64), DFApiV2StaticHelper._training_input_set))))
 
 # Store the configuration functions and parameters to their associated operator
 PANDAS_OPS_TO_CIRCUIT_CONFIG = {
