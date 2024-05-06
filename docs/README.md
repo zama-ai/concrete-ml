@@ -37,7 +37,7 @@ Access to additional resources and join the Zama community.
 
 Refer to the API, review product architecture, and access additional resources for in-depth explanations while working with Concrete ML.
 
-- [API](references/api/)
+- [API](references/api/README.md)
 - [Quantization](explanations/quantization.md)
 - [Pruning](explanations/pruning.md)
 - [Compilation](explanations/compilation.md)
