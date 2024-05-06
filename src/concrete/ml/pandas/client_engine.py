@@ -1,13 +1,17 @@
 """Define the framework used for managing keys (encrypt, decrypt) for encrypted data-frames."""
 
 from pathlib import Path
-from typing import Optional, Union
+from typing import Dict, Optional, Union
 
 import pandas
 
 from concrete import fhe
 from concrete.ml.pandas._development import CLIENT_PATH, get_encrypt_config
-from concrete.ml.pandas._processing import post_process_to_pandas, pre_process_from_pandas
+from concrete.ml.pandas._processing import (
+    check_schema_format,
+    post_process_to_pandas,
+    pre_process_from_pandas,
+)
 from concrete.ml.pandas._utils import decrypt_elementwise, encrypt_elementwise, encrypt_value
 from concrete.ml.pandas.dataframe import EncryptedDataFrame
 
@@ -37,7 +41,9 @@ class ClientEngine:
         else:
             self.client.keygen(True)
 
-    def encrypt_from_pandas(self, pandas_dataframe: pandas.DataFrame) -> EncryptedDataFrame:
+    def encrypt_from_pandas(
+        self, pandas_dataframe: pandas.DataFrame, schema: Optional[Dict] = None
+    ) -> EncryptedDataFrame:
         """Encrypt a Pandas data-frame using the loaded client.
 
         Args:
@@ -46,7 +52,10 @@ class ClientEngine:
         Returns:
             EncryptedDataFrame: The encrypted data-frame.
         """
-        pandas_array, dtype_mappings = pre_process_from_pandas(pandas_dataframe)
+
+        check_schema_format(pandas_dataframe, schema)
+
+        pandas_array, dtype_mappings = pre_process_from_pandas(pandas_dataframe, schema=schema)
 
         # Inputs need to be encrypted element-wise in order to be able to use a composable circuit
         # Once multi-operator is supported, better handle encryption configuration parameters
