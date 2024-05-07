@@ -18,12 +18,6 @@ jobs:
           fetch-depth: 0
           lfs: true
 
-      - name: Save repo
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3
-        with:
-          name: repo-archive
-          path: '.'
-
       # Initial action can be found here: https://github.com/wei/git-sync
       # The issue is that it does not handle LFS files when pushing, so we had to fork it and 
       # add the feature
