@@ -295,6 +295,9 @@ class FHEModelClient:
         Returns:
             bytes: the evaluation keys
         """
+        # Generate private and evaluation keys if not already generated
+        self.generate_private_and_evaluation_keys(force=False)
+
         return self.client.evaluation_keys.serialize()
 
     def quantize_encrypt_serialize(self, x: numpy.ndarray) -> bytes:

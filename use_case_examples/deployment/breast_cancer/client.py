@@ -48,10 +48,8 @@ if __name__ == "__main__":
     client = FHEModelClient(path_dir=str(ROOT.resolve()), key_dir=str((ROOT / "keys").resolve()))
 
     # The client first need to create the private and evaluation keys.
-    client.generate_private_and_evaluation_keys()
-
-    # Get the serialized evaluation keys
     serialized_evaluation_keys = client.get_serialized_evaluation_keys()
+
     assert isinstance(serialized_evaluation_keys, bytes)
 
     # Evaluation keys can be quite large files but only have to be shared once with the server.
