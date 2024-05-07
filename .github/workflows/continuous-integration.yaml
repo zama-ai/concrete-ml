@@ -147,7 +147,7 @@ jobs:
           # Manage instance type
           INSTANCE_TYPE="c5.4xlarge"
           if [[ "${BUILD_TYPE}" == "weekly" ]]; then
-            INSTANCE_TYPE="m6i.metal"
+            INSTANCE_TYPE="m6i.16xlarge"
           elif [[ "${BUILD_TYPE}" == "release" ]]; then
             INSTANCE_TYPE="m6i.16xlarge"
           fi
