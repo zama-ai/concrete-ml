@@ -75,10 +75,8 @@ env:
   # to "release" by the release workflow
   IS_PR: ${{ github.event_name == 'pull_request' && inputs.event_name != 'release' }}
   # Run the weekly CI if it has been triggered manually by the weekly workflow, meaning 
-  # 'inputs.event_name' is set to "weekly" or automatically by the schedule configuration
-  # TODO
-  # IS_WEEKLY: ${{ inputs.event_name == 'weekly' || github.event_name == 'schedule' }}
-  IS_WEEKLY: true
+  # 'inputs.event_name' is set to "weekly"
+  IS_WEEKLY: ${{ inputs.event_name == 'weekly'}}
   # The 'IS_RELEASE' variable indicates that the workflow has been triggered by the releasing 
   # process itself, before publishing it. It should only happen when the release workflow triggers
   # the CI, in which 'inputs.event_name' is set to "release"
@@ -124,11 +122,10 @@ jobs:
           echo "${{ github.event_name }}"
 
           # Manage build type that will condition the rest of the CI
-          # TODO
-          if [[ "${IS_WEEKLY}" == "true" ]]; then
-            BUILD_TYPE="weekly"
-          elif [[ "${IS_PR}" == "true" ]]; then
+          if [[ "${IS_PR}" == "true" ]]; then
             BUILD_TYPE="pr"
+          elif [[ "${IS_WEEKLY}" == "true" ]]; then
+            BUILD_TYPE="weekly"
           elif [[ "${IS_RELEASE}" == "true" ]]; then
             BUILD_TYPE="release"
           elif [[ "${IS_PUSH_TO_MAIN}" == "true" ]]; then
