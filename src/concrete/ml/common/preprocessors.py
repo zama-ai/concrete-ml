@@ -1,8 +1,9 @@
 """Graph pre-processors for automatic rounding."""
 
+from collections import Counter
 from copy import deepcopy
 from itertools import product
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union, Set
 
 import networkx as nx
 import numpy as np
@@ -138,11 +139,17 @@ def vectorized_graph_eval(
     for node in sorted_nodes:
         if node.operation == Operation.Input:
             # Deepcopy on the fhe.Graph doesn't modify the input node/indices mappings
-            indices = input_indices if input_indices is not None else graph.input_indices[node]
+            indices = (
+                input_indices
+                if input_indices is not None
+                else graph.input_indices[node]
+            )
             node_results[node] = node.evaluator(inputs[indices])
             continue
 
-        pred_results = [deepcopy(node_results[pred]) for pred in graph.ordered_preds_of(node)]
+        pred_results = [
+            deepcopy(node_results[pred]) for pred in graph.ordered_preds_of(node)
+        ]
 
         node_results[node] = node.evaluator(*pred_results)
 
@@ -151,7 +158,9 @@ def vectorized_graph_eval(
     return result if len(result) > 1 else result[0]
 
 
-def merge_tlu_constant_shapes(constant_shapes: List[Tuple[int, ...]]) -> Tuple[int, ...]:
+def merge_tlu_constant_shapes(
+    constant_shapes: List[Tuple[int, ...]]
+) -> Tuple[int, ...]:
     """Determine the maximally broadcasted shape of a subgraph output.
 
     The analysis is based on the constants that the TLU uses.
@@ -169,7 +178,11 @@ def merge_tlu_constant_shapes(constant_shapes: List[Tuple[int, ...]]) -> Tuple[i
         return tuple()
 
     return tuple(
-        max(constant_shape[idx] for constant_shape in constant_shapes if len(constant_shape) > idx)
+        max(
+            constant_shape[idx]
+            for constant_shape in constant_shapes
+            if len(constant_shape) > idx
+        )
         for idx in range(max(len(elt) for elt in constant_shapes))
     )
 
@@ -197,11 +210,10 @@ def add_rounding_node(
     """
 
     if lsbs_to_remove <= 0:
-        print(f"No  rounding node to add because {lsbs_to_remove=}")
+        # No  rounding node to add
         return a_node
 
-    # DEBUG
-    print(f"Adding rounding node with {lsbs_to_remove=}")
+    # Adding rounding node 
 
     assert isinstance(a_node.output.dtype, Integer)
     rounding_kwargs = {
@@ -224,9 +236,13 @@ def add_rounding_node(
         attributes=attributes,
     )
     rounding_node.properties["final_lsbs_to_remove"] = lsbs_to_remove
-    rounding_node.properties["resulting_bit_width"] = a_node.output.dtype.bit_width - lsbs_to_remove
+    rounding_node.properties["resulting_bit_width"] = (
+        a_node.output.dtype.bit_width - lsbs_to_remove
+    )
     rounding_node.properties["overflow_detected"] = False
-    rounding_node.properties["original_rounded_bit_width"] = a_node.output.dtype.bit_width
+    rounding_node.properties["original_rounded_bit_width"] = (
+        a_node.output.dtype.bit_width
+    )
     if rounding_function.__name__ == "round_bit_pattern":
         rounding_node.properties["overflow_protection"] = overflow_protection
         rounding_node.properties["exactness"] = exactness
@@ -242,12 +258,13 @@ def add_rounding_node(
         if out_node == rounding_node:
             continue
         # We should preserve the input_idx
-        edge_data: Dict[int, Dict[str, int]] = dict(graph.get_edge_data(in_node, out_node))
+        edge_data: Dict[int, Dict[str, int]] = dict(
+            graph.get_edge_data(in_node, out_node)
+        )
         graph.remove_edge(in_node, out_node)
         input_idx: int = edge_data[0]["input_idx"]
         graph.add_edge(rounding_node, out_node, input_idx=input_idx)
 
-    print(f"Added rounding node")
     return rounding_node
 
 
@@ -344,7 +361,9 @@ def add_leveled_op_with_cst(
         if out_node == new_node:
             continue
         # We should preserve the input_idx
-        edge_data: Dict[int, Dict[str, int]] = dict(graph.get_edge_data(in_node, out_node))
+        edge_data: Dict[int, Dict[str, int]] = dict(
+            graph.get_edge_data(in_node, out_node)
+        )
         graph.remove_edge(in_node, out_node)
         input_idx: int = edge_data[0]["input_idx"]
         graph.add_edge(new_node, out_node, input_idx=input_idx)
@@ -359,125 +378,334 @@ def argmin(d):
     return [k for k in d if d[k] == min_val][0]
 
 
-def compute_best_rounding_for_single_tlu(
-    x_min: int,
-    x_max: int,
-    thresholds: np.ndarray,
-    target_bitwidth: int,
-    tlu_evaluation_function: Callable,
-) -> Tuple[int, int, int]:
-    """Finds the optimal rounding based on unidimensional outputs of a TLU.
+def scale_up(x, a: int = 1, b=0):
+    return (x * a) - b
 
-    Args:
-        x_min (int): minimal calibrated value of TLU inputs
-        x_max (int): maximal calibrated value of TLU inputs
-        thresholds (np.ndarray): the indices of the TLU output changes
-        target_bitwidth (int): the desired raised precision
-        tlu_evaluation_function (Callable): the function that computes the error incurred
-            when rounding this TLU with a certain scale and offset
 
-    Returns:
-        res: tuple containing the scale, offset and rounding bits
-    """
+def scale_down(x, a: int = 1, b=0):
+    return (x + b) / a
 
-    # raised_bitwidth -> target bit-width
-    original_input_repr = Integer.that_can_represent([x_min, x_max])
-    original_bitwidth = original_input_repr.bit_width
 
-    # This should be done after offsetting btw
-    # We should also check that the target bit-width is in fact higher than the offsetted bit-width
-    # and that the offsetted bit-width is lower or equal than the other one
+# Faster more explicit implementation of rounding
+def truncation(x, lsbs_to_remove: int):
+    return x - (x % 2**lsbs_to_remove)
 
-    if len(thresholds) == 0:
-        # The function is constant so nothing to do here
-        # We can just round down to one bit
-        print("rounding to 1-bit because constant")
-        return (1, 0, original_bitwidth - 1)
 
-    assert len(set(thresholds)) == len(
-        thresholds
-    ), "Steps indexes are not unique, something went wrong"
+def rounding(x, lsbs_to_remove: int):
+    offsetted = x + 2 ** (lsbs_to_remove - 1)
+    return offsetted - (offsetted % 2**lsbs_to_remove)
 
-    step_thresholds = thresholds[0:-1]  # all step thresholds
-    # We need to remove the last threshold because it's the step that goes from t_n to x_max
-    # Thus why we don't optimize for it
 
-    deltas = np.diff(thresholds, axis=0)  # all step sizes
+def bit_width(x):
+    return Integer.that_can_represent(x).bit_width
 
-    print(f"{deltas=}, {thresholds=}")
 
-    assert step_thresholds.size == deltas.size
+def transform_inputs(
+    input_range: np.ndarray, inputset: np.ndarray, msbs_to_keep: int, a=1, b=0
+):
+    # TODO: add some asserts based on the expected bit-width of the range
+    scaled_bit_width = bit_width(scale_up(input_range, a=a, b=b))
+    lsbs_to_remove = scaled_bit_width - msbs_to_keep
+    return scale_down(
+        rounding(scale_up(inputset - 1, a=a, b=b), lsbs_to_remove), a=a, b=b
+    )
 
-    if len(deltas) == 0:
-        # Single jump, we can just offset by the threshold and round to 1-bit
-        # TODO: verify
-        # DEBUG: verify
-        # This is true for truncation, might need to offset more for rounding
-        print("rounding to 1-bit because single jump")
-        return (1, thresholds[0], original_bitwidth - 1)
 
-    # low_side_step_size = steps_indexes[0] - x_min
-    # high_side_step_size = x_max - steps_indexes[-1]
-    # min_side_step_size = min(low_side_step_size, high_side_step_size)
-    # delta_axis = np.minimum(delta_axis, min_side_step_size)
+def find_msbs_to_keep(
+    inputset: np.ndarray, thresholds: np.ndarray, deltas: np.ndarray
+) -> int:
+    # todo: this should be reworked since we now update msbs-to-keep in the bias computation
+    msbs_to_keep_set = set()
 
-    if np.all(deltas <= 1):
-        # Do not round because we can't really do anything in this scenario
-        # where all deltas are 1
-        print("no rounding because delta<=1")
-        return (1, 0, 0)
+    for delta in deltas:
 
-    a_candidates = set()
-    b_candidates = set()
-    msbs_to_keep_candidates = set()
-    mses = {}
+        # How many elements it takes to divide [x-min, x-max] in parts of size delta
+        # then take the log2 of that
+        msbs_to_keep = np.ceil(
+            np.log2(np.ceil((inputset.max() - inputset.min() + 1) / delta))
+        ).astype(np.int64)
 
-    for index in range(deltas.size):
-        threshold, delta = thresholds[index], deltas[index]
-        assert delta > 0.0, f"Delta should be strictly positive but got {delta=}."
+        # Off-setting the values so that the thresholds are on a proper power of two
+        # can result in an added bit
+        lsbs_to_remove = int(bit_width(inputset) - msbs_to_keep)
+        if lsbs_to_remove:
+            for offset in np.unique(
+                thresholds - rounding(thresholds, bit_width(inputset) - msbs_to_keep)
+            ):
+                msbs_to_keep = np.ceil(
+                    np.log2(
+                        np.ceil(
+                            ((inputset.max() - inputset.min() + 1) + np.abs(offset))
+                            / delta
+                        )
+                    )
+                ).astype(np.int64)
 
-        # Compute msbs needed
-        msbs_to_keep = np.ceil(np.log2(np.ceil((x_max - x_min) / delta))).astype(np.int64)
-        msbs_to_keep_candidates.add(msbs_to_keep)
+                msbs_to_keep_set.add(msbs_to_keep)
+        else:
+            msbs_to_keep_set.add(msbs_to_keep)
 
-        # Compute a
-        a = np.floor(2 ** (target_bitwidth - msbs_to_keep) / delta).astype(np.int64)
-        a_candidates.add(a)
+    msbs_to_keep = max(msbs_to_keep_set)
 
-        # TODO: should we do this only for the current threshold?
-        scaled_repr = Integer.that_can_represent(np.array([x_min, x_max], dtype=np.int64) * a)
-        scaled_bit_width = scaled_repr.bit_width
-        scaled_lsbs = scaled_bit_width - msbs_to_keep
-        scaled_thresholds = thresholds * a
+    return msbs_to_keep
 
-        b_candidates_array = (
-            round_bit_pattern(scaled_thresholds, lsbs_to_remove=int(scaled_bit_width))
-            - scaled_thresholds
+
+def compute_scaling_factor(deltas, target_bit_width, msbs_to_keep):
+    a_candidates = Counter()
+    for delta in deltas:
+        a_candidate = np.floor(2 ** (target_bit_width - msbs_to_keep) / delta).astype(
+            np.int64
         )
-        b_candidates_array  -= 2 ** (scaled_lsbs - 1)
-        b_candidates_array  *= -1
-        b_candidates |= set(b_candidates_array)
+        a_candidates[a_candidate] += 1
 
-    print(f"{a_candidates=}, {b_candidates=}, {msbs_to_keep_candidates=}")
-    for a in a_candidates:
-        for b, msbs_to_keep in product(range(min(b_candidates), max(b_candidates), a), msbs_to_keep_candidates):
-            lsbs = (
-                Integer.that_can_represent(
-                    (np.array([x_min, x_max], dtype=np.int64) * a) - b
-                ).bit_width
-                - msbs_to_keep
-            )
-            config = (a, b, lsbs)
-            mse = tlu_evaluation_function(a, b, lsbs)
-            if mse == 0:
-                print(f"Returning early because {config=} reached {mse=}")
-                return config
-            mses[config] = mse
+        a_candidate = np.ceil(2 ** (target_bit_width - msbs_to_keep) / delta).astype(
+            np.int64
+        )
+        a_candidates[a_candidate] += 1
+    return a_candidates.most_common(1)[0][0]
 
-    best_config = argmin(mses)
-    assert best_config is not None
-    print(f"{best_config=} reached {mses[best_config]=}")
-    return best_config
+
+def bias_closed_form(
+    input_range: np.ndarray,
+    msbs_to_keep: int,
+    thresholds: np.ndarray,
+    scaling_factor: int = 0,
+):
+    # todo: somehow this isn't the optimal bias solution as shown by grid-searching the optimal parameter
+    # could be worth adding some exploration around it
+    # the first step could be to check for the step size of the error(bias) function
+    # nothing really explicit came to mind just yet
+
+    # Find each threshold (ideally all thresholds) on the same value even with thresholds
+
+    scaled_bit_width = bit_width(input_range)  # Range bit-width
+    lsbs_to_remove = scaled_bit_width - msbs_to_keep  # Lsbs to remove
+
+    rounded_thresholds = rounding(thresholds, lsbs_to_remove)
+
+    threshold_diff = thresholds - rounded_thresholds
+
+    # If the range is skewed left or right we should either remove 2**(lsbs-1) or add it
+    if np.mean(input_range) >= 0:
+        func = add
+    else:
+        func = subtract
+
+    # todo
+    # I somehow have an offset by one to the right that needs to be fixed, maybe a - scaling factor would fix it
+    bias = np.floor(
+        func(np.mean(threshold_diff), int(2 ** (lsbs_to_remove - 1))) - scaling_factor
+    ).astype(np.int64)
+
+    if bit_width(input_range - bias) != bit_width(input_range):
+        msbs_to_keep += 1
+
+    return bias, msbs_to_keep
+
+
+def find_best_params(target, input_range: np.ndarray, target_bit_width: int = 24):
+    # Compute the function over the full range
+    inputset = np.arange(input_range[0], input_range[1] + 1, 1)
+    assert len(target) == len(inputset), f"{len(target)=} != {len(inputset)=}"
+
+    # Compute thresholds and deltas
+    change_mask = np.concatenate([[False], np.diff(target).astype(bool)])
+    thresholds = inputset[change_mask]
+    deltas = np.diff(thresholds)
+    # Compute msbs_to_keep
+    msbs_to_keep = find_msbs_to_keep(inputset, thresholds, deltas)
+    scaling_factor = compute_scaling_factor(deltas, target_bit_width, msbs_to_keep)
+    bias, msbs_to_keep = bias_closed_form(
+        input_range=input_range * scaling_factor,
+        msbs_to_keep=msbs_to_keep,
+        thresholds=thresholds * scaling_factor,
+        scaling_factor=scaling_factor,
+    )
+    return bias, scaling_factor, msbs_to_keep
+
+
+# def compute_best_rounding_for_single_tlu(
+#     x_min: int,
+#     x_max: int,
+#     thresholds: np.ndarray,
+#     target_bit_width: int,
+#     tlu_evaluation_function: Callable,
+# ) -> Tuple[int, int, int]:
+#     """Finds the optimal rounding based on unidimensional outputs of a TLU.
+#
+#     Args:
+#         x_min (int): minimal calibrated value of TLU inputs
+#         x_max (int): maximal calibrated value of TLU inputs
+#         thresholds (np.ndarray): the indices of the TLU output changes
+#         target_bit_width (int): the desired raised precision
+#         tlu_evaluation_function (Callable): the function that computes the error incurred
+#             when rounding this TLU with a certain scale and offset
+#
+#     Returns:
+#         res: tuple containing the scale, offset and rounding bits
+#     """
+#
+#     # raised_bit_width -> target bit-width
+#     original_input_repr = Integer.that_can_represent([x_min, x_max])
+#     original_bit_width = original_input_repr.bit_width
+#
+#     # This should be done after offsetting btw
+#     # We should also check that the target bit-width is in fact higher than the offsetted bit-width
+#     # and that the offsetted bit-width is lower or equal than the other one
+#
+#     if len(thresholds) == 0:
+#         # The function is constant so nothing to do here
+#         # We can just round down to one bit
+#         print("rounding to 1-bit because constant")
+#         return (1, 0, original_bit_width - 1)
+#
+#     assert len(set(thresholds)) == len(
+#         thresholds
+#     ), "Steps indexes are not unique, something went wrong"
+#
+#     step_thresholds = thresholds[0:-1]  # all step thresholds
+#     # We need to remove the last threshold because it's the step that goes from t_n to x_max
+#     # Thus why we don't optimize for it
+#
+#     deltas = np.diff(thresholds, axis=0)  # all step sizes
+#
+#     print(f"{deltas=}, {thresholds=}")
+#
+#     assert step_thresholds.size == deltas.size
+#
+#     if len(deltas) == 0:
+#         # Single jump, we can just offset by the threshold and round to 1-bit
+#         # TODO: verify
+#         # DEBUG: verify
+#         # This is true for truncation, might need to offset more for rounding
+#         print("rounding to 1-bit because single jump")
+#         return (1, thresholds[0], original_bit_width - 1)
+#
+#     # low_side_step_size = steps_indexes[0] - x_min
+#     # high_side_step_size = x_max - steps_indexes[-1]
+#     # min_side_step_size = min(low_side_step_size, high_side_step_size)
+#     # delta_axis = np.minimum(delta_axis, min_side_step_size)
+#
+#     if np.all(deltas <= 1):
+#         # Do not round because we can't really do anything in this scenario
+#         # where all deltas are 1
+#         print("no rounding because delta<=1")
+#         return (1, 0, 0)
+#
+#     a_candidates = set()
+#     b_candidates = set()
+#     msbs_to_keep_candidates = set()
+#     mses = {}
+#
+#     # Compute msbs-to-keep as
+#     # ceil(log_2(ceil((x_max - x_min) / delta)))
+#     msbs_to_keep_set: Set[int] = set()
+#     for delta in deltas:
+#         msbs_to_keep = np.ceil(np.log2(np.ceil((x_max - x_min)/ delta))).astype(
+#             np.int64
+#         )
+#         for offset in np.unique(thresholds - round_bit_pattern(thresholds, 4)):
+#             msbs_to_keep = np.ceil(np.log2(np.ceil((x_max - x_min + np.abs(offset)) / delta))).astype(
+#                 np.int64
+#             )
+#             msbs_to_keep_set.add(msbs_to_keep)
+#
+#     # TODO: we could also iterate on them
+#     msbs_to_keep: int = max(msbs_to_keep_candidates)
+#
+#     for index in range(deltas.size):
+#         threshold, delta = thresholds[index], deltas[index]
+#         assert delta > 0.0, f"Delta should be strictly positive but got {delta=}."
+#
+#         # Compute msbs needed
+#         msbs_to_keep = np.ceil(np.log2(np.ceil((x_max - x_min) / delta))).astype(np.int64)
+#         msbs_to_keep_candidates.add(msbs_to_keep)
+#         msbs_to_keep_candidates.add(msbs_to_keep-1)
+#         msbs_to_keep_candidates.add(msbs_to_keep+1)
+#
+#         # also compute a for msbs_to_keep+1
+#         # Compute a
+#         a_fp = (2 ** (target_bit_width - msbs_to_keep)) / delta
+#         a_ri = np.rint(a_fp).astype(np.int64)
+#         print(f"{a_fp=}")
+#         for a, msbs_to_keep in product([a_ri, a_ri+1, a_ri-1], [msbs_to_keep, msbs_to_keep+1, msbs_to_keep-1]):
+#             a_candidates.add(a)
+#
+#             # TODO: should we do this only for the current threshold?
+#             scaled_repr = Integer.that_can_represent(np.array([x_min, x_max], dtype=np.int64) * a)
+#             scaled_bit_width = scaled_repr.bit_width
+#             scaled_lsbs = scaled_bit_width - msbs_to_keep
+#             scaled_thresholds = thresholds * a
+#
+#             b_candidates_array = (
+#                 scaled_thresholds - round_bit_pattern(scaled_thresholds, lsbs_to_remove=int(scaled_bit_width))
+#             )
+#             b_candidates_array  -= 2 ** (scaled_lsbs - 1)
+#             b_candidates |= set(b_candidates_array)
+#
+#             b_candidates_array  *= -1
+#             b_candidates |= set(b_candidates_array)
+#             b_candidates_array  *= -1
+#
+#             b_candidates_array  += 2 ** (scaled_lsbs - 1)
+#             b_candidates_array  -= 2 ** (scaled_lsbs)
+#             b_candidates |= set(b_candidates_array)
+#
+#             b_candidates_array  *= -1
+#             b_candidates |= set(b_candidates_array)
+#             b_candidates_array  *= -1
+#
+#             b_candidates_array  += 2 ** (scaled_lsbs)
+#             b_candidates |= set(b_candidates_array)
+#
+#             b_candidates_array  *= -1
+#             b_candidates |= set(b_candidates_array)
+#             b_candidates_array  *= -1
+#
+#     for b_candidate in b_candidates.copy():
+#         b_candidates.add(np.ceil(b_candidate / 2).astype(np.int64))
+#         b_candidates.add(np.floor(b_candidate / 2).astype(np.int64))
+#
+#     b_candidates.add(0)
+#
+#     best_mse = np.inf
+#     print(f"{a_candidates=}, {b_candidates=}, {msbs_to_keep_candidates=}")
+#     for a, msbs_to_keep in product(a_candidates, msbs_to_keep_candidates):
+#         diffs=[]
+#         bs=range(min(b_candidates), max(b_candidates), a)
+#         bs=range(0, (2**scaled_lsbs+1), a)
+#         bs=sorted(b_candidates)
+#         from tqdm.auto import tqdm
+#         with tqdm(total=len(bs)) as pbar:
+#             for b in bs:
+#                 lsbs = (
+#                     Integer.that_can_represent(
+#                         (np.array([x_min, x_max], dtype=np.int64) * a) - b
+#                     ).bit_width
+#                     - msbs_to_keep
+#                 )
+#                 config = (a, b, lsbs)
+#                 mse = tlu_evaluation_function(a, b, lsbs)
+#                 if mse == 0:
+#                     print(f"Returning early because {config=} reached {mse=}")
+#                     return config
+#                 mses[config] = mse
+#                 diffs.append(mse)
+#                 pbar.update()
+#                 if mse < best_mse:
+#                     best_mse = mse
+#                     pbar.set_postfix({"best-mse": best_mse, "achieved": config})
+#
+#         import matplotlib.pyplot as plt
+#         plt.figure()
+#         plt.plot(bs, diffs)
+#         plt.savefig("debug.png")
+#         plt.close()
+#
+#     best_config = argmin(mses)
+#     assert best_config is not None
+#     print(f"{best_config=} reached {mses[best_config]=}")
+#     return best_config
 
 
 # TODO: fix this
@@ -487,9 +715,9 @@ def delta_optimize(
     shape_: Tuple[int, ...],
     bounds: Tuple[int, int],
     tlu_subgraph: Graph,
-    raised_bitwidth: int,
+    raised_bit_width: int,
     rounding_function: Callable = round_bit_pattern,
-) -> Tuple[np.ndarray, np.ndarray, int]:
+) -> Tuple[np.ndarray, np.ndarray, int, int]:
     """Optimize a TLU by analyzing the steps (deltas) in the output of the TLU function.
 
     Args:
@@ -500,7 +728,7 @@ def delta_optimize(
         shape_ (Tuple[int, ...]): the shape of constants that broadcast to the inputs of the TLU
         bounds (Tuple[int, int]): calibrated min/max of the possible inputs
         tlu_subgraph (nx.DiGraph): the subgraph that contains the TLU operations
-        raised_bitwidth (int): the desired raised bitwidth used for approximate rounding
+        raised_bit_width (int): the desired raised bit_width used for approximate rounding
         rounding_function (Callable): the function used to round down the raised precision
 
     Returns:
@@ -515,7 +743,7 @@ def delta_optimize(
     ), "Only round is supported for TLU adjustment"
 
     x_min, x_max = bounds
-    bitwidth_input = Integer.that_can_represent([x_min, x_max]).bit_width
+    bit_width_input = Integer.that_can_represent([x_min, x_max]).bit_width
 
     # Initialize a and b such that no changes are done
     best_a = np.ones(shape_, dtype=np.int64)
@@ -532,55 +760,138 @@ def delta_optimize(
     ).astype(bool)
 
     # Some accumulators
-    n_rounds = np.ones(shape_, dtype=np.int64)
+    best_lsbs = np.ones(shape_, dtype=np.int64)
+    best_msbs = np.ones(shape_, dtype=np.int64)
 
-    # per_tensor_a = 2 ** (raised_bitwidth - bitwidth_input)
+    # per_tensor_a = 2 ** (raised_bit_width - bit_width_input)
 
     for indexes in product(*[range(elt) for elt in shape_]):
-        selection = tuple([slice(0, reference.shape[0]), *indexes[1:]])
         best_indexes = tuple([*indexes])
-
+        selection = tuple([slice(0, reference.shape[0]), *indexes[1:]])
+        reference_for_index = reference[selection]
         subgraph_inputs_selected = subgraph_inputs[selection]
         change_mask_selected = change_mask[selection]
-        steps_indexes = subgraph_inputs_selected[change_mask_selected]
-        assert len(steps_indexes) == len(np.unique(steps_indexes)), "not unique steps"
+        thresholds = subgraph_inputs_selected[change_mask_selected]
+        input_range = np.array([bounds[0], bounds[1]], dtype=np.int64)
+        assert len(thresholds) == len(
+            np.unique(thresholds)
+        ), "not unique steps, shouldn't occur"
 
-        def evaluate_tlu(a, b, lsbs_to_remove):
-            rounded_output = eval_subgraph_on_rounded_inputs(
-                tlu_subgraph, subgraph_inputs, rounding_function, a, b, lsbs_to_remove
+        # todo: maybe we should wrap this if-else thingy in `find_best_params`?
+        # todo: support corner-cases
+        # 0-jump
+        if len(thresholds) == 0:
+            msbs_to_keep = 1
+            lsbs_to_remove = bit_width(input_range) - msbs_to_keep
+            (
+                best_a[best_indexes],
+                best_b[best_indexes],
+                best_lsbs[indexes],
+                best_msbs[indexes],
+            ) = (
+                1,
+                0,
+                lsbs_to_remove,
+                msbs_to_keep,
             )
-            return np.sqrt(np.sum((rounded_output - reference) ** 2))
+        # 1-jump
+        elif len(thresholds) == 1:
+            # todo: implement
+            msbs_to_keep = 1
+            scaling_factor = np.floor((2**raised_bit_width)/(bounds[1]-bounds[0])).astype(np.int64)
+            bias, msbs_to_keep = bias_closed_form(
+                input_range=input_range,
+                msbs_to_keep=msbs_to_keep,
+                thresholds=thresholds,
+                scaling_factor=scaling_factor,
+            )
+            bias += scaling_factor
+            lsbs_to_remove = bit_width(input_range-bias) - msbs_to_keep
+            # todo: atm we are filing the values in the range with the one from the value even if outside the range
+            # this leads to a wrong behavior in some situations
+            # i don't know if there is a way to fix that from our side without changing the filling behavior
+            # of concrete-python
+            # todo: remove debug print below
+            print(f"{lsbs_to_remove=}, {msbs_to_keep=}, {scaling_factor=}, {bias=}")
+            (
+                best_a[best_indexes],
+                best_b[best_indexes],
+                best_lsbs[indexes],
+                best_msbs[indexes],
+            ) = (
+                1,
+                bias,
+                lsbs_to_remove,
+                msbs_to_keep
+            )
 
-        (
-            best_a[best_indexes],
-            best_b[best_indexes],
-            n_rounds[indexes],
-        ) = compute_best_rounding_for_single_tlu(
-            x_min, x_max, steps_indexes, raised_bitwidth, evaluate_tlu
-        )
+        else:
+            deltas = np.diff(thresholds).astype(np.int64)
+            # delta=1
+            if np.all(deltas == 1):
+                # todo: check implementation
+                # is there really nothing to do here?
+                msbs_to_keep = bit_width(input_range)
+                (
+                    best_a[best_indexes],
+                    best_b[best_indexes],
+                    best_lsbs[indexes],
+                    best_msbs[indexes],
+                ) = (
+                    1,
+                    0,
+                    0,
+                    msbs_to_keep,
+                )
+            # "normal" scenario
+            else:
+                # todo: check that optimization is indeed needed
+                bias, scaling_factor, msbs_to_keep = find_best_params(
+                    reference_for_index, input_range, target_bit_width=raised_bit_width
+                )
+                lsbs_to_remove = (
+                    bit_width(scale_up(input_range, scaling_factor, bias))
+                    - msbs_to_keep
+                )
+                (
+                    best_a[best_indexes],
+                    best_b[best_indexes],
+                    best_lsbs[indexes],
+                    best_msbs[indexes],
+                ) = (
+                    bias,
+                    scaling_factor,
+                    lsbs_to_remove,
+                    msbs_to_keep,
+                )
 
-        print(
-            f"{best_a[best_indexes]=}",
-            f"{best_b[best_indexes]=}",
-            f"{n_rounds[indexes]=}",
-        )
+                # print(
+                #     f"{best_a[best_indexes]=}",
+                #     f"{best_b[best_indexes]=}",
+                #     f"{n_rounds[indexes]=}",
+                # )
 
     # As rounding can be applied only for the entire tensor,
     # a single rounding threshold must be found. The smallest
     # number of lsbs to remove is used. The scaling factor
     # is chosen for that threshold, while the step
     # offsets are preserved
-    if n_rounds.shape:
-        n_round_idx = np.argmin(n_rounds)
-        n_round = n_rounds.flatten()[n_round_idx]
-        best_a[::] = best_a.flatten()[n_round_idx]
+    # todo: FIX THIS
+    if best_lsbs.shape:
+        n_round_idx = np.argmax(msbs_to_keep)
+        lsbs_to_remove = best_lsbs.flatten()[n_round_idx]
+        msbs_to_keep = best_msbs.flatten()[n_round_idx]
     else:
-        n_round = n_rounds
-    n_round = int(n_round)
-    return best_a, best_b, n_round
+        lsbs_to_remove = best_lsbs
+        msbs_to_keep = best_msbs
+    lsbs_to_remove = int(lsbs_to_remove)
+    msbs_to_keep = int(msbs_to_keep)
+    return best_a, best_b, lsbs_to_remove, msbs_to_keep
 
 
-def modify_subgraph_for_rounded_inputs(tlu_subgraph: Graph, a: np.ndarray, c: np.ndarray):
+def modify_subgraph_for_rounded_inputs(
+    tlu_subgraph: Graph, a: np.ndarray, c: np.ndarray
+):
     """Modify a TLU subgraph to cancel out the rounding.
 
     A TLU will cancel out the rounding transformation by dividing
@@ -607,15 +918,20 @@ def modify_subgraph_for_rounded_inputs(tlu_subgraph: Graph, a: np.ndarray, c: np
         if c.shape == (1,):
             c = c[0]
 
-    # Use floats in the subgraph
-    a = np.array(a).astype(np.float64)
-    c = np.array(c).astype(np.float64)
+    c = np.array(c, dtype=np.int64)
+    a = np.array(a, dtype=np.int64)
 
     # Add threshold offset
-    previous_node = add_leveled_op_with_cst(previous_node, c, add, graph=tlu_subgraph.graph)
+    if np.any(c != 0):
+        previous_node = add_leveled_op_with_cst(
+            previous_node, c.astype(np.float64), add, graph=tlu_subgraph.graph
+        )
 
     # Divide by scaling factor
-    previous_node = add_leveled_op_with_cst(previous_node, a, divide, graph=tlu_subgraph.graph)
+    if np.any(a != 1):
+        previous_node = add_leveled_op_with_cst(
+            previous_node, a.astype(np.float64), divide, graph=tlu_subgraph.graph
+        )
 
 
 def eval_subgraph_on_rounded_inputs(
@@ -668,7 +984,10 @@ def eval_subgraph_on_rounded_inputs(
     # Reuse the input indices when evaluation the modified graph copy
     sorted_nodes = list(nx.topological_sort(tlu_subgraph_copy.graph))
     approx_reference = vectorized_graph_eval(
-        tlu_subgraph_copy, rounded_inputs, sorted_nodes=sorted_nodes, input_indices=indices
+        tlu_subgraph_copy,
+        rounded_inputs,
+        sorted_nodes=sorted_nodes,
+        input_indices=indices,
     )
     return approx_reference
 
@@ -683,7 +1002,9 @@ def extract_tlu_input_bounds(variable_input_node: Node) -> Tuple[np.int64, np.in
         tuple: tuple of min/max values
     """
 
-    assert variable_input_node.bounds is not None, "Bounds not found during TLU optimization"
+    assert (
+        variable_input_node.bounds is not None
+    ), "Bounds not found during TLU optimization"
 
     min_bound, max_bound = variable_input_node.bounds
     min_bound = np.int64(min_bound)
@@ -692,7 +1013,9 @@ def extract_tlu_input_bounds(variable_input_node: Node) -> Tuple[np.int64, np.in
     return min_bound, max_bound
 
 
-def compute_tlu_output_shapes(tlu_subgraph: Graph) -> Tuple[Tuple[int, ...], Tuple[int, ...]]:
+def compute_tlu_output_shapes(
+    tlu_subgraph: Graph,
+) -> Tuple[Tuple[int, ...], Tuple[int, ...]]:
     """Infer the reduced output shape of a tlu.
 
     The reduced output shape reduces dimensions which are broadcasted, to
@@ -721,7 +1044,9 @@ def compute_tlu_output_shapes(tlu_subgraph: Graph) -> Tuple[Tuple[int, ...], Tup
             value = elt.evaluator.properties["constant"]
             if constant_shape:
                 orig_constant_shapes.append(tuple(constant_shape))
-                for axis in range(len(value.shape)):  # pylint: disable=consider-using-enumerate
+                for axis in range(
+                    len(value.shape)
+                ):  # pylint: disable=consider-using-enumerate
                     unique_values_per_axis = np.unique(value, axis=axis)
                     if unique_values_per_axis.shape[axis] == 1:
                         constant_shape[axis] = 1
@@ -755,7 +1080,9 @@ def get_subgraph_input(subgraph: Graph) -> Node:
             assert input_node is None, "More than one astype float node detected"
             input_node = node
 
-    assert input_node is not None, f"Couldn't detect input node in:\n{subgraph.format()}"
+    assert (
+        input_node is not None
+    ), f"Couldn't detect input node in:\n{subgraph.format()}"
     return input_node
 
 
@@ -806,8 +1133,6 @@ def make_subgraph_input_tensor(
     subgraph_inputs = np.array(list(range(int(min_bound), int(max_bound) + 1)))
     subgraph_input_shape = tuple([len(subgraph_inputs), *orig_shape_[1:]])
 
-    print(f"{subgraph_input_shape=}")
-
     if len(expected_shape) > 1:
         subgraph_inputs = np.tile(
             subgraph_inputs[
@@ -821,9 +1146,10 @@ def make_subgraph_input_tensor(
             expected_shape,
         )
 
-        subgraph_inputs = subgraph_inputs[tuple(slice(0, elt, 1) for elt in subgraph_input_shape)]
+        subgraph_inputs = subgraph_inputs[
+            tuple(slice(0, elt, 1) for elt in subgraph_input_shape)
+        ]
 
-    print(f"{subgraph_inputs.shape=}")
     return subgraph_inputs
 
 
@@ -977,7 +1303,7 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
 
     Pairs of (offset, delta) are found by analyzing the output of the TLU.
     The inputs of the tlu are raised to a high precision (internal_bit_width_target)
-    and the offset is removed. Next, rounding to a bitwidth that is determined
+    and the offset is removed. Next, rounding to a bit_width that is determined
     based on delta is applied. The effects of the scaling, offsetting and rounding
     are inversed in a modified TLU so the results obtained are the same as those
     of the original TLU.
@@ -988,13 +1314,17 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
         exactness: Exactness = Exactness.APPROXIMATE,
         overflow_protection: bool = True,
         internal_bit_width_target: int = 24,
+        verbose: int = 0,
     ):
         self.exactness = exactness
         self.overflow_protection = overflow_protection
         self.rounding_function = round_bit_pattern
         self.internal_bit_width_target = internal_bit_width_target
-        # Store per PBS statistics to see how bitwidths were reduced
-        self.statistics: Dict[Node, Dict[str, Union[int, np.ndarray, Tuple[int, ...]]]] = {}
+        self.verbose = verbose
+        # Store per PBS statistics to see how bit_widths were reduced
+        self.statistics: Dict[
+            Node, Dict[str, Union[int, np.ndarray, Tuple[int, ...]]]
+        ] = {}
 
     def apply(self, graph: Graph) -> None:
         """Apply the TLU optimization to a Graph for all TLUs.
@@ -1009,7 +1339,6 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
         )
 
         for tlu_node in tlu_nodes:
-            print("DETECTED A TLU")
             # On each tlu we do:
             # 1. Optimize a and b for the subgraph
             # 2. Insert a and b in the graph
@@ -1026,8 +1355,10 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
             assert isinstance(evaluator, GenericEvaluator)
 
             if "subgraph" not in evaluator.properties["kwargs"]:
+                if self.verbose:
+                    print("skipping because tlu is not a subgraph")
                 # Not supported for now
-                print("skipping because tlu is not a subgraph")
+                # skipping because tlu is not a subgraph
                 continue
 
             tlu_subgraph: Graph = evaluator.properties["kwargs"]["subgraph"]
@@ -1069,9 +1400,11 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
             # try to find axes with constant values in the results of the tlu
             # so that its shape can be reduced to eliminate duplicate values
             if not shape_:
-                subgraph_inputs, reference = reduce_output_tensor(subgraph_inputs, reference)
+                subgraph_inputs, reference = reduce_output_tensor(
+                    subgraph_inputs, reference
+                )
 
-            best_a, best_b, n_round = delta_optimize(
+            best_a, best_b, lsbs_to_remove, msbs_to_keep = delta_optimize(
                 subgraph_inputs,
                 reference,
                 shape_,
@@ -1080,39 +1413,46 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
                 self.internal_bit_width_target,
             )
 
+            bounds = np.array([min_bound, max_bound], dtype=np.int64)
+            print(f"{bit_width((bounds * best_a)- best_b)=}")
+
             # For testing purposes we had some properties
             tlu_node.properties["attributes"]["opt_round_a"] = best_a
             tlu_node.properties["attributes"]["opt_round_b"] = best_b
-            tlu_node.properties["attributes"]["round_bits"] = n_round
+            tlu_node.properties["attributes"]["round_bits"] = lsbs_to_remove
 
             all_multipliers_are_1 = np.all(best_a == 1)
             all_offsets_are_0 = np.all(best_b == 0)
-            if (all_multipliers_are_1 and all_offsets_are_0) and n_round == 0:
-                print("Skipping because there is no benefit to upscaling")
+            if (all_multipliers_are_1 and all_offsets_are_0) and lsbs_to_remove == 0:
+                # Skipping because there is no benefit to upscaling
                 continue
 
             # We need to make sure that we have the correct shape when adding constants in the graph
             # As Concrete Python doesn't handle broadcasting at the graph level
             assert isinstance(variable_input_node.output, ValueDescription)
-            best_a = np.broadcast_to(best_a, shape=(1,) + variable_input_node.output.shape[1:])
-            best_b = np.broadcast_to(best_b, shape=(1,) + variable_input_node.output.shape[1:])
+            best_a = np.broadcast_to(
+                best_a, shape=(1,) + variable_input_node.output.shape[1:]
+            )
+            best_b = np.broadcast_to(
+                best_b, shape=(1,) + variable_input_node.output.shape[1:]
+            )
 
             self.modify_graph_to_round_subgraph_inputs(
-                graph, variable_input_node, best_a, best_b, n_round
+                graph, variable_input_node, best_a, best_b, lsbs_to_remove
             )
 
             self.statistics[tlu_node] = {
                 "shape": variable_input_node.output.shape,
                 "size": variable_input_node.output.size,
-                "original_bitwidth": int(variable_input_node.output.dtype.bit_width),
-                "optimized_bitwidth": int(self.internal_bit_width_target - n_round),
+                "original_bit_width": int(variable_input_node.output.dtype.bit_width),
+                "optimized_bit_width": int(self.internal_bit_width_target - lsbs_to_remove),
             }
 
             # Store some statistics for testing/debugging in the object itself
             tlu_node.properties["attributes"]["msbs_to_keep"] = int(
-                variable_input_node.output.dtype.bit_width - n_round
+                variable_input_node.output.dtype.bit_width - lsbs_to_remove
             )
-            tlu_node.properties["attributes"]["lsbs_to_remove"] = n_round
+            tlu_node.properties["attributes"]["lsbs_to_remove"] = lsbs_to_remove
 
             modify_subgraph_for_rounded_inputs(tlu_subgraph, best_a, best_b)
 
@@ -1155,15 +1495,23 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
             a = a[0]
             b = b[0]
 
-        # Subtract offset that matches step threshold to rounding step treshold
+        previous_node = variable_input_node
 
         # Multiply to match step size to rounding step size
-        previous_node = add_leveled_op_with_cst(
-            variable_input_node, a.astype(np.int64), multiply, graph.graph
-        )
-        previous_node = add_leveled_op_with_cst(
-            previous_node, b.astype(np.int64), subtract, graph.graph
-        )
+        a_int = a.astype(np.int64)
+        print(f"{a_int.max()=}")
+        if np.any(a_int != 1):
+            previous_node = add_leveled_op_with_cst(
+                previous_node, a_int, multiply, graph.graph
+            )
+
+        # Subtract offset that matches step threshold to rounding step treshold
+        b_int = b.astype(np.int64)
+        print(f"{b_int.max()=}")
+        if np.any(b_int != 0):
+            previous_node = add_leveled_op_with_cst(
+                previous_node, b_int, subtract, graph.graph
+            )
 
         # # Compute the offset needed to cancel out the rounding offset
         # # Then broadcast it to match the rounded tensor shape
@@ -1176,11 +1524,13 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
         # Round by n_round
         assert isinstance(previous_node.output.dtype, Integer)
         lsbs_to_remove = int(n_round)
-        previous_node = add_rounding_node(
-            previous_node,
-            lsbs_to_remove,
-            graph.graph,
-            rounding_function=self.rounding_function,
-            exactness=self.exactness,
-            overflow_protection=self.overflow_protection,
-        )
+        print(f"{lsbs_to_remove=}")
+        if lsbs_to_remove:
+            previous_node = add_rounding_node(
+                previous_node,
+                lsbs_to_remove,
+                graph.graph,
+                rounding_function=self.rounding_function,
+                exactness=self.exactness,
+                overflow_protection=self.overflow_protection,
+            )

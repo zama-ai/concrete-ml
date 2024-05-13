@@ -249,7 +249,7 @@ def test_tlu_optimizer(
     not_equal = reference != simulated
     assert isinstance(not_equal, numpy.ndarray)
 
-    if not_equal.sum() > 0 and function_name == "staircase_pot":
+    if not_equal.mean() > 0.05:
         import matplotlib.pyplot as plt
         from pathlib import Path
         from itertools import product
