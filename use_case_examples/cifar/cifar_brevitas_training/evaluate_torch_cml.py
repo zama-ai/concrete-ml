@@ -1,3 +1,4 @@
+# TODO: auto-optim doesn't compile because for some reason the bit-width is not correct
 import argparse
 from pathlib import Path
 
@@ -106,7 +107,7 @@ def main(args):
 
     # Multi-parameter strategy is used in order to speed-up the FHE executions
     tlu_optimizer = TLUDeltaBasedOptimizer(
-        internal_bit_width_target=24, exactness=fhe.Exactness.EXACT
+        internal_bit_width_target=21, exactness=fhe.Exactness.APPROXIMATE,
     )
     cfg = Configuration(
         verbose=True,
