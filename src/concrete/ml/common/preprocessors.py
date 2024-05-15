@@ -1,9 +1,9 @@
 """Graph pre-processors for automatic rounding."""
 
+from itertools import product
 from collections import Counter
 from copy import deepcopy
-from itertools import product
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Tuple, Union, Optional
 
 import networkx as nx
 import numpy as np
@@ -381,15 +381,19 @@ def argmin(d):
 
 
 def scale_up(
-    x: np.ndarray, a: Union[int, np.ndarray] = 1, b: Union[int, np.ndarray] = 0
+    x: np.ndarray,
+    scaling_factor: Union[int, np.ndarray] = 1,
+    bias: Union[int, np.ndarray] = 0,
 ):
-    return (x * a) - b
+    return (x * scaling_factor) - bias
 
 
 def scale_down(
-    x: np.ndarray, a: Union[int, np.ndarray] = 1, b: Union[int, np.ndarray] = 0
+    x: np.ndarray,
+    scaling_factor: Union[int, np.ndarray] = 1,
+    bias: Union[int, np.ndarray] = 0,
 ):
-    return (x + b) / a
+    return (x + bias) / scaling_factor
 
 
 # Faster more explicit implementation of rounding
@@ -407,19 +411,31 @@ def bit_width(x):
 
 
 def transform_inputs(
-    input_range: np.ndarray, inputset: np.ndarray, msbs_to_keep: int, a=1, b=0
+    input_range: np.ndarray,
+    inputset: np.ndarray,
+    msbs_to_keep: int,
+    scaling_factor=1,
+    bias=0,
 ):
     # TODO: add some asserts based on the expected bit-width of the range
-    scaled_bit_width = bit_width(scale_up(input_range, a=a, b=b))
+    scaled_bit_width = bit_width(
+        scale_up(input_range, scaling_factor=scaling_factor, bias=bias)
+    )
     lsbs_to_remove = scaled_bit_width - msbs_to_keep
     return scale_down(
-        rounding(scale_up(inputset - 1, a=a, b=b), lsbs_to_remove), a=a, b=b
+        rounding(
+            scale_up(inputset - 1, scaling_factor=scaling_factor, bias=bias),
+            lsbs_to_remove=lsbs_to_remove,
+        ),
+        scaling_factor=scaling_factor,
+        bias=bias,
     )
 
 
 def find_msbs_to_keep(
     inputset: np.ndarray, thresholds: np.ndarray, deltas: np.ndarray
 ) -> int:
+
     # todo: this should be reworked since we now update msbs-to-keep in the bias computation
     msbs_to_keep_set = set()
 
@@ -497,14 +513,32 @@ def bias_closed_form(
     else:
         func = subtract
 
+    # todo: remove this print debug statement
+    print(f"debug: {func.__name__=}")
+
     # todo
     # I somehow have an offset by one to the right that needs to be fixed, maybe a - scaling factor would fix it
-    bias = np.floor(
-        func(np.mean(threshold_diff), int(2 ** (lsbs_to_remove - 1))) - scaling_factor
+
+    # Should we sub or add the scaling factor -> probably depends on the sign of the mean after the first bias
+    # bias = np.floor(
+    #     func(func(np.mean(threshold_diff), int(2 ** (lsbs_to_remove - 1))), np.ceil(scaling_factor/2))
+    # ).astype(np.int64)
+
+    # todo: check if there isn't a better bias?
+    # I feel like somewhere around this value there is a better solution
+    # mean really?
+    # ceil/floor/rint?
+    # also is it - or + scaling factor
+    # exhaustive search in this range
+    bias = np.rint(
+        func(np.mean(threshold_diff), (int(2 ** (lsbs_to_remove-1)))-scaling_factor)
     ).astype(np.int64)
 
+    # todo: remove the need for this
+    # hackish -> breaks the target-bit-width assumption
     if bit_width(input_range - bias) != bit_width(input_range):
         msbs_to_keep += 1
+        print(f"debug: adding 1 to {msbs_to_keep=}")
 
     return bias, msbs_to_keep
 
@@ -518,6 +552,8 @@ def find_best_params(target, input_range: np.ndarray, target_bit_width: int = 24
     change_mask = np.concatenate([[False], np.diff(target).astype(bool)])
     thresholds = inputset[change_mask]
     deltas = np.diff(thresholds)
+    # todo: remove this print debug statement
+    print(f"debug: {thresholds=}, {deltas=}")
     # Compute msbs_to_keep
     msbs_to_keep = find_msbs_to_keep(inputset, thresholds, deltas)
     scaling_factor = compute_scaling_factor(deltas, target_bit_width, msbs_to_keep)
@@ -530,197 +566,20 @@ def find_best_params(target, input_range: np.ndarray, target_bit_width: int = 24
     return bias, scaling_factor, msbs_to_keep
 
 
-# def compute_best_rounding_for_single_tlu(
-#     x_min: int,
-#     x_max: int,
-#     thresholds: np.ndarray,
-#     target_bit_width: int,
-#     tlu_evaluation_function: Callable,
-# ) -> Tuple[int, int, int]:
-#     """Finds the optimal rounding based on unidimensional outputs of a TLU.
-#
-#     Args:
-#         x_min (int): minimal calibrated value of TLU inputs
-#         x_max (int): maximal calibrated value of TLU inputs
-#         thresholds (np.ndarray): the indices of the TLU output changes
-#         target_bit_width (int): the desired raised precision
-#         tlu_evaluation_function (Callable): the function that computes the error incurred
-#             when rounding this TLU with a certain scale and offset
-#
-#     Returns:
-#         res: tuple containing the scale, offset and rounding bits
-#     """
-#
-#     # raised_bit_width -> target bit-width
-#     original_input_repr = Integer.that_can_represent([x_min, x_max])
-#     original_bit_width = original_input_repr.bit_width
-#
-#     # This should be done after offsetting btw
-#     # We should also check that the target bit-width is in fact higher than the offsetted bit-width
-#     # and that the offsetted bit-width is lower or equal than the other one
-#
-#     if len(thresholds) == 0:
-#         # The function is constant so nothing to do here
-#         # We can just round down to one bit
-#         print("rounding to 1-bit because constant")
-#         return (1, 0, original_bit_width - 1)
-#
-#     assert len(set(thresholds)) == len(
-#         thresholds
-#     ), "Steps indexes are not unique, something went wrong"
-#
-#     step_thresholds = thresholds[0:-1]  # all step thresholds
-#     # We need to remove the last threshold because it's the step that goes from t_n to x_max
-#     # Thus why we don't optimize for it
-#
-#     deltas = np.diff(thresholds, axis=0)  # all step sizes
-#
-#     print(f"{deltas=}, {thresholds=}")
-#
-#     assert step_thresholds.size == deltas.size
-#
-#     if len(deltas) == 0:
-#         # Single jump, we can just offset by the threshold and round to 1-bit
-#         # TODO: verify
-#         # DEBUG: verify
-#         # This is true for truncation, might need to offset more for rounding
-#         print("rounding to 1-bit because single jump")
-#         return (1, thresholds[0], original_bit_width - 1)
-#
-#     # low_side_step_size = steps_indexes[0] - x_min
-#     # high_side_step_size = x_max - steps_indexes[-1]
-#     # min_side_step_size = min(low_side_step_size, high_side_step_size)
-#     # delta_axis = np.minimum(delta_axis, min_side_step_size)
-#
-#     if np.all(deltas <= 1):
-#         # Do not round because we can't really do anything in this scenario
-#         # where all deltas are 1
-#         print("no rounding because delta<=1")
-#         return (1, 0, 0)
-#
-#     a_candidates = set()
-#     b_candidates = set()
-#     msbs_to_keep_candidates = set()
-#     mses = {}
-#
-#     # Compute msbs-to-keep as
-#     # ceil(log_2(ceil((x_max - x_min) / delta)))
-#     msbs_to_keep_set: Set[int] = set()
-#     for delta in deltas:
-#         msbs_to_keep = np.ceil(np.log2(np.ceil((x_max - x_min)/ delta))).astype(
-#             np.int64
-#         )
-#         for offset in np.unique(thresholds - round_bit_pattern(thresholds, 4)):
-#             msbs_to_keep = np.ceil(np.log2(np.ceil((x_max - x_min + np.abs(offset)) / delta))).astype(
-#                 np.int64
-#             )
-#             msbs_to_keep_set.add(msbs_to_keep)
-#
-#     # TODO: we could also iterate on them
-#     msbs_to_keep: int = max(msbs_to_keep_candidates)
-#
-#     for index in range(deltas.size):
-#         threshold, delta = thresholds[index], deltas[index]
-#         assert delta > 0.0, f"Delta should be strictly positive but got {delta=}."
-#
-#         # Compute msbs needed
-#         msbs_to_keep = np.ceil(np.log2(np.ceil((x_max - x_min) / delta))).astype(np.int64)
-#         msbs_to_keep_candidates.add(msbs_to_keep)
-#         msbs_to_keep_candidates.add(msbs_to_keep-1)
-#         msbs_to_keep_candidates.add(msbs_to_keep+1)
-#
-#         # also compute a for msbs_to_keep+1
-#         # Compute a
-#         a_fp = (2 ** (target_bit_width - msbs_to_keep)) / delta
-#         a_ri = np.rint(a_fp).astype(np.int64)
-#         print(f"{a_fp=}")
-#         for a, msbs_to_keep in product([a_ri, a_ri+1, a_ri-1], [msbs_to_keep, msbs_to_keep+1, msbs_to_keep-1]):
-#             a_candidates.add(a)
-#
-#             # TODO: should we do this only for the current threshold?
-#             scaled_repr = Integer.that_can_represent(np.array([x_min, x_max], dtype=np.int64) * a)
-#             scaled_bit_width = scaled_repr.bit_width
-#             scaled_lsbs = scaled_bit_width - msbs_to_keep
-#             scaled_thresholds = thresholds * a
-#
-#             b_candidates_array = (
-#                 scaled_thresholds - round_bit_pattern(scaled_thresholds, lsbs_to_remove=int(scaled_bit_width))
-#             )
-#             b_candidates_array  -= 2 ** (scaled_lsbs - 1)
-#             b_candidates |= set(b_candidates_array)
-#
-#             b_candidates_array  *= -1
-#             b_candidates |= set(b_candidates_array)
-#             b_candidates_array  *= -1
-#
-#             b_candidates_array  += 2 ** (scaled_lsbs - 1)
-#             b_candidates_array  -= 2 ** (scaled_lsbs)
-#             b_candidates |= set(b_candidates_array)
-#
-#             b_candidates_array  *= -1
-#             b_candidates |= set(b_candidates_array)
-#             b_candidates_array  *= -1
-#
-#             b_candidates_array  += 2 ** (scaled_lsbs)
-#             b_candidates |= set(b_candidates_array)
-#
-#             b_candidates_array  *= -1
-#             b_candidates |= set(b_candidates_array)
-#             b_candidates_array  *= -1
-#
-#     for b_candidate in b_candidates.copy():
-#         b_candidates.add(np.ceil(b_candidate / 2).astype(np.int64))
-#         b_candidates.add(np.floor(b_candidate / 2).astype(np.int64))
-#
-#     b_candidates.add(0)
-#
-#     best_mse = np.inf
-#     print(f"{a_candidates=}, {b_candidates=}, {msbs_to_keep_candidates=}")
-#     for a, msbs_to_keep in product(a_candidates, msbs_to_keep_candidates):
-#         diffs=[]
-#         bs=range(min(b_candidates), max(b_candidates), a)
-#         bs=range(0, (2**scaled_lsbs+1), a)
-#         bs=sorted(b_candidates)
-#         from tqdm.auto import tqdm
-#         with tqdm(total=len(bs)) as pbar:
-#             for b in bs:
-#                 lsbs = (
-#                     Integer.that_can_represent(
-#                         (np.array([x_min, x_max], dtype=np.int64) * a) - b
-#                     ).bit_width
-#                     - msbs_to_keep
-#                 )
-#                 config = (a, b, lsbs)
-#                 mse = tlu_evaluation_function(a, b, lsbs)
-#                 if mse == 0:
-#                     print(f"Returning early because {config=} reached {mse=}")
-#                     return config
-#                 mses[config] = mse
-#                 diffs.append(mse)
-#                 pbar.update()
-#                 if mse < best_mse:
-#                     best_mse = mse
-#                     pbar.set_postfix({"best-mse": best_mse, "achieved": config})
-#
-#         import matplotlib.pyplot as plt
-#         plt.figure()
-#         plt.plot(bs, diffs)
-#         plt.savefig("debug.png")
-#         plt.close()
-#
-#     best_config = argmin(mses)
-#     assert best_config is not None
-#     print(f"{best_config=} reached {mses[best_config]=}")
-#     return best_config
+def scale_and_round(x: np.ndarray, scaling_factor=1, bias=0, msbs_to_keep: int = 1):
+    scaled_up = scale_up(x, scaling_factor=scaling_factor, bias=bias)
+    acc_bit_width = bit_width(scaled_up)
+    lsbs_to_remove = acc_bit_width - msbs_to_keep
+    rounded = rounding(scaled_up, lsbs_to_remove=lsbs_to_remove)
+    scaled_down = scale_down(rounded, scaling_factor=scaling_factor, bias=bias)
+    return scaled_down
 
 
-# TODO: fix this
 def delta_optimize(
     subgraph_inputs: np.ndarray,
     subgraph_outputs: np.ndarray,
     shape_: Tuple[int, ...],
     bounds: Tuple[int, int],
-    tlu_subgraph: Graph,
     target_bit_width: int,
     rounding_function: Callable = round_bit_pattern,
 ) -> Tuple[np.ndarray, np.ndarray, int, int]:
@@ -780,9 +639,7 @@ def delta_optimize(
     input_range = np.array([bounds[0], bounds[1]], dtype=np.int64)
 
     # For each axis along which the TLU is different we should compute the best set of parameters
-    from tqdm import tqdm
-
-    for indexes in tqdm(list(product(*[range(elt) for elt in shape_]))):
+    for indexes in product(*[range(elt) for elt in shape_]):
         triggered = False
         best_indexes = tuple([*indexes])
         selection = tuple([slice(0, subgraph_outputs.shape[0]), *indexes[1:]])
@@ -802,6 +659,7 @@ def delta_optimize(
 
         # 0-jump
         if len(thresholds_selected) == 0:
+            print("debug: constant tlu")
             msbs_to_keep = 1
             acc_size = bit_width(input_range)
             lsbs_to_remove = acc_size - msbs_to_keep
@@ -810,53 +668,28 @@ def delta_optimize(
 
         # 1-jump
         elif len(thresholds_selected) == 1:
-            # todo: verify
-            msbs_to_keep = 1
-            scaling_factor = 1
-            bias = thresholds_selected[0] + (2 ** (bit_width(input_range)))
-            # scaling_factor = np.floor((2**target_bit_width)/(bounds[1]-bounds[0])).astype(np.int64)
-            # scaling_factor = 1
-            # bias, _ = bias_closed_form(
-            #     input_range=input_range,
-            #     msbs_to_keep=msbs_to_keep,
-            #     thresholds=thresholds_selected,
-            #     scaling_factor=scaling_factor,
-            # )
-            # bias *= -1
-            # bias += 1
-            acc_size = bit_width(scale_up(input_range, a=scaling_factor, b=bias))
-            lsbs_to_remove = acc_size - msbs_to_keep
-
+            print("debug: single-jump tlu")
             # todo: atm we are filing the values in the range with the one from the value even if outside the range
             # this leads to a wrong behavior in some situations
             # i don't know if there is a way to fix that from our side without changing the filling behavior
             # of concrete-python
 
-            # todo: remove this
-            # bias = 0
-            # scaling_factor = 1
-            # acc_size = bit_width(input_range)
-            # msbs_to_keep = 1
-            # lsbs_to_remove = acc_size - msbs_to_keep
+            # todo: verify
+            msbs_to_keep = 1
+            scaling_factor = 1
+            bias = thresholds_selected[0] + (2 ** (bit_width(input_range)))
+            acc_size = bit_width(
+                scale_up(input_range, scaling_factor=scaling_factor, bias=bias)
+            )
+            lsbs_to_remove = acc_size - msbs_to_keep
+
         else:
+            print("debug: 'normal' tlu")
+            # todo: implement something that limits the bit the msbs_to_keep but still
+            # finds adequate parameters
+
             deltas = np.diff(thresholds_selected).astype(np.int64)
             assert len(deltas) > 0
-
-            # delta=1
-            # if np.all(deltas == 1):
-            #     # todo: check implementation
-            #     # is there really nothing to do here?
-            #     # -> Actually it really depends on the bounds
-            #     # imagine you have two jumps on a narrow range
-            #     # you could just expand the range and gain something from it
-            #     bias = 0
-            #     scaling_factor = 1
-            #     acc_size = bit_width(input_range)
-            #     lsbs_to_remove = 0
-            #     msbs_to_keep = acc_size
-            #
-            # # "normal" scenario
-            # else:
 
             # todo: check that optimization is indeed needed
             bias, scaling_factor, msbs_to_keep = find_best_params(
@@ -1440,7 +1273,6 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
                 reference,
                 shape_,
                 (int(min_bound), int(max_bound)),
-                tlu_subgraph,
                 self.internal_bit_width_target,
             )
 
