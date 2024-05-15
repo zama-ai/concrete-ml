@@ -2,6 +2,7 @@
 import argparse
 from pathlib import Path
 
+import random
 import numpy as np
 import torch
 from concrete.fhe import Configuration
@@ -15,6 +16,19 @@ from concrete.ml.common.preprocessors import TLUDeltaBasedOptimizer
 from concrete.ml.torch.compile import compile_brevitas_qat_model
 
 CURRENT_DIR = Path(__file__).resolve().parent
+
+
+def seed_everything(seed):
+    random.seed(seed)
+    seed += 1
+    np.random.seed(seed % 2**32)
+    seed += 1
+    torch.manual_seed(seed)
+    seed += 1
+    torch.use_deterministic_algorithms(True)
+    return seed
+
+seed_everything(0)
 
 
 def evaluate(torch_model, cml_model, device, num_workers):
