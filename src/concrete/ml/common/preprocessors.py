@@ -3,7 +3,7 @@
 from collections import Counter
 from copy import deepcopy
 from itertools import product
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union, Set
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import networkx as nx
 import numpy as np
@@ -213,7 +213,7 @@ def add_rounding_node(
         # No  rounding node to add
         return a_node
 
-    # Adding rounding node 
+    # Adding rounding node
 
     assert isinstance(a_node.output.dtype, Integer)
     rounding_kwargs = {
@@ -307,7 +307,7 @@ def add_leveled_op_with_cst(
     if b.dtype == np.float64:
         constant_dtype = Float(64)
         result_dtype = Float(64)
-        bounds = None
+        res_bounds = np.array([0, 0], dtype=np.float64)
     elif b.dtype == np.int64:
         # Compute bounds
         assert isinstance(a_node.bounds, tuple) and len(a_node.bounds) == 2, (
@@ -318,9 +318,9 @@ def add_leveled_op_with_cst(
         some_inputs[0] = a_node.bounds[0]  # min
         some_inputs[1] = a_node.bounds[1]  # max
         results = function(np.array(some_inputs), np.asarray(b)[np.newaxis, ...])
-        bounds = (
-            results.min(),
-            results.max(),
+        res_bounds = np.array(
+            [results.min(), results.max()],
+            dtype=np.int64,
         )
         constant_dtype = Integer.that_can_represent(b)
         result_dtype = Integer.that_can_represent(results.astype(np.int64))
@@ -349,7 +349,9 @@ def add_leveled_op_with_cst(
         ),
         operation=function,
     )
-    new_node.bounds = bounds
+    x_min: int = res_bounds[0]
+    x_max: int = res_bounds[1]
+    new_node.bounds = (x_min, x_max)
 
     # Create new edges
     graph.add_edge(a_node, new_node, input_idx=0)
@@ -378,11 +380,15 @@ def argmin(d):
     return [k for k in d if d[k] == min_val][0]
 
 
-def scale_up(x, a: int = 1, b=0):
+def scale_up(
+    x: np.ndarray, a: Union[int, np.ndarray] = 1, b: Union[int, np.ndarray] = 0
+):
     return (x * a) - b
 
 
-def scale_down(x, a: int = 1, b=0):
+def scale_down(
+    x: np.ndarray, a: Union[int, np.ndarray] = 1, b: Union[int, np.ndarray] = 0
+):
     return (x + b) / a
 
 
@@ -711,11 +717,11 @@ def find_best_params(target, input_range: np.ndarray, target_bit_width: int = 24
 # TODO: fix this
 def delta_optimize(
     subgraph_inputs: np.ndarray,
-    reference: np.ndarray,
+    subgraph_outputs: np.ndarray,
     shape_: Tuple[int, ...],
     bounds: Tuple[int, int],
     tlu_subgraph: Graph,
-    raised_bit_width: int,
+    target_bit_width: int,
     rounding_function: Callable = round_bit_pattern,
 ) -> Tuple[np.ndarray, np.ndarray, int, int]:
     """Optimize a TLU by analyzing the steps (deltas) in the output of the TLU function.
@@ -743,18 +749,20 @@ def delta_optimize(
     ), "Only round is supported for TLU adjustment"
 
     x_min, x_max = bounds
-    bit_width_input = Integer.that_can_represent([x_min, x_max]).bit_width
+    assert x_min < x_max
+    assert subgraph_inputs.min() == x_min, f"{subgraph_inputs.min()} != {x_min}"
+    assert subgraph_inputs.max() == x_max, f"{subgraph_inputs.max()} != {x_max}"
 
     # Initialize a and b such that no changes are done
     best_a = np.ones(shape_, dtype=np.int64)
     best_b = np.zeros(shape_, dtype=np.int64)
 
-    ref_diff = np.diff(reference, axis=0).astype(bool)
+    ref_diff = np.diff(subgraph_outputs, axis=0).astype(bool)
 
     # Compute mask of values for which there is a change
     change_mask = np.concatenate(
         [
-            np.zeros(reference[:1].shape).astype(bool),
+            np.zeros(subgraph_outputs[:1].shape).astype(bool),
             ref_diff.astype(bool),
         ]
     ).astype(bool)
@@ -762,130 +770,149 @@ def delta_optimize(
     # Some accumulators
     best_lsbs = np.ones(shape_, dtype=np.int64)
     best_msbs = np.ones(shape_, dtype=np.int64)
+    best_acc = np.ones(shape_, dtype=np.int64)
 
-    # per_tensor_a = 2 ** (raised_bit_width - bit_width_input)
+    # This doesn't pass
+    # assert subgraph_inputs.shape == subgraph_outputs.shape, f"{subgraph_inputs.shape=} != {subgraph_outputs.shape=}"
 
-    for indexes in product(*[range(elt) for elt in shape_]):
+    # We create the input_range object here but we should probably have it per element
+    # instead of per tensor as we have now
+    input_range = np.array([bounds[0], bounds[1]], dtype=np.int64)
+
+    # For each axis along which the TLU is different we should compute the best set of parameters
+    from tqdm import tqdm
+
+    for indexes in tqdm(list(product(*[range(elt) for elt in shape_]))):
+        triggered = False
         best_indexes = tuple([*indexes])
-        selection = tuple([slice(0, reference.shape[0]), *indexes[1:]])
-        reference_for_index = reference[selection]
+        selection = tuple([slice(0, subgraph_outputs.shape[0]), *indexes[1:]])
+
+        # Slice things up
         subgraph_inputs_selected = subgraph_inputs[selection]
-        change_mask_selected = change_mask[selection]
-        thresholds = subgraph_inputs_selected[change_mask_selected]
-        input_range = np.array([bounds[0], bounds[1]], dtype=np.int64)
-        assert len(thresholds) == len(
-            np.unique(thresholds)
+        subgraph_outputs_selected = subgraph_outputs[selection]
+        change_mask_selection = change_mask[selection]
+        thresholds_selected = subgraph_inputs_selected[change_mask_selection]
+
+        assert len(thresholds_selected) == len(
+            np.unique(thresholds_selected)
         ), "not unique steps, shouldn't occur"
 
         # todo: maybe we should wrap this if-else thingy in `find_best_params`?
         # todo: support corner-cases
+
         # 0-jump
-        if len(thresholds) == 0:
+        if len(thresholds_selected) == 0:
             msbs_to_keep = 1
-            lsbs_to_remove = bit_width(input_range) - msbs_to_keep
-            (
-                best_a[best_indexes],
-                best_b[best_indexes],
-                best_lsbs[indexes],
-                best_msbs[indexes],
-            ) = (
-                1,
-                0,
-                lsbs_to_remove,
-                msbs_to_keep,
-            )
+            acc_size = bit_width(input_range)
+            lsbs_to_remove = acc_size - msbs_to_keep
+            scaling_factor = 1
+            bias = 0
+
         # 1-jump
-        elif len(thresholds) == 1:
-            # todo: implement
+        elif len(thresholds_selected) == 1:
+            # todo: verify
             msbs_to_keep = 1
-            scaling_factor = np.floor((2**raised_bit_width)/(bounds[1]-bounds[0])).astype(np.int64)
-            bias, msbs_to_keep = bias_closed_form(
-                input_range=input_range,
-                msbs_to_keep=msbs_to_keep,
-                thresholds=thresholds,
-                scaling_factor=scaling_factor,
-            )
-            bias += scaling_factor
-            lsbs_to_remove = bit_width(input_range-bias) - msbs_to_keep
+            scaling_factor = 1
+            bias = thresholds_selected[0] + (2 ** (bit_width(input_range)))
+            # scaling_factor = np.floor((2**target_bit_width)/(bounds[1]-bounds[0])).astype(np.int64)
+            # scaling_factor = 1
+            # bias, _ = bias_closed_form(
+            #     input_range=input_range,
+            #     msbs_to_keep=msbs_to_keep,
+            #     thresholds=thresholds_selected,
+            #     scaling_factor=scaling_factor,
+            # )
+            # bias *= -1
+            # bias += 1
+            acc_size = bit_width(scale_up(input_range, a=scaling_factor, b=bias))
+            lsbs_to_remove = acc_size - msbs_to_keep
+
             # todo: atm we are filing the values in the range with the one from the value even if outside the range
             # this leads to a wrong behavior in some situations
             # i don't know if there is a way to fix that from our side without changing the filling behavior
             # of concrete-python
-            # todo: remove debug print below
-            print(f"{lsbs_to_remove=}, {msbs_to_keep=}, {scaling_factor=}, {bias=}")
-            (
-                best_a[best_indexes],
-                best_b[best_indexes],
-                best_lsbs[indexes],
-                best_msbs[indexes],
-            ) = (
-                1,
-                bias,
-                lsbs_to_remove,
-                msbs_to_keep
-            )
 
+            # todo: remove this
+            # bias = 0
+            # scaling_factor = 1
+            # acc_size = bit_width(input_range)
+            # msbs_to_keep = 1
+            # lsbs_to_remove = acc_size - msbs_to_keep
         else:
-            deltas = np.diff(thresholds).astype(np.int64)
-            # delta=1
-            if np.all(deltas == 1):
-                # todo: check implementation
-                # is there really nothing to do here?
-                msbs_to_keep = bit_width(input_range)
-                (
-                    best_a[best_indexes],
-                    best_b[best_indexes],
-                    best_lsbs[indexes],
-                    best_msbs[indexes],
-                ) = (
-                    1,
-                    0,
-                    0,
-                    msbs_to_keep,
-                )
-            # "normal" scenario
-            else:
-                # todo: check that optimization is indeed needed
-                bias, scaling_factor, msbs_to_keep = find_best_params(
-                    reference_for_index, input_range, target_bit_width=raised_bit_width
-                )
-                lsbs_to_remove = (
-                    bit_width(scale_up(input_range, scaling_factor, bias))
-                    - msbs_to_keep
-                )
-                (
-                    best_a[best_indexes],
-                    best_b[best_indexes],
-                    best_lsbs[indexes],
-                    best_msbs[indexes],
-                ) = (
-                    bias,
-                    scaling_factor,
-                    lsbs_to_remove,
-                    msbs_to_keep,
-                )
+            deltas = np.diff(thresholds_selected).astype(np.int64)
+            assert len(deltas) > 0
 
-                # print(
-                #     f"{best_a[best_indexes]=}",
-                #     f"{best_b[best_indexes]=}",
-                #     f"{n_rounds[indexes]=}",
-                # )
+            # delta=1
+            # if np.all(deltas == 1):
+            #     # todo: check implementation
+            #     # is there really nothing to do here?
+            #     # -> Actually it really depends on the bounds
+            #     # imagine you have two jumps on a narrow range
+            #     # you could just expand the range and gain something from it
+            #     bias = 0
+            #     scaling_factor = 1
+            #     acc_size = bit_width(input_range)
+            #     lsbs_to_remove = 0
+            #     msbs_to_keep = acc_size
+            #
+            # # "normal" scenario
+            # else:
+
+            # todo: check that optimization is indeed needed
+            bias, scaling_factor, msbs_to_keep = find_best_params(
+                subgraph_outputs_selected,
+                input_range,
+                target_bit_width=target_bit_width,
+            )
+            acc_size = bit_width(scale_up(input_range, scaling_factor, bias))
+            lsbs_to_remove = acc_size - msbs_to_keep
+
+        # todo: re-activate this assert as this shouldn't happen
+        if acc_size > target_bit_width:
+            print(f"{acc_size=} > {target_bit_width=}")
+            triggered = True
+
+        # todo: remove this after check that the accuracy is fine
+        if lsbs_to_remove and triggered:
+            lsbs_to_remove -= 1
+
+        (
+            best_a[best_indexes],
+            best_b[best_indexes],
+            best_lsbs[indexes],
+            best_msbs[indexes],
+            best_acc[indexes],
+        ) = (
+            scaling_factor,
+            bias,
+            lsbs_to_remove,
+            msbs_to_keep,
+            acc_size,
+        )
+
+        # todo: remove debug print
+        print(
+            f"{best_a[best_indexes]=}",
+            f"{best_b[best_indexes]=}",
+            f"{best_lsbs[indexes]=}",
+            f"{best_msbs[indexes]=}",
+            f"{best_acc[indexes]=}",
+        )
 
     # As rounding can be applied only for the entire tensor,
     # a single rounding threshold must be found. The smallest
-    # number of lsbs to remove is used. The scaling factor
-    # is chosen for that threshold, while the step
-    # offsets are preserved
-    # todo: FIX THIS
+    # number of lsbs to remove is used.
     if best_lsbs.shape:
-        n_round_idx = np.argmax(msbs_to_keep)
+        n_round_idx = np.argmax(best_msbs)
         lsbs_to_remove = best_lsbs.flatten()[n_round_idx]
         msbs_to_keep = best_msbs.flatten()[n_round_idx]
     else:
         lsbs_to_remove = best_lsbs
         msbs_to_keep = best_msbs
+
     lsbs_to_remove = int(lsbs_to_remove)
     msbs_to_keep = int(msbs_to_keep)
+
     return best_a, best_b, lsbs_to_remove, msbs_to_keep
 
 
@@ -1339,6 +1366,10 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
         )
 
         for tlu_node in tlu_nodes:
+            print()
+            # todo: remove debug print
+            print("PROCESSING NODE")
+
             # On each tlu we do:
             # 1. Optimize a and b for the subgraph
             # 2. Insert a and b in the graph
@@ -1413,9 +1444,6 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
                 self.internal_bit_width_target,
             )
 
-            bounds = np.array([min_bound, max_bound], dtype=np.int64)
-            print(f"{bit_width((bounds * best_a)- best_b)=}")
-
             # For testing purposes we had some properties
             tlu_node.properties["attributes"]["opt_round_a"] = best_a
             tlu_node.properties["attributes"]["opt_round_b"] = best_b
@@ -1445,7 +1473,10 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
                 "shape": variable_input_node.output.shape,
                 "size": variable_input_node.output.size,
                 "original_bit_width": int(variable_input_node.output.dtype.bit_width),
-                "optimized_bit_width": int(self.internal_bit_width_target - lsbs_to_remove),
+                "lsbs_to_remove": int(lsbs_to_remove),
+                "msbs_to_keep": int(msbs_to_keep),
+                "scaling_factor": best_a,
+                "bias": best_b,
             }
 
             # Store some statistics for testing/debugging in the object itself
@@ -1499,7 +1530,6 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
 
         # Multiply to match step size to rounding step size
         a_int = a.astype(np.int64)
-        print(f"{a_int.max()=}")
         if np.any(a_int != 1):
             previous_node = add_leveled_op_with_cst(
                 previous_node, a_int, multiply, graph.graph
@@ -1507,7 +1537,6 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
 
         # Subtract offset that matches step threshold to rounding step treshold
         b_int = b.astype(np.int64)
-        print(f"{b_int.max()=}")
         if np.any(b_int != 0):
             previous_node = add_leveled_op_with_cst(
                 previous_node, b_int, subtract, graph.graph
@@ -1524,7 +1553,6 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
         # Round by n_round
         assert isinstance(previous_node.output.dtype, Integer)
         lsbs_to_remove = int(n_round)
-        print(f"{lsbs_to_remove=}")
         if lsbs_to_remove:
             previous_node = add_rounding_node(
                 previous_node,
