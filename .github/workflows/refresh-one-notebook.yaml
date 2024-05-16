@@ -35,9 +35,12 @@ on:
         - QuantFrameworkExample \n
         - QuantizationAwareTraining \n
         - RegressorComparison \n
+        - resnet_fhe copy \n
         - SentimentClassification \n
         - SVMClassifier \n
+        - test-1 \n
         - WhitePaperExperiments \n
+        - WhitePaperExperiments_internal \n
         - XGBClassifier \n
         - XGBRegressor \n
         "
@@ -81,9 +84,12 @@ env:
   QuantFrameworkExample: "use_case_examples/llm/QuantFrameworkExample.ipynb" 
   QuantizationAwareTraining: "docs/advanced_examples/QuantizationAwareTraining.ipynb" 
   RegressorComparison: "docs/advanced_examples/RegressorComparison.ipynb" 
+  resnet_fhe copy: "use_case_examples/resnet/resnet_fhe copy.ipynb" 
   SentimentClassification: "use_case_examples/sentiment_analysis_with_transformer/SentimentClassification.ipynb" 
   SVMClassifier: "docs/advanced_examples/SVMClassifier.ipynb" 
+  test-1: "use_case_examples/diamons/test-1.ipynb" 
   WhitePaperExperiments: "use_case_examples/white_paper_experiment/WhitePaperExperiments.ipynb" 
+  WhitePaperExperiments_internal: "use_case_examples/white_paper_experiment/WhitePaperExperiments_internal.ipynb" 
   XGBClassifier: "docs/advanced_examples/XGBClassifier.ipynb" 
   XGBRegressor: "docs/advanced_examples/XGBRegressor.ipynb" 
   # --- refresh_notebooks_list.py: refresh list of notebook paths currently available [END] ---
