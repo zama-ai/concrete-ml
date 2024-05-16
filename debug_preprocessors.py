@@ -4,9 +4,13 @@ import numpy as np
 from concrete.fhe import Configuration, Integer, univariate
 
 from concrete import fhe
-from concrete.ml.common.preprocessors import InsertRounding, TLUDeltaBasedOptimizer, scale_and_round
+from concrete.ml.common.preprocessors import (
+    TLUDeltaBasedOptimizer,
+    scale_and_round,
+)
 
 np.random.seed(42)
+
 
 # Constant function
 def func_const(x):
@@ -95,6 +99,7 @@ def make_step_function(n_thresholds, delta, x_min, x_max, power_of_two=False):
 def main():
     ok_counter = 0
     nok_counter = 0
+    errors = []
     # Activate matplotlib interactive plot
     plt.ion()
 
@@ -102,8 +107,15 @@ def main():
     n_bits_from = execution_number + 2
 
     for bounds in [
-        (-(2 ** (n_bits_from)), (2 ** (n_bits_from)) - 1), # 4 ok, 1 nok (func_5)
-        (-234, 283), (0, 283), (-283, 284), (-283, 0), (-62, 0), (0, 62),
+        (-(2 ** (n_bits_from)), (2 ** (n_bits_from)) - 1),  # Full bounds
+        (-234, 283),  # asymetrical right
+        (-283, 234),  # asymetrical left
+        (0, 283), # positive
+        (-283, 0), # negative
+        (1, 283), # strictly positive
+        (-283, -1), # strictly negative
+        (-63, -1),
+        (1, 63),
     ]:  # ]:
         input_range = bounds
         x_min, x_max = bounds
@@ -118,9 +130,9 @@ def main():
         ]:
 
             print(f.__name__, bounds)
-            inputset = np.arange(input_range[0], input_range[1]+1, 1, dtype=np.int64)
+            inputset = np.arange(input_range[0], input_range[1] + 1, 1, dtype=np.int64)
             integer = Integer.that_can_represent(inputset)
-            full_range = np.arange(integer.min(), integer.max()+1, 1, dtype=np.int64)
+            full_range = np.arange(integer.min(), integer.max() + 1, 1, dtype=np.int64)
             full_range_to_range_mask = (full_range >= x_min) & (full_range <= x_max)
 
             def compute(circuit):
@@ -141,7 +153,6 @@ def main():
 
             naive_res = compute(circuit_naive)
 
-
             # Optim - Res
             exactness = fhe.Exactness.EXACT
             optim_exact = TLUDeltaBasedOptimizer(
@@ -156,8 +167,18 @@ def main():
             )
             stats = list(optim_exact.statistics.values())[0]
 
-            mult_inputset = scale_and_round(inputset, scaling_factor=stats["scaling_factor"], bias=0, msbs_to_keep=stats["msbs_to_keep"])
-            transformed_inputset = scale_and_round(inputset, scaling_factor=stats["scaling_factor"], bias=stats["bias"], msbs_to_keep=stats["msbs_to_keep"])
+            mult_inputset = scale_and_round(
+                inputset,
+                scaling_factor=stats["scaling_factor"],
+                bias=0,
+                msbs_to_keep=stats["msbs_to_keep"],
+            )
+            transformed_inputset = scale_and_round(
+                inputset,
+                scaling_factor=stats["scaling_factor"],
+                bias=stats["bias"],
+                msbs_to_keep=stats["msbs_to_keep"],
+            )
             y_mult = f(mult_inputset)
             y_transformed = f(transformed_inputset)
 
@@ -167,19 +188,42 @@ def main():
                 naive_res[full_range_to_range_mask]
                 != optim_res_exact[full_range_to_range_mask]
             ).sum()
-            # Plot
+            tol = 1
+
+            # Plot function and approximation
             fig, ax = plt.subplots(figsize=(8, 8))
             plt.title(f"Function approximation ({f.__name__}, {bounds=})")
-            ax.plot(full_range, naive_res, label="ground-truth", linestyle="--", color="blue", alpha=.5)
-            ax.plot(inputset, y_mult, label="scaling_factor", linestyle="-.", color="green", alpha=.5)
-            ax.plot(inputset, y_transformed, label="transformed", linestyle="-.", color="orange", alpha=.5)
+            ax.plot(
+                full_range,
+                naive_res,
+                label="ground-truth",
+                linestyle="--",
+                color="blue",
+                alpha=0.5,
+            )
+            ax.plot(
+                inputset,
+                y_mult,
+                label="scaling_factor",
+                linestyle="-.",
+                color="green",
+                alpha=0.5,
+            )
+            ax.plot(
+                inputset,
+                y_transformed,
+                label="transformed",
+                linestyle="-.",
+                color="orange",
+                alpha=0.5,
+            )
             ax.plot(
                 full_range,
                 optim_res_exact,
                 label=f"optim-exact err={optim_exact_error}",
                 linestyle=":",
                 color="red",
-                alpha=.5,
+                alpha=0.5,
             )
             ax.vlines(
                 input_range,
@@ -190,7 +234,10 @@ def main():
                 label="bounds",
             )
             plt.legend()
+            if optim_exact_error > tol:
+                fig.savefig(f"function_{f.__name__}_{bounds[0]}_{bounds[1]}.png")
 
+            # Plot function error
             fig, ax = plt.subplots(figsize=(8, 8))
             plt.title(f"Reference - TLU ({f.__name__}, {bounds=})")
             ax.plot(
@@ -200,21 +247,32 @@ def main():
                 linestyle=":",
             )
             plt.legend()
-            plt.draw()
+            # plt.draw()
 
-            tol = 1
+            if optim_exact_error > tol:
+                fig.savefig(f"error_{f.__name__}_{bounds[0]}_{bounds[1]}.png")
+
             if optim_exact_error > tol:
                 nok_counter += 1
-                plt.pause(0.001)
-                breakpoint()
+                print(circuit_optim_exact.mlir)
+                # plt.pause(0.001)
+                errors.append(
+                    {
+                        "func_name": f.__name__,
+                        "bounds": bounds,
+                        "error": optim_exact_error,
+                    }
+                )
             else:
                 ok_counter += 1
-                print("OK!")
-                plt.pause(0.001)
-                plt.close("all")
+                # plt.pause(0.001)
+
+            plt.close("all")
 
     print(f"{ok_counter=}, {nok_counter=}")
+    from pprint import pprint
 
+    pprint(errors)
 
 
 if __name__ == "__main__":
