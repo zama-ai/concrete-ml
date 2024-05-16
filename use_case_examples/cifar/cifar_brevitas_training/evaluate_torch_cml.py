@@ -1,8 +1,8 @@
 # TODO: auto-optim doesn't compile because for some reason the bit-width is not correct
 import argparse
+import random
 from pathlib import Path
 
-import random
 import numpy as np
 import torch
 from concrete.fhe import Configuration
@@ -27,6 +27,7 @@ def seed_everything(seed):
     seed += 1
     torch.use_deterministic_algorithms(True)
     return seed
+
 
 seed_everything(0)
 
@@ -111,7 +112,7 @@ def main(args):
 
     # Create a representative input-set from the training set that will be used used for both
     # computing quantization parameters and compiling the model
-    num_samples = 100
+    num_samples = 1_000
     input_set = torch.stack(
         [train_set[index][0] for index in range(min(num_samples, len(train_set)))]
     )
@@ -121,7 +122,8 @@ def main(args):
 
     # Multi-parameter strategy is used in order to speed-up the FHE executions
     tlu_optimizer = TLUDeltaBasedOptimizer(
-        internal_bit_width_target=21, exactness=fhe.Exactness.APPROXIMATE,
+        internal_bit_width_target=24,
+        exactness=fhe.Exactness.APPROXIMATE,
     )
     cfg = Configuration(
         verbose=True,

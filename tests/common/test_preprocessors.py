@@ -164,7 +164,10 @@ def test_cycle_finder(
 )
 @pytest.mark.parametrize("shape", [(1,), (2, 2), (2, 2, 2), (2, 3, 1, 4)])
 def test_tlu_optimizer(
-    execution_number: int, function_name: str, shape: Tuple[int, ...], request,
+    execution_number: int,
+    function_name: str,
+    shape: Tuple[int, ...],
+    request,
 ):  # pylint: disable=too-many-locals
     """Tests the tlu optimizer with various functions."""
 
@@ -250,11 +253,15 @@ def test_tlu_optimizer(
     assert isinstance(not_equal, numpy.ndarray)
 
     if not_equal.mean() > 0.05:
-        import matplotlib.pyplot as plt
-        from pathlib import Path
         from itertools import product
-        for axis in product([slice(0, len(input_set))], *(list(range(axis_len)) for axis_len in simulated.shape[1:])):
-            path_to_debug_plot = Path(f"debug_{request.node.name}_{axis}.png")
+        from pathlib import Path
+
+        import matplotlib.pyplot as plt
+
+        for axis in product(
+            [slice(0, len(input_set))], *(list(range(axis_len)) for axis_len in simulated.shape[1:])
+        ):
+            path_to_debug_plot = Path(f"debug_{request.node.name}_{','.join(axis)}.png")
             plt.figure()
             plt.plot(input_set[axis], reference[axis], label="target")
             plt.plot(input_set[axis], simulated[axis], label="optimized")
