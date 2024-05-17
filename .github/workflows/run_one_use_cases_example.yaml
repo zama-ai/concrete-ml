@@ -1,5 +1,6 @@
 name: Run One Use Case Example
 on:
+  push:
   workflow_dispatch:
     inputs:
       use_case:
@@ -68,6 +69,8 @@ jobs:
       run:
         shell: bash
     steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Set up Environment
         run: |
