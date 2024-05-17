@@ -77,6 +77,9 @@ jobs:
           # Setup commands if any, for example, installing dependencies, etc.
           apt-get update && apt-get install -y python3-venv make git git-lfs binutils
 
+          # We need to freeze docker.io because its update requires user input
+          apt-mark hold docker.io
+
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
@@ -84,7 +87,8 @@ jobs:
 
       - name: Run One Use Case Example Script
         run: |
-          make run_one_use_case_example USE_CASE=${{ github.event.inputs.use_case }}
+          USE_CASE=${{ github.event_name == 'push' && 'deployment/breast_cancer' || github.event.inputs.use_case }}
+          make run_one_use_case_example USE_CASE=$USE_CASE
 
   stop-runner-linux:
     name: Stop EC2 runner
