@@ -222,7 +222,6 @@ def add_rounding_node(
         return a_node
 
     # Adding rounding node
-
     assert isinstance(a_node.output.dtype, Integer)
     rounding_kwargs = {
         "lsbs_to_remove": lsbs_to_remove,
@@ -245,9 +244,6 @@ def add_rounding_node(
         )
     )
 
-    print(str(a_node.output.dtype))
-    print(str(output_value.dtype))
-    print(str(a_node.bounds))
     rounding_node = Node.generic(
         name=rounding_function.__name__,
         inputs=[deepcopy(output_value)],
@@ -257,7 +253,6 @@ def add_rounding_node(
         attributes=attributes,
     )
     rounding_node.properties["final_lsbs_to_remove"] = lsbs_to_remove
-    print(f"{output_value.dtype.bit_width - lsbs_to_remove=}, ")
     rounding_node.properties["resulting_bit_width"] = output_value.dtype.bit_width - lsbs_to_remove
     rounding_node.properties["overflow_detected"] = False
     rounding_node.properties["original_rounded_bit_width"] = a_node.output.dtype.bit_width
@@ -625,7 +620,7 @@ def bias_closed_form(
         func = subtract
 
     # todo: remove this print debug statement
-    print(f"debug: {func.__name__=}")
+    # print(f"debug: {func.__name__=}")
 
     # todo
     # I somehow have an offset by one to the right that needs to be fixed, maybe a - scaling factor would fix it
@@ -671,7 +666,7 @@ def find_best_params(target, input_range: np.ndarray, target_bit_width: int = 24
     thresholds = inputset[change_mask]
     deltas = np.diff(thresholds)
     # todo: remove this print debug statement
-    print(f"debug: {thresholds=}, {deltas=}")
+    # print(f"debug: {thresholds=}, {deltas=}")
     # Compute msbs_to_keep
     msbs_to_keep = find_msbs_to_keep(inputset, thresholds, deltas)
     scaling_factor = compute_scaling_factor(deltas, target_bit_width, msbs_to_keep)
@@ -730,6 +725,9 @@ def delta_optimize(
     assert subgraph_inputs.min() == x_min, f"{subgraph_inputs.min()} != {x_min}"
     assert subgraph_inputs.max() == x_max, f"{subgraph_inputs.max()} != {x_max}"
 
+    if (x_min <= 0) == (x_max <= 0):
+        raise ValueError(f"Same sign bounds is not supported yet {x_min=}, {x_max=}")
+
     # Initialize a and b such that no changes are done
     best_a = np.ones(shape_, dtype=np.int64)
     best_b = np.zeros(shape_, dtype=np.int64)
@@ -777,7 +775,7 @@ def delta_optimize(
 
         # 0-jump
         if len(thresholds_selected) == 0:
-            print("debug: constant tlu")
+            # constant tlu
             msbs_to_keep = 1
             acc_size = bit_width(input_range)
             lsbs_to_remove = acc_size - msbs_to_keep
@@ -786,7 +784,8 @@ def delta_optimize(
 
         # 1-jump
         elif len(thresholds_selected) == 1:
-            print("debug: single-jump tlu")
+            # single-jump tlu
+
             # todo: atm we are filing the values in the range with the one from the value even if outside the range
             # this leads to a wrong behavior in some situations
             # i don't know if there is a way to fix that from our side without changing the filling behavior
@@ -806,6 +805,8 @@ def delta_optimize(
                 np.all(deltas == 1)
                 and len(thresholds_selected) == len(subgraph_inputs_selected) - 1
             ):
+                # all delta-1 jumps taking the full range
+
                 # If all values are different in the range then maybe there is nothing that can be done
                 # todo: check if correct
                 acc_size = bit_width(input_range)
@@ -814,7 +815,7 @@ def delta_optimize(
                 scaling_factor = 1
                 bias = 0
             else:
-                print("debug: 'normal' tlu")
+                # 'normal' tlu
                 # todo: implement something that limits the bit the msbs_to_keep but still
                 # finds adequate parameters
                 # todo: check that optimization is indeed needed
@@ -850,13 +851,13 @@ def delta_optimize(
         )
 
         # todo: remove debug print
-        print(
-            f"{best_a[best_indexes]=}",
-            f"{best_b[best_indexes]=}",
-            f"{best_lsbs[indexes]=}",
-            f"{best_msbs[indexes]=}",
-            f"{best_acc[indexes]=}",
-        )
+        # print(
+        #     f"{best_a[best_indexes]=}",
+        #     f"{best_b[best_indexes]=}",
+        #     f"{best_lsbs[indexes]=}",
+        #     f"{best_msbs[indexes]=}",
+        #     f"{best_acc[indexes]=}",
+        # )
 
     # As rounding can be applied only for the entire tensor,
     # a single rounding threshold must be found. The smallest
@@ -1331,10 +1332,6 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
         )
 
         for tlu_node in tlu_nodes:
-            print()
-            # todo: remove debug print
-            print("PROCESSING NODE")
-
             # On each tlu we do:
             # 1. Optimize a and b for the subgraph
             # 2. Insert a and b in the graph
@@ -1444,6 +1441,7 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
             tlu_node.properties["attributes"]["lsbs_to_remove"] = lsbs_to_remove
 
             tlu_node.inputs[0] = deepcopy(rounding_node.output)
+
             modify_subgraph_for_rounded_inputs(
                 tlu_subgraph, best_a, best_b, rounding_node, x_min=min_bound, x_max=max_bound
             )
