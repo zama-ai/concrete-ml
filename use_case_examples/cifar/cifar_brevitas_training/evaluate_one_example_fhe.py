@@ -96,6 +96,7 @@ configuration = Configuration(
     fhe_execution=not SIMULATE_ONLY,
 )
 
+
 print("Compiling the model.")
 quantized_numpy_module, compilation_execution_time = measure_execution_time(
     compile_brevitas_qat_model

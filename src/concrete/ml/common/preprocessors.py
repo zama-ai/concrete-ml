@@ -173,10 +173,26 @@ def merge_tlu_constant_shapes(constant_shapes: List[Tuple[int, ...]]) -> Tuple[i
     if not constant_shapes:
         return tuple()
 
-    return tuple(
-        max(constant_shape[idx] for constant_shape in constant_shapes if len(constant_shape) > idx)
-        for idx in range(max(len(elt) for elt in constant_shapes))
-    )
+    n_dims_max = max(len(constant_shape) for constant_shape in constant_shapes)    
+    fixed_constant_shapes = []
+    for constant_shape in constant_shapes:
+        if len(constant_shape) < n_dims_max:
+            fixed_shape = tuple([1] * (n_dims_max - len(constant_shape)) + list(constant_shape))
+            fixed_constant_shapes.append(fixed_shape)
+        else:
+            fixed_constant_shapes.append(constant_shape)
+    fixed_constant_shapes = np.asarray(fixed_constant_shapes)
+    
+    merged_shape = np.max(fixed_constant_shapes, axis=0)
+    for dim in range(len(merged_shape)):
+        unique_vals = np.unique(fixed_constant_shapes[:,dim])
+        assert len(unique_vals) <= 2
+
+    return tuple(merged_shape)
+#    return tuple(
+#        max(constant_shape[idx] for constant_shape in constant_shapes if len(constant_shape) > idx)
+#        for idx in range(max(len(elt) for elt in constant_shapes))
+#    )
 
 
 def add_rounding_node(
@@ -1108,20 +1124,24 @@ def make_subgraph_input_tensor(
     subgraph_inputs = np.array(list(range(int(min_bound), int(max_bound) + 1)))
     subgraph_input_shape = tuple([len(subgraph_inputs), *orig_shape_[1:]])
 
+    reps = list(expected_shape)
+    reps[0] = 1
+
     if len(expected_shape) > 1:
-        subgraph_inputs = np.tile(
-            subgraph_inputs[
+        to_tile = subgraph_inputs[
                 tuple(
                     [
                         slice(0, len(subgraph_inputs), 1),
                         *[np.newaxis for _ in range(len(expected_shape[1:]))],
                     ]
                 )
-            ],
-            expected_shape,
+            ]
+        subgraph_inputs = np.tile(
+            to_tile,
+            reps,
         )
 
-        subgraph_inputs = subgraph_inputs[tuple(slice(0, elt, 1) for elt in subgraph_input_shape)]
+#        subgraph_inputs = subgraph_inputs[tuple(slice(0, elt, 1) for elt in subgraph_input_shape)]
 
     return subgraph_inputs
 
@@ -1360,7 +1380,7 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
                 min_bound,
                 max_bound,
                 orig_shape_,
-                tuple([int(max_bound - min_bound), *shape_[1:]]),
+                tuple([int(max_bound - min_bound) + 1, *shape_[1:]]),
             )
             # shape_ -> expected_shape
 
