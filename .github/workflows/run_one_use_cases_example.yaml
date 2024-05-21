@@ -1,5 +1,6 @@
 name: Run One Use Case Example
 on:
+  push:
   workflow_dispatch:
     inputs:
       use_case:
@@ -12,7 +13,7 @@ on:
           - cifar/cifar_brevitas_finetuning
           - cifar/cifar_brevitas_training
           - credit_scoring
-          - deployment/breast_cancer_builtin
+          - deployment/breast_cancer
           - deployment/cifar
           - deployment/sentiment_analysis
           - disease_prediction
@@ -68,20 +69,31 @@ jobs:
       run:
         shell: bash
     steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Set up Environment
         run: |
           # Setup commands if any, for example, installing dependencies, etc.
           apt-get update && apt-get install -y python3-venv make git git-lfs binutils
 
+          # We need to freeze docker.io because its update requires user input
+          apt-mark hold docker.io
+
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
           lfs: true
 
+      - name: Install dependencies
+        run: |
+          ./script/make_utils/setup_os_deps.sh
+          make setup_env
+
       - name: Run One Use Case Example Script
         run: |
-          make run_one_use_case_example USE_CASE=${{ github.event.inputs.use_case }}
+          USE_CASE=${{ github.event_name == 'push' && 'deployment/breast_cancer' || github.event.inputs.use_case }}
+          make run_one_use_case_example USE_CASE=$USE_CASE
 
   stop-runner-linux:
     name: Stop EC2 runner

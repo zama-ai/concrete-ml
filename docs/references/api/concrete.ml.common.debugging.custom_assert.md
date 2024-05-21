@@ -8,7 +8,7 @@ Provide some variants of assert.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/debugging/custom_assert.py#L28"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/debugging/custom_assert.py#L29"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `assert_true`
 
@@ -30,7 +30,7 @@ Provide a custom assert to check that the condition is True.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/debugging/custom_assert.py#L43"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/debugging/custom_assert.py#L44"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `assert_false`
 
@@ -52,7 +52,7 @@ Provide a custom assert to check that the condition is False.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/debugging/custom_assert.py#L58"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/debugging/custom_assert.py#L59"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `assert_not_reached`
 

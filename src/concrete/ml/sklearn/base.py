@@ -834,7 +834,8 @@ class BaseClassifier(BaseEstimator):
 class QuantizedTorchEstimatorMixin(BaseEstimator):
     """Mixin that provides quantization for a torch module and follows the Estimator API."""
 
-    def __init_subclass__(cls):
+    def __init_subclass__(cls, *args, **kwargs):
+        super().__init_subclass__(*args, **kwargs)
         for klass in cls.__mro__:
             # pylint: disable-next=protected-access
             if getattr(klass, "_is_a_public_cml_model", False):
@@ -1291,7 +1292,8 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
     #: Model's base framework used, either 'xgboost' or 'sklearn'. Is set for each subclasses.
     framework: str
 
-    def __init_subclass__(cls):
+    def __init_subclass__(cls, *args, **kwargs):
+        super().__init_subclass__(*args, **kwargs)
         for klass in cls.__mro__:
             # pylint: disable-next=protected-access
             if getattr(klass, "_is_a_public_cml_model", False):
@@ -1500,7 +1502,8 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
     `get_params` and `set_params` methods.
     """
 
-    def __init_subclass__(cls):
+    def __init_subclass__(cls, *args, **kwargs):
+        super().__init_subclass__(*args, **kwargs)
         for klass in cls.__mro__:
             # pylint: disable-next=protected-access
             if getattr(klass, "_is_a_public_cml_model", False):
@@ -1896,7 +1899,8 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
     `get_params` and `set_params` methods.
     """
 
-    def __init_subclass__(cls):
+    def __init_subclass__(cls, *args, **kwargs):
+        super().__init_subclass__(*args, **kwargs)
         for klass in cls.__mro__:
             # pylint: disable-next=protected-access
             if getattr(klass, "_is_a_public_cml_model", False):

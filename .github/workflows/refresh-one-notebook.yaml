@@ -15,7 +15,6 @@ on:
         - CreditScoring \n
         - DecisionTreeClassifier \n
         - DecisionTreeRegressor \n
-        - Deployment \n
         - EncryptedPandas \n
         - ExperimentPrivacyTreePaper \n
         - FromImageNetToCifar \n
@@ -60,7 +59,6 @@ env:
   CreditScoring: "use_case_examples/credit_scoring/CreditScoring.ipynb" 
   DecisionTreeClassifier: "docs/advanced_examples/DecisionTreeClassifier.ipynb" 
   DecisionTreeRegressor: "docs/advanced_examples/DecisionTreeRegressor.ipynb" 
-  Deployment: "docs/advanced_examples/Deployment.ipynb" 
   EncryptedPandas: "docs/advanced_examples/EncryptedPandas.ipynb" 
   ExperimentPrivacyTreePaper: "docs/advanced_examples/ExperimentPrivacyTreePaper.ipynb" 
   FromImageNetToCifar: "use_case_examples/cifar/cifar_brevitas_finetuning/FromImageNetToCifar.ipynb" 

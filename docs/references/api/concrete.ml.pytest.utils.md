@@ -13,7 +13,7 @@ Common functions or lists for test files, which can't be put in fixtures.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/utils.py#L146"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L147"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_sklearn_linear_models_and_datasets`
 
@@ -43,7 +43,7 @@ Get the pytest parameters to use for testing linear models.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/utils.py#L189"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L190"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_sklearn_tree_models_and_datasets`
 
@@ -73,7 +73,7 @@ Get the pytest parameters to use for testing tree-based models.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/utils.py#L221"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L222"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_sklearn_neural_net_models_and_datasets`
 
@@ -103,7 +103,7 @@ Get the pytest parameters to use for testing neural network models.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/utils.py#L285"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L286"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_sklearn_neighbors_models_and_datasets`
 
@@ -133,7 +133,7 @@ Get the pytest parameters to use for testing neighbor models.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/utils.py#L317"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L318"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_sklearn_all_models_and_datasets`
 
@@ -163,7 +163,7 @@ Get the pytest parameters to use for testing all models available in Concrete ML
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/utils.py#L379"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L380"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `instantiate_model_generic`
 
@@ -186,7 +186,7 @@ Instantiate any Concrete ML model type.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/utils.py#L430"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L431"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `data_calibration_processing`
 
@@ -212,7 +212,7 @@ Reduce size of the given data-set.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/utils.py#L491"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L492"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `load_torch_model`
 
@@ -240,7 +240,7 @@ Load an object saved with torch.save() from a file or dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/utils.py#L521"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L522"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `values_are_equal`
 
@@ -263,7 +263,7 @@ This method takes into account objects of type None, numpy.ndarray, numpy.floati
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/utils.py#L565"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L566"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_serialization`
 
@@ -289,7 +289,7 @@ This function serializes all objects using the `dump`, `dumps`, `load` and `load
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/utils.py#L673"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L674"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_random_samples`
 
@@ -314,7 +314,7 @@ Select `n_sample` random elements from a 2D NumPy array.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/utils.py#L696"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L697"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `pandas_dataframe_are_equal`
 
