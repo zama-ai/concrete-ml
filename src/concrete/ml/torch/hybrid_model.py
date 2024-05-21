@@ -190,9 +190,8 @@ class RemoteModule(nn.Module):
                 path_dir=str(path_to_client.resolve()), key_dir=str(self.path_to_keys.resolve())
             )
             # The client first need to create the private and evaluation keys.
-            client.generate_private_and_evaluation_keys()
-            # Get the serialized evaluation keys
             serialized_evaluation_keys = client.get_serialized_evaluation_keys()
+
             if self.verbose:
                 print(f"Evaluation keys size: {len(serialized_evaluation_keys) / (10**6):.2f} MB")
             assert isinstance(serialized_evaluation_keys, bytes)

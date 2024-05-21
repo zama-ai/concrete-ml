@@ -13,7 +13,68 @@ The diagram above shows the steps that a developer goes through to prepare a mod
 
 The compiled model (`server.zip`) is deployed to a server and the cryptographic parameters (`client.zip`) are shared with the clients. In some settings, such as a phone application, the `client.zip` can be directly deployed on the client device and the server does not need to host it.
 
-Note that for built-in models, the server output + post-processing adheres to the following guidelines: if the model is a regressor, the output follows the format of the scikit-learn `.predict()` method; if the model is a classifier, the output follows the format of the scikit-learn `.predict_proba()` method.
+> **Important Note:** In a client-server production using FHE, the server's output format depends on the model type. For regressors, the output matches the `predict()` method from scikit-learn, providing direct predictions. For classifiers, the output uses the `predict_proba()` method format, offering probability scores for each class, which allows clients to determine class membership by applying a threshold (commonly 0.5).
+
+### Using the API Classes
+
+The `FHEModelDev`, `FHEModelClient`, and `FHEModelServer` classes in the `concrete.ml.deployment` module make it easy to deploy and interact between the client and server:
+
+- **`FHEModelDev`**: This class is used during the development phase to prepare and save the model artifacts (`client.zip` and `server.zip`). It handles the serialization of the underlying FHE circuit as well as the crypto-parameters used for generating the keys.
+
+- **`FHEModelClient`**: This class is used on the client side to generate and serialize the cryptographic keys, encrypt the data before sending it to the server, and decrypt the results received from the server. It also handles the loading of quantization parameters and pre/post-processing from `serialized_processing.json`.
+
+- **`FHEModelServer`**: This class is used on the server side to load the FHE circuit from `server.zip` and execute the model on encrypted data received from the client.
+
+### Example Usage
+
+```python
+from concrete.ml.sklearn import DecisionTreeClassifier
+from concrete.ml.deployment import FHEModelDev, FHEModelClient, FHEModelServer
+import numpy as np
+
+# Define the directory for FHE client/server files
+fhe_directory = '/tmp/fhe_client_server_files/'
+
+# Initialize the Decision Tree model
+model = DecisionTreeClassifier()
+
+# Generate some random data for training
+X = np.random.rand(100, 20)
+y = np.random.randint(0, 2, size=100)
+
+# Train and compile the model
+model.fit(X, y)
+model.compile(X)
+
+# Setup the development environment
+dev = FHEModelDev(path_dir=fhe_directory, model=model)
+dev.save()
+
+# Setup the client
+client = FHEModelClient(path_dir=fhe_directory, key_dir="/tmp/keys_client")
+serialized_evaluation_keys = client.get_serialized_evaluation_keys()
+
+# Client pre-processes new data
+X_new = np.random.rand(1, 20)
+encrypted_data = client.quantize_encrypt_serialize(X_new)
+
+# Setup the server
+server = FHEModelServer(path_dir=fhe_directory)
+server.load()
+
+# Server processes the encrypted data
+encrypted_result = server.run(encrypted_data, serialized_evaluation_keys)
+
+# Client decrypts the result
+result = client.deserialize_decrypt_dequantize(encrypted_result)
+```
+
+> **Data Transfer Overview:**
+>
+> - **From Client to Server:** `serialized_evaluation_keys` (once), `encrypted_data`.
+> - **From Server to Client:** `encrypted_result`.
+
+These objects are serialized into bytes to streamline the data transfer between the client and server.
 
 ## Serving
 

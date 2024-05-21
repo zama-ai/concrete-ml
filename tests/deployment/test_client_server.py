@@ -278,7 +278,6 @@ def check_client_server_execution(
     fhe_model_server.load()
 
     # Client side : Generate all keys and serialize the evaluation keys for the server
-    fhe_model_client.generate_private_and_evaluation_keys()
     evaluation_keys = fhe_model_client.get_serialized_evaluation_keys()
 
     # Client side : Encrypt the data
