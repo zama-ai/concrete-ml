@@ -85,6 +85,11 @@ jobs:
         with:
           lfs: true
 
+      - name: Install dependencies
+        run: |
+          ./script/make_utils/setup_os_deps.sh
+          make setup_env
+
       - name: Run One Use Case Example Script
         run: |
           USE_CASE=${{ github.event_name == 'push' && 'deployment/breast_cancer' || github.event.inputs.use_case }}
