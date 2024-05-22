@@ -47,11 +47,28 @@ jobs:
       run:
         shell: bash
     steps:
-
-      - name: Set up Environment
+      - name: Install Docker and Dependencies
         run: |
-          # Setup commands if any, for example, installing dependencies, etc.
-          apt-get update && apt-get install -y python3-venv make git git-lfs binutils
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update
+          apt-get install -y \
+            ca-certificates \
+            curl \
+            gnupg \
+            lsb-release \
+            python3-venv \
+            make \
+            git \
+            git-lfs \
+            binutils
+          mkdir -p /etc/apt/keyrings
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+          echo \
+            "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+            $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+          apt-get update
+          apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+          apt-get install -y python3-venv make git git-lfs binutils
 
       - name: Checkout Code
         uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
