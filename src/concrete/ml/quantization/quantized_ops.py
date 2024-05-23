@@ -1577,14 +1577,139 @@ class QuantizedOr(QuantizedOpUnivariateOfEncrypted, QuantizedOp):
     _impl_for_op_named: str = "Or"
 
 
-class QuantizedDiv(QuantizedOpUnivariateOfEncrypted, QuantizedOp):
-    """Div operator /.
+class QuantizedDiv(QuantizedMixingOp):
+    """Quantized Division operator.
 
-    This operation is not really working as a quantized operation. It just works when things got
-    fused, as in e.g., Act(x) = 1000 / (x + 42))
+    Can divide either two variables (both encrypted) or a variable and a constant
     """
 
     _impl_for_op_named: str = "Div"
+
+    def __init__(
+        self, *args, rounding_threshold_bits: int | Dict[str, str | int] | None = None, **kwargs
+    ) -> None:
+        super().__init__(*args, rounding_threshold_bits=rounding_threshold_bits, **kwargs)
+        self.divider_quantizer: UniformQuantizer
+        self.max_qvalue: int
+
+    def calibrate(self, *inputs: numpy.ndarray) -> numpy.ndarray:
+        """Create corresponding QuantizedArray for the output of the activation function.
+
+        Args:
+            *inputs (numpy.ndarray): Calibration sample inputs.
+
+        Returns:
+            numpy.ndarray: the output values for the provided calibration samples.
+        """
+        q_array_divider = QuantizedArray(self.n_bits, 1 / inputs[1], is_symmetric=False)
+        self.divider_quantizer = q_array_divider.quantizer
+
+        # Get the max qvalue that will be used to handle division by zero in quantized
+        self.max_qvalue = numpy.max(q_array_divider.qvalues)
+        return super().calibrate(*inputs)
+
+    def q_impl(
+        self,
+        *q_inputs: ONNXOpInputOutputType,
+        calibrate_rounding: bool = False,
+        **attrs,
+    ) -> ONNXOpInputOutputType:
+
+        # Ensure q_inputs has exactly 2 elements
+        assert len(q_inputs) == 2, "QuantizedDiv should always have 2 elements in q_inputs"
+
+        # If the second input is a RawOpOutput, perform the op in the clear
+        if isinstance(q_inputs[1], RawOpOutput):
+            prepared_inputs = self._prepare_inputs_with_constants(
+                *q_inputs, calibrate=False, quantize_actual_values=False
+            )
+            return self.call_impl(*prepared_inputs, **attrs).view(RawOpOutput)
+
+        # For mypy
+        assert self.output_quant_params is not None
+        assert self.output_quant_params.scale is not None
+        assert self.output_quant_params.zero_point is not None
+
+        prepared_inputs = self._prepare_inputs_with_constants(
+            *q_inputs, calibrate=False, quantize_actual_values=True
+        )
+
+        q_input_0: QuantizedArray = prepared_inputs[0]
+        q_input_1: QuantizedArray = prepared_inputs[1]
+
+        assert q_input_0.quantizer.scale is not None
+        assert q_input_0.quantizer.zero_point is not None
+
+        assert q_input_1.quantizer.scale is not None
+        assert q_input_1.quantizer.zero_point is not None
+
+        # Dequantize
+        input_1 = q_input_1.dequant()
+
+        # Replace input_1 with max_qvalue if input_1 is 0
+        input_1 = numpy.where(input_1 == 0, self.max_qvalue, input_1)
+
+        # Compute the inverse of input_1
+        input_1_inv = 1.0 / input_1
+
+        # Re-quantize the inverse using the same quantization parameters as q_input_1
+        q_input_1_inv_rescaled = self.divider_quantizer.quant(input_1_inv)
+
+        # The product of quantized encrypted integer values
+        product_q_values = q_input_0.qvalues * q_input_1_inv_rescaled
+
+        # Integer quantized multiplication need adjustment based on the zero points.
+        if q_input_0.quantizer.zero_point:
+            product_q_values -= q_input_0.quantizer.zero_point * (
+                q_input_1.qvalues - q_input_1.quantizer.zero_point
+            )
+        if q_input_1.quantizer.zero_point:
+            product_q_values -= q_input_1.quantizer.zero_point * (
+                q_input_0.qvalues - q_input_0.quantizer.zero_point
+            )
+
+        # mypy
+        assert self.divider_quantizer.scale is not None
+        assert self.divider_quantizer.zero_point is not None
+
+        # Compute the scale and zero point based on the scale and zero point
+        # of the two quantized values multiplied together
+        new_scale = q_input_0.quantizer.scale * self.divider_quantizer.scale
+        new_zero_point = q_input_0.quantizer.zero_point * self.divider_quantizer.zero_point
+
+        if self.produces_graph_output:
+            return self.make_output_quant_parameters(product_q_values, new_scale, new_zero_point)
+
+        q_product = QuantizedArray(
+            n_bits=self.n_bits,
+            values=product_q_values,
+            value_is_float=False,
+            options=self._get_output_quant_opts(),
+            stats=self.output_quant_stats,
+            params=UniformQuantizationParameters(
+                scale=new_scale,
+                zero_point=new_zero_point,
+                offset=0,
+            ),
+        )
+
+        with tag(self.op_instance_name + ".rounding"):
+            # Apply Concrete rounding (if relevant)
+            product_q_values = self.cnp_round(product_q_values, calibrate_rounding)
+
+        # De-quantize the product
+        dequant_product = q_product.dequant()
+
+        # Return the raw float values without re-quantizing them to the new scale, as any
+        # following Gemm/Add/Conv will quantize them with _prepare_inputs_with_constants(...)
+        return QuantizedArray(
+            self.n_bits,
+            dequant_product,
+            value_is_float=True,
+            options=self._get_output_quant_opts(),
+            stats=self.output_quant_stats,
+            params=self.output_quant_params,
+        )
 
 
 class QuantizedMul(QuantizedOpUnivariateOfEncrypted, QuantizedOp):

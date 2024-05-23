@@ -1600,3 +1600,22 @@ class IdentityExpandMultiOutputModel(nn.Module):
             Tuple[torch.Tensor. torch.Tensor]: Outputs of the network.
         """
         return x, x.unsqueeze(0)
+
+class TorchDivide(torch.nn.Module):
+    """Torch model that performs a encrypted division between two inputs."""
+
+    def __init__(self, input_output, activation_function):  # pylint: disable=unused-argument
+        super().__init__()
+
+    @staticmethod
+    def forward(x, y):
+        """Forward pass.
+
+        Args:
+            x (torch.Tensor): The first input tensor.
+            y (torch.Tensor): The second input tensor.
+
+        Returns:
+            torch.Tensor: The result of the division.
+        """
+        return x / y
