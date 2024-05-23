@@ -30,6 +30,8 @@ class OS(enum.Enum):
     MACOS = "macos"
 
 
+# Add mac silicon
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4010
 OS_VERSIONS = {
     OS.LINUX: "ubuntu-20.04",
     OS.MACOS: "macos-12",

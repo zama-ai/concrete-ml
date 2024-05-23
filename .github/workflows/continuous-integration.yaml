@@ -1,4 +1,4 @@
-name: CML builds (weekly or not)
+name: Concrete ML Tests
 on:
   pull_request:
 
@@ -10,40 +10,38 @@ on:
   release:
     types: [published]
 
-  # Workflow dispatch and schedule refer to the weekly build
   workflow_dispatch:
     inputs:
       event_name:
         description: "Event that triggers the workflow"
         required: true
         type: choice
-        default: weekly
+        default: pr
         options:
-          - weekly
           - pr
-          - push_to_main
-          - push_to_release
 
       linux_python_versions:
         description: "Space separated list of python versions (3.8, 3.9, 3.10 are supported) to launch on linux"
         required: false
         type: string
-        default: "3.8 3.9"
+        default: "3.8"
+
       macos_python_versions:
-        description: "Space separated list of python versions (3.8, 3.9, 3.10 are supported) to launch on macos"
+        description: "Space separated list of python versions (3.8, 3.9, 3.10 are supported) to launch on macos (intel)"
         required: false
         type: string
-        default: "3.8 3.9"
+        default: "3.8"
+
       manual_call:
         description: "Do not uncheck this"
         type: boolean
         required: false
         default: true
   
-  # Workflow call refers to the release process (it enables the current CI workflow to be called by
-  # another workflow from the same repository, in this case the release one)
-  # The "release" event is not put by default in order to avoid running the following CI without
-  # explicitly indicating it in the caller workflow
+  # Workflow call refers to the weekly or release process (it enables the current CI workflow to be 
+  # called by another workflow from the same repository, in this case the release one)
+  # No default value is put in order to avoid running the following CI without explicitly 
+  # indicating it in the caller workflow
   # Besides, GitHub actions are not able to differentiate 'workflow_dispatch' from 'workflow_call'
   # based on 'github.event_name' and both are set to 'workflow_dispatch'. Therefore, an optional 
   # input 'manual_call' with proper default values is added to both as a workaround, following one 
@@ -60,12 +58,6 @@ on:
         type: boolean
         required: false
         default: false
-  
-  schedule:
-    # * is a special character in YAML so you have to quote this string
-    # At 22:00 on Sunday
-    # Timezone is UTC, so Paris time is +2 during the summer and +1 during winter
-    - cron: '0 22 * * 0'
 
 concurrency:
   # Add event_name in the group as workflow dispatch means we could run this in addition to other
@@ -82,7 +74,9 @@ env:
   # differentiate the release CI from regular CIs by using 'inputs.event_name', which should be set
   # to "release" by the release workflow
   IS_PR: ${{ github.event_name == 'pull_request' && inputs.event_name != 'release' }}
-  IS_WEEKLY: ${{ github.event_name == 'schedule' || ((github.event_name == 'workflow_dispatch') && (inputs.event_name == 'weekly')) }}
+  # Run the weekly CI if it has been triggered manually by the weekly workflow, meaning 
+  # 'inputs.event_name' is set to "weekly"
+  IS_WEEKLY: ${{ inputs.event_name == 'weekly'}}
   # The 'IS_RELEASE' variable indicates that the workflow has been triggered by the releasing 
   # process itself, before publishing it. It should only happen when the release workflow triggers
   # the CI, in which 'inputs.event_name' is set to "release"
@@ -104,6 +98,7 @@ env:
 
 jobs:
   matrix-preparation:
+    name: Prepare versions and OS
     # We skip the CI in cases of pushing to internal main (because all pushes to main internal are now from the bot)
     if: ${{ !( github.repository == 'zama-ai/concrete-ml-internal' && github.event_name == 'push' && github.ref == 'refs/heads/main' ) }}
     runs-on: ubuntu-20.04
@@ -115,6 +110,8 @@ jobs:
       needs-39-linux-runner: ${{ steps.set-matrix.outputs.needs-39-linux-runner }}
       needs-310-linux-runner: ${{ steps.set-matrix.outputs.needs-310-linux-runner }}
       instance-type: ${{ steps.set-matrix.outputs.instance-type }}
+      linux-python-versions: ${{ steps.set-matrix.outputs.linux-python-versions }}
+      macos-python-versions: ${{ steps.set-matrix.outputs.macos-python-versions }}
     steps:
       - name: Checkout code
         uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
@@ -147,7 +144,7 @@ jobs:
           # Manage instance type
           INSTANCE_TYPE="c5.4xlarge"
           if [[ "${BUILD_TYPE}" == "weekly" ]]; then
-            INSTANCE_TYPE="m6i.metal"
+            INSTANCE_TYPE="m6i.16xlarge"
           elif [[ "${BUILD_TYPE}" == "release" ]]; then
             INSTANCE_TYPE="m6i.16xlarge"
           fi
@@ -178,6 +175,11 @@ jobs:
           
           echo "LINUX_PYTHON_VERSIONS: ${LINUX_PYTHON_VERSIONS}"
           echo "MACOS_PYTHON_VERSIONS: ${MACOS_PYTHON_VERSIONS}"
+
+          # Used for the slack report
+          echo "linux-python-versions=${LINUX_PYTHON_VERSIONS}" >> $GITHUB_OUTPUT
+          echo "macos-python-versions=${MACOS_PYTHON_VERSIONS}" >> $GITHUB_OUTPUT
+
           echo "BUILD_TYPE: ${BUILD_TYPE}"
           echo "INSTANCE_TYPE: ${INSTANCE_TYPE}"
 
@@ -223,7 +225,7 @@ jobs:
 
   start-runner-linux:
     needs: [matrix-preparation]
-    name: Start EC2 runner
+    name: Start EC2 runner (Linux)
     runs-on: ubuntu-20.04
     timeout-minutes: 15
     outputs:
@@ -336,6 +338,7 @@ jobs:
           echo "linux-matrix=${MATRIX}" >> $GITHUB_OUTPUT
 
   build-linux:
+    name: Python ${{ matrix.python_version }} (Linux)
     needs: [start-runner-linux]
     runs-on: ${{ matrix.runs_on }}
     # Run in a clean container
@@ -681,22 +684,23 @@ jobs:
           name: py3-wheel
           path: dist/*.whl
       
-      # Run Pytest on a subset of our tests if :
-      # - the current workflow does no take place in a weekly or release CI
+      # Run pytest if :
+      # - the current workflow does no take place release CI
       # - if the CI has been triggered manually (through GitHub's Action interface)
       # - the source code has been changed
       # - any tests utils (pytest, data) has been changed
       # - any dependency has been updated 
       # - conftest.py has been changed
       # - Makefile has been changed
+      # If the workflow takes place in a release CI, an option is added to take into account more tests
       # If only some test files were changed, this step is skipped and each associated tests will be
       # run individually in a following step (pytest_modified_tests_only)
       # If regular tests failed, a following script checks for flaky tests. If all failed tests 
       # are known flaky tests, they are rerun. Otherwise, the step exits with status 1.
       # The 'bash +e {0}' is added here in order to make sure that the step does not exit directly 
       # if 'make pytest' fails
-      - name: PyTest Source Code (regular)
-        id: pytest_regular
+      - name: PyTest Source Code (regular, weekly)
+        id: pytest
         if: |
           (
             (
@@ -710,12 +714,19 @@ jobs:
               )
             )
             || fromJSON(env.IS_WORKFLOW_DISPATCH)
+            || fromJSON(env.IS_WEEKLY)
           )
           && steps.conformance.outcome == 'success' 
           && !cancelled()
         shell: bash +e {0}
         run: |
-          make pytest_and_report
+          if [[ "${{ env.IS_WEEKLY }}" == "true" ]]; then
+            PYTEST_OPTIONS="--weekly"
+          else
+            PYTEST_OPTIONS=""
+          fi
+          
+          make pytest_and_report PYTEST_OPTIONS=${PYTEST_OPTIONS}
 
           # If regular tests failed, check for flaky tests
           if [ $? -ne 0 ]; then
@@ -724,7 +735,8 @@ jobs:
           	poetry run python ./script/actions_utils/pytest_failed_test_report.py \
             --pytest-input-report "pytest_report.json" \
             --failed-tests-report "failed_tests_report.json" \
-            --failed-tests-comment "failed_tests_comment.txt"
+            --failed-tests-comment "failed_tests_comment_${{ matrix.python_version }}.txt"
+            --failed-tests-list "failed_tests_slack_list_${{ matrix.python_version }}.txt"
 
             # Check if all failed tests are known flaky tests
             FAILED_TESTS_ARE_FLAKY=$(jq .all_failed_tests_are_flaky "failed_tests_report.json")
@@ -741,26 +753,43 @@ jobs:
             fi
           fi
 
+      # Upload the list of flaky tests that have been re-run (if the only failed tests were flaky)
+      - name: Upload flaky tests list (weekly)
+        uses: actions/upload-artifact@v4
+        if: |
+          fromJSON(env.IS_WEEKLY) 
+          && steps.pytest.outcome == 'success' 
+          && fromJSON(env.FAILED_TESTS_ARE_FLAKY) 
+          && !cancelled()
+        with:
+          name: failed_flaky_${{ matrix.python_version }}
+          path: failed_tests_slack_list_${{ matrix.python_version }}.txt
+
       # If regular tests passed but at least one known flaky test have been rerun, a warning
       # comment is published in the PR and all flaky tests that initially failed are listed
-      - name: Warn PR with flaky tests
+      - name: Warn PR with flaky tests (regular)
         uses: marocchino/sticky-pull-request-comment@331f8f5b4215f0445d3c07b4967662a32a2d3e31
-        if: steps.pytest_regular.outcome == 'success' && fromJSON(env.FAILED_TESTS_ARE_FLAKY) && !cancelled()
+        if: |
+          fromJSON(env.IS_PR) 
+          && steps.pytest.outcome == 'success' 
+          && fromJSON(env.FAILED_TESTS_ARE_FLAKY) 
+          && !cancelled()
         with:
           header: flaky-test
           recreate: true
-          path: failed_tests_comment.txt
+          path: failed_tests_comment_${{ matrix.python_version }}.txt
 
-      # If regular pytest step has been skipped but some changes has been detected in test files, 
+      # If pytest step has been skipped but some changes has been detected in test files, 
       # meaning there was no other changed impacting our testing suite, we only need to run these 
       # modified tests
-      # Note that if pytest utils or test data are changed, the regular pytest step should have been
+      # Note that if pytest utils or test data are changed, the pytest step should have been
       # triggered instead
       - name: PyTest on modified tests only
         id: pytest_modified_tests_only
         if: |
-          steps.changed-files-in-pr.outcome == 'success'
-          && steps.pytest_regular.outcome == 'skipped'
+          fromJSON(env.IS_PR)
+          && steps.changed-files-in-pr.outcome == 'success'
+          && steps.pytest.outcome == 'skipped'
           && steps.changed-files-in-pr.outputs.tests_any_changed == 'true'
           && steps.conformance.outcome == 'success' 
           && !cancelled()
@@ -769,27 +798,11 @@ jobs:
               make pytest_one TEST="$file"
           done
 
-      # Run Pytest on all of our tests on a weekly basis
-      - name: PyTest Source Code (weekly)
-        id: pytest_weekly
-        if: ${{ fromJSON(env.IS_WEEKLY) && steps.conformance.outcome == 'success' && !cancelled() }}
-        run: |
-          make pytest PYTEST_OPTIONS=--weekly
-
-      # Run Pytest on all of our tests on a weekly basis using PyPI's local wheel
-      - name: PyTest with PyPI local wheel of Concrete ML (weekly)
+      # Run Pytest on all of our tests (except flaky ones) using PyPI's local wheel in the weekly 
+      # or during the release process
+      - name: PyTest (no flaky) with PyPI local wheel of Concrete ML (weekly, release)
         if: |
-          fromJSON(env.IS_WEEKLY)
-          && steps.conformance.outcome == 'success' 
-          && !cancelled()
-        run: |
-          make pytest_pypi_wheel_cml
-
-      # Run Pytest on all of our tests (except flaky ones) using PyPI's local wheel during the 
-      # release process
-      - name: PyTest (no flaky) with PyPI local wheel of Concrete ML (release)
-        if: |
-          fromJSON(env.IS_RELEASE)
+          (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
           && steps.conformance.outcome == 'success' 
           && !cancelled()
         run: |
@@ -812,10 +825,7 @@ jobs:
         id: coverage
         if: |
           fromJSON(env.IS_REF_BUILD) 
-          && (
-            steps.pytest_regular.outcome != 'skipped' 
-            || steps.pytest_weekly.outcome != 'skipped'
-          ) 
+          && steps.pytest.outcome != 'skipped'
           && !cancelled()
         run: |
           ./script/actions_utils/coverage.sh global-coverage-infos.json
@@ -932,11 +942,11 @@ jobs:
   # This can be updated to take macOS into account but it is impractical because of long builds 
   # and therefore expensive macOS testing
   linux-build-status:
-    name: Linux build status
+    name: Build Status (Linux)
     needs: [build-linux]
     runs-on: ubuntu-20.04
     timeout-minutes: 2
-    if: ${{ always() }}
+    if: success() || failure()
     steps:
       - name: Fail on unsuccessful Linux build
         shell: bash
@@ -951,20 +961,8 @@ jobs:
             exit 1
           fi
 
-      - name: Slack Notification
-        if: ${{ always() && !success() }}
-        continue-on-error: true
-        uses: rtCamp/action-slack-notify@4e5fb42d249be6a45a298f3c9543b111b02f7907
-        env:
-          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
-          SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
-          SLACK_COLOR: ${{ needs.build-linux.result }}
-          SLACK_MESSAGE: "Build finished with status ${{ needs.build-linux.result }}. (${{ env.ACTION_RUN_URL }})"
-          SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-
   stop-runner-linux:
-    name: Stop EC2 runner
+    name: Stop EC2 runner (Linux)
     needs: [build-linux, start-runner-linux]
     runs-on: ubuntu-20.04
     timeout-minutes: 2
@@ -1004,10 +1002,13 @@ jobs:
           ec2-instance-id: ${{ needs.start-runner-linux.outputs.ec2-instance-id-310 }}
           mode: stop
 
-  build-macos:
+  build-macos-intel:
+    name: Python ${{ matrix.python_version }} (macOS, intel)
     needs: [matrix-preparation]
-    if: ${{ needs.matrix-preparation.outputs.macos-matrix != '[]' }}
-
+    # macOS (intel) build is currently broken so there is not need to test it until Concrete fixes it
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4428
+    # if: ${{ needs.matrix-preparation.outputs.macos-matrix != '[]' }}
+    if: false
     runs-on: ${{ matrix.runs_on }}
     defaults:
       run:
@@ -1080,12 +1081,44 @@ jobs:
       # macOS builds are already long, so we decide not to use --weekly on them, it could be
       # changed. Remark also that, for mac, due to unexpected issues with GitHub, we have a
       # slightly different way to launch pytest
+      # Add support for re-running flaky tests on macOS (intel) CI 
+      # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4428
       - name: PyTest Source Code
         run: |
           make pytest_macOS_for_GitHub
 
+  decide-slack-report:
+    name: Decide Slack report
+    runs-on: ubuntu-20.04
+    outputs:
+      send_slack_report: ${{ steps.set-decision.outputs.send_slack_report }}
+    steps:
+      - name: Set decision
+        id: set-decision
+        run: |
+          SEND_SLACK_REPORT="${{ fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_PUSH_TO_MAIN) || fromJSON(env.IS_PUSH_TO_RELEASE) }}"
+
+          echo "Send Slack report:"
+          echo "${SEND_SLACK_REPORT}"
+
+          echo "send_slack_report=${SEND_SLACK_REPORT}" >> $GITHUB_OUTPUT
+
+
+  # Only send a report for the following CI:
+  # - when pushing to main
+  # - when pushing to a release branch
+  # - when running weekly tests
+  # In these cases, we want to send the report whenever one of the step was triggered, which is 
+  # basically when the `matrix-preparation` has not been skipped
+  # Side note: environmental variables cannot be used for jobs conditions, so we need to determine 
+  # if the job should be run or not in an previous job and store it in its output
   send-report:
-    if: ${{ always() }}
+    name: Send Slack report
+    runs-on: ubuntu-20.04
+    if: |
+      always() 
+      && needs.matrix-preparation.result != 'skipped' 
+      && fromJSON(needs.decide-slack-report.outputs.send_slack_report)
     timeout-minutes: 2
     needs:
       [
@@ -1093,17 +1126,14 @@ jobs:
         start-runner-linux,
         build-linux,
         stop-runner-linux,
-        build-macos,
+        build-macos-intel,
+        decide-slack-report,
       ]
 
-    name: Send Slack notification
-    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
 
       - name: Prepare whole job status
-        if: ${{ always() }}
-        continue-on-error: true
         env:
           NEEDS_JSON: ${{ toJSON(needs) }}
         run: |
@@ -1112,20 +1142,65 @@ jobs:
           --needs_context_json /tmp/needs_context.json)
           echo "JOB_STATUS=${JOB_STATUS}" >> "$GITHUB_ENV"
 
-      - name: Slack Notification
-        if: ${{ always() }}
-        continue-on-error: true
+      - name: Set message title
+        run: |
+          if [[ "${{ env.IS_WEEKLY }}" == "true" ]]; then
+            TITLE_START="Weekly Tests"
+          elif [[ "${{ fromJSON(env.IS_PUSH_TO_MAIN) || fromJSON(env.IS_PUSH_TO_RELEASE) }}" == "true" ]]; then
+            TITLE_START="Push to '${{ github.ref_name }}'"
+          fi
+
+          if [[ "${{ env.JOB_STATUS }}" == "success" ]]; then
+            TITLE_STATUS="passed ✅"
+          elif [[ "${{ env.JOB_STATUS }}" == "cancelled" ]]; then 
+            TITLE_STATUS="cancelled :black_square_for_stop:"
+          elif [[ "${{ env.JOB_STATUS }}" == "skipped" ]]; then 
+            TITLE_STATUS="skipped :fast_forward:"
+          else
+            TITLE_STATUS="failed ❌"
+          fi
+
+          echo "SLACK_TITLE=${TITLE_START} ${TITLE_STATUS}" >> "$GITHUB_ENV"
+        
+      # Retrieve the list of flaky tests that have been re-run if they were some
+      # Enable 'merge-multiple' to download all files in the root directory
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          pattern: failed_flaky_*
+
+      # Add support for re-running flaky tests on macOS (intel) CI 
+      # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4428
+      - name: Set message body
+        run: |
+          SLACK_BODY="Build status ([Action URL](${{ env.ACTION_RUN_URL }})):\n\
+            - Linux: ${{ needs.build-linux.result }}\n\n\
+            - macOS (intel): ${{ needs.build-macos-intel.result }}\n\n"
+
+          LINUX_PYTHON_VERSIONS="${{ needs.matrix-preparation.outputs.linux-python-versions }}"
+
+          for linux_python_version in ${LINUX_PYTHON_VERSIONS}; do
+            file_name="failed_tests_slack_list_${linux_python_version}.txt"
+
+            if [ -f ${file_name} ]; then
+              SLACK_BODY+="Linux failed tests (Python ${linux_python_version}):\n"
+              SLACK_BODY+="$(cat ${file_name})"
+              SLACK_BODY+="\n\n"
+            fi
+          done
+
+          echo "SLACK_BODY=${SLACK_BODY}" >> "$GITHUB_ENV"
+
+      - name: Slack report
         uses: rtCamp/action-slack-notify@4e5fb42d249be6a45a298f3c9543b111b02f7907
         env:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: ${{ env.JOB_STATUS || 'failure' }}
-          SLACK_MESSAGE: "Full run finished with status ${{ env.JOB_STATUS || 'failure' }} \
-            (${{ env.ACTION_RUN_URL }})\n\
-            - matrix-preparation: ${{ needs.matrix-preparation.result || 'Did not run.'}}\n\n\
-            - start-runner-linux: ${{ needs.start-runner-linux.result || 'Did not run.'}}\n\n\
-            - build-linux: ${{ needs.build-linux.result || 'Did not run.' }}\n\n\
-            - stop-runner-linux: ${{ needs.stop-runner-linux.result || 'Did not run.'}}\n\n\
-            - build-macos: ${{ needs.build-macos.result || 'Did not run.' }}"
+          SLACK_TITLE: ${{ env.SLACK_TITLE || 'Unexpected CI' }}
+          SLACK_MESSAGE: ${{ env.SLACK_BODY || 'Unexpected CI' }}
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACKIFY_MARKDOWN: true
+

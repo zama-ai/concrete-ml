@@ -252,7 +252,7 @@ pytest:
 	${PYTEST_OPTIONS}"
 
 # Coverage options are not included since they look to fail on macOS
-# (see https://github.com/zama-ai/concrete-ml-internal/issues/1554)
+# (see https://github.com/zama-ai/concrete-ml-internal/issues/4428)
 .PHONY: pytest_macOS_for_GitHub # Run pytest without coverage options
 pytest_macOS_for_GitHub: pytest_internal_parallel
 
