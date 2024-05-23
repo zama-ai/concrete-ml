@@ -18,5 +18,6 @@ jobs:
   weekly-tests:
     name: Run weekly tests
     uses: ./.github/workflows/continuous-integration.yaml
+    secrets: inherit
     with:
       event_name: "weekly"
