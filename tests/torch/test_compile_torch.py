@@ -50,6 +50,7 @@ from concrete.ml.pytest.torch_models import (
     SingleMixNet,
     StepActivationModule,
     TinyQATCNN,
+    TorchDivide,
     UnivariateModule,
 )
 from concrete.ml.quantization import QuantizedModule
@@ -416,6 +417,7 @@ def accuracy_test_rounding(
         pytest.param(UnivariateModule, 5),
         pytest.param(StepActivationModule, 5),
         pytest.param(EncryptedMatrixMultiplicationModel, 5),
+        pytest.param(TorchDivide, [1, 1]),
     ],
 )
 @pytest.mark.parametrize("simulate", [True, False], ids=["FHE_simulation", "FHE"])
