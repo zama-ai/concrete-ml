@@ -5,6 +5,7 @@ import os
 import tempfile
 import warnings
 import zipfile
+from functools import partial
 from pathlib import Path
 from shutil import copyfile
 
@@ -13,13 +14,30 @@ import pytest
 from sklearn.exceptions import ConvergenceWarning
 from torch import nn
 
-from concrete.ml.deployment.fhe_client_server import FHEModelClient, FHEModelDev, FHEModelServer
+from concrete.ml.deployment.fhe_client_server import (
+    DeploymentMode,
+    FHEModelClient,
+    FHEModelDev,
+    FHEModelServer,
+)
 from concrete.ml.pytest.torch_models import FCSmall
 from concrete.ml.pytest.utils import MODELS_AND_DATASETS, get_model_name, instantiate_model_generic
 from concrete.ml.quantization.quantized_module import QuantizedModule
+from concrete.ml.sklearn.linear_model import SGDClassifier
 from concrete.ml.torch.compile import compile_torch_model
 
 # pylint: disable=too-many-statements,too-many-locals
+
+
+# Add encrypted training with SGDClassifier manually
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4460
+MODELS_AND_DATASETS = MODELS_AND_DATASETS + [
+    pytest.param(
+        partial(SGDClassifier, fit_encrypted=True, parameters_range=(-1, 1)),
+        {"n_samples": 100, "n_features": 10, "n_classes": 2, "n_informative": 10, "n_redundant": 0},
+        id="SGDClassifier_Encrypted_Training",
+    )
+]
 
 
 class OnDiskNetwork:
@@ -96,11 +114,15 @@ def test_client_server_sklearn(
     y_train = y[:-1]
     x_test = x[-1:]
 
-    model = instantiate_model_generic(model_class, n_bits=n_bits)
+    # Instantiate the model
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=UserWarning)
+        model = instantiate_model_generic(model_class, n_bits=n_bits)
 
     # Fit the model
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=ConvergenceWarning)
+        warnings.simplefilter("ignore", category=UserWarning)
         model.fit(x_train, y_train)
 
     key_dir = default_configuration.insecure_key_cache_location
@@ -203,7 +225,7 @@ def check_client_server_files(model):
     with pytest.raises(
         Exception,
         match=(
-            f"path_dir: {disk_network.dev_dir.name} is not empty."
+            f"path_dir: {disk_network.dev_dir.name} is not empty. "
             "Please delete it before saving a new model."
         ),
     ):
@@ -337,3 +359,66 @@ def check_input_compression(model, fhe_circuit_compressed, is_torch, **compilati
         "Compressed input ciphertext's is not smaller than the uncompressed input ciphertext. Got "
         f"{compressed_size} bytes (compressed) and {uncompressed_size} bytes (uncompressed)."
     )
+
+
+ERROR_MSG_BAD_MODE = "Mode must be either 'inference' or 'training'"
+ERROR_MSG_NO_FHE_CIRCUIT = "Training FHE circuit does not exist."
+
+
+@pytest.mark.parametrize("n_bits", [2])
+@pytest.mark.parametrize(
+    "mode, fit_encrypted, error_message",
+    [
+        ("invalid_mode", True, ERROR_MSG_BAD_MODE),
+        ("INVALID_MODE", True, ERROR_MSG_BAD_MODE),
+        ("train", True, ERROR_MSG_BAD_MODE),
+        ("", True, ERROR_MSG_BAD_MODE),
+        (None, True, None),
+        ("inference", False, None),
+        ("inference", True, None),
+        ("training", False, ERROR_MSG_NO_FHE_CIRCUIT),
+        ("training", True, None),
+        (DeploymentMode.INFERENCE, False, None),
+        (DeploymentMode.TRAINING, False, ERROR_MSG_NO_FHE_CIRCUIT),
+        (DeploymentMode.TRAINING, True, None),
+    ],
+)
+def test_save_mode_handling(n_bits, fit_encrypted, mode, error_message):
+    """Test that the save method handles valid and invalid modes correctly."""
+
+    # Generate random data
+    x, y = numpy.random.rand(20, 2), numpy.random.randint(0, 2, 20)
+
+    x_train = x[:-1]
+    y_train = y[:-1]
+
+    # Instantiate the model
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=UserWarning)
+        parameters_range = [-1, 1] if fit_encrypted else None
+        model = instantiate_model_generic(
+            partial(SGDClassifier, fit_encrypted=fit_encrypted, parameters_range=parameters_range),
+            n_bits=n_bits,
+        )
+
+    # Fit the model
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=ConvergenceWarning)
+        warnings.simplefilter("ignore", category=UserWarning)
+        model.fit(x_train, y_train)
+
+    # Compile
+    model.compile(X=x_train)
+
+    # Create FHEModelDev instance
+    with tempfile.TemporaryDirectory() as temp_dir:
+        model_dev = FHEModelDev(path_dir=temp_dir, model=model)
+
+        if error_message:
+            with pytest.raises((AssertionError, ValueError), match=error_message):
+                model_dev.save(mode=mode)
+        else:
+            try:
+                model_dev.save(mode=mode)
+            except ValueError:
+                pytest.fail("Valid mode raised ValueError unexpectedly")

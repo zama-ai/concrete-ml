@@ -9,6 +9,7 @@ import pytest
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.tree import plot_tree
 
+from concrete.ml.common.utils import get_model_name
 from concrete.ml.pytest.utils import MODELS_AND_DATASETS
 
 
@@ -88,14 +89,18 @@ def test_seed_sklearn(model_class, parameters, load_data, default_configuration)
 
     # Force "random_state": if it was there, it is overwritten; if it was not there, it is added
     model_params = {}
-    if "random_state" in inspect.getfullargspec(model_class).args:
+    if "random_state" in inspect.signature(model_class).parameters:
         model_params["random_state"] = numpy.random.randint(0, 2**15)
 
     # First case: user gives his own random_state
-    model = model_class(**model_params)
+    # Warning skip due to SGDClassifier with fit_encrypted = True
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=UserWarning)
+        model = model_class(**model_params)
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=ConvergenceWarning)
+        warnings.simplefilter("ignore", category=UserWarning)
         # Fit the model
         model, sklearn_model = model.fit_benchmark(x, y)
 

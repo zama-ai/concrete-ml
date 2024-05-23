@@ -33,12 +33,35 @@ then
     exit 255
 fi
 
-set -e
-
 # Exceptions:
-#   passed in: since it is related to timings
-diff "${OUTPUT_DIRECTORY}/one.txt" "${OUTPUT_DIRECTORY}/two.txt" -I "passed in"
-echo "Successful determinism check"
+#   in X.Xs: since it is related to timings
+diff_output=$(diff "${OUTPUT_DIRECTORY}/one.txt" "${OUTPUT_DIRECTORY}/two.txt" -I "in [0-9]*\.[0-9]*s")
+
+# If a diff is present, we need to print the tests that failed to be reproduced for debugging.
+if [ -n "$diff_output" ]; then
+    echo "Differences found:"
+    echo "$diff_output"
+    
+    # Extract line numbers of differences
+    diff_lines=$(echo "$diff_output" | grep -E '^[0-9]+(,[0-9]+)?[acd][0-9]+(,[0-9]+)?' | sed -E 's/([0-9]+).*/\1/')
+    
+    for line in $diff_lines; do
+
+        # Find the first line number before the diff that starts with 'tests/seeding/'
+        start_line_num=$(awk 'NR<'"$line"' && /^tests\/seeding\// {print NR}' "${OUTPUT_DIRECTORY}/one.txt" | tail -n 1)
+
+        # Print lines from start_line_num to the diff line
+        if [ -n "$start_line_num" ]; then
+            sed -n "${start_line_num},${line}p" "${OUTPUT_DIRECTORY}/one.txt"
+        fi
+    done
+    
+    exit 255
+else
+    echo "Successful determinism check"
+fi
+
+set -e
 
 # Now, check that one can reproduce conditions of a bug in a single file
 # and test without having to relaunch the full pytest
@@ -58,14 +81,13 @@ do
     # SC2086 is about double quote to prevent globbing and word splitting, but here, it makes that we have
     # an empty arg in pytest, which is considered as "do pytest for all files"
     # shellcheck disable=SC2086
-    poetry run pytest "$x" -xsvv $EXTRA_OPTION --randomly-dont-reset-seed | sed -n -e '/collecting/,$p' | grep -v collecting | grep -v "collected" | grep -v "passed in" | grep -v "PASSED" >> "${OUTPUT_DIRECTORY}/three.txt"
+    poetry run pytest "$x" -xsvv $EXTRA_OPTION --randomly-dont-reset-seed | sed -n -e '/collecting/,$p' | grep -v collecting | grep -v "collected" | grep -v "PASSED" | grep -v "SKIPPED" | grep -v "in [0-9]*\.[0-9]*s" >> "${OUTPUT_DIRECTORY}/three.txt"
 
     ((WHICH+=1))
 done
 
 # Clean a bit one.txt
-sed -n -e '/collecting/,$p' "${OUTPUT_DIRECTORY}/one.txt" | grep -v collecting | grep -v "collected" | grep -v "passed in" | grep -v "PASSED" | grep -v "Leaving directory" > "${OUTPUT_DIRECTORY}/one.modified.txt"
-
+sed -n -e '/collecting/,$p' "${OUTPUT_DIRECTORY}/one.txt" | grep -v collecting | grep -v "collected" | grep -v "PASSED" | grep -v "SKIPPED" |grep -v "Leaving directory" | grep -v "in [0-9]*\.[0-9]*s" > "${OUTPUT_DIRECTORY}/one.modified.txt"
 echo ""
 echo "diff:"
 echo ""
