@@ -22,6 +22,8 @@ def get_blob_data(n_classes=2, scale_input=False, parameters_range=None):
     # pylint: disable-next=unbalanced-tuple-unpacking
     x, y = make_blobs(n_samples=n_samples, centers=n_classes, n_features=n_features)
 
+    assert len(numpy.unique(y)) == n_classes, f"{numpy.unique(y)=} != {n_classes=}"
+
     # Scale the input values if needed
     if scale_input:
         assert parameters_range is not None
@@ -95,8 +97,9 @@ def test_init_error_raises(n_bits, parameter_min_max):
             )
 
 
+@pytest.mark.parametrize("n_classes", [1, 3])
 @pytest.mark.parametrize("n_bits, max_iter, parameter_min_max", [pytest.param(7, 30, 1.0)])
-def test_fit_error_if_non_binary_targets(n_bits, max_iter, parameter_min_max):
+def test_fit_error_if_non_binary_targets(n_classes, n_bits, max_iter, parameter_min_max):
     """Test that training in FHE on a data-set with more than 2 target classes raises an error."""
 
     # Model parameters
@@ -104,7 +107,7 @@ def test_fit_error_if_non_binary_targets(n_bits, max_iter, parameter_min_max):
     parameters_range = (-parameter_min_max, parameter_min_max)
 
     # Generate a data-set with three target classes
-    x, y = get_blob_data(n_classes=3)
+    x, y = get_blob_data(n_classes=n_classes)
 
     with warnings.catch_warnings():
 
@@ -130,7 +133,7 @@ def test_fit_error_if_non_binary_targets(n_bits, max_iter, parameter_min_max):
         NotImplementedError,
         match="Only binary classification is currently supported when FHE training is enabled.*",
     ):
-        model.partial_fit(x, y, fhe="disable")
+        model.partial_fit(x, y, fhe="disable", classes=numpy.unique(y))
 
 
 @pytest.mark.parametrize("n_bits, max_iter, parameter_min_max", [pytest.param(7, 30, 1.0)])
@@ -143,7 +146,7 @@ def test_fit_single_target_class(n_bits, max_iter, parameter_min_max, use_partia
     parameters_range = (-parameter_min_max, parameter_min_max)
 
     # Generate a data-set with a single target class
-    x, y = get_blob_data(n_classes=1)
+    x, y = get_blob_data(n_classes=2)
 
     with warnings.catch_warnings():
 
@@ -159,9 +162,15 @@ def test_fit_single_target_class(n_bits, max_iter, parameter_min_max, use_partia
             max_iter=max_iter,
         )
 
+    if use_partial:
+        with pytest.raises(
+            ValueError, match="classes must be passed on the first call to partial_fit."
+        ):
+            model.partial_fit(x, y, fhe="disable", classes=None)
+
     with pytest.warns(UserWarning, match="ONNX Preprocess - Removing mutation from node .*"):
         if use_partial:
-            model.partial_fit(x, y, fhe="disable")
+            model.partial_fit(x, y, fhe="disable", classes=numpy.unique(y))
         else:
             model.fit(x, y, fhe="disable")
 
@@ -410,14 +419,24 @@ def check_encrypted_fit(
         )
 
         if partial_fit:
-
             # Check that we can swap between disable and simulation modes without any impact on the
             # final training performance
             for index in range(max_iter):
                 if index % 2 == 0:
-                    model.partial_fit(x, y, fhe="disable")
+                    model.partial_fit(x, y, fhe="disable", classes=numpy.unique(y))
                 else:
+
+                    # We don't need to provide `classes` if index>=1
                     model.partial_fit(x, y, fhe="simulate")
+
+            # Check that we raise an error if we call `partial_fit` with a different classes.
+            with pytest.raises(
+                ValueError,
+                match="classes=.* is not the same as on last call to partial_fit, was: .*",
+            ):
+                model.partial_fit(
+                    x, y, fhe="disable", classes=numpy.array(numpy.unique(y).tolist() + [len(y)])
+                )
 
         elif warm_fit:
 

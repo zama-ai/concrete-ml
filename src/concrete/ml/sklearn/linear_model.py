@@ -235,6 +235,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
 
         # Checks and warnings for FHE training
         if self.fit_encrypted:
+            self.classes_: Optional[numpy.ndarray] = None
 
             warnings.warn(
                 "FHE training is an experimental feature. Please be aware that the API might "
@@ -375,6 +376,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         coef_init: Optional[numpy.ndarray] = None,
         intercept_init: Optional[numpy.ndarray] = None,
         is_partial_fit: bool = False,
+        classes: Optional[numpy.ndarray] = None,
     ):
         """Fit SGDClassifier in FHE.
 
@@ -401,6 +403,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
                 optimization. Default to None.
             is_partial_fit (bool): Indicates if this fit represents a partial fit. A partial fit is
                 similar to a fit but with only a single iteration.
+            classes (Optional[numpy.ndarray]): should be specified in the first call to partial fit.
 
         Returns:
             The fitted estimator.
@@ -408,6 +411,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         Raises:
             NotImplementedError: If the target values are not binary and 2D, or in the target values
                 are not 1D.
+            ValueError: If called from `partial_fit`, and classes is None on first call.
         """
         if len(X.shape) != 2:
             raise NotImplementedError(
@@ -421,26 +425,42 @@ class SGDClassifier(SklearnSGDClassifierMixin):
                 f"enabled. Got {y.shape}"
             )
 
+        if classes is not None and self.classes_ is not None:
+            if len(numpy.setxor1d(classes, self.classes_)) > 0:
+                raise ValueError(
+                    f"{classes=} is not the same as on last call to partial_fit,"
+                    f" was: {self.classes_}"
+                )
+
         # Build the quantized module
         # In case of a partial fit, only do so if it has not been done already (which indicates
         # that this is the partial fit's first call)
-        if not is_partial_fit or self.training_quantized_module is None:
+        if (not is_partial_fit) or (self.training_quantized_module is None):
             # Update this once we support multi-class
             # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4182
             # We need to define this here and not in the init otherwise this breaks
             # because scikit-learn assumes that as soon as the attribute exists
             # the model is fitted
             # pylint: disable=attribute-defined-outside-init
-            self.label_encoder = LabelEncoder()
-            self.label_encoder.fit(y)
-            self.classes_ = self.label_encoder.classes_
+            if is_partial_fit and self.training_quantized_module is None and classes is None:
+                raise ValueError("classes must be passed on the first call to partial_fit.")
+
+            if classes is None:
+                self.label_encoder = LabelEncoder()
+                self.label_encoder.fit(y)
+                self.classes_ = numpy.array(self.label_encoder.classes_)
+            else:
+                self.label_encoder = LabelEncoder()
+                self.label_encoder.fit(classes)
+                self.classes_ = numpy.array(classes)
+            # If partial fit we should probably support adding classes along the way
 
             assert isinstance(self.classes_, numpy.ndarray)
 
             # Allow the training set to only provide a single class. This can happen, for example,
             # when running 'partial_fit' on a small batch of values. Even with a single class, the
             # model remains binary
-            if len(self.classes_) not in [1, 2]:
+            if len(self.classes_) != 2:
                 raise NotImplementedError(
                     f"Only binary classification is currently supported when FHE training is "
                     f"enabled. Got {len(self.classes_)} labels: {self.classes_}."
@@ -716,6 +736,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         X: numpy.ndarray,
         y: numpy.ndarray,
         fhe: Optional[Union[str, FheMode]] = None,
+        classes=None,
     ):
         """Fit SGDClassifier for a single iteration.
 
@@ -731,6 +752,10 @@ class SGDClassifier(SklearnSGDClassifierMixin):
                 FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.
                 Can also be the string representation of any of these values. If None, training is
                 done in floating points in the clear through scikit-learn. Default to None.
+            classes (Optional[numpy.ndarray]): The classes in the dataset.
+                It needs to be provided in the first call to `partial_fit`.
+                If provided in following calls it should match the classes
+                provided in the first call
 
         Raises:
             NotImplementedError: If FHE training is disabled.
@@ -753,7 +778,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
                 f"{fhe}",
             )
 
-            self._fit_encrypted(X=X, y=y, fhe=fhe, is_partial_fit=True)
+            self._fit_encrypted(X=X, y=y, fhe=fhe, is_partial_fit=True, classes=classes)
 
         else:
             # Expose and implement partial_fit for clear training
