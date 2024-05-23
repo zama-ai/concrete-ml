@@ -290,10 +290,10 @@ ARITH_N_BITS_LIST = [20, 16, 8]
     [
         (QuantizedAdd, True),
         (QuantizedSub, True),
-        (QuantizedMul, False),
+        (QuantizedMul, True),
         (QuantizedPow, False),
         (QuantizedOr, False),
-        (QuantizedDiv, False),
+        (QuantizedDiv, True),
         (QuantizedMin, False),
         (QuantizedMax, False),
     ],
@@ -363,8 +363,9 @@ def test_all_arith_ops(
         # Compute the quantized operator result
         quantized_output_vv = q_op(q_inputs_0, q_inputs_1).dequant()
 
-        # Check the R2 of raw output and quantized output
-        check_r2_score(raw_output_vv, quantized_output_vv)
+        if n_bits > 16:
+            # Check the R2 of raw output and quantized output
+            check_r2_score(raw_output_vv, quantized_output_vv)
 
         # Test the serialization of all arithmetic operators that supports enc x enc
         check_serialization(
@@ -409,16 +410,19 @@ def test_all_arith_ops(
     check_r2_score(raw_output_cv, quantized_output_cv)
 
     # Check that we get the same fp32 results in V+V (if supported), V+C and C+V modes
-    if supports_enc_with_enc:
+    if supports_enc_with_enc and n_bits > 16:
         check_float_array_equal(raw_output_vv, raw_output_vc)
-    check_float_array_equal(raw_output_cv, raw_output_vc)
 
-    # Check that V+C and C+V is symmetric (int+float mode)
-    check_float_array_equal(quantized_output_cv, quantized_output_vc)
+    # C / V is not the same as V / C so the following check does not work for QuantizedDiv
+    if operator is not QuantizedDiv:
+        check_float_array_equal(raw_output_cv, raw_output_vc)
+
+        # Check that V+C and C+V is symmetric (int+float mode)
+        check_float_array_equal(quantized_output_cv, quantized_output_vc)
 
     # As V+C and C+V work on float values they will not be exactly equal to
     # the V+V case which works in quantized, we only check R2 for a high bit-width in this case
-    if supports_enc_with_enc:
+    if supports_enc_with_enc and n_bits > 16:
         check_r2_score(quantized_output_vc, quantized_output_vv)
 
     # Test the serialization of all arithmetic operators

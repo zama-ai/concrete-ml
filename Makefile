@@ -533,7 +533,7 @@ pytest_codeblocks_one:
 .PHONY: shell_lint # Lint all bash scripts
 shell_lint:
 	@# grep -v "^\./\." is to avoid files in .hidden_directories
-	find . -type f -name "*.sh" | grep -v "^\./\." | \
+	find . -type f -name "*.sh" | grep -v "^\./\." | grep -v "^\./playground/" | \
 	xargs shellcheck
 
 .PHONY: set_version # Generate a new version number and update all files with it accordingly
