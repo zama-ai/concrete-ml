@@ -571,3 +571,75 @@ def test_print_and_repr():
     assert pandas_dataframe_are_equal(
         expected_schema, schema, equal_nan=True
     ), "Expected and retrieved schemas do not match."
+
+
+def get_input_schema(pandas_dataframe, selected_schema=None):
+    """Get a data-frame's expected input schema."""
+    schema = {}
+    for column_name in pandas_dataframe.columns:
+        column = pandas_dataframe[column_name]
+        if numpy.issubdtype(column.dtype, numpy.floating):
+            schema[column_name] = {
+                "min": column.min(),
+                "max": column.max(),
+            }
+
+        elif column.dtype == "object":
+            unique_values = column.unique()
+
+            # Only take strings into account and thus avoid NaN values
+            schema[column_name] = {
+                val: i for i, val in enumerate(unique_values) if isinstance(val, str)
+            }
+
+    # Update the common column's mapping
+    if selected_schema is not None:
+        schema.update(selected_schema)
+
+    return schema
+
+
+def test_schema_input():
+    """Test that users can properly provide schemas when encrypting data-frames."""
+    selected_column = "index"
+    pandas_kwargs = {"how": "left", "on": selected_column}
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        keys_path = Path(temp_dir) / "keys"
+
+        client_1 = ClientEngine(keys_path=keys_path)
+        client_2 = ClientEngine(keys_path=keys_path)
+
+    indexes_left = ["one", "two", "three", "four"]
+    indexes_right = ["two", "three"]
+
+    schema_index = {selected_column: {"one": 1, "two": 2, "three": 3, "four": 4}}
+
+    pandas_df_left = generate_pandas_dataframe(
+        feat_name="left", index_name=selected_column, indexes=indexes_left, index_position=2
+    )
+    pandas_df_right = generate_pandas_dataframe(
+        feat_name="right", index_name=selected_column, indexes=indexes_right, index_position=1
+    )
+
+    schema_left = get_input_schema(pandas_df_left, selected_schema=schema_index)
+    schema_right = get_input_schema(pandas_df_right, selected_schema=schema_index)
+
+    encrypted_df_left = client_1.encrypt_from_pandas(pandas_df_left, schema=schema_left)
+    encrypted_df_right = client_2.encrypt_from_pandas(pandas_df_right, schema=schema_right)
+
+    pandas_joined_df = pandas_df_left.merge(pandas_df_right, **pandas_kwargs)
+    encrypted_df_joined = encrypted_df_left.merge(encrypted_df_right, **pandas_kwargs)
+
+    clear_df_joined_1 = client_1.decrypt_to_pandas(encrypted_df_joined)
+    clear_df_joined_2 = client_2.decrypt_to_pandas(encrypted_df_joined)
+
+    assert pandas_dataframe_are_equal(
+        clear_df_joined_1, clear_df_joined_2, equal_nan=True
+    ), "Joined encrypted data-frames decrypted by different clients are not equal."
+
+    # Improve the test to avoid risk of flaky
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4342
+    assert pandas_dataframe_are_equal(
+        clear_df_joined_1, pandas_joined_df, float_atol=1, equal_nan=True
+    ), "Joined encrypted data-frame does not match Pandas' joined data-frame."

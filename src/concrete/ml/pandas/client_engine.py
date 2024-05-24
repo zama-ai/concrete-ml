@@ -48,6 +48,7 @@ class ClientEngine:
 
         Args:
             pandas_dataframe (DataFrame): The Pandas data-frame to encrypt.
+            schema (Optional[Dict]): The input schema to consider. Default to None.
 
         Returns:
             EncryptedDataFrame: The encrypted data-frame.

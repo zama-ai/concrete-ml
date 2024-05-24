@@ -14,6 +14,14 @@ SCHEMA_FLOAT_KEYS = ["min", "max"]
 
 
 def is_str_or_none(column: pandas.Series) -> bool:
+    """Determine if the data-frames only contains string and None values or not.
+
+    Args:
+        column (pandas.Series): The data-frame to consider.
+
+    Returns:
+        bool: If the data-frames only contains string and None values or not.
+    """
     return column.apply(lambda x: isinstance(x, str) or not pandas.notna(x)).all()
 
 
@@ -23,11 +31,13 @@ def compute_scale_zero_point(
     """Compute the scale and zero point to use for quantizing / de-quantizing the given column.
 
     Note that the scale and zero point are computed so that values are quantized uniformly from
-    range [column.min(), column.max()] (float) to range [q_min, q_max] (int).
+    range [f_min, f_max] (float) to range [q_min, q_max] (int).
 
     Args:
-        q_min (int): The minimum quantized value to consider.
-        q_max (int): The maximum quantized value to consider.
+        f_min (float): The minimum float value observed.
+        f_max (float): The maximum float value observed.
+        q_min (int): The minimum quantized value to target.
+        q_max (int): The maximum quantized value to target.
 
     Returns:
         Tuple[float, float]: The scale and zero-point.
@@ -54,7 +64,8 @@ def compute_scale_zero_point(
         # The issue is that we currently need to avoid quantized values to reach 0, but having a
         # round here + in the 'quant' method can make this happen.
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4342
-        zero_point = f_min * scale - q_min
+        # Disable mypy until it is fixed
+        zero_point = f_min * scale - q_min  # type: ignore[assignment]
 
     return scale, zero_point
 
@@ -93,6 +104,17 @@ def dequant(
 
 
 def check_schema_format(pandas_dataframe: pandas.DataFrame, schema: Optional[Dict] = None) -> None:
+    """Check that the given schema has a proper expected format.
+
+    Args:
+        pandas_dataframe (pandas.DataFrame): The data-frame associated to the given schema.
+        schema (Optional[Dict]): The schema to check, which can be None. Default to None.
+
+    Raises:
+        ValueError: If the given schema is not a dict.
+        ValueError: If the given schema contains column names that do not appear in the data-frame.
+        ValueError: If one of the columns' mapping is not a dict.
+    """
     if schema is None:
         return
 
@@ -120,6 +142,7 @@ def check_schema_format(pandas_dataframe: pandas.DataFrame, schema: Optional[Dic
             )
 
 
+# pylint: disable=too-many-branches, too-many-statements
 def pre_process_dtypes(
     pandas_dataframe: pandas.DataFrame, schema: Optional[Dict] = None
 ) -> Tuple[pandas.DataFrame, Dict]:
@@ -131,6 +154,7 @@ def pre_process_dtypes(
 
     Args:
         pandas_dataframe (pandas.DataFrame): The Pandas data-frame to pre-process.
+        schema (Optional[Dict]): The input schema to consider. Default to None.
 
     Raises:
         ValueError: If the values of a column with an integer dtype are out of bounds.
@@ -152,6 +176,7 @@ def pre_process_dtypes(
 
     # Avoid sending column names to server, instead use hashes
     # FIXME : https://github.com/zama-ai/concrete-ml-internal/issues/4342
+    # pylint: disable=too-many-nested-blocks
     for column_name in pandas_dataframe.columns:
         column = pandas_dataframe[column_name]
         column_dtype = column.dtype
@@ -163,11 +188,11 @@ def pre_process_dtypes(
         if numpy.issubdtype(column_dtype, numpy.integer):
             if schema is not None and column_name in schema:
                 raise ValueError(
-                    f"Column '{column_name}' contains integer values and therefore does not require "
-                    "any mappings. Please remove it"
+                    f"Column '{column_name}' contains integer values and therefore does not "
+                    "require any mappings. Please remove it"
                 )
 
-            elif column.min() < q_min or column.max() > q_max:
+            if column.min() < q_min or column.max() > q_max:
                 raise ValueError(
                     f"Column '{column_name}' (dtype={column_dtype}) contains values that are out "
                     f"of bounds. Expected values to be in interval [min={q_min}, max={q_max}], but "
@@ -218,7 +243,7 @@ def pre_process_dtypes(
                 if schema is not None and column_name in schema:
                     str_to_int = schema[column_name]
 
-                    column_values = set(column.values) - set([None])
+                    column_values = set(column.values) - set([None, numpy.NaN])
                     string_mapping_keys = set(str_to_int.keys())
 
                     # Allow custom mapping for NaN values once they are not represented by 0 anymore
@@ -310,6 +335,7 @@ def pre_process_from_pandas(
 
     Args:
         pandas_dataframe (pandas.DataFrame): The Pandas data-frame to pre-process.
+        schema (Optional[Dict]): The input schema to consider. Default to None.
 
     Raises:
         ValueError: If the data-frame's index has not been reset (meaning the index is not a
