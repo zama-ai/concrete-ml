@@ -6,7 +6,6 @@ from functools import partial
 import numpy
 import onnx
 import pytest
-from sklearn.exceptions import ConvergenceWarning
 
 from concrete.ml.common.utils import is_model_class_in_a_list
 from concrete.ml.pytest.utils import UNIQUE_MODELS_AND_DATASETS, get_model_name
@@ -419,11 +418,6 @@ def check_onnx_file_dump(
         # KNN can only be compiled with small quantization bit numbers for now
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
         model.n_bits = 2
-
-    with warnings.catch_warnings():
-        # Sometimes, we miss convergence, which is not a problem for our test
-        warnings.simplefilter("ignore", category=ConvergenceWarning)
-
         model.fit(x, y)
 
     with warnings.catch_warnings():

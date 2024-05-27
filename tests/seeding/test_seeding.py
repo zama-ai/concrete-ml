@@ -2,14 +2,11 @@
 
 import inspect
 import random
-import warnings
 
 import numpy
 import pytest
-from sklearn.exceptions import ConvergenceWarning
 from sklearn.tree import plot_tree
 
-from concrete.ml.common.utils import get_model_name
 from concrete.ml.pytest.utils import MODELS_AND_DATASETS
 
 
@@ -93,16 +90,10 @@ def test_seed_sklearn(model_class, parameters, load_data, default_configuration)
         model_params["random_state"] = numpy.random.randint(0, 2**15)
 
     # First case: user gives his own random_state
-    # Warning skip due to SGDClassifier with fit_encrypted = True
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=UserWarning)
-        model = model_class(**model_params)
+    model = model_class(**model_params)
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=ConvergenceWarning)
-        warnings.simplefilter("ignore", category=UserWarning)
-        # Fit the model
-        model, sklearn_model = model.fit_benchmark(x, y)
+    # Fit the model
+    model, sklearn_model = model.fit_benchmark(x, y)
 
     lpvoid_ptr_plot_tree = getattr(model, "plot_tree", None)
     if callable(lpvoid_ptr_plot_tree):

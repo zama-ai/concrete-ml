@@ -136,6 +136,8 @@ filterwarnings = [
     "ignore:The --rsyncdir command line argument and rsyncdirs config variable are deprecated.:DeprecationWarning",
     "ignore:Converting a tensor to a NumPy array might cause the trace to be incorrect.",
     "ignore:torch.from_numpy results are registered as constants in the trace.",
+    "ignore:ONNX Preprocess - Removing mutation from node aten*:UserWarning",
+    "ignore:Liblinear failed to converge, increase the number of iterations.*:sklearn.exceptions.ConvergenceWarning",
 ]
 
 [tool.semantic_release]

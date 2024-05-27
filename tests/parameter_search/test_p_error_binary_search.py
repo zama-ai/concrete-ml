@@ -1,14 +1,12 @@
 """Test binary search class."""
 
 import os
-import warnings
 from pathlib import Path
 
 import numpy
 import pytest
 import torch
 from sklearn.datasets import make_classification
-from sklearn.exceptions import ConvergenceWarning
 from sklearn.metrics import r2_score, top_k_accuracy_score
 from tensorflow import keras
 
@@ -126,9 +124,8 @@ def test_update_valid_attr_method(attr, value, model_name, quant_type, metric, l
         predict="predict",
         n_simulation=1,
     )
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=ConvergenceWarning)
-        search.run(x=x_calib, ground_truth=y, strategy=all, **{attr: value})
+
+    search.run(x=x_calib, ground_truth=y, strategy=all, **{attr: value})
 
     assert getattr(search, attr) == value
 
@@ -167,10 +164,7 @@ def test_non_convergence_for_built_in_models(model_class, parameters, load_data,
         max_metric_loss=-10,
         is_qat=False,
     )
-
-    warnings.simplefilter("always")
-    with pytest.warns(UserWarning, match="ConvergenceWarning: .*"):
-        search.run(x=x_calib, ground_truth=y, strategy=all)
+    search.run(x=x_calib, ground_truth=y, strategy=all)
 
 
 @pytest.mark.parametrize("model_name, quant_type", [("CustomModel", "qat")])
@@ -205,9 +199,7 @@ def test_non_convergence_for_custom_models(model_name, quant_type):
         labels=numpy.arange(MODELS_ARGS[model_name]["dataset"]["n_classes"]),
     )
 
-    warnings.simplefilter("always")
-    with pytest.warns(UserWarning, match="ConvergenceWarning: .*"):
-        search.run(x=x_calib, ground_truth=y, strategy=all)
+    search.run(x=x_calib, ground_truth=y, strategy=all)
 
 
 @pytest.mark.parametrize(
@@ -279,9 +271,8 @@ def test_binary_search_for_custom_models(model_name, quant_type, threshold):
         k=1,
         labels=numpy.arange(MODELS_ARGS[model_name]["dataset"]["n_classes"]),
     )
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=ConvergenceWarning)
-        largest_perror = search.run(x=x_calib, ground_truth=y, strategy=all)
+
+    largest_perror = search.run(x=x_calib, ground_truth=y, strategy=all)
 
     assert 1.0 > largest_perror > 0.0
     assert (
@@ -337,9 +328,7 @@ def test_binary_search_for_built_in_models(model_class, parameters, threshold, p
         # The model does not have `predict`
         return
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=ConvergenceWarning)
-        largest_perror = search.run(x=x_calib, ground_truth=y, strategy=all)
+    largest_perror = search.run(x=x_calib, ground_truth=y, strategy=all)
 
     assert 1.0 > largest_perror > 0.0
     assert (
@@ -475,9 +464,7 @@ def test_success_save_option(model_name, quant_type, metric, directory, log_file
     # When instantiating the class, if the file exists, it is deleted, to avoid overwriting it
     assert not path.exists()
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=ConvergenceWarning)
-        search.run(x=x_calib, ground_truth=y)
+    search.run(x=x_calib, ground_truth=y)
 
     # Check that the file has been properly created
     assert path.exists()

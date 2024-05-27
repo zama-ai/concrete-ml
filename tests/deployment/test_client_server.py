@@ -3,7 +3,6 @@
 import json
 import os
 import tempfile
-import warnings
 import zipfile
 from functools import partial
 from pathlib import Path
@@ -11,7 +10,6 @@ from shutil import copyfile
 
 import numpy
 import pytest
-from sklearn.exceptions import ConvergenceWarning
 from torch import nn
 
 from concrete.ml.deployment.fhe_client_server import (
@@ -115,15 +113,10 @@ def test_client_server_sklearn(
     x_test = x[-1:]
 
     # Instantiate the model
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=UserWarning)
-        model = instantiate_model_generic(model_class, n_bits=n_bits)
+    model = instantiate_model_generic(model_class, n_bits=n_bits)
 
     # Fit the model
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=ConvergenceWarning)
-        warnings.simplefilter("ignore", category=UserWarning)
-        model.fit(x_train, y_train)
+    model.fit(x_train, y_train)
 
     key_dir = default_configuration.insecure_key_cache_location
 
@@ -393,19 +386,14 @@ def test_save_mode_handling(n_bits, fit_encrypted, mode, error_message):
     y_train = y[:-1]
 
     # Instantiate the model
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=UserWarning)
-        parameters_range = [-1, 1] if fit_encrypted else None
-        model = instantiate_model_generic(
-            partial(SGDClassifier, fit_encrypted=fit_encrypted, parameters_range=parameters_range),
-            n_bits=n_bits,
-        )
+    parameters_range = [-1, 1] if fit_encrypted else None
+    model = instantiate_model_generic(
+        partial(SGDClassifier, fit_encrypted=fit_encrypted, parameters_range=parameters_range),
+        n_bits=n_bits,
+    )
 
     # Fit the model
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=ConvergenceWarning)
-        warnings.simplefilter("ignore", category=UserWarning)
-        model.fit(x_train, y_train)
+    model.fit(x_train, y_train)
 
     # Compile
     model.compile(X=x_train)

@@ -1,7 +1,6 @@
 """Tests training in FHE."""
 
 import re
-import warnings
 
 import numpy
 import pytest
@@ -56,26 +55,20 @@ def test_init_error_raises(n_bits, parameter_min_max):
             parameters_range=parameters_range,
         )
 
-    with warnings.catch_warnings():
-
-        # FHE training is an experimental feature and a warning is raised each time `fit_encrypted`
-        # is set to True
-        warnings.filterwarnings("ignore", message="FHE training is an experimental feature.*")
-
-        with pytest.raises(
-            ValueError,
-            match=re.escape(
-                "Only 'log_loss' is currently supported if FHE training is enabled"
-                " (fit_encrypted=True). Got loss='perceptron'"
-            ),
-        ):
-            SGDClassifier(
-                n_bits=n_bits,
-                fit_encrypted=True,
-                loss="perceptron",
-                random_state=random_state,
-                parameters_range=parameters_range,
-            )
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Only 'log_loss' is currently supported if FHE training is enabled"
+            " (fit_encrypted=True). Got loss='perceptron'"
+        ),
+    ):
+        SGDClassifier(
+            n_bits=n_bits,
+            fit_encrypted=True,
+            loss="perceptron",
+            random_state=random_state,
+            parameters_range=parameters_range,
+        )
 
         with pytest.raises(
             ValueError, match="Setting 'parameter_range' is mandatory if FHE training is enabled."
@@ -109,19 +102,13 @@ def test_fit_error_if_non_binary_targets(n_classes, n_bits, max_iter, parameter_
     # Generate a data-set with three target classes
     x, y = get_blob_data(n_classes=n_classes)
 
-    with warnings.catch_warnings():
-
-        # FHE training is an experimental feature and a warning is raised each time `fit_encrypted`
-        # is set to True
-        warnings.filterwarnings("ignore", message="FHE training is an experimental feature.*")
-
-        model = SGDClassifier(
-            n_bits=n_bits,
-            fit_encrypted=True,
-            random_state=random_state,
-            parameters_range=parameters_range,
-            max_iter=max_iter,
-        )
+    model = SGDClassifier(
+        n_bits=n_bits,
+        fit_encrypted=True,
+        random_state=random_state,
+        parameters_range=parameters_range,
+        max_iter=max_iter,
+    )
 
     with pytest.raises(
         NotImplementedError,
@@ -148,19 +135,13 @@ def test_fit_single_target_class(n_bits, max_iter, parameter_min_max, use_partia
     # Generate a data-set with a single target class
     x, y = get_blob_data(n_classes=2)
 
-    with warnings.catch_warnings():
-
-        # FHE training is an experimental feature and a warning is raised each time `fit_encrypted`
-        # is set to True
-        warnings.filterwarnings("ignore", message="FHE training is an experimental feature.*")
-
-        model = SGDClassifier(
-            n_bits=n_bits,
-            fit_encrypted=True,
-            random_state=random_state,
-            parameters_range=parameters_range,
-            max_iter=max_iter,
-        )
+    model = SGDClassifier(
+        n_bits=n_bits,
+        fit_encrypted=True,
+        random_state=random_state,
+        parameters_range=parameters_range,
+        max_iter=max_iter,
+    )
 
     if use_partial:
         with pytest.raises(
@@ -219,19 +200,13 @@ def test_encrypted_fit_warning_error_raises(n_bits, max_iter, parameter_min_max)
     # Generate a data-set with binary target classes
     x, y = get_blob_data(scale_input=True, parameters_range=parameters_range)
 
-    with warnings.catch_warnings():
-
-        # FHE training is an experimental feature and a warning is raised each time `fit_encrypted`
-        # is set to True
-        warnings.filterwarnings("ignore", message="FHE training is an experimental feature.*")
-
-        model = SGDClassifier(
-            n_bits=n_bits,
-            fit_encrypted=True,
-            random_state=random_state,
-            parameters_range=parameters_range,
-            max_iter=max_iter,
-        )
+    model = SGDClassifier(
+        n_bits=n_bits,
+        fit_encrypted=True,
+        random_state=random_state,
+        parameters_range=parameters_range,
+        max_iter=max_iter,
+    )
 
     with pytest.warns(
         UserWarning,
@@ -388,73 +363,61 @@ def check_encrypted_fit(
         fit_kwargs = {}
 
     # Initialize the model
-    with warnings.catch_warnings():
+    model = SGDClassifier(
+        n_bits=n_bits,
+        fit_encrypted=True,
+        random_state=random_state,
+        parameters_range=parameters_range,
+        max_iter=max_iter,
+        fit_intercept=fit_intercept,
+        verbose=True,
+        **init_kwargs,
+    )
 
-        # FHE training is an experimental feature and a warning is raised each time `fit_encrypted`
-        # is set to True
-        warnings.filterwarnings("ignore", message="FHE training is an experimental feature.*")
+    # If a RNG instance if provided, use it to set the new model's one
+    if random_number_generator is not None:
+        model.random_number_generator = random_number_generator
 
-        model = SGDClassifier(
-            n_bits=n_bits,
-            fit_encrypted=True,
-            random_state=random_state,
-            parameters_range=parameters_range,
-            max_iter=max_iter,
-            fit_intercept=fit_intercept,
-            verbose=True,
-            **init_kwargs,
-        )
+    # We need to lower the p-error to make sure that the test passes
+    model.training_p_error = 1e-15
 
-        # If a RNG instance if provided, use it to set the new model's one
-        if random_number_generator is not None:
-            model.random_number_generator = random_number_generator
+    if partial_fit:
+        # Check that we can swap between disable and simulation modes without any impact on the
+        # final training performance
+        for index in range(max_iter):
+            if index % 2 == 0:
+                model.partial_fit(x, y, fhe="disable", classes=numpy.unique(y))
+            else:
 
-        # We need to lower the p-error to make sure that the test passes
-        model.training_p_error = 1e-15
+                # We don't need to provide `classes` if index>=1
+                model.partial_fit(x, y, fhe="simulate")
 
-    with warnings.catch_warnings():
-        warnings.filterwarnings(
-            "ignore",
-            message="ONNX Preprocess - Removing mutation from node aten::sub_ on block input.*",
-        )
+        # Check that we raise an error if we call `partial_fit` with a different classes.
+        with pytest.raises(
+            ValueError,
+            match="classes=.* is not the same as on last call to partial_fit, was: .*",
+        ):
+            model.partial_fit(
+                x, y, fhe="disable", classes=numpy.array(numpy.unique(y).tolist() + [len(y)])
+            )
 
-        if partial_fit:
-            # Check that we can swap between disable and simulation modes without any impact on the
-            # final training performance
-            for index in range(max_iter):
-                if index % 2 == 0:
-                    model.partial_fit(x, y, fhe="disable", classes=numpy.unique(y))
-                else:
+    elif warm_fit:
 
-                    # We don't need to provide `classes` if index>=1
-                    model.partial_fit(x, y, fhe="simulate")
+        # Check that we can swap between disable and simulation modes without any impact on the
+        # final training performance
+        half_iter = max_iter // 2
+        model.max_iter = half_iter
+        model.fit(x, y, fhe="disable")
 
-            # Check that we raise an error if we call `partial_fit` with a different classes.
-            with pytest.raises(
-                ValueError,
-                match="classes=.* is not the same as on last call to partial_fit, was: .*",
-            ):
-                model.partial_fit(
-                    x, y, fhe="disable", classes=numpy.array(numpy.unique(y).tolist() + [len(y)])
-                )
+        other_iter = max_iter - half_iter
+        model.max_iter = other_iter
+        model.fit(x, y, fhe="simulate")
 
-        elif warm_fit:
+        assert half_iter + other_iter == max_iter
 
-            # Check that we can swap between disable and simulation modes without any impact on the
-            # final training performance
-            half_iter = max_iter // 2
-            model.max_iter = half_iter
-            model.fit(x, y, fhe="disable")
-
-            other_iter = max_iter - half_iter
-            model.max_iter = other_iter
-            model.fit(x, y, fhe="simulate")
-
-            assert half_iter + other_iter == max_iter
-
-        else:
-            # Fit the model
-            model.fit(x, y, fhe=fhe, **fit_kwargs)
+    else:
+        # Fit the model
+        model.fit(x, y, fhe=fhe, **fit_kwargs)
 
     y_pred_class = model.predict(x)
     y_pred_proba = model.predict_proba(x)

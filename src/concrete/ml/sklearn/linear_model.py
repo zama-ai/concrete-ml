@@ -237,12 +237,6 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         if self.fit_encrypted:
             self.classes_: Optional[numpy.ndarray] = None
 
-            warnings.warn(
-                "FHE training is an experimental feature. Please be aware that the API might "
-                "change in future versions.",
-                stacklevel=2,
-            )
-
             # Check the presence of mandatory attributes
             if self.loss != "log_loss":
                 raise ValueError(
@@ -687,13 +681,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
 
         # If the model should be trained using FHE training
         if self.fit_encrypted:
-            if fhe is None:
-                fhe = "disable"
-                warnings.warn(
-                    "Parameter 'fhe' isn't set while FHE training is enabled.\n"
-                    f"Defaulting to '{fhe=}'",
-                    stacklevel=2,
-                )
+            fhe = "disable" if fhe is None else fhe
 
             # Make sure the `fhe` parameter is correct
             assert FheMode.is_valid(fhe), (
