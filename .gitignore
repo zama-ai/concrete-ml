@@ -53,7 +53,8 @@ coverage.xml
 global-coverage-infos.json
 pytest_report.json
 failed_tests_report.json
-failed_tests_comment.txt
+failed_tests_comment_*.txt
+failed_tests_slack_list_*.txt
 
 # Translations
 *.mo
