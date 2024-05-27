@@ -1,6 +1,6 @@
 """Utility functions for FHE training."""
 
-from typing import Tuple
+from typing import List, Optional, Tuple
 
 import numpy
 import torch
@@ -29,7 +29,12 @@ class LogisticRegressionTraining(torch.nn.Module):
     The forward function iterates the SGD over a given certain number of times.
     """
 
-    def __init__(self, iterations: int = 1, learning_rate: float = 1.0, fit_bias: bool = True):
+    def __init__(
+        self,
+        iterations: int = 1,
+        learning_rate: float = 1.0,
+        fit_bias: bool = True,
+    ):
         """Instantiate the model.
 
         Args:

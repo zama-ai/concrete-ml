@@ -247,7 +247,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
 
             if self.parameters_range is None:
                 raise ValueError(
-                    "Setting 'parameter_range' is mandatory if FHE training is enabled "
+                    "Setting 'parameters_range' is mandatory if FHE training is enabled "
                     f"({fit_encrypted=}). Got {parameters_range=}"
                 )
 
@@ -352,6 +352,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         # Enable the underlying FHE circuit to be composed with itself
         # This feature is used in order to be able to iterate in the clear n times without having
         # to encrypt/decrypt the weight/bias values between each loop
+        # configuration = Configuration(composable=True, detect_overflow_in_simulation=False)
         configuration = Configuration(composable=True)
 
         # Compile the model using the compile set
@@ -440,7 +441,6 @@ class SGDClassifier(SklearnSGDClassifierMixin):
                     f" was: {self.classes_}"
                 )
 
-            
         n_samples, n_features = X.shape
         weight_shape = (1, n_features, 1)
         bias_shape = (1, 1, 1)
