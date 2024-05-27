@@ -345,6 +345,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
             learning_rate=self.learning_rate_value,
             iterations=1,
             fit_bias=self.fit_intercept,
+            parameters_range=self.parameters_range,
         )
 
         # Compile the model using the compile set

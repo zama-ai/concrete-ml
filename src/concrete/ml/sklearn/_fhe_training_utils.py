@@ -29,7 +29,7 @@ class LogisticRegressionTraining(torch.nn.Module):
     The forward function iterates the SGD over a given certain number of times.
     """
 
-    def __init__(self, iterations: int = 1, learning_rate: float = 1.0, fit_bias: bool = True):
+    def __init__(self, iterations: int = 1, learning_rate: float = 1.0, fit_bias: bool = True, parameters_range=None):
         """Instantiate the model.
 
         Args:
@@ -41,6 +41,7 @@ class LogisticRegressionTraining(torch.nn.Module):
         self.iterations = iterations
         self.learning_rate = learning_rate
         self.fit_bias = fit_bias
+        self.parameters_range = parameters_range
 
     def forward(
         self,
@@ -93,5 +94,10 @@ class LogisticRegressionTraining(torch.nn.Module):
         # Should we clip the parameters to the min-max values?
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4206
 
+        # # (1, n_features, n_targets), (1, n_targets, 1)
+        weights_clipped = weights.clip(self.parameters_range[0], self.parameters_range[1])
+        bias_clipped = bias.clip(self.parameters_range[0], self.parameters_range[1])
+        
         # (1, n_features, n_targets), (1, n_targets, 1)
+        return weights_clipped, bias_clipped
         return weights, bias
