@@ -56,7 +56,7 @@ def write_failed_tests_comment(failed_tests_comment_path: Path, failed_tests_rep
             else:
                 f.write("## ❌ Some tests failed after rerun ❌\n\n")
                 failed_tests_header = (
-                    "At least one of the following tests initially failed. They have therefore"
+                    "At least one of the following tests initially failed. They have therefore "
                     "been rerun but failed again. See below for more details.\n\n"
                 )
 

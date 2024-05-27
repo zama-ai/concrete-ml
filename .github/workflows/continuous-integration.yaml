@@ -735,7 +735,7 @@ jobs:
           	poetry run python ./script/actions_utils/pytest_failed_test_report.py \
             --pytest-input-report "pytest_report.json" \
             --failed-tests-report "failed_tests_report.json" \
-            --failed-tests-comment "failed_tests_comment_${{ matrix.python_version }}.txt"
+            --failed-tests-comment "failed_tests_comment_${{ matrix.python_version }}.txt" \
             --failed-tests-list "failed_tests_slack_list_${{ matrix.python_version }}.txt"
 
             # Check if all failed tests are known flaky tests
