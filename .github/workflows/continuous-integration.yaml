@@ -1190,9 +1190,7 @@ jobs:
               FAILED_TESTS_LIST=$(cat "${file_name}")
               
               {
-                echo ""
-                echo ""
-                echo "Linux failed tests (Python ${linux_python_version}):"
+                echo "Linux (Python ${linux_python_version}):"
                 echo "${FAILED_TESTS_LIST}"
               } >> "$GITHUB_ENV"
             fi

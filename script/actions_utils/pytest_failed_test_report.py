@@ -19,16 +19,16 @@ def write_failed_tests_list(failed_tests_list_path: Path, failed_tests_report: D
         if failed_tests_report["tests_failed"]:
 
             # Write all flaky tests that initially failed as a list
-            f.write("- Known flaky tests that initially failed: \n")
+            f.write("- Known flaky tests :warning:: \n")
             for flaky_name in failed_tests_report["flaky"]:
                 f.write("    - " + flaky_name)
 
-            # Write all other tests that initially failed as a list if they were not all known
+            # Write all other tests that failed as a list if they were not all known
             # flaky tests
             if not failed_tests_report["all_failed_tests_are_flaky"]:
                 f.write("\n")
 
-                f.write("- Other tests that initially failed: \n")
+                f.write("- Other failed tests ❌: \n")
                 for non_flaky_name in failed_tests_report["non_flaky"]:
                     f.write("    - " + non_flaky_name)
 
