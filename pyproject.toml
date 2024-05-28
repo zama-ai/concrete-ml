@@ -31,9 +31,9 @@ readme = "README.md"
 "Bug Tracker" = "https://github.com/zama-ai/concrete-ml/issues"
 
 [tool.poetry.dependencies]
-# Investigate if it is better to fix specific versions or use lower and upper bounds  
+# Investigate if it is better to fix specific versions or use lower and upper bounds
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2665
-python = ">=3.8.1,<3.11"
+python = ">=3.8.1,<3.12"
 # Based on the following link, explicitly indicating the source makes poetry only look for that
 # source, so we should only use this for Concrete Python's non-public releases
 # https://python-poetry.org/docs/1.7/repositories#project-configuration
@@ -52,7 +52,7 @@ typing-extensions = "^4.5.0"
 brevitas = "0.10.2"
 onnx = "1.16.1"
 onnxoptimizer = "0.3.13"
-# onnxruntime versions supported by onnx versions and opsets can be found here : 
+# onnxruntime versions supported by onnx versions and opsets can be found here :
 # https://onnxruntime.ai/docs/reference/compatibility.html#onnx-opset-support
 onnxruntime = "1.18"
 hummingbird-ml = {version="0.4.11", extras = ["onnx"]}
@@ -98,7 +98,7 @@ pip-audit = "^2.1.0"
 types-requests = "^2.32.0"
 requests="^2.32.1"
 jupyter = "^1.0.0"
-py-progress-tracker = "0.6.0"
+py-progress-tracker = "0.7.0"
 nbqa = "^1.3.1"
 darglint = "^1.8.1"
 linkcheckmd = "^1.4.0"
@@ -167,4 +167,3 @@ line-length = 100
 
 # Add a setuptools_scm section to avoid warnings
 [tool.setuptools_scm]
-

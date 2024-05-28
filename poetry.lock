@@ -3904,7 +3904,8 @@ files = [
 [package.dependencies]
 numpy = [
     {version = ">=1.20.3", markers = "python_version < \"3.10\""},
-    {version = ">=1.21.0", markers = "python_version >= \"3.10\""},
+    {version = ">=1.23.2", markers = "python_version >= \"3.11\""},
+    {version = ">=1.21.0", markers = "python_version >= \"3.10\" and python_version < \"3.11\""},
 ]
 python-dateutil = ">=2.8.2"
 pytz = ">=2020.1"
@@ -4348,13 +4349,13 @@ files = [
 
 [[package]]
 name = "py-progress-tracker"
-version = "0.6.0"
+version = "0.7.0"
 description = "A simple benchmarking library"
 optional = false
-python-versions = ">=3.7,<3.11"
+python-versions = ">=3.7"
 files = [
-    {file = "py-progress-tracker-0.6.0.tar.gz", hash = "sha256:04e25e9596cd4a47af310041f75abe64b2d13b8d09ff6582c1644fccc3524226"},
-    {file = "py_progress_tracker-0.6.0-py3-none-any.whl", hash = "sha256:05bf573d413fa28e3c224c26da9508a87b490376fced499eb141fc51e640e3a0"},
+    {file = "py_progress_tracker-0.7.0-py3-none-any.whl", hash = "sha256:02c08b5799f4473cf7d1a23f2c6f10a7e735b85008595ff33c6e0d80442a57fc"},
+    {file = "py_progress_tracker-0.7.0.tar.gz", hash = "sha256:4bf9e908ed89481459a24824505904a2c7e8348221f0a478722ceae37f6f2af0"},
 ]
 
 [package.dependencies]
@@ -7069,5 +7070,5 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 
 [metadata]
 lock-version = "2.0"
-python-versions = ">=3.8.1,<3.11"
-content-hash = "a79e8fa17df9216b2331611a1cbb233ea4cd2481beaf5fb76224b240b2c1cf93"
+python-versions = ">=3.8.1,<3.12"
+content-hash = "bc052f37afa7c294dd8bc857d3c1823a6dce618a698d6a1ee366c85f8819a391"
