@@ -33,7 +33,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 # Investigate if it is better to fix specific versions or use lower and upper bounds
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2665
-python = ">=3.8.1,<3.12"
+python = ">=3.8.1,<3.13"
 # Based on the following link, explicitly indicating the source makes poetry only look for that
 # source, so we should only use this for Concrete Python's non-public releases
 # https://python-poetry.org/docs/1.7/repositories#project-configuration
@@ -57,7 +57,10 @@ onnxoptimizer = "0.3.13"
 onnxruntime = "1.18"
 hummingbird-ml = {version="0.4.11", extras = ["onnx"]}
 scikit-learn = "1.1.3"
-scipy = "1.10.1"
+scipy = [
+        {version = "1.10.1", python = "3.8"},
+        {version = ">=1.10.1", python = ">3.8"}
+        ]
 numpy = "1.23.5"
 protobuf = "3.20.3"
 pandas = "2.0.3"
