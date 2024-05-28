@@ -1174,9 +1174,12 @@ jobs:
       # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4428
       - name: Set message body
         run: |
-          SLACK_BODY="Build status ([Action URL](${{ env.ACTION_RUN_URL }})):\n\
-            - Linux: ${{ needs.build-linux.result }}\n\n\
-            - macOS (intel): ${{ needs.build-macos-intel.result }}\n\n"
+          {
+            echo "SLACK_BODY<<EOF" 
+            echo "Build status ([Action URL](${{ env.ACTION_RUN_URL }})):"
+            echo "  - Linux: ${{ needs.build-linux.result }}"
+            echo "  - macOS (intel): ${{ needs.build-macos-intel.result }}"
+          } >> "$GITHUB_ENV"
 
           LINUX_PYTHON_VERSIONS="${{ needs.matrix-preparation.outputs.linux-python-versions }}"
 
@@ -1184,13 +1187,18 @@ jobs:
             file_name="failed_tests_slack_list_${linux_python_version}.txt"
 
             if [ -f ${file_name} ]; then
-              SLACK_BODY+="Linux failed tests (Python ${linux_python_version}):\n"
-              SLACK_BODY+="$(cat ${file_name})"
-              SLACK_BODY+="\n\n"
+              FAILED_TESTS_LIST=$(cat "${file_name}")
+              
+              {
+                echo ""
+                echo ""
+                echo "Linux failed tests (Python ${linux_python_version}):"
+                echo "${FAILED_TESTS_LIST}"
+              } >> "$GITHUB_ENV"
             fi
           done
 
-          echo "SLACK_BODY=${SLACK_BODY}" >> "$GITHUB_ENV"
+          echo "EOF" >> "$GITHUB_ENV"
 
       - name: Slack report
         uses: rtCamp/action-slack-notify@4e5fb42d249be6a45a298f3c9543b111b02f7907
