@@ -418,7 +418,8 @@ def check_onnx_file_dump(
         # KNN can only be compiled with small quantization bit numbers for now
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
         model.n_bits = 2
-        model.fit(x, y)
+
+    model.fit(x, y)
 
     with warnings.catch_warnings():
         # Use FHE simulation to not have issues with precision

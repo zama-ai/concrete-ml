@@ -266,7 +266,7 @@ class QuantizedModule:
         Returns:
             Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]: The post-processed values.
         """
-        return values
+        return values[0] if len(values) == 1 else values
 
     def _set_output_quantizers(self) -> List[UniformQuantizer]:
         """Get the output quantizers.

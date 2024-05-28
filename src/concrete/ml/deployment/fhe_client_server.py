@@ -151,9 +151,11 @@ class FHEModelServer:
 
         result = self.server.run(*deserialized_data, evaluation_keys=deserialized_keys)
 
-        if isinstance(result, tuple):
-            return tuple(res.serialize() for res in result)
-        return result.serialize()
+        return (
+            tuple(res.serialize() for res in result)
+            if isinstance(result, tuple)
+            else result.serialize()
+        )
 
 
 class FHEModelDev:
@@ -384,10 +386,7 @@ class FHEModelClient:
         serialized_enc_qx = tuple(e.serialize() for e in enc_qx)
 
         # Return a single value if the original input was a single value
-        if len(serialized_enc_qx) == 1:
-            return serialized_enc_qx[0]
-
-        return serialized_enc_qx
+        return serialized_enc_qx[0] if len(serialized_enc_qx) == 1 else serialized_enc_qx
 
     def deserialize_decrypt(
         self, serialized_encrypted_quantized_result: Union[bytes, Tuple[bytes, ...]]

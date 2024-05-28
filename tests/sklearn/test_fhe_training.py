@@ -41,20 +41,6 @@ def test_init_error_raises(n_bits, parameter_min_max):
     random_state = numpy.random.randint(0, 2**15)
     parameters_range = (-parameter_min_max, parameter_min_max)
 
-    with pytest.warns(
-        UserWarning,
-        match=(
-            "FHE training is an experimental feature. Please be aware that the API might change "
-            "in future versions."
-        ),
-    ):
-        SGDClassifier(
-            n_bits=n_bits,
-            fit_encrypted=True,
-            random_state=random_state,
-            parameters_range=parameters_range,
-        )
-
     with pytest.raises(
         ValueError,
         match=re.escape(
@@ -70,24 +56,24 @@ def test_init_error_raises(n_bits, parameter_min_max):
             parameters_range=parameters_range,
         )
 
-        with pytest.raises(
-            ValueError, match="Setting 'parameter_range' is mandatory if FHE training is enabled."
-        ):
-            SGDClassifier(
-                n_bits=n_bits,
-                fit_encrypted=True,
-                random_state=random_state,
-                parameters_range=None,
-                fit_intercept=True,
-            )
+    with pytest.raises(
+        ValueError, match="Setting 'parameter_range' is mandatory if FHE training is enabled."
+    ):
+        SGDClassifier(
+            n_bits=n_bits,
+            fit_encrypted=True,
+            random_state=random_state,
+            parameters_range=None,
+            fit_intercept=True,
+        )
 
-            SGDClassifier(
-                n_bits=n_bits,
-                fit_encrypted=True,
-                random_state=random_state,
-                parameters_range=parameters_range,
-                fit_intercept=False,
-            )
+    SGDClassifier(
+        n_bits=n_bits,
+        fit_encrypted=True,
+        random_state=random_state,
+        parameters_range=parameters_range,
+        fit_intercept=False,
+    )
 
 
 @pytest.mark.parametrize("n_classes", [1, 3])
@@ -208,20 +194,6 @@ def test_encrypted_fit_warning_error_raises(n_bits, max_iter, parameter_min_max)
         max_iter=max_iter,
     )
 
-    with pytest.warns(
-        UserWarning,
-        match="Parameter 'fhe' isn't set while FHE training is enabled.\n"
-        "Defaulting to 'fhe='disable''",
-    ):
-        model.fit(x, y, fhe=None)
-
-    with pytest.warns(
-        UserWarning,
-        match="Parameter 'fhe' isn't set while FHE training is enabled.\n"
-        "Defaulting to 'fhe='disable''",
-    ):
-        model.partial_fit(x, y, fhe=None)
-
     with pytest.raises(
         NotImplementedError,
         match="Parameter 'sample_weight' is currently not supported for FHE training.",
@@ -244,40 +216,12 @@ def test_encrypted_fit_warning_error_raises(n_bits, max_iter, parameter_min_max)
     with pytest.raises(NotImplementedError, match="Target values must be 1D.*"):
         model.partial_fit(x, y_2d, fhe="disable")
 
-    with pytest.warns(
-        UserWarning,
-        match="FHE training is an experimental feature. "
-        "Please be aware that the API might change in future versions.",
-    ):
-        model = SGDClassifier(
-            n_bits=n_bits,
-            fit_encrypted=True,
-            random_state=random_state,
-            parameters_range=parameters_range,
-            max_iter=max_iter,
-            loss="log_loss",
-        )
-
     with pytest.warns(UserWarning, match="ONNX Preprocess - Removing mutation from node .*"):
         model.fit(x, y, fhe="disable")
 
     with pytest.raises(NotImplementedError, match=""):
         model.loss = "random"
         model.predict_proba(x)
-
-    with pytest.warns(
-        UserWarning,
-        match="FHE training is an experimental feature. "
-        "Please be aware that the API might change in future versions.",
-    ):
-        model = SGDClassifier(
-            n_bits=n_bits,
-            fit_encrypted=True,
-            random_state=random_state,
-            parameters_range=parameters_range,
-            max_iter=max_iter,
-            loss="log_loss",
-        )
 
     assert isinstance(y, numpy.ndarray)
 
