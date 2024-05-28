@@ -25,7 +25,7 @@ do
             ;;
 
         "--all" )
-            VERSION_LIST="3.8 3.9 3.10 3.11"
+            VERSION_LIST="3.8 3.9 3.10 3.11 3.12"
             ;;
 
         "--version" )
@@ -44,7 +44,7 @@ done
 
 if [ "${VERSION_LIST}" == "" ]
 then
-    VERSION_LIST="3.8 3.9 3.10 3.11"
+    VERSION_LIST="3.8 3.9 3.10 3.11 3.12"
 fi
 
 for VERSION in $VERSION_LIST
