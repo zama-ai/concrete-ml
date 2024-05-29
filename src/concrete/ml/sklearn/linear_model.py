@@ -627,20 +627,9 @@ class SGDClassifier(SklearnSGDClassifierMixin):
 
             # If the training is done in FHE, execute the underlying FHE circuit directly on the
             # encrypted values
-            if fhe == "execute":
-                weights_enc, bias_enc = self.training_quantized_module.fhe_circuit.run(
-                    X_batch_enc_i,
-                    y_batch_enc_i,
-                    weights_enc,
-                    bias_enc,
-                )
-
-            # Else, use the quantized module on the quantized values (works for both quantized
-            # clear and FHE simulation modes)
-            else:
-                weights_enc, bias_enc = self.training_quantized_module.quantized_forward(
-                    X_batch_enc_i, y_batch_enc_i, weights_enc, bias_enc, fhe=fhe
-                )
+            weights_enc, bias_enc = self.training_quantized_module.quantized_forward(
+                X_batch_enc_i, y_batch_enc_i, weights_enc, bias_enc, fhe=fhe
+            )
 
             if self.verbose:
                 print(
