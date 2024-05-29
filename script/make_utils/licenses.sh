@@ -108,6 +108,8 @@ then
         IS_CORRECT_PYTHON=1
     elif [[ "${CHECK_VERSION}" == *"3.10"* ]]; then
         IS_CORRECT_PYTHON=1
+    elif [[ "${CHECK_VERSION}" == *"3.11"* ]]; then
+        IS_CORRECT_PYTHON=1
     fi
 
     if [ $IS_CORRECT_PYTHON -eq 0 ]

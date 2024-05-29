@@ -1,21 +1,21 @@
 Name, Version, License
 PyYAML, 6.0.1, MIT License
 brevitas, 0.8.0, UNKNOWN
-certifi, 2023.7.22, Mozilla Public License 2.0 (MPL 2.0)
+certifi, 2024.2.2, Mozilla Public License 2.0 (MPL 2.0)
 charset-normalizer, 3.3.2, MIT License
 coloredlogs, 15.0.1, MIT License
 concrete-python, 2024.4.19, BSD-3-Clause
 dependencies, 2.0.1, BSD License
 dill, 0.3.8, BSD License
-filelock, 3.13.4, The Unlicense (Unlicense)
+filelock, 3.14.0, The Unlicense (Unlicense)
 flatbuffers, 24.3.25, Apache Software License
-fsspec, 2024.3.1, BSD License
-huggingface-hub, 0.22.2, Apache Software License
+fsspec, 2024.5.0, BSD License
+huggingface-hub, 0.23.2, Apache Software License
 humanfriendly, 10.0, MIT License
 hummingbird-ml, 0.4.8, MIT License
 idna, 3.7, BSD License
 importlib_resources, 6.4.0, Apache Software License
-joblib, 1.4.0, BSD License
+joblib, 1.4.2, BSD License
 jsonpickle, 3.0.4, BSD License
 mpmath, 1.3.0, BSD License
 networkx, 3.1, BSD License
@@ -44,7 +44,7 @@ skops, 0.5.0, MIT
 skorch, 0.11.0, new BSD 3-Clause
 sympy, 1.12, BSD License
 tabulate, 0.8.10, MIT License
-threadpoolctl, 3.4.0, BSD License
+threadpoolctl, 3.5.0, BSD License
 torch, 1.13.1, BSD License
 tqdm, 4.66.4, MIT License; Mozilla Public License 2.0 (MPL 2.0)
 typing_extensions, 4.5.0, Python Software Foundation License
