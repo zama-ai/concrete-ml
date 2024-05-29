@@ -141,8 +141,7 @@ class FHEModelServer:
         """
         assert_true(self.server is not None, "Model has not been loaded.")
 
-        if isinstance(serialized_encrypted_quantized_data, bytes):
-            serialized_encrypted_quantized_data = (serialized_encrypted_quantized_data,)
+        serialized_encrypted_quantized_data = to_tuple(serialized_encrypted_quantized_data)
 
         deserialized_data = tuple(
             fhe.Value.deserialize(data) for data in serialized_encrypted_quantized_data

@@ -406,7 +406,4 @@ def test_save_mode_handling(n_bits, fit_encrypted, mode, error_message):
             with pytest.raises((AssertionError, ValueError), match=error_message):
                 model_dev.save(mode=mode)
         else:
-            try:
-                model_dev.save(mode=mode)
-            except ValueError:
-                pytest.fail("Valid mode raised ValueError unexpectedly")
+            model_dev.save(mode=mode)
