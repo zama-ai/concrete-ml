@@ -75,6 +75,7 @@ def build_quantized_module(
     n_bits: Union[int, Dict[str, int]] = MAX_BITWIDTH_BACKWARD_COMPATIBLE,
     rounding_threshold_bits: Union[None, int, Dict[str, Union[str, int]]] = None,
     reduce_sum_copy=False,
+    composition_mapping: Optional[Dict] = None,
 ) -> QuantizedModule:
     """Build a quantized module from a Torch or ONNX model.
 
@@ -124,10 +125,14 @@ def build_quantized_module(
     # FIXME: mismatch here. We traced with dummy_input_for_tracing which made some operator
     # only work over shape of (1, ., .). For example, some reshape have newshape hardcoded based
     # on the inputset we sent in the NumpyModule.
-    quantized_module = post_training_quant.quantize_module(*inputset_as_numpy_tuple)
+    quantized_module = post_training_quant.quantize_module(
+        *inputset_as_numpy_tuple, composition_mapping=composition_mapping
+    )
+
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4127
     if reduce_sum_copy:
         quantized_module.set_reduce_sum_copy()
+
     return quantized_module
 
 
@@ -145,7 +150,8 @@ def _compile_torch_or_onnx_model(
     global_p_error: Optional[float] = None,
     verbose: bool = False,
     inputs_encryption_status: Optional[Sequence[str]] = None,
-    reduce_sum_copy=False,
+    reduce_sum_copy: bool = False,
+    composition_mapping: Optional[Dict] = None,
 ) -> QuantizedModule:
     """Compile a torch module or ONNX into an FHE equivalent.
 
@@ -191,6 +197,12 @@ def _compile_torch_or_onnx_model(
         convert_torch_tensor_or_numpy_array_to_numpy_array(val) for val in to_tuple(torch_inputset)
     )
 
+    if composition_mapping is not None and not configuration.composable:
+        raise ValueError(
+            "Please enable the composition feature in order to be able to take the mapping between "
+            "inputs and output quantizers into account."
+        )
+
     # Build the quantized module
     quantized_module = build_quantized_module(
         model=model,
@@ -199,6 +211,7 @@ def _compile_torch_or_onnx_model(
         n_bits=n_bits,
         rounding_threshold_bits=rounding_threshold_bits,
         reduce_sum_copy=reduce_sum_copy,
+        composition_mapping=composition_mapping,
     )
 
     # Check that p_error or global_p_error is not set in both the configuration and in the direct
@@ -248,6 +261,7 @@ def compile_torch_model(
     verbose: bool = False,
     inputs_encryption_status: Optional[Sequence[str]] = None,
     reduce_sum_copy: bool = False,
+    composition_mapping: Optional[Dict] = None,
 ) -> QuantizedModule:
     """Compile a torch module into an FHE equivalent.
 
@@ -314,9 +328,11 @@ def compile_torch_model(
         verbose=verbose,
         inputs_encryption_status=inputs_encryption_status,
         reduce_sum_copy=reduce_sum_copy,
+        composition_mapping=composition_mapping,
     )
 
 
+# TODO: add 'composition_mapping' here as well
 # pylint: disable-next=too-many-arguments
 def compile_onnx_model(
     onnx_model: onnx.ModelProto,
@@ -397,6 +413,7 @@ def compile_onnx_model(
     )
 
 
+# TODO: add 'composition_mapping' here as well ?
 # pylint: disable-next=too-many-arguments
 def compile_brevitas_qat_model(
     torch_model: torch.nn.Module,

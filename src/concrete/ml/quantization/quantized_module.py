@@ -97,6 +97,7 @@ class QuantizedModule:
         ordered_module_output_names: Optional[Iterable[str]] = None,
         quant_layers_dict: Optional[Dict[str, Tuple[Tuple[str, ...], QuantizedOp]]] = None,
         onnx_model: Optional[onnx.ModelProto] = None,
+        composition_mapping: Optional[Dict] = None,
     ):
 
         all_or_none_params = [
@@ -138,6 +139,9 @@ class QuantizedModule:
             self.output_quantizers = self._set_output_quantizers()
         else:
             self.output_quantizers = []
+
+        # TODO: add check for inputs and outputs
+        self._composition_mapping = composition_mapping
 
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4127
     def set_reduce_sum_copy(self):
@@ -274,7 +278,7 @@ class QuantizedModule:
         Returns:
             List[UniformQuantizer]: List of output quantizers.
         """
-        output_layers = (
+        output_layers = list(
             self.quant_layers_dict[output_name][1]
             for output_name in self.ordered_module_output_names
         )
@@ -485,12 +489,22 @@ class QuantizedModule:
         # The output of a graph must be a QuantizedArray
         assert all(isinstance(elt, QuantizedArray) for elt in output_quantized_arrays)
 
-        results = tuple(
+        q_results = tuple(
             elt.qvalues for elt in output_quantized_arrays if isinstance(elt, QuantizedArray)
         )
-        if len(results) == 1:
-            return results[0]
-        return results
+
+        if self._composition_mapping is not None:
+            q_results = tuple(
+                self.input_quantizers[input_i].quant(
+                    self.output_quantizers[output_i].dequant(q_results[output_i])
+                )
+                for output_i, input_i in self._composition_mapping.items()
+            )
+
+            if len(q_results) == 1:
+                return q_results[0]
+
+        return q_results
 
     def _fhe_forward(
         self, *q_x: numpy.ndarray, simulate: bool = True

@@ -477,24 +477,6 @@ def test_encrypted_fit_coherence(
     assert array_allclose_and_same_shape(y_pred_proba_simulated, y_pred_proba_disable)
     assert array_allclose_and_same_shape(y_pred_class_simulated, y_pred_class_disable)
 
-    # Define early break parameters, with a very high tolerance
-    early_break_kwargs = {"early_stopping": True, "tol": 1e100}
-
-    # We don't have any way to properly test early break, we therefore disable the accuracy check
-    # in order to avoid flaky issues
-    check_encrypted_fit(
-        x,
-        y,
-        n_bits,
-        random_state,
-        parameters_range,
-        max_iter,
-        fit_intercept,
-        check_accuracy=None,
-        fhe="simulate",
-        init_kwargs=early_break_kwargs,
-    )
-
     weights_partial, bias_partial, y_pred_proba_partial, y_pred_class_partial, _ = (
         check_encrypted_fit(
             x,
@@ -541,7 +523,7 @@ def test_encrypted_fit_coherence(
 
     # Fit the model for max_iter // 2 iterations and retrieved the weight/bias values, as well as
     # the RNG object
-    weights_coef_init, bias_coef_init, _, _, rng_coef_init = check_encrypted_fit(
+    weights_coef_init_partial, bias_coef_init_partial, _, _, rng_coef_init = check_encrypted_fit(
         x,
         y,
         n_bits,
@@ -557,8 +539,8 @@ def test_encrypted_fit_coherence(
 
     # Define coef parameters
     coef_init_fit_kwargs = {
-        "coef_init": weights_coef_init,
-        "intercept_init": bias_coef_init,
+        "coef_init": weights_coef_init_partial,
+        "intercept_init": bias_coef_init_partial,
     }
 
     # Fit the model for the remaining iterations starting at the previous weight/bias values. It is

@@ -352,8 +352,9 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         # Enable the underlying FHE circuit to be composed with itself
         # This feature is used in order to be able to iterate in the clear n times without having
         # to encrypt/decrypt the weight/bias values between each loop
-        # configuration = Configuration(composable=True, detect_overflow_in_simulation=False)
         configuration = Configuration(composable=True)
+
+        composition_mapping = {0: 2, 1: 3}
 
         # Compile the model using the compile set
         if self.verbose:
@@ -368,6 +369,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
             p_error=self.training_p_error,
             configuration=configuration,
             reduce_sum_copy=True,
+            composition_mapping=composition_mapping,
         )
         end = time.time()
 
@@ -514,7 +516,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
 
         # Initialize the weight values with the given ones if some are provided
         if coef_init is not None:
-            weights = coef_init
+            weights = coef_init.reshape(weight_shape)
 
         # Else, if warm start is activated or this is a partial fit, use some already computed
         # weight values have if there are some
@@ -534,7 +536,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
 
             # Initialize the bias values with the given ones if some are provided
             if intercept_init is not None:
-                bias = intercept_init
+                bias = intercept_init.reshape(bias_shape)
 
             # Else, if warm start is activated or this is a partial fit, use some already computed
             # bias values have if there are some
@@ -621,15 +623,28 @@ class SGDClassifier(SklearnSGDClassifierMixin):
                 X_batches_enc[iteration_step],
                 y_batches_enc[iteration_step],
             )
-
             # Train the model over one iteration
             inference_start = time.time()
 
             # If the training is done in FHE, execute the underlying FHE circuit directly on the
             # encrypted values
-            weights_enc, bias_enc = self.training_quantized_module.quantized_forward(
-                X_batch_enc_i, y_batch_enc_i, weights_enc, bias_enc, fhe=fhe
-            )
+            if fhe == "execute":
+                weights_enc, bias_enc = self.training_quantized_module.fhe_circuit.run(
+                    X_batch_enc_i,
+                    y_batch_enc_i,
+                    weights_enc,
+                    bias_enc,
+                )
+
+            # Else, use the quantized module on the quantized values (works for both quantized
+            # clear and FHE simulation modes). It is important to note that 'quantized_forward'
+            # with 'fhe="execute"' is executing Concrete's 'encrypt_run_decrypt' method, as opposed
+            # to the 'run' method right above. We thus need to separate these cases since values
+            # are already encrypted here.
+            else:
+                weights_enc, bias_enc = self.training_quantized_module.quantized_forward(
+                    X_batch_enc_i, y_batch_enc_i, weights_enc, bias_enc, fhe=fhe
+                )
 
             if self.verbose:
                 print(
