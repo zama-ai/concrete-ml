@@ -356,6 +356,8 @@ jobs:
       PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    outputs:
+      hashes: ${{ steps.hash.outputs.hashes }}
 
     steps:
       - name: Add masks
@@ -677,6 +679,12 @@ jobs:
           rm -rf dist
           poetry build -f wheel
 
+      - name: "Generate hashes"
+        id: hash
+        if: ${{ steps.build-wheel.outcome == 'success' && !cancelled() }}
+        run: |
+          cd dist && echo "hashes=$(sha256sum * | base64 -w0)" >> $GITHUB_OUTPUT
+
       - name: Upload wheel artifacts
         if: ${{ steps.build-wheel.outcome == 'success' && !cancelled() }}
         uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3
@@ -938,12 +946,24 @@ jobs:
         run: |
           ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --clone
 
+  provenance:
+      needs: [build-linux]
+      permissions:
+        actions: read
+        contents: write
+        id-token: write # Needed to access the workflow's OIDC identity.
+      uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0 # Not pinned by commit on purpose
+      # see https://github.com/slsa-framework/slsa-github-generator/blob/main/README.md#referencing-slsa-builders-and-generators
+      if: ${{ needs.build-linux.outputs.hashes != '' }}
+      with:
+        base64-subjects: "${{ needs.build-linux.outputs.hashes }}"
+
   # This is to manage build matrices and have a single status point for PRs
   # This can be updated to take macOS into account but it is impractical because of long builds
   # and therefore expensive macOS testing
   linux-build-status:
     name: Build Status (Linux)
-    needs: [build-linux]
+    needs: [build-linux, provenance]
     runs-on: ubuntu-20.04
     timeout-minutes: 2
     if: success() || failure()
