@@ -6,7 +6,7 @@ on:
     branches:
       - main
       - 'release/*'
-  
+
   release:
     types: [published]
 
@@ -37,14 +37,14 @@ on:
         type: boolean
         required: false
         default: true
-  
-  # Workflow call refers to the weekly or release process (it enables the current CI workflow to be 
+
+  # Workflow call refers to the weekly or release process (it enables the current CI workflow to be
   # called by another workflow from the same repository, in this case the release one)
-  # No default value is put in order to avoid running the following CI without explicitly 
+  # No default value is put in order to avoid running the following CI without explicitly
   # indicating it in the caller workflow
   # Besides, GitHub actions are not able to differentiate 'workflow_dispatch' from 'workflow_call'
-  # based on 'github.event_name' and both are set to 'workflow_dispatch'. Therefore, an optional 
-  # input 'manual_call' with proper default values is added to both as a workaround, following one 
+  # based on 'github.event_name' and both are set to 'workflow_dispatch'. Therefore, an optional
+  # input 'manual_call' with proper default values is added to both as a workaround, following one
   # user's suggestion : https://github.com/actions/runner/discussions/1884
   # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3930
   workflow_call:
@@ -68,23 +68,23 @@ concurrency:
 
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-  # The CI can be triggered by the release workflow which itself can be triggered by the merge of a 
-  # pull-request (following the 'prepare_release' workflow). Since GitHub weirdly propagates the 
-  # original 'github.event_name' (here "pull_request") in all nested workflows, we need to 
+  # The CI can be triggered by the release workflow which itself can be triggered by the merge of a
+  # pull-request (following the 'prepare_release' workflow). Since GitHub weirdly propagates the
+  # original 'github.event_name' (here "pull_request") in all nested workflows, we need to
   # differentiate the release CI from regular CIs by using 'inputs.event_name', which should be set
   # to "release" by the release workflow
   IS_PR: ${{ github.event_name == 'pull_request' && inputs.event_name != 'release' }}
-  # Run the weekly CI if it has been triggered manually by the weekly workflow, meaning 
+  # Run the weekly CI if it has been triggered manually by the weekly workflow, meaning
   # 'inputs.event_name' is set to "weekly"
   IS_WEEKLY: ${{ inputs.event_name == 'weekly'}}
-  # The 'IS_RELEASE' variable indicates that the workflow has been triggered by the releasing 
+  # The 'IS_RELEASE' variable indicates that the workflow has been triggered by the releasing
   # process itself, before publishing it. It should only happen when the release workflow triggers
   # the CI, in which 'inputs.event_name' is set to "release"
   IS_RELEASE: ${{ inputs.event_name == 'release' }}
   IS_PUSH_TO_MAIN: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
   IS_PUSH_TO_RELEASE: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/') }}
   IS_WORKFLOW_DISPATCH: ${{ github.event_name == 'workflow_dispatch' && inputs.manual_call}}
-  # The 'IS_PUBLISHED_RELEASE' variable indicates that the workflow has been triggered by a 
+  # The 'IS_PUBLISHED_RELEASE' variable indicates that the workflow has been triggered by a
   # release's successful publishing
   IS_PUBLISHED_RELEASE: ${{ github.event_name == 'release'}}
   AGENT_TOOLSDIRECTORY: /opt/hostedtoolcache
@@ -172,7 +172,7 @@ jobs:
             echo "Unknown BUILD_TYPE! Aborting"
             exit 1
           fi
-          
+
           echo "LINUX_PYTHON_VERSIONS: ${LINUX_PYTHON_VERSIONS}"
           echo "MACOS_PYTHON_VERSIONS: ${MACOS_PYTHON_VERSIONS}"
 
@@ -386,8 +386,8 @@ jobs:
         uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
         with:
           fetch-depth: 0
-      
-      # Pull necessary LFS files (and thus avoid downloading files stored for benchmarks, use cases, ...) 
+
+      # Pull necessary LFS files (and thus avoid downloading files stored for benchmarks, use cases, ...)
       - name: Pull LFS files
         run: |
           git lfs pull --include "tests/data/**, src/concrete/ml/pandas/_client_server_files/**" --exclude  ""
@@ -473,17 +473,17 @@ jobs:
         run: |
           make pcc
 
-      # Checked for changes between main and the current branch in a PR. More specifically, 
-      # this is used in regular CIs to avoid launching Pytest, checking codeblocks, building docs 
+      # Checked for changes between main and the current branch in a PR. More specifically,
+      # this is used in regular CIs to avoid launching Pytest, checking codeblocks, building docs
       # or other steps if the associated files were not touched. For most, we also check that the
       # linux MD5 has not changed, which means that no libraries got updated. This is done in order
       # to handle PRs which only upgrades dependencies
-      # Following the 'files_yaml' section, we define what files should trigger a defined acronym 
-      # (src, codeblocks, ...) when some changes are detected in them. For example, if some 
+      # Following the 'files_yaml' section, we define what files should trigger a defined acronym
+      # (src, codeblocks, ...) when some changes are detected in them. For example, if some
       # dependencies were changed, 'tests', 'determinism', 'codeblocks' and 'determinism' acronyms
-      # will be affected. We use the license MD5 file for that because it is built on the 
+      # will be affected. We use the license MD5 file for that because it is built on the
       # poetry.lock as well as the Concrete Python version, which can be installed manually in the
-      # makefile. 
+      # makefile.
       # For codeblocks, 'make pytest_codeblocks' runs the `make_utils/pytest_codeblocks.sh` script,
       # which executes a find and grep command to find them. In the following section, we manually
       # re-define what this command does by looking at all markdown files that are neither in hidden
@@ -493,10 +493,10 @@ jobs:
       # as for release and weekly checks, as there are no changes to check in these cases
       - name: Get all changed files from main in PR
         id: changed-files-in-pr
-        if: | 
+        if: |
           fromJSON(env.IS_PR)
           && steps.install-deps.outcome == 'success'
-          && steps.make-pcc.outcome == 'success' 
+          && steps.make-pcc.outcome == 'success'
           && !cancelled()
         uses: tj-actions/changed-files@v44.5.2
         with:
@@ -531,7 +531,7 @@ jobs:
               - Makefile
 
       # Run determinism test if:
-      # - during weekly or release CI, as well as when the CI has been triggered manually (through 
+      # - during weekly or release CI, as well as when the CI has been triggered manually (through
       # GitHub's Action interface)
       # - the determinism test file has been changed
       # - the source code has been changed
@@ -542,22 +542,22 @@ jobs:
         id: determinism
         if: |
           (
-            steps.changed-files-in-pr.outcome == 'skipped' 
+            steps.changed-files-in-pr.outcome == 'skipped'
             || steps.changed-files-in-pr.outputs.determinism_any_changed == 'true'
             || steps.changed-files-in-pr.outputs.src_any_changed == 'true'
             || steps.changed-files-in-pr.outputs.dependencies_any_changed == 'true'
             || steps.changed-files-in-pr.outputs.conftest_any_changed == 'true'
             || steps.changed-files-in-pr.outputs.makefile_any_changed == 'true'
           )
-          && steps.install-deps.outcome == 'success' 
-          && steps.make-pcc.outcome == 'success' 
+          && steps.install-deps.outcome == 'success'
+          && steps.make-pcc.outcome == 'success'
           && !cancelled()
         run: |
           make determinism
 
       # Build the documentation if :
       # - the current workflow takes place in a release CI with the reference build
-      # - the current workflow takes place in a weekly CI or it has been triggered manually (through 
+      # - the current workflow takes place in a weekly CI or it has been triggered manually (through
       # GitHub's Action interface)
       # - any documentation files has been changed
       # - the source code has been changed
@@ -567,19 +567,19 @@ jobs:
         if: |
           (
             (fromJSON(env.IS_RELEASE) && fromJSON(env.IS_REF_BUILD))
-            || steps.changed-files-in-pr.outcome == 'skipped' 
-            || steps.changed-files-in-pr.outputs.docs_any_changed == 'true' 
-            || steps.changed-files-in-pr.outputs.use_cases_any_changed == 'true' 
+            || steps.changed-files-in-pr.outcome == 'skipped'
+            || steps.changed-files-in-pr.outputs.docs_any_changed == 'true'
+            || steps.changed-files-in-pr.outputs.use_cases_any_changed == 'true'
             || steps.changed-files-in-pr.outputs.src_any_changed == 'true'
             || steps.changed-files-in-pr.outputs.makefile_any_changed == 'true'
           )
-          && steps.install-deps.outcome == 'success' 
-          && steps.make-pcc.outcome == 'success' 
-          && steps.determinism.outcome != 'failure' 
+          && steps.install-deps.outcome == 'success'
+          && steps.make-pcc.outcome == 'success'
+          && steps.determinism.outcome != 'failure'
           && !cancelled()
         run: |
           make docs_no_links
-      
+
       # Do not check links during the release process in order to avoid temporary connection errors
       - name: Check links
         id: check_links
@@ -591,7 +591,7 @@ jobs:
           make check_links
           make check_symlinks
 
-      # Make sure all necessary steps passed. For build-docs and determinism steps, we only check for 
+      # Make sure all necessary steps passed. For build-docs and determinism steps, we only check for
       # non-failures as the 'changed-files-in-pr' step might skip them
       - name: Stop if previous steps failed
         id: conformance
@@ -599,8 +599,8 @@ jobs:
         env:
           CONFORMANCE_STATUS: >-
             ${{
-              steps.commit-conformance.outcome == 'success' 
-              && steps.make-pcc.outcome == 'success' 
+              steps.commit-conformance.outcome == 'success'
+              && steps.make-pcc.outcome == 'success'
               && steps.determinism.outcome != 'failure'
               && steps.build-docs.outcome != 'failure'
               && steps.check_links.outcome != 'failure'
@@ -621,10 +621,10 @@ jobs:
       - name: Tar docs artifacts
         id: tar-docs
         if:  |
-          fromJSON(env.IS_RELEASE) 
-          && fromJSON(env.IS_REF_BUILD) 
-          && steps.conformance.outcome == 'success' 
-          && steps.build-docs.outcome == 'success' 
+          fromJSON(env.IS_RELEASE)
+          && fromJSON(env.IS_REF_BUILD)
+          && steps.conformance.outcome == 'success'
+          && steps.build-docs.outcome == 'success'
           && !cancelled()
         run: |
           cd docs/_build/html
@@ -638,12 +638,12 @@ jobs:
           path: docs/_build/html/docs.tar
 
       # Generate the changelog for releases with the reference build only
-      # The changelog is generated by considering all commits from the latest stable previous 
+      # The changelog is generated by considering all commits from the latest stable previous
       # version (not a release candidate) up to the new upcoming version
       - name: Generate release changelog
         id: changelog
         if: |
-          fromJSON(env.IS_RELEASE) 
+          fromJSON(env.IS_RELEASE)
           && fromJSON(env.IS_REF_BUILD)
           && steps.conformance.outcome == 'success'
           && !cancelled()
@@ -654,7 +654,7 @@ jobs:
           echo "changelog-file=${CHANGELOG_FILE}" >> $GITHUB_OUTPUT
           poetry run python ./script/make_utils/changelog_helper.py \
           --to-ref "${{ github.sha }}" > "${CHANGELOG_FILE}"
-  
+
       - name: Upload changelog artifacts
         if: ${{ steps.changelog.outcome == 'success' && !cancelled() }}
         uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3
@@ -668,10 +668,10 @@ jobs:
       # and macOS as long as the dependencies are available
       - name: Build wheel
         id: build-wheel
-        if: | 
+        if: |
           fromJSON(env.IS_RELEASE)
-          && fromJSON(env.IS_REF_BUILD) 
-          && steps.conformance.outcome == 'success' 
+          && fromJSON(env.IS_REF_BUILD)
+          && steps.conformance.outcome == 'success'
           && !cancelled()
         run: |
           rm -rf dist
@@ -683,30 +683,30 @@ jobs:
         with:
           name: py3-wheel
           path: dist/*.whl
-      
+
       # Run pytest if :
       # - the current workflow does no take place release CI
       # - if the CI has been triggered manually (through GitHub's Action interface)
       # - the source code has been changed
       # - any tests utils (pytest, data) has been changed
-      # - any dependency has been updated 
+      # - any dependency has been updated
       # - conftest.py has been changed
       # - Makefile has been changed
       # If the workflow takes place in a release CI, an option is added to take into account more tests
       # If only some test files were changed, this step is skipped and each associated tests will be
       # run individually in a following step (pytest_modified_tests_only)
-      # If regular tests failed, a following script checks for flaky tests. If all failed tests 
+      # If regular tests failed, a following script checks for flaky tests. If all failed tests
       # are known flaky tests, they are rerun. Otherwise, the step exits with status 1.
-      # The 'bash +e {0}' is added here in order to make sure that the step does not exit directly 
+      # The 'bash +e {0}' is added here in order to make sure that the step does not exit directly
       # if 'make pytest' fails
       - name: PyTest Source Code (regular, weekly)
         id: pytest
         if: |
           (
             (
-              steps.changed-files-in-pr.outcome == 'success' 
+              steps.changed-files-in-pr.outcome == 'success'
               && (
-                steps.changed-files-in-pr.outputs.src_any_changed == 'true' 
+                steps.changed-files-in-pr.outputs.src_any_changed == 'true'
                 || steps.changed-files-in-pr.outputs.tests_utils_any_changed == 'true'
                 || steps.changed-files-in-pr.outputs.dependencies_any_changed == 'true'
                 || steps.changed-files-in-pr.outputs.conftest_any_changed == 'true'
@@ -716,7 +716,7 @@ jobs:
             || fromJSON(env.IS_WORKFLOW_DISPATCH)
             || fromJSON(env.IS_WEEKLY)
           )
-          && steps.conformance.outcome == 'success' 
+          && steps.conformance.outcome == 'success'
           && !cancelled()
         shell: bash +e {0}
         run: |
@@ -725,7 +725,7 @@ jobs:
           else
             PYTEST_OPTIONS=""
           fi
-          
+
           make pytest_and_report PYTEST_OPTIONS=${PYTEST_OPTIONS}
 
           # If regular tests failed, check for flaky tests
@@ -746,7 +746,7 @@ jobs:
             # If all failed tests are known flaky tests, try to rerun them
             if [[ "${FAILED_TESTS_ARE_FLAKY}" == "true" ]]; then
               make pytest_run_last_failed
-            
+
             # Else, return exit status 1 in order to make this step fail
             else
               exit 1
@@ -757,9 +757,9 @@ jobs:
       - name: Upload flaky tests list (weekly)
         uses: actions/upload-artifact@v4
         if: |
-          fromJSON(env.IS_WEEKLY) 
-          && steps.pytest.outcome == 'success' 
-          && fromJSON(env.FAILED_TESTS_ARE_FLAKY) 
+          fromJSON(env.IS_WEEKLY)
+          && steps.pytest.outcome == 'success'
+          && fromJSON(env.FAILED_TESTS_ARE_FLAKY)
           && !cancelled()
         with:
           name: failed_flaky_${{ matrix.python_version }}
@@ -770,17 +770,17 @@ jobs:
       - name: Warn PR with flaky tests (regular)
         uses: marocchino/sticky-pull-request-comment@331f8f5b4215f0445d3c07b4967662a32a2d3e31
         if: |
-          fromJSON(env.IS_PR) 
-          && steps.pytest.outcome == 'success' 
-          && fromJSON(env.FAILED_TESTS_ARE_FLAKY) 
+          fromJSON(env.IS_PR)
+          && steps.pytest.outcome == 'success'
+          && fromJSON(env.FAILED_TESTS_ARE_FLAKY)
           && !cancelled()
         with:
           header: flaky-test
           recreate: true
           path: failed_tests_comment_${{ matrix.python_version }}.txt
 
-      # If pytest step has been skipped but some changes has been detected in test files, 
-      # meaning there was no other changed impacting our testing suite, we only need to run these 
+      # If pytest step has been skipped but some changes has been detected in test files,
+      # meaning there was no other changed impacting our testing suite, we only need to run these
       # modified tests
       # Note that if pytest utils or test data are changed, the pytest step should have been
       # triggered instead
@@ -791,29 +791,29 @@ jobs:
           && steps.changed-files-in-pr.outcome == 'success'
           && steps.pytest.outcome == 'skipped'
           && steps.changed-files-in-pr.outputs.tests_any_changed == 'true'
-          && steps.conformance.outcome == 'success' 
+          && steps.conformance.outcome == 'success'
           && !cancelled()
         run: |
           for file in ${{ steps.changed-files-in-pr.outputs.tests_all_changed_files }}; do
               make pytest_one TEST="$file"
           done
 
-      # Run Pytest on all of our tests (except flaky ones) using PyPI's local wheel in the weekly 
+      # Run Pytest on all of our tests (except flaky ones) using PyPI's local wheel in the weekly
       # or during the release process
       - name: PyTest (no flaky) with PyPI local wheel of Concrete ML (weekly, release)
         if: |
-          (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
-          && steps.conformance.outcome == 'success' 
+          (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE))
+          && steps.conformance.outcome == 'success'
           && !cancelled()
         run: |
           make pytest_pypi_wheel_cml_no_flaky
 
-      # Run Pytest on all of our tests (except flaky ones) using Concrete ML's latest version 
+      # Run Pytest on all of our tests (except flaky ones) using Concrete ML's latest version
       # available on PyPI after publishing a release
       - name: PyTest (no flaky) with PyPI (published release)
         if: |
           fromJSON(env.IS_PUBLISHED_RELEASE)
-          && steps.conformance.outcome == 'success' 
+          && steps.conformance.outcome == 'success'
           && !cancelled()
         run: |
           PROJECT_VERSION="$(poetry version --short)"
@@ -824,7 +824,7 @@ jobs:
       - name: Test coverage (regular, weekly)
         id: coverage
         if: |
-          fromJSON(env.IS_REF_BUILD) 
+          fromJSON(env.IS_REF_BUILD)
           && steps.pytest.outcome != 'skipped'
           && !cancelled()
         run: |
@@ -849,9 +849,9 @@ jobs:
         if: |
           (
             (
-              steps.changed-files-in-pr.outcome == 'success' 
+              steps.changed-files-in-pr.outcome == 'success'
               && (
-                steps.changed-files-in-pr.outputs.src_any_changed == 'true' 
+                steps.changed-files-in-pr.outputs.src_any_changed == 'true'
                 || steps.changed-files-in-pr.outputs.codeblocks_any_changed == 'true'
                 || steps.changed-files-in-pr.outputs.dependencies_any_changed == 'true'
                 || steps.changed-files-in-pr.outputs.makefile_any_changed == 'true'
@@ -859,7 +859,7 @@ jobs:
             )
             || fromJSON(env.IS_WORKFLOW_DISPATCH)
           )
-          && steps.conformance.outcome == 'success' 
+          && steps.conformance.outcome == 'success'
           && !cancelled()
         run: |
           make pytest_codeblocks
@@ -867,18 +867,18 @@ jobs:
       # Run Pytest on all codeblocks on a weekly basis or while releasing
       - name: PyTest CodeBlocks with PyPI local wheel of Concrete ML (weekly, release)
         if: |
-          (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
-          && steps.conformance.outcome == 'success' 
+          (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE))
+          && steps.conformance.outcome == 'success'
           && !cancelled()
         run: |
-          make pytest_codeblocks_pypi_wheel_cml 
+          make pytest_codeblocks_pypi_wheel_cml
 
-      # Run Pytest on all codeblocks using Concrete ML's latest version available on PyPI after 
+      # Run Pytest on all codeblocks using Concrete ML's latest version available on PyPI after
       # publishing a release
       - name: PyTest CodeBlocks with PyPI (published release)
         if: |
-          fromJSON(env.IS_PUBLISHED_RELEASE) 
-          && steps.conformance.outcome == 'success' 
+          fromJSON(env.IS_PUBLISHED_RELEASE)
+          && steps.conformance.outcome == 'success'
           && !cancelled()
         run: |
           PROJECT_VERSION="$(poetry version --short)"
@@ -888,9 +888,9 @@ jobs:
       # Run Pytest on all notebooks on a weekly basis
       # Note: some notebooks need specific data stored in LFS
       - name: PyTest Notebooks (weekly)
-        if: | 
-          fromJSON(env.IS_WEEKLY) 
-          && steps.conformance.outcome == 'success' 
+        if: |
+          fromJSON(env.IS_WEEKLY)
+          && steps.conformance.outcome == 'success'
           && !cancelled()
         run: |
           git lfs pull --include "docs/advanced_examples/data/**" --exclude  ""
@@ -901,12 +901,12 @@ jobs:
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
         run: |
           make fast_sanity_check
-      
+
       # Check installation with sync_env
       - name: Check installation with sync_env and python ${{ matrix.python_version }} (weekly, release)
         if: |
-            (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
-            && steps.conformance.outcome == 'success' 
+            (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE))
+            && steps.conformance.outcome == 'success'
             && !cancelled()
         run: |
           ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --sync_env
@@ -914,8 +914,8 @@ jobs:
       # Check installation with pip
       - name: Check installation with pip and python ${{ matrix.python_version }} (weekly, release)
         if: |
-            (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
-            && steps.conformance.outcome == 'success' 
+            (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE))
+            && steps.conformance.outcome == 'success'
             && !cancelled()
         run: |
           ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --pip
@@ -923,8 +923,8 @@ jobs:
       # Check installation with wheel
       - name: Check installation with wheel and python ${{ matrix.python_version }} (weekly, release)
         if: |
-            (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
-            && steps.conformance.outcome == 'success' 
+            (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE))
+            && steps.conformance.outcome == 'success'
             && !cancelled()
         run: |
           ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --wheel
@@ -932,14 +932,14 @@ jobs:
       # Check installation with git clone
       - name: Check installation with clone and python ${{ matrix.python_version }} (weekly, release)
         if: |
-            (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
-            && steps.conformance.outcome == 'success' 
+            (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE))
+            && steps.conformance.outcome == 'success'
             && !cancelled()
         run: |
           ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --clone
 
   # This is to manage build matrices and have a single status point for PRs
-  # This can be updated to take macOS into account but it is impractical because of long builds 
+  # This can be updated to take macOS into account but it is impractical because of long builds
   # and therefore expensive macOS testing
   linux-build-status:
     name: Build Status (Linux)
@@ -1026,17 +1026,17 @@ jobs:
         run: |
           echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
           echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
-    
+
       # By default, `git clone` downloads all LFS files, which we want to avoid in CIs
       - name: Disable LFS download by default
         run: |
           git lfs install --skip-smudge
- 
+
       # Checkout the code
       - name: Checkout Code
         uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
-      
-      # Pull necessary LFS files (and thus avoid downloading files stored for benchmarks, use cases, ...) 
+
+      # Pull necessary LFS files (and thus avoid downloading files stored for benchmarks, use cases, ...)
       - name: Pull LFS files
         run: |
           git lfs pull --include "tests/data/**, src/concrete/ml/pandas/_client_server_files/**" --exclude  ""
@@ -1081,7 +1081,7 @@ jobs:
       # macOS builds are already long, so we decide not to use --weekly on them, it could be
       # changed. Remark also that, for mac, due to unexpected issues with GitHub, we have a
       # slightly different way to launch pytest
-      # Add support for re-running flaky tests on macOS (intel) CI 
+      # Add support for re-running flaky tests on macOS (intel) CI
       # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4428
       - name: PyTest Source Code
         run: |
@@ -1108,16 +1108,16 @@ jobs:
   # - when pushing to main
   # - when pushing to a release branch
   # - when running weekly tests
-  # In these cases, we want to send the report whenever one of the step was triggered, which is 
+  # In these cases, we want to send the report whenever one of the step was triggered, which is
   # basically when the `matrix-preparation` has not been skipped
-  # Side note: environmental variables cannot be used for jobs conditions, so we need to determine 
+  # Side note: environmental variables cannot be used for jobs conditions, so we need to determine
   # if the job should be run or not in an previous job and store it in its output
   send-report:
     name: Send Slack report
     runs-on: ubuntu-20.04
     if: |
-      always() 
-      && needs.matrix-preparation.result != 'skipped' 
+      always()
+      && needs.matrix-preparation.result != 'skipped'
       && fromJSON(needs.decide-slack-report.outputs.send_slack_report)
     timeout-minutes: 2
     needs:
@@ -1152,16 +1152,16 @@ jobs:
 
           if [[ "${{ env.JOB_STATUS }}" == "success" ]]; then
             TITLE_STATUS="passed ✅"
-          elif [[ "${{ env.JOB_STATUS }}" == "cancelled" ]]; then 
+          elif [[ "${{ env.JOB_STATUS }}" == "cancelled" ]]; then
             TITLE_STATUS="cancelled :black_square_for_stop:"
-          elif [[ "${{ env.JOB_STATUS }}" == "skipped" ]]; then 
+          elif [[ "${{ env.JOB_STATUS }}" == "skipped" ]]; then
             TITLE_STATUS="skipped :fast_forward:"
           else
             TITLE_STATUS="failed ❌"
           fi
 
           echo "SLACK_TITLE=${TITLE_START} ${TITLE_STATUS}" >> "$GITHUB_ENV"
-        
+
       # Retrieve the list of flaky tests that have been re-run if they were some
       # Enable 'merge-multiple' to download all files in the root directory
       - name: Download artifacts
@@ -1170,12 +1170,12 @@ jobs:
           merge-multiple: true
           pattern: failed_flaky_*
 
-      # Add support for re-running flaky tests on macOS (intel) CI 
+      # Add support for re-running flaky tests on macOS (intel) CI
       # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4428
       - name: Set message body
         run: |
           {
-            echo "SLACK_BODY<<EOF" 
+            echo "SLACK_BODY<<EOF"
             echo "Build status ([Action URL](${{ env.ACTION_RUN_URL }})):"
             echo "  - Linux: ${{ needs.build-linux.result }}"
             echo "  - macOS (intel): ${{ needs.build-macos-intel.result }}"
@@ -1188,7 +1188,7 @@ jobs:
 
             if [ -f ${file_name} ]; then
               FAILED_TESTS_LIST=$(cat "${file_name}")
-              
+
               {
                 echo "Linux (Python ${linux_python_version}):"
                 echo "${FAILED_TESTS_LIST}"

@@ -4,9 +4,9 @@ on:
   # properly built
   workflow_dispatch:
 
-  # Releases are also allowed to be automatically triggered once the release preparation 
-  # pull-request is merged in main (major/minor releases or release candidates) or in a release 
-  # branch (dot/patch releases). We also make sure that the PR has changes in at least one file 
+  # Releases are also allowed to be automatically triggered once the release preparation
+  # pull-request is merged in main (major/minor releases or release candidates) or in a release
+  # branch (dot/patch releases). We also make sure that the PR has changes in at least one file
   # related to `make set_version` or `make apidocs`
   pull_request:
     types:
@@ -19,10 +19,10 @@ on:
       - 'docs/references/api/**'
 
 # We need to make sure that the concurrency group is not identical to the continuous-integration.yaml
-# one, else the release workflow will be canceled when calling that latter for tests. More 
+# one, else the release workflow will be canceled when calling that latter for tests. More
 # specifically, we should avoid using the usual "${{ github.ref }}-${{ github.event_name }}-${{ github.workflow }}"
 # group as the 'github.workflow' reference is shared between caller and called workflows, making
-# both workflows have the same concurrency group. Note that the problem happens because 
+# both workflows have the same concurrency group. Note that the problem happens because
 # the continuous-integration.yaml workflow currently cancels all workflows from the same group that
 # are not triggered by a push targeting main, which is the case in the release process
 concurrency:
@@ -32,14 +32,14 @@ concurrency:
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   BRANCH_NAME: ${{ github.ref_name }}
-  BRANCH_IS_MAIN: ${{ github.ref_name == 'main' }} 
-  BRANCH_IS_RELEASE: ${{ startsWith(github.ref_name, 'release/') }} 
+  BRANCH_IS_MAIN: ${{ github.ref_name == 'main' }}
+  BRANCH_IS_RELEASE: ${{ startsWith(github.ref_name, 'release/') }}
 
 jobs:
-  # Open the AWS EC2 instance if the release process has been triggered manually, if the release 
-  # preparation pull-request has been merged or if a pull-request has been merged in a release 
-  # branch. In the second case, we also make sure that the PR contains "Prepare release" in their 
-  # title coming from a branch that starts with "chore/prepare_release_". This workflow will not 
+  # Open the AWS EC2 instance if the release process has been triggered manually, if the release
+  # preparation pull-request has been merged or if a pull-request has been merged in a release
+  # branch. In the second case, we also make sure that the PR contains "Prepare release" in their
+  # title coming from a branch that starts with "chore/prepare_release_". This workflow will not
   # be triggered if a pull request preparing a patch release is merged as the PR's title and branch
   # name are expected to be different
   start-runner-linux:
@@ -63,7 +63,7 @@ jobs:
         with:
           ref: ${{ github.ref }}
           token: ${{ secrets.BOT_TOKEN }}
-  
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
         with:
@@ -93,7 +93,7 @@ jobs:
               {"Key": "Team", "Value": "CML"}
             ]
 
-  # Check that everything is up to date and run all non-flaky tests on different Python versions 
+  # Check that everything is up to date and run all non-flaky tests on different Python versions
   release-checks:
     name: Install deps and run checks
     needs: [start-runner-linux]
@@ -169,12 +169,12 @@ jobs:
           IS_PATCH="$(poetry run python ./script/make_utils/version_utils.py is_patch_release --version "$PROJECT_VERSION")"
           GIT_TAG="v${PROJECT_VERSION}"
 
-          # Release branches are only used for non-release candidates and have a special naming 
+          # Release branches are only used for non-release candidates and have a special naming
           # format (for example, "release/1.1.x" is used for all patch versions related to version 1.1)
           PROJECT_VERSION_MAJOR_MINOR=$(echo "${PROJECT_VERSION}" | cut -d '.' -f -2)
           RELEASE_BRANCH_NAME="release/${PROJECT_VERSION_MAJOR_MINOR}.x"
 
-          # Store project version, tag version, branch name and if they represent a release candidate 
+          # Store project version, tag version, branch name and if they represent a release candidate
           # as environment variables in order to be able to use them in this job's following steps
           echo "PROJECT_VERSION=${PROJECT_VERSION}" >> "$GITHUB_ENV"
           echo "IS_RC=${IS_RC}" >> "$GITHUB_ENV"
@@ -182,7 +182,7 @@ jobs:
           echo "GIT_TAG=${GIT_TAG}" >> "$GITHUB_ENV"
           echo "RELEASE_BRANCH_NAME=${RELEASE_BRANCH_NAME}" >> "$GITHUB_ENV"
 
-          # Store project version, tag version, branch name and if they represent a release 
+          # Store project version, tag version, branch name and if they represent a release
           # candidate as job outputs in order to be able to use them in following jobs
           echo "project_version=${PROJECT_VERSION}" >> "$GITHUB_OUTPUT"
           echo "is_rc=${IS_RC}" >> "$GITHUB_OUTPUT"
@@ -190,7 +190,7 @@ jobs:
           echo "git_tag=${GIT_TAG}" >> "$GITHUB_OUTPUT"
           echo "release_branch_name=${RELEASE_BRANCH_NAME}" >> "$GITHUB_OUTPUT"
 
-      # Make sure that the workflow has been triggered from a release branch if this is a patch 
+      # Make sure that the workflow has been triggered from a release branch if this is a patch
       # release or from main otherwise. If not, the release preparation process is stopped
       # Additionally, for patch releases, if the release branch name does not match the current
       # release version, the release preparation process is stopped as well
@@ -217,21 +217,21 @@ jobs:
           fi
 
       # Make sure that the tag related to the current version does not already exist in the
-      # repository. Otherwise, the version has probably not been updated properly and the release 
+      # repository. Otherwise, the version has probably not been updated properly and the release
       # process is thus stopped
       - name: Check tag does not exist remotely
         run: |
           ./script/actions_utils/check_tag_not_remote.sh --tag_name "${{ env.GIT_TAG }}"
 
-      # Make sure that the branch related to the current version does not already exist in 
-      # the repository if this is a non-rc and non-patch release. Otherwise, the version has 
+      # Make sure that the branch related to the current version does not already exist in
+      # the repository if this is a non-rc and non-patch release. Otherwise, the version has
       # probably not been updated properly and the release process is thus stopped
       - name: Check release branch does not exist remotely
         if:  env.IS_RC == 'false' && env.IS_PATCH == 'false'
         run: |
           ./script/actions_utils/check_branch_not_remote.sh --branch_name "${{ env.RELEASE_BRANCH_NAME }}"
 
-  # The caller workflow's job (here 'release-tests') does not need to run on the current runner as 
+  # The caller workflow's job (here 'release-tests') does not need to run on the current runner as
   # the reusable workflow (here 'continuous-integration.yaml') uses its own runner
   release-tests:
     name: Run tests
@@ -286,11 +286,11 @@ jobs:
           github_token: ${{ secrets.BOT_TOKEN }}
           branch: ${{ env.TARGET_BRANCH_NAME }}
           tags: true
-  
+
   # This action creates docker and pypi images directly on the AWS EC2 instance
   # The 'PRIVATE_RELEASE_IMAGE_BASE' variable is kept here in case Concrete-ML starts to publish
-  # private nightly releases one day. Currently, release candidates and actual releases are all 
-  # done through the 'PUBLIC_RELEASE_IMAGE_BASE' image. The private image is also used to list all 
+  # private nightly releases one day. Currently, release candidates and actual releases are all
+  # done through the 'PUBLIC_RELEASE_IMAGE_BASE' image. The private image is also used to list all
   # tags easily
   release-package:
     name: Release package and artifacts
@@ -309,7 +309,7 @@ jobs:
       GIT_TAG: ${{ needs.release-checks.outputs.git_tag }}
       PROJECT_VERSION: ${{ needs.release-checks.outputs.project_version }}
 
-    # Jobs are separated runners, we therefore need to install dependencies again in order to 
+    # Jobs are separated runners, we therefore need to install dependencies again in order to
     # pursue (without using cache or upload/download them as artifacts)
     steps:
       # Mask internal URLs if logged
@@ -583,7 +583,7 @@ jobs:
           -r pypi "${{ env.ARTIFACTS_PACKAGED_DIR }}"/*.whl
 
       # This step is kept if Concrete ML starts to publish private nightly release one day. For now,
-      # since release candidates and actual releases are public, we don't need to publish anything 
+      # since release candidates and actual releases are public, we don't need to publish anything
       # to the private internal repo
       - name: Push package to Internal PyPi
         if: false
@@ -648,7 +648,7 @@ jobs:
         id: get-release-link
         run: |
           echo "RELEASE_URL=${{ steps.create-release.outputs.url }}" >> $GITHUB_ENV
-  
+
 
   # Close the AWS EC2 instance
   stop-runner-linux:
@@ -713,7 +713,7 @@ jobs:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: ${{ env.JOB_STATUS || 'failure' }}
-          SLACK_MESSAGE: "Creating release for ${{ env.GIT_TAG }} finished with status\ 
+          SLACK_MESSAGE: "Creating release for ${{ env.GIT_TAG }} finished with status\
             ${{ env.JOB_STATUS || 'failure' }} (${{ env.ACTION_RUN_URL }})\n\
             - start-runner-linux: ${{ needs.start-runner-linux.result || 'Did not run.'}}\n\n\
             - release-checks: ${{ needs.release-checks.result || 'Did not run.' }}\n\n\
