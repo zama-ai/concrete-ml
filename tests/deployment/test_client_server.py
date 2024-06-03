@@ -3,6 +3,7 @@
 import json
 import os
 import tempfile
+import warnings
 import zipfile
 from functools import partial
 from pathlib import Path
@@ -116,7 +117,9 @@ def test_client_server_sklearn(
     model = instantiate_model_generic(model_class, n_bits=n_bits)
 
     # Fit the model
-    model.fit(x_train, y_train)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=UserWarning)
+        model.fit(x_train, y_train)
 
     key_dir = default_configuration.insecure_key_cache_location
 
@@ -393,7 +396,9 @@ def test_save_mode_handling(n_bits, fit_encrypted, mode, error_message):
     )
 
     # Fit the model
-    model.fit(x_train, y_train)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=UserWarning)
+        model.fit(x_train, y_train)
 
     # Compile
     model.compile(X=x_train)

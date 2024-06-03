@@ -2,6 +2,7 @@
 
 import itertools
 import time
+import warnings
 from typing import Any, Dict, Optional, Union
 
 import numpy
@@ -680,7 +681,13 @@ class SGDClassifier(SklearnSGDClassifierMixin):
 
         # If the model should be trained using FHE training
         if self.fit_encrypted:
-            fhe = "disable" if fhe is None else fhe
+            if fhe is None:
+                fhe = "disable"
+                warnings.warn(
+                    "Parameter 'fhe' isn't set while FHE training is enabled.\n"
+                    f"Defaulting to '{fhe=}'",
+                    stacklevel=2,
+                )
 
             # Make sure the `fhe` parameter is correct
             assert FheMode.is_valid(fhe), (
@@ -750,7 +757,13 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         # A partial fit is similar to a fit with a single iteration. The slight differences between
         # both are handled in the encrypted method when setting `is_partial_fit` to True.
         if self.fit_encrypted:
-            fhe = "disable" if fhe is None else fhe
+            if fhe is None:
+                fhe = "disable"
+                warnings.warn(
+                    "Parameter 'fhe' isn't set while FHE training is enabled.\n"
+                    f"Defaulting to '{fhe=}'",
+                    stacklevel=2,
+                )
 
             # Make sure the `fhe` parameter is correct
             assert FheMode.is_valid(fhe), (

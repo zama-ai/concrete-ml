@@ -194,6 +194,20 @@ def test_encrypted_fit_warning_error_raises(n_bits, max_iter, parameter_min_max)
         max_iter=max_iter,
     )
 
+    with pytest.warns(
+        UserWarning,
+        match="Parameter 'fhe' isn't set while FHE training is enabled.\n"
+        "Defaulting to 'fhe='disable''",
+    ):
+        model.fit(x, y, fhe=None)
+
+    with pytest.warns(
+        UserWarning,
+        match="Parameter 'fhe' isn't set while FHE training is enabled.\n"
+        "Defaulting to 'fhe='disable''",
+    ):
+        model.partial_fit(x, y, fhe=None)
+
     with pytest.raises(
         NotImplementedError,
         match="Parameter 'sample_weight' is currently not supported for FHE training.",
