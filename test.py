@@ -1,4 +1,4 @@
-from concrete.ml.common.preprocessors import TLUDeltaBasedOptimizer, InsertRounding
+from concrete.ml.common.preprocessors import TLU1bitDecomposition
 from concrete import fhe
 import numpy as np
 import matplotlib.pyplot as plt
@@ -76,7 +76,7 @@ naive_res = compute(circuit_naive)
 
 # Optim - Approx
 exactness = fhe.Exactness.APPROXIMATE
-optim = TLUDeltaBasedOptimizer(overflow_protection=True, exactness=exactness, internal_bit_width_target=18)
+optim = TLU1bitDecomposition(overflow_protection=True, exactness=exactness, internal_bit_width_target=18)
 pre_proc_optim = [optim]
 cfg_optim = Configuration(additional_pre_processors=pre_proc_optim)
 
@@ -88,7 +88,7 @@ optim_res = compute(circuit_optim)
 
 # Optim - Res
 exactness = fhe.Exactness.EXACT
-optim_exact = TLUDeltaBasedOptimizer(overflow_protection=True, exactness=exactness, internal_bit_width_target=18)
+optim_exact = TLU1bitDecomposition(overflow_protection=True, exactness=exactness, internal_bit_width_target=18)
 pre_proc_optim_exact = [optim_exact]
 cfg_optim_exact = Configuration(additional_pre_processors=pre_proc_optim_exact)
 
@@ -98,24 +98,11 @@ circuit_optim_exact = f_optim_exact.compile(inputset, configuration=cfg_optim_ex
 
 optim_res_exact = compute(circuit_optim_exact)
 
-# Round (bit-width-from-optim)
-n_bits_round = list(optim.statistics.values())[0]["optimized_bitwidth"] if optim.statistics else None
-rounding_from_optim_no_scaling = InsertRounding(n_bits_round, overflow_protection=True)
-pre_proc_round_from_optim_no_scaling = [rounding_from_optim_no_scaling]
-cfg_round_from_optim_no_scaling = Configuration(additional_pre_processors=pre_proc_round_from_optim_no_scaling)
-
-f_round_from_optim_no_scaling = fhe.compiler({"x": "encrypted"})(f)
-
-circuit_round_from_optim_no_scaling = f_round_from_optim_no_scaling.compile(inputset, configuration=cfg_round_from_optim_no_scaling)
-
-round_res_from_optim_no_scaling = compute(circuit_round_from_optim_no_scaling)
-
 # Plot
 fig, ax = plt.subplots()
 ax.plot(full_range, naive_res,label="ground-truth", linestyle="-")
 ax.plot(full_range, optim_res,label="optim-approx", linestyle="-.")
 ax.plot(full_range, optim_res_exact,label="optim-exact", linestyle=":")
-ax.plot(full_range, round_res_from_optim_no_scaling,label="round-from-optim", linestyle="-.")
 ax.vlines(input_range, np.min(naive_res), np.max(naive_res), color="grey", linestyle="--", label="bounds")
 plt.legend()
 

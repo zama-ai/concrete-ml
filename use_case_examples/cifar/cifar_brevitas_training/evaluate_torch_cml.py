@@ -12,7 +12,7 @@ from tqdm import tqdm
 from trainer import accuracy, get_test_set, get_train_set
 
 from concrete import fhe
-from concrete.ml.common.preprocessors import TLUDeltaBasedOptimizer
+from concrete.ml.common.preprocessors import TLU1bitDecomposition
 from concrete.ml.torch.compile import compile_brevitas_qat_model
 
 CURRENT_DIR = Path(__file__).resolve().parent
@@ -112,7 +112,7 @@ def main(args):
 
     # Create a representative input-set from the training set that will be used used for both
     # computing quantization parameters and compiling the model
-    num_samples = 1_000
+    num_samples = 100
     input_set = torch.stack(
         [train_set[index][0] for index in range(min(num_samples, len(train_set)))]
     )
@@ -121,9 +121,9 @@ def main(args):
     model.eval()
 
     # Multi-parameter strategy is used in order to speed-up the FHE executions
-    tlu_optimizer = TLUDeltaBasedOptimizer(
-        internal_bit_width_target=24,
-        exactness=fhe.Exactness.APPROXIMATE,
+    tlu_optimizer = TLU1bitDecomposition(
+        n_jumps_limit=2,
+        exactness=fhe.Exactness.EXACT,
     )
     cfg = Configuration(
         verbose=True,
