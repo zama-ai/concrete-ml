@@ -508,6 +508,7 @@ def test_brevitas_power_of_two(
     power_of_two: bool,
     n_bits: int,
     is_cnn: bool,
+    check_array_equal,
 ):
     """Test a custom QAT network that uses power-of-two scaling.
 
@@ -603,5 +604,5 @@ def test_brevitas_power_of_two(
     # # Compare the result with the optimized network and without
     # # they should be equal
 
-    assert numpy.sum(y_pred_sim_round != y_pred_clear_round) == 0
-    assert numpy.sum(y_pred_clear_round != y_pred_clear_no_round) == 0
+    check_array_equal(y_pred_sim_round, y_pred_clear_round)
+    check_array_equal(y_pred_clear_round, y_pred_clear_no_round)

@@ -57,7 +57,7 @@ def test_init_error_raises(n_bits, parameter_min_max):
         )
 
     with pytest.raises(
-        ValueError, match="Setting 'parameter_range' is mandatory if FHE training is enabled."
+        ValueError, match="Setting 'parameters_range' is mandatory if FHE training is enabled."
     ):
         SGDClassifier(
             n_bits=n_bits,
@@ -83,7 +83,7 @@ def test_init_error_raises(n_bits, parameter_min_max):
         )
 
     with pytest.raises(
-        ValueError, match="Setting 'parameter_range' is mandatory if FHE training is enabled."
+        ValueError, match="Setting 'parameters_range' is mandatory if FHE training is enabled."
     ):
         SGDClassifier(
             n_bits=n_bits,
