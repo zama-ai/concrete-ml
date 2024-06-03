@@ -262,7 +262,7 @@ This software is distributed under the **BSD-3-Clause-Clear** license. Read [thi
 >To commercially use Zama’s technology you need to be granted Zama’s patent license. Please contact us at hello@zama.ai for more information.
 
 **Do you file IP on your technology?**
->Yes, all Zama’s technologies are patented.
+>Yes, all of Zama’s technologies are patented.
 
 **Can you customize a solution for my specific use case?**
 >We are open to collaborating and advancing the FHE space with our partners. If you have specific needs, please email us at hello@zama.ai.
