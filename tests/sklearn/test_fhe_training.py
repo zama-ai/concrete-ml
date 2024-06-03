@@ -93,9 +93,7 @@ def test_init_error_raises(n_bits, parameter_min_max):
             fit_intercept=True,
         )
 
-    with pytest.raises(
-        ValueError, match="Early stopping is not possible when training in FHE.*"
-    ):
+    with pytest.raises(ValueError, match="Early stopping is not possible when training in FHE.*"):
         SGDClassifier(
             n_bits=n_bits,
             fit_encrypted=True,
