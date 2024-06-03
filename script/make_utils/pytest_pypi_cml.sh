@@ -69,7 +69,7 @@ if ${USE_PIP_WHEEL}; then
     # Concrete-Python version
     PYPI_WHEEL=$(find dist -type f -name "*.whl")
     python -m pip install "${PYPI_WHEEL}"
-    python -m pip install "${CONCRETE_PYTHON}"
+    python -m pip install --extra-index-url https://pypi.zama.ai "${CONCRETE_PYTHON}"
 else
     if [ -z "${VERSION}" ]; then
         python -m pip install concrete-ml
