@@ -681,9 +681,7 @@ class ONNXConverter:
                 node_results[output_name] = node_output[0]
                 constants.add(output_name)
 
-    def quantize_module(
-        self, *calibration_data: numpy.ndarray, composition_mapping: Optional[Dict] = None
-    ) -> QuantizedModule:
+    def quantize_module(self, *calibration_data: numpy.ndarray) -> QuantizedModule:
         """Quantize numpy module.
 
         Following https://arxiv.org/abs/1712.05877 guidelines.
@@ -691,7 +689,6 @@ class ONNXConverter:
         Args:
             calibration_data (numpy.ndarray):  Data that will be used to compute the bounds,
                 scales and zero point values for every quantized object.
-            force_output_requant (bool):
 
         Returns:
             QuantizedModule: Quantized numpy module
@@ -711,7 +708,6 @@ class ONNXConverter:
             ),
             quant_layers_dict=self.quant_ops_dict,
             onnx_model=self.numpy_model.onnx_model,
-            composition_mapping=composition_mapping,
         )
 
         adapter = PowerOfTwoScalingRoundPBSAdapter(quantized_module)

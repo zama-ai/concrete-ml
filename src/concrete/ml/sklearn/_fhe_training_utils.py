@@ -1,6 +1,6 @@
 """Utility functions for FHE training."""
 
-from typing import List, Optional, Tuple
+from typing import Tuple
 
 import numpy
 import torch

@@ -13,7 +13,7 @@ from sklearn.preprocessing import LabelEncoder
 from ..common.utils import FheMode
 from ..onnx.ops_impl import numpy_sigmoid
 from ..quantization import QuantizedModule
-from ..torch.compile import compile_torch_model
+from ..torch.compile import _compile_torch_or_onnx_model
 from ._fhe_training_utils import LogisticRegressionTraining
 from .base import (
     Data,
@@ -361,7 +361,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
             print("Compiling training circuit ...")
 
         start = time.time()
-        training_quantized_module = compile_torch_model(
+        training_quantized_module = _compile_torch_or_onnx_model(
             trainer,
             compile_set,
             n_bits=self.n_bits_training,

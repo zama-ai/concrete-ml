@@ -97,7 +97,6 @@ class QuantizedModule:
         ordered_module_output_names: Optional[Iterable[str]] = None,
         quant_layers_dict: Optional[Dict[str, Tuple[Tuple[str, ...], QuantizedOp]]] = None,
         onnx_model: Optional[onnx.ModelProto] = None,
-        composition_mapping: Optional[Dict] = None,
     ):
 
         all_or_none_params = [
@@ -140,8 +139,8 @@ class QuantizedModule:
         else:
             self.output_quantizers = []
 
-        # TODO: add check for inputs and outputs
-        self._composition_mapping = composition_mapping
+        # Input-output quantizer mapping for composition is not enabled at initialization
+        self._composition_mapping: Optional[Dict] = None
 
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4127
     def set_reduce_sum_copy(self):
@@ -293,6 +292,61 @@ class QuantizedModule:
             for output_layer in output_layers
         )
         return output_quantizers
+
+    # Remove this once we handle the re-quantization step in post-training only
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4472
+    def _add_requant_for_composition(self, composition_mapping: Optional[Dict]):
+        """Trigger a re-quantization step for outputs using an input-output mapping for quantizers.
+
+        Args:
+            composition_mapping (Optional[Dict]): Dictionary that maps output positions with input
+                positions in the case of composable circuits. Setting this parameter triggers a
+                re-quantization step at the end of the FHE circuit. This makes sure outputs are
+                de-quantized using their output quantizer and then re-quantized using their
+                associated input quantizer. Default to None.
+
+        Raises:
+            ValueError: If the mapping is not properly constructed: it must be a dictionary of
+                positive integers, mapping output positions to input positions, where positions
+                must not be greater than the model's number of outputs/inputs.
+        """
+        if not isinstance(composition_mapping, Dict):
+            raise ValueError(
+                "Parameter 'composition_mapping' mus be a dictionary. Got "
+                f"{type(composition_mapping)}"
+            )
+
+        max_output_pos = len(self.output_quantizers) - 1
+        max_input_pos = len(self.input_quantizers) - 1
+
+        for output_position, input_position in composition_mapping.items():
+            if not isinstance(output_position, int) or output_position < 0:
+                raise ValueError(
+                    "Output positions (keys) must be positive integers. Got "
+                    f"{type(output_position)}"
+                )
+
+            if output_position > max_output_pos:
+                raise ValueError(
+                    "Output positions (keys) must not be greater than the model's number of "
+                    f"outputs. Expected position '{max_output_pos}' at most, but got "
+                    f"'{output_position}'"
+                )
+
+            if not isinstance(input_position, int) or input_position < 0:
+                raise ValueError(
+                    "Input positions (values) must be positive integers. Got "
+                    f"{type(input_position)}"
+                )
+
+            if input_position > max_input_pos:
+                raise ValueError(
+                    "Input positions (values) must not be greater than the model's number of "
+                    f"inputs. Expected position '{max_input_pos}' at most, but got "
+                    f"'{input_position}'"
+                )
+
+        self._composition_mapping = composition_mapping
 
     @property
     def onnx_model(self):
@@ -493,6 +547,8 @@ class QuantizedModule:
             elt.qvalues for elt in output_quantized_arrays if isinstance(elt, QuantizedArray)
         )
 
+        # Remove this once we handle the re-quantization step in post-training only
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4472
         if self._composition_mapping is not None:
             q_results = tuple(
                 self.input_quantizers[input_i].quant(

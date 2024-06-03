@@ -55,6 +55,7 @@ from concrete.ml.quantization import QuantizedModule
 # packages/projects, disable the warning
 # pylint: disable=ungrouped-imports
 from concrete.ml.torch.compile import (
+    _compile_torch_or_onnx_model,
     build_quantized_module,
     compile_brevitas_qat_model,
     compile_onnx_model,
@@ -1476,3 +1477,60 @@ def test_rounding_mode(rounding_method, expected_reinterpret, default_configurat
         ), "Expected 'reinterpret_precision' found but 'round' should not be present."
     else:
         assert "reinterpret_precision" not in mlir, "Unexpected 'reinterpret_precision' found."
+
+
+def test_composition_mapping_error_raise(default_configuration):
+    """Test that using composition mappings in a wrong manner raises the proper errors."""
+    model = FCSmall(input_output=5, activation_function=nn.ReLU)
+    torch_inputset = torch.randn(10, 5)
+    composition_mapping = {0: 2}
+
+    with pytest.raises(ValueError, match="Composition must be enabled in 'configuration'.*"):
+        _compile_torch_or_onnx_model(
+            model,
+            torch_inputset,
+            configuration=default_configuration,
+            composition_mapping=composition_mapping,
+        )
+
+    default_configuration.composable = True
+
+    composition_mapping = {-1: 2}
+
+    with pytest.raises(ValueError, match=r"Output positions \(keys\) must be positive integers.*"):
+        _compile_torch_or_onnx_model(
+            model,
+            torch_inputset,
+            configuration=default_configuration,
+            composition_mapping=composition_mapping,
+        )
+
+    composition_mapping = {0: -2}
+
+    with pytest.raises(ValueError, match=r"Input positions \(values\) must be positive integers.*"):
+        _compile_torch_or_onnx_model(
+            model,
+            torch_inputset,
+            configuration=default_configuration,
+            composition_mapping=composition_mapping,
+        )
+
+    composition_mapping = {10: 2}
+
+    with pytest.raises(ValueError, match=r"Output positions \(keys\) must not be greater.*"):
+        _compile_torch_or_onnx_model(
+            model,
+            torch_inputset,
+            configuration=default_configuration,
+            composition_mapping=composition_mapping,
+        )
+
+    composition_mapping = {0: 20}
+
+    with pytest.raises(ValueError, match=r"Input positions \(values\) must not be greater.*"):
+        _compile_torch_or_onnx_model(
+            model,
+            torch_inputset,
+            configuration=default_configuration,
+            composition_mapping=composition_mapping,
+        )

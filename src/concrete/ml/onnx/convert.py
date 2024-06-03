@@ -141,6 +141,7 @@ def get_equivalent_numpy_forward_from_torch(
     use_tempfile: bool = output_onnx_file is None
 
     arguments = list(inspect.signature(torch_module.forward).parameters)
+
     # Export to ONNX
     torch.onnx.export(
         torch_module,
