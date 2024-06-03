@@ -1,11 +1,9 @@
 """Tests for the sklearn linear models."""
 
-import warnings
 from inspect import signature
 
 import numpy
 import pytest
-from sklearn.exceptions import ConvergenceWarning
 from torch import nn
 
 from concrete.ml.pytest.torch_models import FCSmall
@@ -34,10 +32,8 @@ def test_config_sklearn(model_class, parameters, kwargs, load_data):
 
     model = model_class()
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=ConvergenceWarning)
-        # Fit the model
-        model.fit(x, y)
+    # Fit the model
+    model.fit(x, y)
 
     if kwargs.get("p_error", None) is not None and kwargs.get("global_p_error", None) is not None:
         with pytest.raises(ValueError) as excinfo:

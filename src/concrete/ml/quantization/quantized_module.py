@@ -252,7 +252,9 @@ class QuantizedModule:
         self._post_processing_params = post_processing_params
 
     # pylint: disable-next=no-self-use
-    def post_processing(self, values: numpy.ndarray) -> numpy.ndarray:
+    def post_processing(
+        self, *values: numpy.ndarray
+    ) -> Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]:
         """Apply post-processing to the de-quantized values.
 
         For quantized modules, there is no post-processing step but the method is kept to make the
@@ -262,9 +264,9 @@ class QuantizedModule:
             values (numpy.ndarray): The de-quantized values to post-process.
 
         Returns:
-            numpy.ndarray: The post-processed values.
+            Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]: The post-processed values.
         """
-        return values
+        return values[0] if len(values) == 1 else values
 
     def _set_output_quantizers(self) -> List[UniformQuantizer]:
         """Get the output quantizers.

@@ -13,6 +13,8 @@ import torch
 from numpy.random import RandomState
 from torch import nn
 
+from concrete.ml.sklearn.linear_model import SGDClassifier
+
 from ..common.serialization.dumpers import dump, dumps
 from ..common.serialization.loaders import load, loads
 from ..common.utils import (
@@ -127,7 +129,13 @@ def _get_sklearn_models_and_datasets(model_classes: List, unique_models: bool = 
             # the test execution timings
             n_classes_to_test = (
                 [2]
-                if unique_models or get_model_class(model_class) == KNeighborsClassifier
+                if unique_models
+                or get_model_class(model_class) == KNeighborsClassifier
+                or (
+                    isinstance(model_class, partial)
+                    and model_class.func == SGDClassifier
+                    and model_class.keywords.get("fit_encrypted", False)
+                )
                 else [2, 4]
             )
 
@@ -182,6 +190,15 @@ def get_sklearn_linear_models_and_datasets(
             partial(TweedieRegressor, link="auto", power=2.8),
             partial(TweedieRegressor, link="log", power=1.0),
             partial(TweedieRegressor, link="identity", power=0.0),
+        ]
+
+    # If the linear model is SGDClassifier,
+    # we need to handle the training parameters
+    if is_model_class_in_a_list(SGDClassifier, linear_classes):
+        linear_classes += [
+            partial(SGDClassifier, fit_encrypted=False),
+            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4460
+            # partial(SGDClassifier, fit_encrypted=True, parameters_range=(-1, 1)),
         ]
 
     return _get_sklearn_models_and_datasets(linear_classes, unique_models=unique_models)

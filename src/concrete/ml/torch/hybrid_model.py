@@ -289,7 +289,7 @@ class RemoteModule(nn.Module):
 
         # We need to iterate over elements in the batch since
         # we don't support batch inference
-        inferences = []
+        inferences: List[torch.Tensor] = []
         for index in range(len(x)):
             # Manage tensor, tensor shape, and encrypt tensor
             clear_input = x[[index], :].detach().numpy()

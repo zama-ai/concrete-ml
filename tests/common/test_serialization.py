@@ -6,7 +6,6 @@ serializing unsupported object types properly throws an error.
 
 import inspect
 import io
-import warnings
 from functools import partial
 
 import numpy
@@ -18,7 +17,6 @@ import torch
 from concrete.fhe.compilation import Circuit
 from numpy.random import RandomState
 from sklearn.datasets import make_regression
-from sklearn.exceptions import ConvergenceWarning
 from skops.io.exceptions import UntrustedTypesFoundException
 from skorch.dataset import ValidSplit
 from torch import nn
@@ -123,9 +121,7 @@ def test_serialize_sklearn_model(concrete_model_class, load_data):
     # Instantiate and fit a Concrete model to recover its underlying Scikit Learn model
     concrete_model = concrete_model_class()
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=ConvergenceWarning)
-        _, sklearn_model = concrete_model.fit_benchmark(x, y)
+    _, sklearn_model = concrete_model.fit_benchmark(x, y)
 
     # Both JSON string are not compared as scikit-learn models are serialized using Skops or pickle,
     # which does not make string comparison possible

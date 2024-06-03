@@ -38,7 +38,7 @@ import pandas
 import pytest
 import torch
 from sklearn.decomposition import PCA
-from sklearn.exceptions import ConvergenceWarning, UndefinedMetricWarning
+from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.metrics import make_scorer, matthews_corrcoef, top_k_accuracy_score
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
@@ -145,10 +145,7 @@ def preamble(model_class, parameters, n_bits, load_data, is_weekly_option):
     # Get the data-set. The data generation is seeded in load_data.
     model = instantiate_model_generic(model_class, n_bits=n_bits)
     x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
-    with warnings.catch_warnings():
-        # Sometimes, we miss convergence, which is not a problem for our test
-        warnings.simplefilter("ignore", category=ConvergenceWarning)
-        model.fit(x, y)
+    model.fit(x, y)
 
     return model, x
 
@@ -169,10 +166,7 @@ def get_n_bits_non_correctness(model_class):
 def fit_and_compile(model, x, y):
     """Fit the model and compile it."""
 
-    with warnings.catch_warnings():
-        # Sometimes, we miss convergence, which is not a problem for our test
-        warnings.simplefilter("ignore", category=ConvergenceWarning)
-        model.fit(x, y)
+    model.fit(x, y)
 
     model.compile(x)
 
@@ -194,10 +188,7 @@ def check_correctness_with_sklearn(
 
     model = instantiate_model_generic(model_class, n_bits=n_bits, **hyper_parameters)
 
-    with warnings.catch_warnings():
-        # Sometimes, we miss convergence, which is not a problem for our test
-        warnings.simplefilter("ignore", category=ConvergenceWarning)
-        model, sklearn_model = model.fit_benchmark(x, y)
+    model, sklearn_model = model.fit_benchmark(x, y)
 
     model_name = get_model_name(model_class)
     acceptance_r2score = 0.9
@@ -270,88 +261,83 @@ def check_double_fit(model_class, n_bits, x_1, x_2, y_1, y_2):
 
     model = instantiate_model_generic(model_class, n_bits=n_bits)
 
-    # Sometimes, we miss convergence, which is not a problem for our test
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=ConvergenceWarning)
+    # Set the torch seed manually before fitting a neural network
+    if is_model_class_in_a_list(model_class, _get_sklearn_neural_net_models()):
 
-        # Set the torch seed manually before fitting a neural network
-        if is_model_class_in_a_list(model_class, _get_sklearn_neural_net_models()):
+        # Generate a seed for PyTorch
+        main_seed = numpy.random.randint(0, 2**63)
+        torch.manual_seed(main_seed)
 
-            # Generate a seed for PyTorch
-            main_seed = numpy.random.randint(0, 2**63)
-            torch.manual_seed(main_seed)
+    # Fit and predict on the first dataset
+    model.fit(x_1, y_1)
+    y_pred_1 = model.predict(x_1)
 
-        # Fit and predict on the first dataset
-        model.fit(x_1, y_1)
-        y_pred_1 = model.predict(x_1)
+    # Store the input and output quantizers
+    input_quantizers_1 = copy.copy(model.input_quantizers)
+    output_quantizers_1 = copy.copy(model.output_quantizers)
 
-        # Store the input and output quantizers
-        input_quantizers_1 = copy.copy(model.input_quantizers)
-        output_quantizers_1 = copy.copy(model.output_quantizers)
+    # Set the same torch seed manually before re-fitting the neural network
+    if is_model_class_in_a_list(model_class, _get_sklearn_neural_net_models()):
+        torch.manual_seed(main_seed)
 
-        # Set the same torch seed manually before re-fitting the neural network
-        if is_model_class_in_a_list(model_class, _get_sklearn_neural_net_models()):
-            torch.manual_seed(main_seed)
+    # Re-fit on the second dataset
+    model.fit(x_2, y_2)
 
-        # Re-fit on the second dataset
-        model.fit(x_2, y_2)
+    # Check that predictions are different
+    y_pred_2 = model.predict(x_2)
+    assert not numpy.array_equal(y_pred_1, y_pred_2)
 
-        # Check that predictions are different
-        y_pred_2 = model.predict(x_2)
-        assert not numpy.array_equal(y_pred_1, y_pred_2)
+    # Store the new input and output quantizers
+    input_quantizers_2 = copy.copy(model.input_quantizers)
+    output_quantizers_2 = copy.copy(model.output_quantizers)
 
-        # Store the new input and output quantizers
-        input_quantizers_2 = copy.copy(model.input_quantizers)
-        output_quantizers_2 = copy.copy(model.output_quantizers)
+    # Random forest and decision tree classifiers can have identical output_quantizers
+    # This is because targets are integers, while these models have a fixed output
+    # precision, which leads the output scale to be the same between models with similar target
+    # classes range
+    if is_model_class_in_a_list(
+        model_class,
+        _get_sklearn_tree_models(classifier=True, select=["RandomForest", "DecisionTree"]),
+    ):
+        quantizers_1 = input_quantizers_1
+        quantizers_2 = input_quantizers_2
+    else:
+        quantizers_1 = input_quantizers_1 + output_quantizers_1
+        quantizers_2 = input_quantizers_2 + output_quantizers_2
 
-        # Random forest and decision tree classifiers can have identical output_quantizers
-        # This is because targets are integers, while these models have a fixed output
-        # precision, which leads the output scale to be the same between models with similar target
-        # classes range
-        if is_model_class_in_a_list(
-            model_class,
-            _get_sklearn_tree_models(classifier=True, select=["RandomForest", "DecisionTree"]),
-        ):
-            quantizers_1 = input_quantizers_1
-            quantizers_2 = input_quantizers_2
-        else:
-            quantizers_1 = input_quantizers_1 + output_quantizers_1
-            quantizers_2 = input_quantizers_2 + output_quantizers_2
+    # Check that the new quantizers are different from the first ones. This is because we
+    # currently expect all quantizers to be re-computed when re-fitting a model
 
-        # Check that the new quantizers are different from the first ones. This is because we
-        # currently expect all quantizers to be re-computed when re-fitting a model
+    assert all(
+        quantizer_1 != quantizer_2 for (quantizer_1, quantizer_2) in zip(quantizers_1, quantizers_2)
+    )
 
-        assert all(
-            quantizer_1 != quantizer_2
-            for (quantizer_1, quantizer_2) in zip(quantizers_1, quantizers_2)
+    # Set the same torch seed manually before re-fitting the neural network
+    if is_model_class_in_a_list(model_class, _get_sklearn_neural_net_models()):
+        torch.manual_seed(main_seed)
+
+    # Re-fit on the first dataset again
+    model.fit(x_1, y_1)
+
+    # Check that predictions are identical to the first ones
+    y_pred_3 = model.predict(x_1)
+    assert numpy.array_equal(y_pred_1, y_pred_3)
+
+    # Store the new input and output quantizers
+    input_quantizers_3 = copy.copy(model.input_quantizers)
+    output_quantizers_3 = copy.copy(model.output_quantizers)
+
+    # Check that the new quantizers are identical from the first ones. Again, we expect the
+    # quantizers to be re-computed when re-fitting. Since we used the same dataset as the first
+    # fit, we also expect these quantizers to be the same.
+
+    assert all(
+        quantizer_1 == quantizer_3
+        for (quantizer_1, quantizer_3) in zip(
+            input_quantizers_1 + output_quantizers_1,
+            input_quantizers_3 + output_quantizers_3,
         )
-
-        # Set the same torch seed manually before re-fitting the neural network
-        if is_model_class_in_a_list(model_class, _get_sklearn_neural_net_models()):
-            torch.manual_seed(main_seed)
-
-        # Re-fit on the first dataset again
-        model.fit(x_1, y_1)
-
-        # Check that predictions are identical to the first ones
-        y_pred_3 = model.predict(x_1)
-        assert numpy.array_equal(y_pred_1, y_pred_3)
-
-        # Store the new input and output quantizers
-        input_quantizers_3 = copy.copy(model.input_quantizers)
-        output_quantizers_3 = copy.copy(model.output_quantizers)
-
-        # Check that the new quantizers are identical from the first ones. Again, we expect the
-        # quantizers to be re-computed when re-fitting. Since we used the same dataset as the first
-        # fit, we also expect these quantizers to be the same.
-
-        assert all(
-            quantizer_1 == quantizer_3
-            for (quantizer_1, quantizer_3) in zip(
-                input_quantizers_1 + output_quantizers_1,
-                input_quantizers_3 + output_quantizers_3,
-            )
-        )
+    )
 
 
 def check_serialization(model, x, use_dump_method):
@@ -487,18 +473,14 @@ def check_offset(model_class, n_bits, x, y):
     """Check offset."""
     model = instantiate_model_generic(model_class, n_bits=n_bits)
 
-    # Sometimes, we miss convergence, which is not a problem for our test
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=ConvergenceWarning)
+    # Add the offset: here, we really need to fit, we can't reuse an already fitted model
+    y += 3
+    model.fit(x, y)
+    model.predict(x[:1])
 
-        # Add the offset: here, we really need to fit, we can't reuse an already fitted model
-        y += 3
-        model.fit(x, y)
-        model.predict(x[:1])
-
-        # Another offset: here, we really need to fit, we can't reuse an already fitted model
-        y -= 2
-        model.fit(x, y)
+    # Another offset: here, we really need to fit, we can't reuse an already fitted model
+    y -= 2
+    model.fit(x, y)
 
 
 def check_inference_methods(model, model_class, x, check_float_array_equal):
@@ -701,10 +683,7 @@ def check_input_support(model_class, n_bits, default_configuration, x, y, input_
     model = instantiate_model_generic(model_class, n_bits=n_bits)
     x, y = cast_input(x, y, input_type=input_type)
 
-    # Sometimes, we miss convergence, which is not a problem for our test
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=ConvergenceWarning)
-        model.fit(x, y)
+    model.fit(x, y)
 
     # Make sure `predict` is working when FHE is disabled
     model.predict(x)
@@ -770,11 +749,7 @@ def check_pipeline(model_class, x, y):
     # We need a small number of splits, especially for the KNN model, which has a small data-set
     grid_search = GridSearchCV(pipe_cv, param_grid, error_score="raise", cv=2)
 
-    # Sometimes, we miss convergence, which is not a problem for our test
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=ConvergenceWarning)
-
-        grid_search.fit(x, y)
+    grid_search.fit(x, y)
 
 
 def check_grid_search(model_class, x, y, scoring):
@@ -804,8 +779,6 @@ def check_grid_search(model_class, x, y, scoring):
         }
 
     with warnings.catch_warnings():
-        # Sometimes, we miss convergence, which is not a problem for our test
-        warnings.simplefilter("ignore", category=ConvergenceWarning)
         warnings.simplefilter("ignore", category=UndefinedMetricWarning)
 
         # KNeighborsClassifier does not provide a predict_proba method for now
@@ -895,12 +868,8 @@ def check_hyper_parameters(
         model = instantiate_model_generic(model_class, n_bits=n_bits, **hyper_parameters)
 
         # Also fit with these hyper parameters to check it works fine
-        with warnings.catch_warnings():
-            # Sometimes, we miss convergence, which is not a problem for our test
-            warnings.simplefilter("ignore", category=ConvergenceWarning)
-
-            # Here, we really need to fit, to take into account hyper parameters
-            model.fit(x, y)
+        # Here, we really need to fit, to take into account hyper parameters
+        model.fit(x, y)
 
         # Check correctness with sklearn
         check_correctness_with_sklearn(
@@ -966,10 +935,7 @@ def check_fitted_compiled_error_raises(model_class, n_bits, x, y):
             with pytest.raises(AttributeError, match=".* model is not fitted.*"):
                 model.decision_function(x)
 
-    with warnings.catch_warnings():
-        # Sometimes, we miss convergence, which is not a problem for our test
-        warnings.simplefilter("ignore", category=ConvergenceWarning)
-        model.fit(x, y)
+    model.fit(x, y)
 
     # Predicting in FHE using a trained model that is not compiled should not be possible
     with pytest.raises(AttributeError, match=".* model is not compiled.*"):
@@ -994,10 +960,7 @@ def check_class_mapping(model, x, y):
     assert numpy.array_equal(numpy.arange(len(classes)), classes)
 
     # Fit the model
-    with warnings.catch_warnings():
-        # Sometimes, we miss convergence, which is not a problem for our test
-        warnings.simplefilter("ignore", category=ConvergenceWarning)
-        model.fit(x, y)
+    model.fit(x, y)
 
     # Compute the predictions
     y_pred = model.predict(x)
@@ -1009,10 +972,7 @@ def check_class_mapping(model, x, y):
     new_y = classes[y]
 
     # Fit the model using these new targets
-    with warnings.catch_warnings():
-        # Sometimes, we miss convergence, which is not a problem for our test
-        warnings.simplefilter("ignore", category=ConvergenceWarning)
-        model.fit(x, new_y)
+    model.fit(x, new_y)
 
     # Compute the predictions
     y_pred_shuffled = model.predict(x)
@@ -1034,10 +994,7 @@ def check_exposition_of_sklearn_attributes(model, x, y):
     ):
         getattr(model, training_attribute)
 
-    with warnings.catch_warnings():
-        # Sometimes, we miss convergence, which is not a problem for our test
-        warnings.simplefilter("ignore", category=ConvergenceWarning)
-        model.fit(x, y)
+    model.fit(x, y)
 
     for name in vars(model.sklearn_model):
         if name.endswith("_") and not name.endswith("__"):
@@ -1092,10 +1049,7 @@ def check_exposition_structural_methods_decision_trees(model, x, y):
     ):
         model.get_depth()
 
-    with warnings.catch_warnings():
-        # Sometimes, we miss convergence, which is not a problem for our test
-        warnings.simplefilter("ignore", category=ConvergenceWarning)
-        model.fit(x, y)
+    model.fit(x, y)
 
     # Get the number of leaves from both the scikit-learn and Concrete ML models
     concrete_value = model.get_n_leaves()
@@ -1126,10 +1080,7 @@ def check_load_fitted_sklearn_linear_models(model_class, n_bits, x, y, check_flo
     model = instantiate_model_generic(model_class, n_bits=n_bits)
 
     # Fit the model and retrieve both the Concrete ML and the scikit-learn models
-    with warnings.catch_warnings():
-        # Sometimes, we miss convergence, which is not a problem for our test
-        warnings.simplefilter("ignore", category=ConvergenceWarning)
-        concrete_model, sklearn_model = model.fit_benchmark(x, y)
+    concrete_model, sklearn_model = model.fit_benchmark(x, y)
 
     # This step is needed in order to handle partial classes
     model_class = get_model_class(model_class)
@@ -2002,10 +1953,7 @@ def test_valid_n_bits_setting(
 
     model = instantiate_model_generic(model_class, n_bits=n_bits)
 
-    with warnings.catch_warnings():
-        # Sometimes, we miss convergence, which is not a problem for our test
-        warnings.simplefilter("ignore", category=ConvergenceWarning)
-        model.fit(x, y)
+    model.fit(x, y)
 
 
 # A type error will be raised for NeuralNetworks, which is tested in test_failure_bad_data_types
@@ -2068,10 +2016,7 @@ def test_initialization_variables_and_defaults_match(
     model = instantiate_model_generic(model_class, n_bits=n_bits)
 
     # Fit the model to create the equivalent sklearn model
-    with warnings.catch_warnings():
-        # Ignore convergence warnings
-        warnings.simplefilter("ignore", category=ConvergenceWarning)
-        model.fit(x, y)
+    model.fit(x, y)
 
     # Assert the sklearn model has been created
     assert hasattr(model, "sklearn_model"), "Sklearn model not found"
