@@ -557,8 +557,8 @@ class QuantizedModule:
                 for output_i, input_i in self._composition_mapping.items()
             )
 
-            if len(q_results) == 1:
-                return q_results[0]
+        if len(q_results) == 1:
+            return q_results[0]
 
         return q_results
 
