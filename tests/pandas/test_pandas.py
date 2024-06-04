@@ -1,5 +1,6 @@
 """Tests the encrypted data-frame API abd its coherence with Pandas"""
 
+import copy
 import re
 import shutil
 import tempfile
@@ -298,7 +299,7 @@ def test_save_load():
 
 
 def check_invalid_merge_parameters():
-    """Check that unsupported or invalid parameters for merge raise the correct errors."""
+    """Check that unsupported or invalid parameters for merge raise correct errors."""
     encrypted_df_left, encrypted_df_right = get_two_encrypted_dataframes()
 
     unsupported_pandas_parameters_and_values = [
@@ -345,7 +346,7 @@ def check_no_multi_columns_merge():
 
 
 def check_column_coherence():
-    """Check that merging data-frames with unsupported scheme raise the correct errors."""
+    """Check that merging data-frames with unsupported scheme raises correct errors."""
     index_name = "index"
 
     # Test when a selected column has a different dtype than the other one
@@ -394,7 +395,7 @@ def check_column_coherence():
 
 
 def check_unsupported_input_values():
-    """Check that initializing a data-frame with unsupported inputs raise the correct errors."""
+    """Check that initializing a data-frame with unsupported inputs raises correct errors."""
     client = ClientEngine()
 
     # Test with integer values that are out of bound
@@ -451,7 +452,7 @@ def check_unsupported_input_values():
 
 
 def check_post_processing_coherence():
-    """Check post-processing a data-frame with unsupported scheme raise the correct errors."""
+    """Check post-processing a data-frame with unsupported scheme raises correct errors."""
     index_name = "index"
 
     client = ClientEngine()
@@ -480,6 +481,8 @@ def test_error_raises():
     check_column_coherence()
     check_unsupported_input_values()
     check_post_processing_coherence()
+    check_invalid_schema_format()
+    check_invalid_schema_values()
 
 
 def deserialize_client_file(client_path: Union[Path, str]) -> ClientSpecs:
@@ -571,3 +574,211 @@ def test_print_and_repr():
     assert pandas_dataframe_are_equal(
         expected_schema, schema, equal_nan=True
     ), "Expected and retrieved schemas do not match."
+
+
+def get_input_schema(pandas_dataframe, selected_schema=None):
+    """Get a data-frame's expected input schema."""
+    schema = {}
+    for column_name in pandas_dataframe.columns:
+        column = pandas_dataframe[column_name]
+        if numpy.issubdtype(column.dtype, numpy.floating):
+            schema[column_name] = {
+                "min": column.min(),
+                "max": column.max(),
+            }
+
+        elif column.dtype == "object":
+            unique_values = column.unique()
+
+            # Only take strings into account and thus avoid NaN values
+            schema[column_name] = {
+                val: i for i, val in enumerate(unique_values) if isinstance(val, str)
+            }
+
+    # Update the common column's mapping
+    if selected_schema is not None:
+        schema.update(selected_schema)
+
+    return schema
+
+
+def test_schema_input():
+    """Test that users can properly provide schemas when encrypting data-frames."""
+    selected_column = "index"
+    pandas_kwargs = {"how": "left", "on": selected_column}
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        keys_path = Path(temp_dir) / "keys"
+
+        client_1 = ClientEngine(keys_path=keys_path)
+        client_2 = ClientEngine(keys_path=keys_path)
+
+    indexes_left = ["one", "two", "three", "four"]
+    indexes_right = ["two", "three"]
+
+    schema_index = {selected_column: {"one": 1, "two": 2, "three": 3, "four": 4}}
+
+    pandas_df_left = generate_pandas_dataframe(
+        feat_name="left", index_name=selected_column, indexes=indexes_left, index_position=2
+    )
+    pandas_df_right = generate_pandas_dataframe(
+        feat_name="right", index_name=selected_column, indexes=indexes_right, index_position=1
+    )
+
+    schema_left = get_input_schema(pandas_df_left, selected_schema=schema_index)
+    schema_right = get_input_schema(pandas_df_right, selected_schema=schema_index)
+
+    encrypted_df_left = client_1.encrypt_from_pandas(pandas_df_left, schema=schema_left)
+    encrypted_df_right = client_2.encrypt_from_pandas(pandas_df_right, schema=schema_right)
+
+    pandas_joined_df = pandas_df_left.merge(pandas_df_right, **pandas_kwargs)
+    encrypted_df_joined = encrypted_df_left.merge(encrypted_df_right, **pandas_kwargs)
+
+    clear_df_joined_1 = client_1.decrypt_to_pandas(encrypted_df_joined)
+    clear_df_joined_2 = client_2.decrypt_to_pandas(encrypted_df_joined)
+
+    assert pandas_dataframe_are_equal(
+        clear_df_joined_1, clear_df_joined_2, equal_nan=True
+    ), "Joined encrypted data-frames decrypted by different clients are not equal."
+
+    # Improve the test to avoid risk of flaky
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4342
+    assert pandas_dataframe_are_equal(
+        clear_df_joined_1, pandas_joined_df, float_atol=1, equal_nan=True
+    ), "Joined encrypted data-frame does not match Pandas' joined data-frame."
+
+
+def check_invalid_schema_format():
+    """Check that encrypting data-frames with an unsupported schema format raises correct errors."""
+    selected_column = "index"
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        keys_path = Path(temp_dir) / "keys"
+
+        client = ClientEngine(keys_path=keys_path)
+
+    pandas_df = generate_pandas_dataframe(index_name=selected_column)
+
+    with pytest.raises(
+        ValueError,
+        match="When set, parameter 'schema' must be a dictionary.*",
+    ):
+        client.encrypt_from_pandas(pandas_df, schema=[])
+
+    schema_wrong_column = {"wrong_column": None}
+
+    with pytest.raises(
+        ValueError,
+        match="Column name '.*' found in the given schema cannot be found.*",
+    ):
+        client.encrypt_from_pandas(pandas_df, schema=schema_wrong_column)
+
+    schema_wrong_mapping_type = {selected_column: [None]}
+
+    with pytest.raises(
+        ValueError,
+        match="Mapping for column '.*' is not a dictionary. .*",
+    ):
+        client.encrypt_from_pandas(pandas_df, schema=schema_wrong_mapping_type)
+
+
+def check_invalid_schema_values():
+    """Check that encrypting data-frames with an unsupported schema values raises correct errors."""
+    selected_column = "index"
+    feat_name = "feat"
+    float_min = -10.0
+    float_max = 10.0
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        keys_path = Path(temp_dir) / "keys"
+
+        client = ClientEngine(keys_path=keys_path)
+
+    pandas_df = generate_pandas_dataframe(
+        feat_name=feat_name, index_name=selected_column, float_min=float_min, float_max=float_max
+    )
+
+    schema_int_column = {f"{feat_name}_int_1": {None: None}}
+
+    with pytest.raises(
+        ValueError,
+        match="Column '.*' contains integer values and therefore does not.*",
+    ):
+        client.encrypt_from_pandas(pandas_df, schema=schema_int_column)
+
+    schema_float_column = {f"{feat_name}_float_1": {"wrong_mapping": 1.0}}
+
+    with pytest.raises(
+        ValueError,
+        match="Column '.*' contains float values but the associated mapping.*",
+    ):
+        client.encrypt_from_pandas(pandas_df, schema=schema_float_column)
+
+    schema_float_oob = {f"{feat_name}_float_1": {"min": float_min // 2, "max": float_max // 2}}
+
+    with pytest.raises(
+        ValueError,
+        match=r"Column '.*' \(dtype=float64\) contains values that are out of bounds.*",
+    ):
+        client.encrypt_from_pandas(pandas_df, schema=schema_float_oob)
+
+    string_column = f"{feat_name}_str_1"
+
+    schema_string_nan = {string_column: {numpy.NaN: 1}}
+
+    with pytest.raises(
+        ValueError,
+        match="String mapping for column '.*' contains numpy.NaN as a key.*",
+    ):
+        client.encrypt_from_pandas(pandas_df, schema=schema_string_nan)
+
+    schema_string_missing_values = {string_column: {"apple": 1}}
+
+    with pytest.raises(
+        ValueError,
+        match="String mapping keys for column '.*' are not considering all values.*",
+    ):
+        client.encrypt_from_pandas(pandas_df, schema=schema_string_missing_values)
+
+    # Retrieve the string column's unique values and create a mapping, except for numpy.NaN values
+    string_values = pandas_df[string_column].unique()
+    string_values = [
+        string_value for string_value in string_values if isinstance(string_value, str)
+    ]
+    string_mapping = {val: i for i, val in enumerate(string_values)}
+
+    string_mapping_non_int = copy.copy(string_mapping)
+
+    # Disable mypy as this type assignment is expected for the error to be raised
+    string_mapping_non_int[string_values[0]] = "orange"  # type: ignore[assignment]
+
+    schema_string_non_int = {string_column: string_mapping_non_int}
+
+    with pytest.raises(
+        ValueError,
+        match="String mapping values for column '.*' must be integers.*",
+    ):
+        client.encrypt_from_pandas(pandas_df, schema=schema_string_non_int)
+
+    string_mapping_oob = copy.copy(string_mapping)
+    string_mapping_oob[string_values[0]] = -1
+
+    schema_string_oob = {string_column: string_mapping_oob}
+
+    with pytest.raises(
+        ValueError,
+        match="String mapping values for column '.*' are out of bounds.*",
+    ):
+        client.encrypt_from_pandas(pandas_df, schema=schema_string_oob)
+
+    string_mapping_non_unique = copy.copy(string_mapping)
+    string_mapping_non_unique[string_values[0]] = 1
+    string_mapping_non_unique[string_values[1]] = 1
+
+    schema_string_non_unique = {string_column: string_mapping_non_unique}
+
+    with pytest.raises(
+        ValueError,
+        match="String mapping values for column '.*' must be unique.*",
+    ):
+        client.encrypt_from_pandas(pandas_df, schema=schema_string_non_unique)
