@@ -13,7 +13,8 @@ from models import cnv_2w2a
 from torch.utils.data import DataLoader
 from trainer import get_test_set
 
-from concrete.ml.common.preprocessors import TLUDeltaBasedOptimizer
+from concrete import fhe
+from concrete.ml.common.preprocessors import Debug, InsertRounding, TLU1bitDecomposition
 from concrete.ml.quantization import QuantizedModule
 from concrete.ml.torch.compile import compile_brevitas_qat_model
 
@@ -83,15 +84,18 @@ x, labels = next(iter(test_loader))
 # Multi-parameter strategy is used in order to speed-up the FHE executions
 base_configuration = Configuration()
 
-tlu_optimizer = TLUDeltaBasedOptimizer()
+tlu_optimizer = TLU1bitDecomposition(
+    n_jumps_limit=2,
+    exactness=fhe.Exactness.EXACT,
+)
+rounding = InsertRounding(6)
+
 configuration = Configuration(
     dump_artifacts_on_unexpected_failures=False,
     enable_unsafe_features=True,
     use_insecure_key_cache=True,
     insecure_key_cache_location=KEYGEN_CACHE_DIR,
-    additional_pre_processors=[
-        tlu_optimizer,
-    ],
+    additional_pre_processors=[tlu_optimizer, rounding],
     fhe_simulation=SIMULATE_ONLY,
     fhe_execution=not SIMULATE_ONLY,
 )
@@ -104,7 +108,7 @@ quantized_numpy_module, compilation_execution_time = measure_execution_time(
     torch_model,
     x,
     configuration=configuration,
-    rounding_threshold_bits={"method": Exactness.APPROXIMATE, "n_bits": 6},
+    # rounding_threshold_bits={"method": Exactness.APPROXIMATE, "n_bits": 6},
     p_error=P_ERROR,
 )
 assert isinstance(quantized_numpy_module, QuantizedModule)

@@ -1475,6 +1475,15 @@ class InsertRounding(GraphProcessor):
 
             # Only one input should be non-constant per LUT
             if len(variable_input_indices) != 1:
+                print("SKIPPING BECAUSE MORE THAN 1 INPUT")
+                continue
+
+            if pred_nodes[0].properties["name"] in {"round_bit_pattern", "truncate_bit_pattern"}:
+                print("SKIPPING BECAUSE ROUNDING ALREADY PRESENT")
+                continue
+
+            if tlu_node.properties["name"] in {"round_bit_pattern", "truncate_bit_pattern"}:
+                print("SKIPPING BECAUSE NODE IS ROUNDING NODE")
                 continue
 
             # Get variable input
@@ -1489,11 +1498,13 @@ class InsertRounding(GraphProcessor):
             if variable_input_bit_width <= self.rounding_threshold:
                 # No need to do anything if the bit-width is actually lower or equal
                 # to the rounding threshold value
+                print("SKIPPING BECAUSE ROUNDING ABOVE ACCUMULATOR SIZE")
                 continue
 
             # Compute lsbs to remove
             lsbs_to_remove = variable_input_bit_width - self.rounding_threshold
 
+            print(f"ADDING ROUNDING NODE to {tlu_node.properties['name']}")
             # Rounding node
             rounding_node = Node.generic(
                 "round_bit_pattern",

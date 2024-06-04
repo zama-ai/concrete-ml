@@ -12,7 +12,7 @@ from tqdm import tqdm
 from trainer import accuracy, get_test_set, get_train_set
 
 from concrete import fhe
-from concrete.ml.common.preprocessors import Debug, TLU1bitDecomposition
+from concrete.ml.common.preprocessors import Debug, InsertRounding, TLU1bitDecomposition
 from concrete.ml.torch.compile import compile_brevitas_qat_model
 
 CURRENT_DIR = Path(__file__).resolve().parent
@@ -126,14 +126,14 @@ def main(args):
         n_jumps_limit=2,
         exactness=fhe.Exactness.EXACT,
     )
+    insert_rounding = InsertRounding(6)
+    # debug_processor = Debug()
     cfg = Configuration(
         verbose=True,
         show_optimizer=args.show_optimizer,
-        additional_pre_processors=[
-            tlu_optimizer,
-        ],
+        additional_pre_processors=[tlu_optimizer, insert_rounding],
         additional_post_processors=[
-            Debug(),
+            # debug_processor,
         ],
     )
 
