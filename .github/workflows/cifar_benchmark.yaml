@@ -59,7 +59,6 @@ jobs:
         id: start-instance
         uses: zama-ai/slab-github-runner@58f2cae4bf2c0b6728083f5f009b6dc0eb6dc3ac
         with:
-          backend: aws
           mode: start
           github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
           slab-url: ${{ secrets.SLAB_BASE_URL }}
