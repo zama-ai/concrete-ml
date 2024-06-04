@@ -289,7 +289,7 @@ class RemoteModule(nn.Module):
 
         # We need to iterate over elements in the batch since
         # we don't support batch inference
-        inferences: List[torch.Tensor] = []
+        inferences: List[numpy.ndarray] = []
         for index in range(len(x)):
             # Manage tensor, tensor shape, and encrypt tensor
             clear_input = x[[index], :].detach().numpy()
@@ -331,8 +331,9 @@ class RemoteModule(nn.Module):
             encrypted_result = inference_query.content
             decrypted_prediction = client.deserialize_decrypt_dequantize(encrypted_result)[0]
             inferences.append(decrypted_prediction)
+
         # Concatenate results and move them back to proper device
-        return torch.Tensor(numpy.array(inferences)).to(device=base_device)
+        return torch.Tensor(inferences).to(device=base_device)
 
 
 class HybridFHEModel:

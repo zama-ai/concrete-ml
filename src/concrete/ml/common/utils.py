@@ -11,6 +11,7 @@ import numpy
 import onnx
 import torch
 from concrete.fhe import Exactness
+from concrete.fhe import Value as EncryptedValue
 from concrete.fhe.dtypes import Integer
 from sklearn.base import is_classifier, is_regressor
 
@@ -681,3 +682,50 @@ def process_rounding_threshold_bits(rounding_threshold_bits):
         rounding_threshold_bits = {"n_bits": n_bits_rounding, "method": method}
 
     return rounding_threshold_bits
+
+
+def serialize_encrypted_values(
+    *values_enc: Optional[EncryptedValue],
+) -> Union[Optional[bytes], Optional[Tuple[bytes]]]:
+    """Serialize encrypted values.
+
+    If a value is None, None is returned.
+
+    Args:
+        values_enc (Optional[EncryptedValue]): The values to serialize.
+
+    Returns:
+        Union[Optional[bytes], Optional[Tuple[bytes]]]: The serialized values.
+    """
+    values_enc_serialized = tuple(
+        value_enc.serialize() if value_enc is not None else None for value_enc in values_enc
+    )
+
+    if len(values_enc_serialized) == 1:
+        return values_enc_serialized[0]
+
+    return values_enc_serialized
+
+
+def deserialize_encrypted_values(
+    *values_serialized: Optional[bytes],
+) -> Union[Optional[EncryptedValue], Optional[Tuple[EncryptedValue]]]:
+    """Deserialize encrypted values.
+
+    If a value is None, None is returned.
+
+    Args:
+        values_serialized (Optional[bytes]): The values to deserialize.
+
+    Returns:
+        Union[Optional[EncryptedValue], Optional[Tuple[EncryptedValue]]]: The deserialized values.
+    """
+    values_enc = tuple(
+        EncryptedValue.deserialize(value_serialized) if value_serialized is not None else None
+        for value_serialized in values_serialized
+    )
+
+    if len(values_enc) == 1:
+        return values_enc[0]
+
+    return values_enc

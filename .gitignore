@@ -168,6 +168,8 @@ execution_time_of_individual_pytest_files.txt
 # Docs: Advance Examples MNIST data
 docs/advanced_examples/data/MNIST/
 
+# Docs: Advance Examples FHE training deployment files
+docs/advanced_examples/fhe_training
 
 # Hybrid model artifacts
 use_case_examples/hybrid_model/clients/

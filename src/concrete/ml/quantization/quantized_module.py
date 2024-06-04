@@ -700,8 +700,10 @@ class QuantizedModule:
             numpy.array(output_quantizer.dequant(q_y_pred))
             for q_y_pred, output_quantizer in zip(q_y_preds, self.output_quantizers)
         )
+
         if len(y_preds) == 1:
             return y_preds[0]
+
         return y_preds
 
     def set_inputs_quantization_parameters(self, *input_q_params: UniformQuantizer):

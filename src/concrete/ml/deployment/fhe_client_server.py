@@ -14,7 +14,7 @@ from concrete import fhe
 from ..common.debugging.custom_assert import assert_true
 from ..common.serialization.dumpers import dump
 from ..common.serialization.loaders import load
-from ..common.utils import to_tuple
+from ..common.utils import deserialize_encrypted_values, serialize_encrypted_values, to_tuple
 from ..version import __version__ as CML_VERSION
 
 try:
@@ -124,6 +124,9 @@ class FHEModelServer:
 
         self.server = fhe.Server.load(Path(self.path_dir).joinpath("server.zip"))
 
+    # We should make 'serialized_encrypted_quantized_data' handle unpacked inputs, as Concrete does,
+    # instead of tuples
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4477
     def run(
         self,
         serialized_encrypted_quantized_data: Union[bytes, Tuple[bytes, ...]],
@@ -141,20 +144,26 @@ class FHEModelServer:
         """
         assert_true(self.server is not None, "Model has not been loaded.")
 
-        serialized_encrypted_quantized_data = to_tuple(serialized_encrypted_quantized_data)
+        q_data_enc_serialized = to_tuple(serialized_encrypted_quantized_data)
 
-        deserialized_data = tuple(
-            fhe.Value.deserialize(data) for data in serialized_encrypted_quantized_data
-        )
+        q_data_enc = deserialize_encrypted_values(*q_data_enc_serialized)
+
+        q_data_enc = to_tuple(q_data_enc)
+
+        # Make sure no inputs is None, to avoid any crash in Concrete
+        assert_true(not any(x is None for x in q_data_enc), "No inputs should be None")
+
         deserialized_keys = fhe.EvaluationKeys.deserialize(serialized_evaluation_keys)
 
-        result = self.server.run(*deserialized_data, evaluation_keys=deserialized_keys)
+        q_result_enc = self.server.run(*q_data_enc, evaluation_keys=deserialized_keys)
 
-        return (
-            tuple(res.serialize() for res in result)
-            if isinstance(result, tuple)
-            else result.serialize()
-        )
+        q_result_enc = to_tuple(q_result_enc)
+
+        q_result_enc_serialized = serialize_encrypted_values(*q_result_enc)
+
+        # Mypy complains because the outputs of `serialize_encrypted_values` can be None, but here
+        # we already made sure this is not the case
+        return q_result_enc_serialized  # type: ignore[return-value]
 
 
 class FHEModelDev:
@@ -357,97 +366,86 @@ class FHEModelClient:
         return self.client.evaluation_keys.serialize()
 
     def quantize_encrypt_serialize(
-        self, x: Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]
-    ) -> Union[bytes, Tuple[bytes, ...]]:
+        self, *x: Optional[numpy.ndarray]
+    ) -> Union[Optional[bytes], Tuple[Optional[bytes], ...]]:
         """Quantize, encrypt and serialize the values.
 
         Args:
-            x (Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]): the values to quantize,
-                encrypt and serialize
+            x (Optional[numpy.ndarray]): The values to quantize, encrypt and serialize.
 
         Returns:
-            Union[bytes, Tuple[bytes, ...]]: the quantized, encrypted and serialized values
+            Union[bytes, Tuple[bytes, ...]]: The quantized, encrypted and serialized values.
         """
 
-        x = to_tuple(x)
-
         # Quantize the values
-        quantized_x = self.model.quantize_input(*x)
+        q_x = self.model.quantize_input(*x)
 
-        quantized_x = to_tuple(quantized_x)
+        q_x = to_tuple(q_x)
 
         # Encrypt the values
-        enc_qx = self.client.encrypt(*quantized_x)
+        q_x_enc = self.client.encrypt(*q_x)
 
-        enc_qx = to_tuple(enc_qx)
+        q_x_enc = to_tuple(q_x_enc)
 
         # Serialize the encrypted values to be sent to the server
-        serialized_enc_qx = tuple(e.serialize() for e in enc_qx)
+        q_x_enc_serialized = serialize_encrypted_values(*q_x_enc)
 
-        # Return a single value if the original input was a single value
-        return serialized_enc_qx[0] if len(serialized_enc_qx) == 1 else serialized_enc_qx
+        return q_x_enc_serialized
 
+    # We should find a better name for `serialized_encrypted_quantized_result`
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4476
     def deserialize_decrypt(
-        self, serialized_encrypted_quantized_result: Union[bytes, Tuple[bytes, ...]]
+        self, *serialized_encrypted_quantized_result: Optional[bytes]
     ) -> Union[Any, Tuple[Any, ...]]:
         """Deserialize and decrypt the values.
 
         Args:
-            serialized_encrypted_quantized_result (Union[bytes, Tuple[bytes, ...]]): the
-                serialized, encrypted and quantized result
+            serialized_encrypted_quantized_result (Optional[bytes]): The serialized, encrypted and
+                quantized values.
 
         Returns:
-            Union[Any, Tuple[Any, ...]]: the decrypted and deserialized values
+            Union[Any, Tuple[Any, ...]]: The decrypted and deserialized values.
         """
-
-        serialized_encrypted_quantized_result = to_tuple(serialized_encrypted_quantized_result)
-
         # Deserialize the encrypted values
-        deserialized_encrypted_quantized_result = tuple(
-            fhe.Value.deserialize(data) for data in serialized_encrypted_quantized_result
-        )
+        q_result_enc = deserialize_encrypted_values(*serialized_encrypted_quantized_result)
+
+        q_result_enc = to_tuple(q_result_enc)
 
         # Decrypt the values
-        deserialized_decrypted_quantized_result = self.client.decrypt(
-            *deserialized_encrypted_quantized_result
-        )
+        q_result = self.client.decrypt(*q_result_enc)
 
-        return deserialized_decrypted_quantized_result
+        return q_result
 
+    # We should find a better name for `serialized_encrypted_quantized_result`
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4476
     def deserialize_decrypt_dequantize(
-        self, serialized_encrypted_quantized_result: Union[bytes, Tuple[bytes, ...]]
-    ) -> numpy.ndarray:
+        self, *serialized_encrypted_quantized_result: Optional[bytes]
+    ) -> Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]:
         """Deserialize, decrypt and de-quantize the values.
 
         Args:
-            serialized_encrypted_quantized_result (Union[bytes, Tuple[bytes, ...]]): the
-                serialized, encrypted and quantized result
+            serialized_encrypted_quantized_result (Optional[bytes]): The serialized, encrypted and
+                quantized result
 
         Returns:
-            numpy.ndarray: the decrypted (de-quantized) values
+            Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]: The clear float values.
         """
-        # Ensure the input is a tuple
-        serialized_encrypted_quantized_result = to_tuple(serialized_encrypted_quantized_result)
-
         # Decrypt and deserialize the values
-        deserialized_decrypted_quantized_result = self.deserialize_decrypt(
-            serialized_encrypted_quantized_result
-        )
+        q_result = self.deserialize_decrypt(*serialized_encrypted_quantized_result)
 
-        deserialized_decrypted_quantized_result = to_tuple(deserialized_decrypted_quantized_result)
+        q_result = to_tuple(q_result)
 
         # De-quantize the values
-        deserialized_decrypted_dequantized_result = self.model.dequantize_output(
-            *deserialized_decrypted_quantized_result
-        )
+        f_result = self.model.dequantize_output(*q_result)
 
-        deserialized_decrypted_dequantized_result = to_tuple(
-            deserialized_decrypted_dequantized_result
-        )
+        f_result = to_tuple(f_result)
 
         # Apply post-processing to the de-quantized values
-        deserialized_decrypted_dequantized_result = self.model.post_processing(
-            *deserialized_decrypted_dequantized_result
-        )
+        # Side note: `post_processing` method from built-in models (not Quantized Modules) only
+        # handles a single input. Calling the following is however not an issue for now as we expect
+        # 'f_result' to be a tuple of length 1 in this case anyway. Still, we need to make sure this
+        # does not break in the future if any built-in models starts to handle multiple outputs :
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4474
+        result = self.model.post_processing(*f_result)
 
-        return deserialized_decrypted_dequantized_result
+        return result
