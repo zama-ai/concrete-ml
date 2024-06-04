@@ -7,12 +7,12 @@ import numpy as np
 import torch
 from concrete.fhe import Configuration
 from models import cnv_2w2a
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 from tqdm import tqdm
 from trainer import accuracy, get_test_set, get_train_set
 
 from concrete import fhe
-from concrete.ml.common.preprocessors import TLU1bitDecomposition
+from concrete.ml.common.preprocessors import Debug, TLU1bitDecomposition
 from concrete.ml.torch.compile import compile_brevitas_qat_model
 
 CURRENT_DIR = Path(__file__).resolve().parent
@@ -36,6 +36,7 @@ def evaluate(torch_model, cml_model, device, num_workers):
 
     # Import and load the CIFAR test dataset (following bnn_pynq_train.py)
     test_set = get_test_set(dataset="CIFAR10", datadir=CURRENT_DIR / ".datasets/")
+    test_set = Subset(test_set, np.arange(128))
     test_loader = DataLoader(test_set, batch_size=128, shuffle=False, num_workers=num_workers)
 
     torch_top_1_batches = []
@@ -130,6 +131,9 @@ def main(args):
         show_optimizer=args.show_optimizer,
         additional_pre_processors=[
             tlu_optimizer,
+        ],
+        additional_post_processors=[
+            Debug(),
         ],
     )
 

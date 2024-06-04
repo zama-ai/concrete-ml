@@ -24,11 +24,14 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import networkx as nx
 import numpy as np
-from concrete.fhe import Exactness, round_bit_pattern
+from concrete.fhe import Exactness, round_bit_pattern, truncate_bit_pattern
 from concrete.fhe.dtypes import Float, Integer
 from concrete.fhe.representation import Graph, GraphProcessor, Node, Operation
 from concrete.fhe.representation.evaluator import ConstantEvaluator, GenericEvaluator
 from concrete.fhe.values.value_description import ValueDescription
+
+# TODO: debug
+np.set_printoptions(threshold=1, edgeitems=2)
 
 
 def add(x, y):
@@ -159,17 +162,11 @@ def vectorized_graph_eval(
         node: Node
         if node.operation == Operation.Input:
             # Deepcopy on the fhe.Graph doesn't modify the input node/indices mappings
-            indices = (
-                input_indices
-                if input_indices is not None
-                else graph.input_indices[node]
-            )
+            indices = input_indices if input_indices is not None else graph.input_indices[node]
             node_results[node] = node.evaluator(inputs[indices])
             continue
 
-        pred_results = [
-            deepcopy(node_results[pred]) for pred in graph.ordered_preds_of(node)
-        ]
+        pred_results = [deepcopy(node_results[pred]) for pred in graph.ordered_preds_of(node)]
 
         res = node.evaluator(*pred_results)
         node_results[node] = res
@@ -182,9 +179,7 @@ def vectorized_graph_eval(
     return result if len(result) > 1 else result[0]
 
 
-def merge_tlu_constant_shapes(
-    constant_shapes: List[Tuple[int, ...]]
-) -> Tuple[int, ...]:
+def merge_tlu_constant_shapes(constant_shapes: List[Tuple[int, ...]]) -> Tuple[int, ...]:
     """Determine the maximally broadcasted shape of a subgraph output.
 
     The analysis is based on the constants that the TLU uses.
@@ -205,9 +200,7 @@ def merge_tlu_constant_shapes(
     fixed_constant_shapes = []
     for constant_shape in constant_shapes:
         if len(constant_shape) < n_dims_max:
-            fixed_shape = tuple(
-                [1] * (n_dims_max - len(constant_shape)) + list(constant_shape)
-            )
+            fixed_shape = tuple([1] * (n_dims_max - len(constant_shape)) + list(constant_shape))
             fixed_constant_shapes.append(fixed_shape)
         else:
             fixed_constant_shapes.append(constant_shape)
@@ -266,6 +259,13 @@ def add_rounding_node(
         attributes = {
             "overflow_protection": overflow_protection,
         }
+    elif rounding_function.__name__ == "truncate_bit_pattern":
+        # These kwargs are not supported atm
+        rounding_kwargs["overflow_protection"] = overflow_protection
+        attributes = {
+            "overflow_protection": overflow_protection,
+        }
+
     output_value = deepcopy(a_node.output)
     output_value.dtype = Integer.that_can_represent(
         round_bit_pattern(
@@ -285,13 +285,9 @@ def add_rounding_node(
         attributes=attributes,
     )
     rounding_node.properties["final_lsbs_to_remove"] = lsbs_to_remove
-    rounding_node.properties["resulting_bit_width"] = (
-        output_value.dtype.bit_width - lsbs_to_remove
-    )
+    rounding_node.properties["resulting_bit_width"] = output_value.dtype.bit_width - lsbs_to_remove
     rounding_node.properties["overflow_detected"] = False
-    rounding_node.properties["original_rounded_bit_width"] = (
-        a_node.output.dtype.bit_width
-    )
+    rounding_node.properties["original_rounded_bit_width"] = a_node.output.dtype.bit_width
     if rounding_function.__name__ == "round_bit_pattern":
         rounding_node.properties["overflow_protection"] = overflow_protection
         rounding_node.properties["exactness"] = exactness
@@ -308,9 +304,7 @@ def add_rounding_node(
         if out_node == rounding_node:
             continue
         # We should preserve the input_idx
-        edge_data: Dict[int, Dict[str, int]] = dict(
-            graph.get_edge_data(in_node, out_node)
-        )
+        edge_data: Dict[int, Dict[str, int]] = dict(graph.get_edge_data(in_node, out_node))
         graph.remove_edge(in_node, out_node)
         input_idx: int = edge_data[0]["input_idx"]
         graph.add_edge(rounding_node, out_node, input_idx=input_idx)
@@ -386,9 +380,7 @@ def add_leveled_op_with_cst(
     assert isinstance(constant_node.output.dtype, (Float, Integer))
 
     # Create op node
-    output_shape = np.broadcast_arrays(
-        np.zeros(a_node.output.shape), np.zeros(b.shape)
-    )[0].shape
+    output_shape = np.broadcast_arrays(np.zeros(a_node.output.shape), np.zeros(b.shape))[0].shape
     new_node = Node.generic(
         name=function.__name__,
         inputs=[
@@ -416,9 +408,7 @@ def add_leveled_op_with_cst(
         if out_node == new_node:
             continue
         # We should preserve the input_idx
-        edge_data: Dict[int, Dict[str, int]] = dict(
-            graph.get_edge_data(in_node, out_node)
-        )
+        edge_data: Dict[int, Dict[str, int]] = dict(graph.get_edge_data(in_node, out_node))
         graph.remove_edge(in_node, out_node)
         input_idx: int = edge_data[0]["input_idx"]
         graph.add_edge(new_node, out_node, input_idx=input_idx)
@@ -462,9 +452,7 @@ def add_sum(
         if out_node == new_node:
             continue
         # We should preserve the input_idx
-        edge_data: Dict[int, Dict[str, int]] = dict(
-            graph.get_edge_data(in_node, out_node)
-        )
+        edge_data: Dict[int, Dict[str, int]] = dict(graph.get_edge_data(in_node, out_node))
         graph.remove_edge(in_node, out_node)
         input_idx: int = edge_data[0]["input_idx"]
         graph.add_edge(new_node, out_node, input_idx=input_idx)
@@ -509,9 +497,7 @@ def add_reshaping(
         if out_node == new_node:
             continue
         # We should preserve the input_idx
-        edge_data: Dict[int, Dict[str, int]] = dict(
-            graph.get_edge_data(in_node, out_node)
-        )
+        edge_data: Dict[int, Dict[str, int]] = dict(graph.get_edge_data(in_node, out_node))
         graph.remove_edge(in_node, out_node)
         input_idx: int = edge_data[0]["input_idx"]
         graph.add_edge(new_node, out_node, input_idx=input_idx)
@@ -570,9 +556,7 @@ def add_clipping(
             bounds,
             dtype=np.int64,
         )
-        constant_dtype = Integer.that_can_represent(
-            np.array([x_min, x_max], dtype=np.int64)
-        )
+        constant_dtype = Integer.that_can_represent(np.array([x_min, x_max], dtype=np.int64))
         result_dtype = Integer.that_can_represent(res_bounds.astype(np.int64))
     else:
         raise ValueError(f"{bounds_dtype.dtype=} is not supported")
@@ -620,9 +604,7 @@ def add_clipping(
         if out_node == new_node:
             continue
         # We should preserve the input_idx
-        edge_data: Dict[int, Dict[str, int]] = dict(
-            graph.get_edge_data(in_node, out_node)
-        )
+        edge_data: Dict[int, Dict[str, int]] = dict(graph.get_edge_data(in_node, out_node))
         graph.remove_edge(in_node, out_node)
         input_idx: int = edge_data[0]["input_idx"]
         graph.add_edge(new_node, out_node, input_idx=input_idx)
@@ -675,9 +657,7 @@ def transform_inputs(
     bias=0,
 ):
     # TODO: add some asserts based on the expected bit-width of the range
-    scaled_bit_width = bit_width(
-        scale_up(input_range, scaling_factor=scaling_factor, bias=bias)
-    )
+    scaled_bit_width = bit_width(scale_up(input_range, scaling_factor=scaling_factor, bias=bias))
     lsbs_to_remove = scaled_bit_width - msbs_to_keep
     return scale_down(
         rounding(
@@ -689,9 +669,7 @@ def transform_inputs(
     )
 
 
-def find_msbs_to_keep(
-    inputset: np.ndarray, thresholds: np.ndarray, deltas: np.ndarray
-) -> int:
+def find_msbs_to_keep(inputset: np.ndarray, thresholds: np.ndarray, deltas: np.ndarray) -> int:
 
     # todo: this should be reworked since we now update msbs-to-keep in the bias computation
     msbs_to_keep_set = set()
@@ -713,10 +691,7 @@ def find_msbs_to_keep(
             ):
                 msbs_to_keep = np.ceil(
                     np.log2(
-                        np.ceil(
-                            ((inputset.max() - inputset.min() + 1) + np.abs(offset))
-                            / delta
-                        )
+                        np.ceil(((inputset.max() - inputset.min() + 1) + np.abs(offset)) / delta)
                     )
                 ).astype(np.int64)
 
@@ -732,14 +707,10 @@ def find_msbs_to_keep(
 def compute_scaling_factor(deltas, target_bit_width, msbs_to_keep):
     a_candidates = Counter()
     for delta in deltas:
-        a_candidate = np.floor(2 ** (target_bit_width - msbs_to_keep) / delta).astype(
-            np.int64
-        )
+        a_candidate = np.floor(2 ** (target_bit_width - msbs_to_keep) / delta).astype(np.int64)
         a_candidates[a_candidate] += 1
 
-        a_candidate = np.ceil(2 ** (target_bit_width - msbs_to_keep) / delta).astype(
-            np.int64
-        )
+        a_candidate = np.ceil(2 ** (target_bit_width - msbs_to_keep) / delta).astype(np.int64)
         a_candidates[a_candidate] += 1
     return a_candidates.most_common(1)[0][0]
 
@@ -888,19 +859,23 @@ def decompose_1_bit_tlu(
         subgraph_outputs_selected = subgraph_outputs[selection]
         change_mask_selection = change_mask[selection]
         thresholds_selected = subgraph_inputs_selected[change_mask_selection]
-        max_number_of_thresholds = max(
-            max_number_of_thresholds, len(thresholds_selected)
-        )
+        max_number_of_thresholds = max(max_number_of_thresholds, len(thresholds_selected))
 
     if n_jumps_limit is not None and max_number_of_thresholds > n_jumps_limit:
         # In this case we want to do nothing
-        return -1, 0, -1, np.empty((0,)), np.empty((0,))
+        return -1, 0, -1, np.empty((0,)), np.empty((0,)), np.empty((0,))
 
     # Add (,1) to the shape for proper broadcast -> offset -> round -> tlu -> mult with coeff -> sum along last axis
     offsets_to_apply = np.zeros(shape_ + (max_number_of_thresholds,))
     coefficients = np.zeros(shape_ + (max_number_of_thresholds,))
-
+    base = np.zeros(shape_)
     max_acc_size = 0
+
+    # Sanity check
+    assert (
+        len(np.unique(subgraph_outputs)) == max_number_of_thresholds + 1
+    ), f"{len(np.unique(subgraph_outputs))=} != {max_number_of_thresholds+1=}"
+
     # For each axis along which the TLU is different we should compute the best set of parameters
     for indexes in product(*[range(elt) for elt in shape_]):
         best_indexes = tuple([*indexes])
@@ -909,29 +884,56 @@ def decompose_1_bit_tlu(
         # Slice things up
         subgraph_inputs_selected = subgraph_inputs[selection]
         subgraph_outputs_selected = subgraph_outputs[selection]
+        # tlu_coefs_idx = np.unique(subgraph_outputs_selected, return_index=True)[1]
+        # tlu_coefs = subgraph_outputs_selected[np.sort(tlu_coefs_idx)]
         change_mask_selection = change_mask[selection]
         thresholds_selected = subgraph_inputs_selected[change_mask_selection]
 
+        out_select = change_mask_selection.copy()
+        out_select[0] = True
+        tlu_coefs = subgraph_outputs_selected[out_select]
+        if base.shape:
+            base[selection] = tlu_coefs[0]
+        else:
+            base = tlu_coefs[0]
+
+        # Sanity check
         assert len(thresholds_selected) == len(
             np.unique(thresholds_selected)
         ), "not unique steps, shouldn't occur"
 
-        for threshold_index, threshold in enumerate(thresholds_selected):
+        assert (len(thresholds_selected) + 1) == len(tlu_coefs)
+
+        # Populate coefficients and offsets
+        for threshold_index, (threshold, coef) in enumerate(zip(thresholds_selected, tlu_coefs)):
+            # Compute the offset
             offset = threshold + (2 ** (bit_width(input_range)))
             offsets_to_apply[best_indexes + (threshold_index,)] = offset
+
             # todo: get the proper value here: must be the result of f(x-1) - f(x) or smth like that
-            coefficients[best_indexes + (threshold_index,)] = 1
+            res = tlu_coefs[threshold_index + 1] - tlu_coefs[threshold_index]
+            print(res)
+            coefficients[best_indexes + (threshold_index,)] = res
+
             acc_size = bit_width(scale_up(input_range, scaling_factor=1, bias=offset))
             max_acc_size = max(max_acc_size, acc_size)
 
     msbs_to_keep = 1
     lsbs_to_remove = max_acc_size - msbs_to_keep
+    rounded = round_bit_pattern(
+        (subgraph_inputs[..., np.newaxis] - offsets_to_apply).astype(np.int64),
+        lsbs_to_remove=lsbs_to_remove,
+    )
+    pred = ((rounded >= 0).astype(np.int64) * coefficients).sum(axis=-1) + base
+    assert (subgraph_outputs == pred).all()
+
     return (
         max_number_of_thresholds,
         lsbs_to_remove,
         max_acc_size,
         offsets_to_apply,
         coefficients,
+        base,
     )
 
 
@@ -1042,9 +1044,7 @@ def delta_optimize(
             msbs_to_keep = 1
             scaling_factor = 1
             bias = thresholds_selected[0] + (2 ** (bit_width(input_range)))
-            acc_size = bit_width(
-                scale_up(input_range, scaling_factor=scaling_factor, bias=bias)
-            )
+            acc_size = bit_width(scale_up(input_range, scaling_factor=scaling_factor, bias=bias))
             lsbs_to_remove = acc_size - msbs_to_keep
 
         else:
@@ -1249,9 +1249,7 @@ def extract_tlu_input_bounds(variable_input_node: Node) -> Tuple[np.int64, np.in
         tuple: tuple of min/max values
     """
 
-    assert (
-        variable_input_node.bounds is not None
-    ), "Bounds not found during TLU optimization"
+    assert variable_input_node.bounds is not None, "Bounds not found during TLU optimization"
 
     min_bound, max_bound = variable_input_node.bounds
     min_bound = np.int64(min_bound)
@@ -1291,9 +1289,7 @@ def compute_tlu_output_shapes(
             value = elt.evaluator.properties["constant"]
             if constant_shape:
                 orig_constant_shapes.append(tuple(constant_shape))
-                for axis in range(
-                    len(value.shape)
-                ):  # pylint: disable=consider-using-enumerate
+                for axis in range(len(value.shape)):  # pylint: disable=consider-using-enumerate
                     unique_values_per_axis = np.unique(value, axis=axis)
                     if unique_values_per_axis.shape[axis] == 1:
                         constant_shape[axis] = 1
@@ -1327,9 +1323,7 @@ def get_subgraph_input(subgraph: Graph) -> Node:
             assert input_node is None, "More than one astype float node detected"
             input_node = node
 
-    assert (
-        input_node is not None
-    ), f"Couldn't detect input node in:\n{subgraph.format()}"
+    assert input_node is not None, f"Couldn't detect input node in:\n{subgraph.format()}"
     return input_node
 
 
@@ -1562,7 +1556,10 @@ def add_extra_shape_to_subgraph(tlu_node, extra_dim: Tuple[int, ...]):
 
     for node in tlu_node.evaluator.properties["kwargs"]["subgraph"].graph:
         if isinstance(node.evaluator, ConstantEvaluator):
-            node.evaluator.properties["constant"] = np.reshape(node.evaluator.properties["constant"], node.evaluator.properties["constant"].shape + tuple([1 for _ in extra_dim]))
+            node.evaluator.properties["constant"] = np.reshape(
+                node.evaluator.properties["constant"],
+                node.evaluator.properties["constant"].shape + tuple([1 for _ in extra_dim]),
+            )
             continue
 
         node.inputs[0].shape = deepcopy(node.inputs[0].shape)
@@ -1581,6 +1578,17 @@ def add_extra_shape_to_subgraph(tlu_node, extra_dim: Tuple[int, ...]):
     print()
 
 
+class Debug(GraphProcessor):
+    def __init__(
+        self,
+    ) -> None:
+        super().__init__()
+
+    def apply(self, graph: Graph) -> None:
+        print(graph.format())
+        breakpoint()
+
+
 # todo: fix insert rounding to make sure that it only adds rounding if there is
 # no rounding already -> Put TLU-1bit and then InsertRounding in CIFAR
 class TLU1bitDecomposition(GraphProcessor):
@@ -1592,7 +1600,8 @@ class TLU1bitDecomposition(GraphProcessor):
         self.n_jumps_limit = n_jumps_limit
         self.statistics = {}
         self.rounding_function = round_bit_pattern
-        self.overflow_protection = False
+        self.overflow_protection = True
+        self.verbose = True
 
     def apply(self, graph: Graph) -> None:
         """Apply the TLU optimization to a Graph for all TLUs.
@@ -1612,6 +1621,9 @@ class TLU1bitDecomposition(GraphProcessor):
             assert isinstance(evaluator, GenericEvaluator)
 
             # todo: remove this since we now can easily modify the evaluator
+            # so we aren't limited to that anymore
+            # but we won't be able to isolate independent axis/functions
+            # if we don't have the subgraph though
             if "subgraph" not in evaluator.properties["kwargs"]:
                 if self.verbose:
                     print("skipping because tlu is not a subgraph")
@@ -1658,11 +1670,9 @@ class TLU1bitDecomposition(GraphProcessor):
             # try to find axes with constant values in the results of the tlu
             # so that its shape can be reduced to eliminate duplicate values
             if not shape_:
-                subgraph_inputs, reference = reduce_output_tensor(
-                    subgraph_inputs, reference
-                )
+                subgraph_inputs, reference = reduce_output_tensor(subgraph_inputs, reference)
 
-            number_of_tlus, lsbs_to_remove, max_acc_size, offsets, coefficients = (
+            number_of_tlus, lsbs_to_remove, max_acc_size, offsets, coefficients, base = (
                 decompose_1_bit_tlu(
                     subgraph_inputs=subgraph_inputs,
                     subgraph_outputs=reference,
@@ -1674,13 +1684,13 @@ class TLU1bitDecomposition(GraphProcessor):
             assert isinstance(lsbs_to_remove, int)
             assert isinstance(max_acc_size, int)
 
-            print(
-                f"{number_of_tlus=}, {lsbs_to_remove=} {coefficients.shape=}, {offsets.shape=}"
-            )
+            print(f"{number_of_tlus=}, {lsbs_to_remove=} {coefficients.shape=}, {offsets.shape=}")
             if number_of_tlus == -1:
                 # Don't do here for now
                 print("SKIPPING NODE")
                 continue
+
+            # ####################### This is the part where we modify the graph ###############
 
             # For testing purposes we had some properties
             tlu_node.properties["attributes"]["number_of_tlus"] = number_of_tlus
@@ -1699,8 +1709,9 @@ class TLU1bitDecomposition(GraphProcessor):
                 coefficients,
                 shape=(1,) + variable_input_node.output.shape[1:] + (number_of_tlus,),
             )
-
             new_shape = variable_input_node.output.shape + (1,)
+
+            # 1. Add reshaping node so that broadcasting is done properly
             variable_input_node = add_reshaping(
                 variable_input_node, new_shape=new_shape, graph=graph.graph
             )
@@ -1708,34 +1719,34 @@ class TLU1bitDecomposition(GraphProcessor):
             # todo: variable_input_node is now the output of broadcasting
             # lsbs_to_remove -> all except 1
             # todo: rename n-round as lsbs-to-remove
+            # 2. Insert substraction of offset and rounding
             rounding_node = self.modify_graph_to_round_subgraph_inputs(
                 graph=graph,
                 variable_input_node=variable_input_node,
-                a=np.ones(
-                    offsets.shape
-                ),  # We don't really want to multiply by anything here
+                a=np.ones(offsets.shape),  # We don't really want to multiply by anything here
                 b=offsets,
                 n_round=lsbs_to_remove,
             )
 
+            # 3. Modify subgraph to have updated shapes
             add_extra_shape_to_subgraph(tlu_node, (number_of_tlus,))
 
-            # tlu_node.inputs[0] = deepcopy(rounding_node.output)
-            # tlu_node.inputs[0] = deepcopy(tlu_node.inputs[0])
-            # tlu_node.inputs[0].shape = tlu_node.inputs[0].shape + (number_of_tlus,)
-            #
-            # tlu_node.output.shape = deepcopy(tlu_node.output.shape)
-            # tlu_node.output.shape = tlu_node.output.shape + (number_of_tlus,)
-
+            # 4. Actually modify LUT
+            # >= 0
             def compute_lut(args, **kwargs):
-                return vectorized_graph_eval(
-                    kwargs["graph"],
-                    args,
-                )
+                res = (args >= 0).astype(np.int64)
+                print(f"{args=}, {res=}, {np.unique(args)=}")
+                return res
+
+                # This works but this isn't what we want
+                # return vectorized_graph_eval(
+                #     kwargs["graph"],
+                #     args,
+                # )
 
             tlu_node.evaluator = GenericEvaluator(
                 operation=compute_lut,
-                properties={"args": {}, "kwargs": {"graph": tlu_subgraph}},
+                properties={"args": {}, "kwargs": {}},  # {"graph": tlu_subgraph}
             )
             # Store some statistics for testing/debugging in the object itself
             tlu_node.properties["attributes"]["msbs_to_keep"] = int(
@@ -1754,27 +1765,31 @@ class TLU1bitDecomposition(GraphProcessor):
             }
 
             # Add thresholds and clipping to the subgraph
-            self.modify_subgraph_for_rounded_inputs(
-                tlu_subgraph,
-                np.ones(offsets.shape),
-                offsets,
-                rounding_node,
-                x_min=min_bound,
-                x_max=max_bound,
-            )
+            # self.modify_subgraph_for_rounded_inputs(
+            #     tlu_subgraph,
+            #     np.ones(offsets.shape),
+            #     offsets,
+            #     rounding_node,
+            #     x_min=min_bound,
+            #     x_max=max_bound,
+            # )
             # or we can try to just change the evaluator :thinking-face:
 
+            # 5. Multiply by coefficients and sum
             # (a*b).sum(axis=-1)
             current_node = tlu_node
             current_node = add_leveled_op_with_cst(
                 current_node, coefficients.astype(np.int64), multiply, graph=graph.graph
             )
             current_node = add_sum(current_node, axis=(-1,), graph=graph.graph)
+            current_node = add_leveled_op_with_cst(
+                current_node, base.astype(np.int64), add, graph=graph.graph
+            )
 
             print(f"Done modifying TLU: {tlu_node}")
         print("DONE")
         # recursion error when printing :thinking-face:
-        # print(graph.format())
+        print(graph.format())
 
     def modify_subgraph_for_rounded_inputs(
         self,
@@ -1883,16 +1898,16 @@ class TLU1bitDecomposition(GraphProcessor):
         # Multiply to match step size to rounding step size
         a_int = a.astype(np.int64)
         if np.any(a_int != 1):
-            previous_node = add_leveled_op_with_cst(
-                previous_node, a_int, multiply, graph.graph
-            )
+            previous_node = add_leveled_op_with_cst(previous_node, a_int, multiply, graph.graph)
+        else:
+            print("not inserting multiplicative factor")
 
         # Subtract offset that matches step threshold to rounding step treshold
         b_int = b.astype(np.int64)
         if np.any(b_int != 0):
-            previous_node = add_leveled_op_with_cst(
-                previous_node, b_int, subtract, graph.graph
-            )
+            previous_node = add_leveled_op_with_cst(previous_node, b_int, subtract, graph.graph)
+        else:
+            print("not inserting bias")
 
         # # Compute the offset needed to cancel out the rounding offset
         # # Then broadcast it to match the rounded tensor shape
@@ -1957,9 +1972,7 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
         self.internal_bit_width_target = internal_bit_width_target
         self.verbose = verbose
         # Store per PBS statistics to see how bit_widths were reduced
-        self.statistics: Dict[
-            Node, Dict[str, Union[int, np.ndarray, Tuple[int, ...]]]
-        ] = {}
+        self.statistics: Dict[Node, Dict[str, Union[int, np.ndarray, Tuple[int, ...]]]] = {}
 
     def apply(self, graph: Graph) -> None:
         """Apply the TLU optimization to a Graph for all TLUs.
@@ -2035,9 +2048,7 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
             # try to find axes with constant values in the results of the tlu
             # so that its shape can be reduced to eliminate duplicate values
             if not shape_:
-                subgraph_inputs, reference = reduce_output_tensor(
-                    subgraph_inputs, reference
-                )
+                subgraph_inputs, reference = reduce_output_tensor(subgraph_inputs, reference)
 
             best_a, best_b, lsbs_to_remove, msbs_to_keep = delta_optimize(
                 subgraph_inputs,
@@ -2061,12 +2072,8 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
             # We need to make sure that we have the correct shape when adding constants in the graph
             # As Concrete Python doesn't handle broadcasting at the graph level
             assert isinstance(variable_input_node.output, ValueDescription)
-            best_a = np.broadcast_to(
-                best_a, shape=(1,) + variable_input_node.output.shape[1:]
-            )
-            best_b = np.broadcast_to(
-                best_b, shape=(1,) + variable_input_node.output.shape[1:]
-            )
+            best_a = np.broadcast_to(best_a, shape=(1,) + variable_input_node.output.shape[1:])
+            best_b = np.broadcast_to(best_b, shape=(1,) + variable_input_node.output.shape[1:])
 
             rounding_node = self.modify_graph_to_round_subgraph_inputs(
                 graph, variable_input_node, best_a, best_b, lsbs_to_remove
@@ -2143,16 +2150,12 @@ class TLUDeltaBasedOptimizer(GraphProcessor):
         # Multiply to match step size to rounding step size
         a_int = a.astype(np.int64)
         if np.any(a_int != 1):
-            previous_node = add_leveled_op_with_cst(
-                previous_node, a_int, multiply, graph.graph
-            )
+            previous_node = add_leveled_op_with_cst(previous_node, a_int, multiply, graph.graph)
 
         # Subtract offset that matches step threshold to rounding step treshold
         b_int = b.astype(np.int64)
         if np.any(b_int != 0):
-            previous_node = add_leveled_op_with_cst(
-                previous_node, b_int, subtract, graph.graph
-            )
+            previous_node = add_leveled_op_with_cst(previous_node, b_int, subtract, graph.graph)
 
         # # Compute the offset needed to cancel out the rounding offset
         # # Then broadcast it to match the rounded tensor shape
