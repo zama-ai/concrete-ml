@@ -3,18 +3,19 @@
 import itertools
 import time
 import warnings
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 import numpy
 import sklearn.linear_model
 from concrete.fhe import Configuration
+from concrete.fhe import Value as EncryptedValue
 from sklearn.preprocessing import LabelEncoder
 
 from ..common.utils import FheMode
 from ..onnx.ops_impl import numpy_sigmoid
 from ..quantization import QuantizedModule
 from ..torch.compile import _compile_torch_or_onnx_model
-from ._fhe_training_utils import LogisticRegressionTraining
+from ._fhe_training_utils import LogisticRegressionTraining, binary_cross_entropy
 from .base import (
     Data,
     SklearnLinearClassifierMixin,
@@ -251,12 +252,6 @@ class SGDClassifier(SklearnSGDClassifierMixin):
                     f"({fit_encrypted=}). Got {parameters_range=}"
                 )
 
-            if self.early_stopping:
-                raise ValueError(
-                    "Early stopping is not possible when training in FHE: values are encrypted "
-                    "throughout all training iterations."
-                )
-
         else:
             supported_losses = ["log_loss", "modified_huber"]
             if self.loss not in supported_losses:
@@ -377,6 +372,51 @@ class SGDClassifier(SklearnSGDClassifierMixin):
             print(f"Compilation took {end - start:.4f} seconds.")
 
         return training_quantized_module
+
+    def _decrypt_dequantize_training_output(
+        self,
+        weights_enc: Union[numpy.ndarray, EncryptedValue],
+        bias_enc: Union[numpy.ndarray, EncryptedValue],
+        fhe: Union[str, FheMode] = FheMode.DISABLE,
+    ) -> Tuple[numpy.ndarray, numpy.ndarray]:
+        """Decrypt and de-quantize the outputs using the training circuit.
+
+        Args:
+            weights_enc (Union[numpy.ndarray, EncryptedValue]): The weight values to decrypt (if
+                encrypted) and de-quantize.
+            bias_enc (Union[numpy.ndarray, EncryptedValue]): The bias values to decrypt (if
+                encrypted) and de-quantize.
+            fhe (Union[str, FheMode]): The mode to use for FHE training.
+                Can be FheMode.DISABLE for Concrete ML Python (quantized) training,
+                FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.
+                Can also be the string representation of any of these values. Default to
+                FheMode.DISABLE.
+
+        Returns:
+            weights_float, bias_float (Tuple[numpy.ndarray, numpy.ndarray]): The weight and bias
+                float values.
+        """
+        # Mypy
+        assert self.training_quantized_module is not None
+        assert self.training_quantized_module.fhe_circuit is not None
+
+        # If the training is done in FHE, decrypt the weight and bias values
+        if fhe == "execute":
+            q_weights, q_bias = self.training_quantized_module.fhe_circuit.decrypt(
+                weights_enc, bias_enc
+            )
+
+        else:
+            q_weights, q_bias = weights_enc, bias_enc
+
+        weights_float, bias_float = self.training_quantized_module.dequantize_output(
+            q_weights, q_bias
+        )
+
+        # Reshape parameters to fit what scikit-learn expects
+        weights_float, bias_float = weights_float.squeeze(0), bias_float.squeeze(0)
+
+        return weights_float, bias_float
 
     # pylint: disable-next=too-many-branches, too-many-statements, too-many-locals
     def _fit_encrypted(
@@ -617,6 +657,10 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         else:
             weights_enc, bias_enc = q_weights, q_bias
 
+        # This variable is used for computing the loss and handle early stopping (see at the end of
+        # the loop)
+        loss_value_moving_average = None
+
         # Iterate on the training quantized module in the clear
         for iteration_step in range(max_iter):
             X_batch_enc_i, y_batch_enc_i = (
@@ -651,21 +695,41 @@ class SGDClassifier(SklearnSGDClassifierMixin):
                     f"Iteration {iteration_step} took {time.time() - inference_start:.2f} seconds."
                 )
 
-        # If the training is done in FHE, encrypt the weight and bias values
-        if fhe == "execute":
-            q_weights, q_bias = self.training_quantized_module.fhe_circuit.decrypt(
-                weights_enc, bias_enc
-            )
+            # If early stopping is enabled, decrypt (if needed) and de-quantize the weight and bias
+            # values. Then, compute the loss and stop the training if it gets under the given
+            # tolerance
+            # Additionally, there is no point in computing the following in case of a partial fit,
+            # as it only represents a single iteration
+            if self.early_stopping and not is_partial_fit:
+                weights_float, bias_float = self._decrypt_dequantize_training_output(
+                    weights_enc, bias_enc, fhe=fhe
+                )
 
-        else:
-            q_weights, q_bias = weights_enc, bias_enc
+                # Evaluate the model on the full dataset and compute the loss
+                logits = ((X @ weights_float) + bias_float).squeeze()
+                loss_value = binary_cross_entropy(y_true=y, logits=logits)
 
-        fitted_weights, fitted_bias = self.training_quantized_module.dequantize_output(
-            q_weights, q_bias
+                # If this is the first training iteration, store the loss value computed above
+                if loss_value_moving_average is None:
+                    loss_value_moving_average = loss_value
+
+                # Else, update the value
+                else:
+                    previous_loss_value_moving_average = loss_value_moving_average
+                    loss_value_moving_average = (loss_value_moving_average + loss_value) / 2
+
+                    loss_difference = numpy.abs(
+                        previous_loss_value_moving_average - loss_value_moving_average
+                    )
+
+                    # If the loss gets under the given tolerance, stop the training
+                    if loss_difference < self.tol:
+                        break
+
+        # Decrypt (if needed) and de-quantize the fitted weight and bias values
+        fitted_weights, fitted_bias = self._decrypt_dequantize_training_output(
+            weights_enc, bias_enc, fhe=fhe
         )
-
-        # Reshape parameters to fit what scikit-learn expects
-        fitted_weights, fitted_bias = fitted_weights.squeeze(0), fitted_bias.squeeze(0)
 
         # Initialize the underlying scikit-learn model if it has not already been done
         # This model should be directly initialized in the model's __init__ method instead

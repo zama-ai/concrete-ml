@@ -93,15 +93,6 @@ def test_init_error_raises(n_bits, parameter_min_max):
             fit_intercept=True,
         )
 
-    with pytest.raises(ValueError, match="Early stopping is not possible when training in FHE.*"):
-        SGDClassifier(
-            n_bits=n_bits,
-            fit_encrypted=True,
-            random_state=random_state,
-            parameters_range=parameters_range,
-            early_stopping=True,
-        )
-
 
 @pytest.mark.parametrize("n_classes", [1, 3])
 @pytest.mark.parametrize("n_bits, max_iter, parameter_min_max", [pytest.param(7, 30, 1.0)])
@@ -565,3 +556,21 @@ def test_encrypted_fit_coherence(
     assert array_allclose_and_same_shape(bias_disable, bias_coef_init)
     assert array_allclose_and_same_shape(y_pred_proba_disable, y_pred_proba_coef_init)
     assert array_allclose_and_same_shape(y_pred_class_disable, y_pred_class_coef_init)
+
+    # Define early break parameters, with a very high tolerance
+    early_break_kwargs = {"early_stopping": True, "tol": 1e100}
+
+    # We don't have any way to properly test early break, we therefore disable the accuracy check
+    # in order to avoid flaky issues
+    check_encrypted_fit(
+        x,
+        y,
+        n_bits,
+        random_state,
+        parameters_range,
+        max_iter,
+        fit_intercept,
+        check_accuracy=None,
+        fhe="simulate",
+        init_kwargs=early_break_kwargs,
+    )
