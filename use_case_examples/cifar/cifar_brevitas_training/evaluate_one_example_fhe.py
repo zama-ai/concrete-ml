@@ -18,7 +18,7 @@ from concrete.ml.common.preprocessors import Debug, InsertRounding, TLU1bitDecom
 from concrete.ml.quantization import QuantizedModule
 from concrete.ml.torch.compile import compile_brevitas_qat_model
 
-SIMULATE_ONLY = True
+SIMULATE_ONLY = False
 CURRENT_DIR = Path(__file__).resolve().parent
 KEYGEN_CACHE_DIR = CURRENT_DIR.joinpath(".keycache")
 
@@ -128,11 +128,11 @@ print("Saving graph and mlir to disk.")
 open("cifar10.graph", "w").write(str(quantized_numpy_module.fhe_circuit))
 open("cifar10.mlir", "w").write(quantized_numpy_module.fhe_circuit.mlir)
 
-import sys
-
-if sys.platform == "darwin":
-    print("skipping fhe evaluation on darwin platform")
-    sys.exit(0)
+# import sys
+#
+# if sys.platform == "darwin":
+#     print("skipping fhe evaluation on darwin platform")
+#     sys.exit(0)
 
 if not SIMULATE_ONLY:
     # Key generation

@@ -1694,7 +1694,7 @@ class TLU1bitDecomposition(GraphProcessor):
             assert isinstance(lsbs_to_remove, int)
             assert isinstance(max_acc_size, int)
 
-            print(f"{number_of_tlus=}, {lsbs_to_remove=} {coefficients.shape=}, {offsets.shape=}")
+            # print(f"{number_of_tlus=}, {lsbs_to_remove=} {coefficients.shape=}, {offsets.shape=}")
             if number_of_tlus == -1:
                 # Don't do here for now
                 # print("SKIPPING NODE")
