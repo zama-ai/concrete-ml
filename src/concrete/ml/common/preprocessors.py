@@ -170,9 +170,9 @@ def vectorized_graph_eval(
 
         res = node.evaluator(*pred_results)
         node_results[node] = res
-        print(
-            f"{node.properties['name'] if 'name' in node.properties else node}, {node.operation=}({[pred.shape for pred in pred_results]})={res.shape=},"
-        )
+        # print(
+        #     f"{node.properties['name'] if 'name' in node.properties else node}, {node.operation=}({[pred.shape for pred in pred_results]})={res.shape=},"
+        # )
 
     result = tuple(node_results[node] for node in graph.ordered_outputs())
     assert len(result) > 0, "Empty results"
@@ -773,7 +773,7 @@ def bias_closed_form(
     # hackish -> breaks the target-bit-width assumption
     if bit_width(input_range - bias) != bit_width(input_range):
         msbs_to_keep += 1
-        print(f"debug: adding 1 to {msbs_to_keep=}")
+        # print(f"debug: adding 1 to {msbs_to_keep=}")
 
     return bias, msbs_to_keep
 
@@ -912,7 +912,7 @@ def decompose_1_bit_tlu(
 
             # todo: get the proper value here: must be the result of f(x-1) - f(x) or smth like that
             res = tlu_coefs[threshold_index + 1] - tlu_coefs[threshold_index]
-            print(res)
+            # print(res)
             coefficients[best_indexes + (threshold_index,)] = res
 
             acc_size = bit_width(scale_up(input_range, scaling_factor=1, bias=offset))
@@ -1078,7 +1078,7 @@ def delta_optimize(
 
         # todo: re-activate this assert as this shouldn't happen
         if acc_size > target_bit_width:
-            print(f"{acc_size=} > {target_bit_width=}")
+            # print(f"{acc_size=} > {target_bit_width=}")
             triggered = True
 
         # todo: remove this after check that the accuracy is fine
@@ -1475,15 +1475,15 @@ class InsertRounding(GraphProcessor):
 
             # Only one input should be non-constant per LUT
             if len(variable_input_indices) != 1:
-                print("SKIPPING BECAUSE MORE THAN 1 INPUT")
+                # print("SKIPPING BECAUSE MORE THAN 1 INPUT")
                 continue
 
             if pred_nodes[0].properties["name"] in {"round_bit_pattern", "truncate_bit_pattern"}:
-                print("SKIPPING BECAUSE ROUNDING ALREADY PRESENT")
+                # print("SKIPPING BECAUSE ROUNDING ALREADY PRESENT")
                 continue
 
             if tlu_node.properties["name"] in {"round_bit_pattern", "truncate_bit_pattern"}:
-                print("SKIPPING BECAUSE NODE IS ROUNDING NODE")
+                # print("SKIPPING BECAUSE NODE IS ROUNDING NODE")
                 continue
 
             # Get variable input
@@ -1498,13 +1498,13 @@ class InsertRounding(GraphProcessor):
             if variable_input_bit_width <= self.rounding_threshold:
                 # No need to do anything if the bit-width is actually lower or equal
                 # to the rounding threshold value
-                print("SKIPPING BECAUSE ROUNDING ABOVE ACCUMULATOR SIZE")
+                # print("SKIPPING BECAUSE ROUNDING ABOVE ACCUMULATOR SIZE")
                 continue
 
             # Compute lsbs to remove
             lsbs_to_remove = variable_input_bit_width - self.rounding_threshold
 
-            print(f"ADDING ROUNDING NODE to {tlu_node.properties['name']}")
+            # print(f"ADDING ROUNDING NODE to {tlu_node.properties['name']}")
             # Rounding node
             rounding_node = Node.generic(
                 "round_bit_pattern",
@@ -1556,9 +1556,9 @@ def update_constant_node(node, new_value):
 def add_extra_shape_to_subgraph(tlu_node, extra_dim: Tuple[int, ...]):
     # TODO: maybe collect all shapes and just broadcast everything to the correct shape
     # and reshape if constant
-    print()
-    print()
-    print("UPDATING SUBGRAPH SHAPES")
+    # print()
+    # print()
+    # print("UPDATING SUBGRAPH SHAPES")
     tlu_node.inputs[0] = deepcopy(tlu_node.inputs[0])
     tlu_node.inputs[0].shape = tlu_node.inputs[0].shape + extra_dim
 
@@ -1576,17 +1576,17 @@ def add_extra_shape_to_subgraph(tlu_node, extra_dim: Tuple[int, ...]):
         node.inputs[0].shape = deepcopy(node.inputs[0].shape)
         node.inputs[0].shape = node.inputs[0].shape + extra_dim
 
-        print(f"{node.output.shape=}")
+        # print(f"{node.output.shape=}")
         node.output.shape = deepcopy(node.output.shape)
 
         if node.output.shape[-1:] == extra_dim:  # BIG HACK
             continue
 
         node.output.shape = node.output.shape + extra_dim
-        print(f"{node.output.shape=}")
-        print(f"{node}")
-    print()
-    print()
+    #     print(f"{node.output.shape=}")
+    #     print(f"{node}")
+    # print()
+    # print()
 
 
 class Debug(GraphProcessor):
@@ -1597,7 +1597,6 @@ class Debug(GraphProcessor):
 
     def apply(self, graph: Graph) -> None:
         print(graph.format())
-        breakpoint()
 
 
 # todo: fix insert rounding to make sure that it only adds rounding if there is
@@ -1698,7 +1697,7 @@ class TLU1bitDecomposition(GraphProcessor):
             print(f"{number_of_tlus=}, {lsbs_to_remove=} {coefficients.shape=}, {offsets.shape=}")
             if number_of_tlus == -1:
                 # Don't do here for now
-                print("SKIPPING NODE")
+                # print("SKIPPING NODE")
                 continue
 
             # ####################### This is the part where we modify the graph ###############
@@ -1746,7 +1745,7 @@ class TLU1bitDecomposition(GraphProcessor):
             # >= 0
             def compute_lut(args, **kwargs):
                 res = (args >= 0).astype(np.int64)
-                print(f"{args=}, {res=}, {np.unique(args)=}")
+                # print(f"{args=}, {res=}, {np.unique(args)=}")
                 return res
 
                 # This works but this isn't what we want
@@ -1797,10 +1796,10 @@ class TLU1bitDecomposition(GraphProcessor):
                 current_node, base.astype(np.int64), add, graph=graph.graph
             )
 
-            print(f"Done modifying TLU: {tlu_node}")
-        print("DONE")
+        #     print(f"Done modifying TLU: {tlu_node}")
+        # print("DONE")
         # recursion error when printing :thinking-face:
-        print(graph.format())
+        # print(graph.format())
 
     def modify_subgraph_for_rounded_inputs(
         self,
@@ -1911,14 +1910,16 @@ class TLU1bitDecomposition(GraphProcessor):
         if np.any(a_int != 1):
             previous_node = add_leveled_op_with_cst(previous_node, a_int, multiply, graph.graph)
         else:
-            print("not inserting multiplicative factor")
+            pass
+            # print("not inserting multiplicative factor")
 
         # Subtract offset that matches step threshold to rounding step treshold
         b_int = b.astype(np.int64)
         if np.any(b_int != 0):
             previous_node = add_leveled_op_with_cst(previous_node, b_int, subtract, graph.graph)
         else:
-            print("not inserting bias")
+            pass
+            # print("not inserting bias")
 
         # # Compute the offset needed to cancel out the rounding offset
         # # Then broadcast it to match the rounded tensor shape

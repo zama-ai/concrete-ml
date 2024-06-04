@@ -19,7 +19,6 @@ from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
 from concrete.ml.quantization.qat_quantizers import Int8ActPerTensorPoT, Int8WeightPerTensorPoT
-
 from concrete.ml.sklearn.linear_model import SGDClassifier
 
 from ..common.serialization.dumpers import dump, dumps
