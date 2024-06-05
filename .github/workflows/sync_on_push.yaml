@@ -26,6 +26,6 @@ jobs:
         with:
           source_repo: "zama-ai/concrete-ml"
           source_branch: "main"
-          destination_repo: "https://${{ secrets.BOT_USERNAME }}:${{ secrets.CONCRETE_ACTIONS_TOKEN }}@github.com/${{ secrets.SYNC_DEST_REPO }}"
+          destination_repo: "https://${{ secrets.BOT_USERNAME }}:${{ secrets.CONCRETE_ACTIONS_TOKEN }}@github.com/${{ secrets.SYNC_DEST_REPO }}.git"
           destination_branch: "main"
           push_lfs: true
