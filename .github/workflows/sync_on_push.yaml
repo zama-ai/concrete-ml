@@ -22,7 +22,7 @@ jobs:
       # The issue is that it does not handle LFS files when pushing, so we had to fork it and 
       # add the feature
       - name: git-sync
-        uses: RomanBredehoft/git-sync@3b692f6f09e921cfc7add7e1d0f7a54d7fe5f6ac
+        uses: RomanBredehoft/git-sync@90c0b4d50224381109327f0513a7e7a90a766b2f
         with:
           source_repo: "zama-ai/concrete-ml"
           source_branch: "main"
