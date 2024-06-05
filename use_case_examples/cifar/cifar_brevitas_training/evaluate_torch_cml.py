@@ -36,7 +36,7 @@ def evaluate(torch_model, cml_model, device, num_workers):
 
     # Import and load the CIFAR test dataset (following bnn_pynq_train.py)
     test_set = get_test_set(dataset="CIFAR10", datadir=CURRENT_DIR / ".datasets/")
-    test_set = Subset(test_set, np.arange(128))
+    # test_set = Subset(test_set, np.arange(128))
     test_loader = DataLoader(test_set, batch_size=128, shuffle=False, num_workers=num_workers)
 
     torch_top_1_batches = []
@@ -121,12 +121,13 @@ def main(args):
     # Eval mode
     model.eval()
 
+    exactness=fhe.Exactness.APPROXIMATE
     # Multi-parameter strategy is used in order to speed-up the FHE executions
     tlu_optimizer = TLU1bitDecomposition(
         n_jumps_limit=2,
-        exactness=fhe.Exactness.EXACT,
+        exactness=exactness,
     )
-    insert_rounding = InsertRounding(6)
+    insert_rounding = InsertRounding(6,exactness=exactness)
     # debug_processor = Debug()
     cfg = Configuration(
         verbose=True,

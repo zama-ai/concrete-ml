@@ -84,11 +84,13 @@ x, labels = next(iter(test_loader))
 # Multi-parameter strategy is used in order to speed-up the FHE executions
 base_configuration = Configuration()
 
+exactness = fhe.Exactness.APPROXIMATE
+
 tlu_optimizer = TLU1bitDecomposition(
     n_jumps_limit=2,
-    exactness=fhe.Exactness.EXACT,
+    exactness=exactness,
 )
-rounding = InsertRounding(6)
+rounding = InsertRounding(6, exactness=exactness)
 
 configuration = Configuration(
     dump_artifacts_on_unexpected_failures=False,
