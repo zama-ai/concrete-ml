@@ -127,43 +127,65 @@ class FHEModelServer:
     # We should make 'serialized_encrypted_quantized_data' handle unpacked inputs, as Concrete does,
     # instead of tuples
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4477
+    # We should also rename the input arguments to remove the `serialized` part, as we now accept
+    # both serialized and deserialized input values
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4476
     def run(
         self,
-        serialized_encrypted_quantized_data: Union[bytes, Tuple[bytes, ...]],
+        serialized_encrypted_quantized_data: Union[
+            bytes, fhe.Value, Tuple[bytes, ...], Tuple[fhe.Value, ...]
+        ],
         serialized_evaluation_keys: bytes,
-    ) -> Union[bytes, Tuple[bytes, ...]]:
+    ) -> Union[bytes, fhe.Value, Tuple[bytes, ...], Tuple[fhe.Value, ...]]:
         """Run the model on the server over encrypted data.
 
         Args:
-            serialized_encrypted_quantized_data (Union[bytes, Tuple[bytes, ...]]): the encrypted,
-                quantized and serialized data
-            serialized_evaluation_keys (bytes): the serialized evaluation keys
+            serialized_encrypted_quantized_data (Union[bytes, fhe.Value, Tuple[bytes, ...], \
+                Tuple[fhe.Value, ...]]): The encrypted and quantized values to consider. If these
+                values are serialized (in bytes), they are first deserialized.
+            serialized_evaluation_keys (bytes): The evaluation keys. If they are serialized (in
+                bytes), they are first deserialized.
 
         Returns:
-            Union[bytes, Tuple[bytes, ...]]: the result of the model
+            Union[bytes, fhe.Value, Tuple[bytes, ...], Tuple[fhe.Value, ...]]: The model's encrypted
+                and quantized results. If the inputs were initially serialized, the outputs are also
+                serialized.
         """
+
+        # TODO: make desr / ser optional
         assert_true(self.server is not None, "Model has not been loaded.")
 
-        q_data_enc_serialized = to_tuple(serialized_encrypted_quantized_data)
+        q_data_enc = to_tuple(serialized_encrypted_quantized_data)
 
-        q_data_enc = deserialize_encrypted_values(*q_data_enc_serialized)
+        # Make sure no inputs are None, to avoid any crash in Concrete
+        assert not any(x is None for x in q_data_enc), "No input values should be None"
 
-        q_data_enc = to_tuple(q_data_enc)
+        inputs_are_serialized = all(isinstance(x, bytes) for x in q_data_enc)
+        inputs_are_encrypted_values = all(isinstance(x, fhe.Value) for x in q_data_enc)
 
-        # Make sure no inputs is None, to avoid any crash in Concrete
-        assert_true(not any(x is None for x in q_data_enc), "No inputs should be None")
+        # Make sure inputs are either only serialized values or encrypted values
+        assert (
+            inputs_are_serialized ^ inputs_are_encrypted_values
+        ), "Inputs must be all of the same types, either 'bytes' or 'concrete.fhe.Value'"
 
-        deserialized_keys = fhe.EvaluationKeys.deserialize(serialized_evaluation_keys)
+        # Deserialize the values if they are all serialized
+        if inputs_are_serialized:
+            q_data_enc = to_tuple(deserialize_encrypted_values(*q_data_enc))
 
-        q_result_enc = self.server.run(*q_data_enc, evaluation_keys=deserialized_keys)
+        # Deserialize the evaluation keys if they are serialized
+        evaluation_keys = serialized_evaluation_keys
+        if isinstance(evaluation_keys, bytes):
+            evaluation_keys = fhe.EvaluationKeys.deserialize(evaluation_keys)
 
-        q_result_enc = to_tuple(q_result_enc)
+        q_result_enc = self.server.run(*q_data_enc, evaluation_keys=evaluation_keys)
 
-        q_result_enc_serialized = serialize_encrypted_values(*q_result_enc)
+        # If inputs were serialized, return serialized values as well
+        if inputs_are_serialized:
+            q_result_enc = serialize_encrypted_values(*to_tuple(q_result_enc))
 
         # Mypy complains because the outputs of `serialize_encrypted_values` can be None, but here
         # we already made sure this is not the case
-        return q_result_enc_serialized  # type: ignore[return-value]
+        return q_result_enc  # type: ignore[return-value]
 
 
 class FHEModelDev:
@@ -378,14 +400,10 @@ class FHEModelClient:
         """
 
         # Quantize the values
-        q_x = self.model.quantize_input(*x)
-
-        q_x = to_tuple(q_x)
+        q_x = to_tuple(self.model.quantize_input(*x))
 
         # Encrypt the values
-        q_x_enc = self.client.encrypt(*q_x)
-
-        q_x_enc = to_tuple(q_x_enc)
+        q_x_enc = to_tuple(self.client.encrypt(*q_x))
 
         # Serialize the encrypted values to be sent to the server
         q_x_enc_serialized = serialize_encrypted_values(*q_x_enc)
@@ -407,9 +425,9 @@ class FHEModelClient:
             Union[Any, Tuple[Any, ...]]: The decrypted and deserialized values.
         """
         # Deserialize the encrypted values
-        q_result_enc = deserialize_encrypted_values(*serialized_encrypted_quantized_result)
-
-        q_result_enc = to_tuple(q_result_enc)
+        q_result_enc = to_tuple(
+            deserialize_encrypted_values(*serialized_encrypted_quantized_result)
+        )
 
         # Decrypt the values
         q_result = self.client.decrypt(*q_result_enc)
@@ -431,14 +449,10 @@ class FHEModelClient:
             Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]: The clear float values.
         """
         # Decrypt and deserialize the values
-        q_result = self.deserialize_decrypt(*serialized_encrypted_quantized_result)
-
-        q_result = to_tuple(q_result)
+        q_result = to_tuple(self.deserialize_decrypt(*serialized_encrypted_quantized_result))
 
         # De-quantize the values
-        f_result = self.model.dequantize_output(*q_result)
-
-        f_result = to_tuple(f_result)
+        f_result = to_tuple(self.model.dequantize_output(*q_result))
 
         # Apply post-processing to the de-quantized values
         # Side note: `post_processing` method from built-in models (not Quantized Modules) only
