@@ -12,20 +12,18 @@ jobs:
     if: ${{ github.repository == 'zama-ai/concrete-ml' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
-        with:
-          fetch-depth: 0
-          lfs: true
-
       # Initial action can be found here: https://github.com/wei/git-sync
-      # The issue is that it does not handle LFS files when pushing, so we had to fork it and 
-      # add the feature
+      # The issue is that it does not handle new LFS files when pushing, only the ones that are 
+      # already existing ones. We therefore had to fork it and add the feature manually. In 
+      # particular, trying to rewrite the action directly here as a step does not work because of
+      # some authorization issues and thus requires to further investigate on the right 
+      # configuration to use. This is not needed with external actions like this one as they
+      # are specifically allowed in the repository's settings
       - name: git-sync
-        uses: RomanBredehoft/git-sync@836de2d057c5bfae184bc4d45160463fe8653796
+        uses: RomanBredehoft/git-sync@4cb5df92a32e6b0881903ebb4e7b2e7d5643891b
         with:
           source_repo: "zama-ai/concrete-ml"
           source_branch: "main"
-          destination_repo: "https://${{ secrets.BOT_USERNAME }}:${{ secrets.CONCRETE_ACTIONS_TOKEN }}@github.com/${{ secrets.SYNC_DEST_REPO }}"
+          destination_repo: "https://${{ secrets.BOT_USERNAME }}:${{ secrets.CONCRETE_ACTIONS_TOKEN }}@github.com/${{ secrets.SYNC_DEST_REPO }}.git"
           destination_branch: "main"
           push_lfs: true
