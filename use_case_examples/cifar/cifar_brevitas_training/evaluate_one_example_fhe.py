@@ -4,6 +4,7 @@ import time
 from functools import partial
 from importlib.metadata import version
 from pathlib import Path
+from pprint import pprint
 
 import numpy as np
 import torch
@@ -114,6 +115,7 @@ quantized_numpy_module, compilation_execution_time = measure_execution_time(
     p_error=P_ERROR,
 )
 assert isinstance(quantized_numpy_module, QuantizedModule)
+assert quantized_numpy_module.fhe_circuit is not None
 
 print(tlu_optimizer.statistics)
 
@@ -129,6 +131,8 @@ print(
 print("Saving graph and mlir to disk.")
 open("cifar10.graph", "w").write(str(quantized_numpy_module.fhe_circuit))
 open("cifar10.mlir", "w").write(quantized_numpy_module.fhe_circuit.mlir)
+
+pprint(quantized_numpy_module.fhe_circuit.statistics)
 
 # import sys
 #
