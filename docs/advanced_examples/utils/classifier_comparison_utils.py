@@ -342,7 +342,6 @@ def make_classifier_comparison_from_sklearn(title, classifiers, decision_level, 
             # scikit-learn
             concrete_model, sklearn_model = model.fit_benchmark(X_train, y_train)
 
-            # TODO: from data or not?
             sklearn_fhe_model = concrete_model.__class__.from_sklearn_model(sklearn_model, X=X_train)
 
             # Compute the predictions in clear using the scikit-learn model

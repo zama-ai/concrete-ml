@@ -128,8 +128,6 @@ def check_schema_format(pandas_dataframe: pandas.DataFrame, schema: Optional[Dic
 
     for column_name, column_mapping in schema.items():
         if column_name not in column_names:
-            # TODO: Is this check actually relevant ? Can't the schema provide more columns than the
-            # one found in the data-frame ?
             raise ValueError(
                 f"Column name '{column_name}' found in the given schema cannot be found in the "
                 f"input data-frame. Expected one of {column_names}"
@@ -321,9 +319,6 @@ def pre_process_dtypes(
                 f"Column '{column_name}' has dtype '{column_dtype}', which is not currently "
                 "supported."
             )
-
-    # TODO: Should all non-integers columns be considered by the schema if not None ? Currently,
-    # mappings are computed automatically if schema is not set
 
     return pandas_dataframe, dtype_mappings
 
