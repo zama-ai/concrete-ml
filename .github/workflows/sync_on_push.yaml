@@ -12,11 +12,11 @@ jobs:
     if: ${{ github.repository == 'zama-ai/concrete-ml' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
-        with:
-          fetch-depth: 0
-          lfs: true
+      # - name: Checkout repo
+      #   uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
+      #   with:
+      #     fetch-depth: 0
+      #     lfs: true
 
       # Initial action can be found here: https://github.com/wei/git-sync
       # The issue is that it does not handle LFS files when pushing, so we had to fork it and 
