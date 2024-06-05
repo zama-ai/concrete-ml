@@ -12,20 +12,42 @@ jobs:
     if: ${{ github.repository == 'zama-ai/concrete-ml' }}
     runs-on: ubuntu-latest
     steps:
-      # - name: Checkout repo
-      #   uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
-      #   with:
-      #     fetch-depth: 0
-      #     lfs: true
+      - name: Checkout repo
+        uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
+        with:
+          fetch-depth: 0
+          lfs: true
+          ref: "main"
 
       # Initial action can be found here: https://github.com/wei/git-sync
       # The issue is that it does not handle LFS files when pushing, so we had to fork it and 
       # add the feature
-      - name: git-sync
-        uses: RomanBredehoft/git-sync@2e68fe0b118adbae6d9293ea7759227b8191e4af
-        with:
-          source_repo: "zama-ai/concrete-ml"
-          source_branch: "main"
-          destination_repo: "https://${{ secrets.BOT_USERNAME }}:${{ secrets.CONCRETE_ACTIONS_TOKEN }}@github.com/${{ secrets.SYNC_DEST_REPO }}.git"
-          destination_branch: "main"
-          push_lfs: true
+      # - name: git-sync
+      #   uses: RomanBredehoft/git-sync@2e68fe0b118adbae6d9293ea7759227b8191e4af
+      #   with:
+      #     source_repo: "zama-ai/concrete-ml"
+      #     source_branch: "main"
+      #     destination_repo: "https://${{ secrets.BOT_USERNAME }}:${{ secrets.CONCRETE_ACTIONS_TOKEN }}@github.com/${{ secrets.SYNC_DEST_REPO }}.git"
+      #     destination_branch: "main"
+      #     push_lfs: true
+
+      - name: Custom git-sync
+        run: |
+          SOURCE_BRANCH="main"
+          DESTINATION_BRANCH="main"
+
+          SOURCE_REPO="https://github.com/zama-ai/concrete-ml.git"
+          PRIVATE_REPO="https://${{ secrets.BOT_USERNAME }}:${{ secrets.CONCRETE_ACTIONS_TOKEN }}@github.com/${{ secrets.SYNC_DEST_REPO }}.git"
+
+          echo "SOURCE=$SOURCE_REPO:$SOURCE_BRANCH"
+          echo "DESTINATION=$PRIVATE_REPO:$DESTINATION_BRANCH"
+
+          git remote add private_repo "$PRIVATE_REPO"
+
+          echo "Push LFS files:"
+          # git lfs push private_repo "${SOURCE_BRANCH}:${DESTINATION_BRANCH}"
+          git lfs push private_repo main --dry-run
+
+          echo "Push remaining files:"
+          # git push private_repo "${SOURCE_BRANCH}:${DESTINATION_BRANCH}" -f
+          git push private_repo -f main --dry-run
