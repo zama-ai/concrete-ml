@@ -98,7 +98,10 @@ configuration = Configuration(
     enable_unsafe_features=True,
     use_insecure_key_cache=True,
     insecure_key_cache_location=KEYGEN_CACHE_DIR,
-    additional_pre_processors=[tlu_optimizer, rounding],
+    additional_pre_processors=[
+        # tlu_optimizer,
+        rounding,
+    ],
     fhe_simulation=SIMULATE_ONLY,
     fhe_execution=not SIMULATE_ONLY,
 )
