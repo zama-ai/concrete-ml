@@ -817,6 +817,7 @@ def decompose_1_bit_tlu(
     bounds: Tuple[int, int],
     rounding_function: Callable = round_bit_pattern,
     n_jumps_limit: Optional[int] = None,
+    msbs_to_keep=1,
 ):
     assert (
         rounding_function.__name__ == "round_bit_pattern"
@@ -907,7 +908,7 @@ def decompose_1_bit_tlu(
         # Populate coefficients and offsets
         for threshold_index, (threshold, coef) in enumerate(zip(thresholds_selected, tlu_coefs)):
             # Compute the offset
-            offset = threshold + (2 ** (bit_width(input_range)))
+            offset = threshold
             offsets_to_apply[best_indexes + (threshold_index,)] = offset
 
             # todo: get the proper value here: must be the result of f(x-1) - f(x) or smth like that
@@ -918,14 +919,33 @@ def decompose_1_bit_tlu(
             acc_size = bit_width(scale_up(input_range, scaling_factor=1, bias=offset))
             max_acc_size = max(max_acc_size, acc_size)
 
-    msbs_to_keep = 1
     lsbs_to_remove = max_acc_size - msbs_to_keep
-    rounded = round_bit_pattern(
+
+    if rounding_function.__name__ == "round_bit_pattern":
+        offsets_to_apply += 2 ** (lsbs_to_remove - 1)
+
+    # Sanity check
+    rounded = rounding_function(
         (subgraph_inputs[..., np.newaxis] - offsets_to_apply).astype(np.int64),
-        lsbs_to_remove=lsbs_to_remove,
+        lsbs_to_remove=int(lsbs_to_remove),
     )
     pred = ((rounded >= 0).astype(np.int64) * coefficients).sum(axis=-1) + base
-    assert (subgraph_outputs == pred).all()
+
+    if (subgraph_outputs != pred).any():
+        # TODO: DEBUG
+        import matplotlib.pyplot as plt
+
+        fig, ax = plt.subplots()
+        fig.suptitle("Debug")
+        slice_index = tuple(
+            [slice(0, subgraph_inputs.shape[0])] + [0 for _ in subgraph_inputs.shape[1:]]
+        )
+        ax.plot(subgraph_inputs[slice_index], pred[slice_index], label="debug", linestyle="--")
+        ax.plot(subgraph_inputs[slice_index], subgraph_outputs[slice_index], label="reference")
+        plt.legend()
+        plt.savefig("debug.png")
+        plt.close("all")
+        raise ValueError(f"{(subgraph_outputs == pred).mean()=} != 1")
 
     return (
         max_number_of_thresholds,
@@ -1603,7 +1623,10 @@ class Debug(GraphProcessor):
 # no rounding already -> Put TLU-1bit and then InsertRounding in CIFAR
 class TLU1bitDecomposition(GraphProcessor):
     def __init__(
-        self, n_jumps_limit: int = 4, exactness: Exactness = Exactness.APPROXIMATE
+        self,
+        n_jumps_limit: int = 4,
+        exactness: Exactness = Exactness.APPROXIMATE,
+        msbs_to_keep=1,
     ) -> None:
         super().__init__()
         self.exactness = exactness
@@ -1612,6 +1635,7 @@ class TLU1bitDecomposition(GraphProcessor):
         self.rounding_function = round_bit_pattern
         self.overflow_protection = True
         self.verbose = True
+        self.msbs_to_keep = msbs_to_keep
 
     def apply(self, graph: Graph) -> None:
         """Apply the TLU optimization to a Graph for all TLUs.
@@ -1689,6 +1713,7 @@ class TLU1bitDecomposition(GraphProcessor):
                     shape_=shape_,
                     bounds=(int(min_bound), int(max_bound)),
                     n_jumps_limit=self.n_jumps_limit,
+                    msbs_to_keep=self.msbs_to_keep,
                 )
             )
             assert isinstance(lsbs_to_remove, int)

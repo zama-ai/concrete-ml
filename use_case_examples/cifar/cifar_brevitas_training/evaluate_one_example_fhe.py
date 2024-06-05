@@ -90,6 +90,7 @@ exactness = fhe.Exactness.APPROXIMATE
 tlu_optimizer = TLU1bitDecomposition(
     n_jumps_limit=2,
     exactness=exactness,
+    msbs_to_keep=4,
 )
 rounding = InsertRounding(6, exactness=exactness)
 
@@ -99,7 +100,7 @@ configuration = Configuration(
     use_insecure_key_cache=True,
     insecure_key_cache_location=KEYGEN_CACHE_DIR,
     additional_pre_processors=[
-        # tlu_optimizer,
+        tlu_optimizer,
         rounding,
     ],
     fhe_simulation=SIMULATE_ONLY,
@@ -114,7 +115,6 @@ quantized_numpy_module, compilation_execution_time = measure_execution_time(
     torch_model,
     x,
     configuration=configuration,
-    # rounding_threshold_bits={"method": Exactness.APPROXIMATE, "n_bits": 6},
     p_error=P_ERROR,
 )
 assert isinstance(quantized_numpy_module, QuantizedModule)
