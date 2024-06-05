@@ -21,7 +21,7 @@ jobs:
 
       - name: Custom git-sync
         run: |
-          PRIVATE_REPO="https://${{ secrets.BOT_USERNAME }}:${{ secrets.CONCRETE_ACTIONS_TOKEN }}@github.com/${{ secrets.SYNC_DEST_REPO }}"
+          PRIVATE_REPO="https://${{ secrets.BOT_USERNAME }}:${{ secrets.CONCRETE_ACTIONS_TOKEN }}@github.com/${{ secrets.SYNC_DEST_REPO }}.git"
 
           git remote add private_repo "$PRIVATE_REPO"
 
