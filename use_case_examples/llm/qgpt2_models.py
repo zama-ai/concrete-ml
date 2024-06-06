@@ -96,7 +96,11 @@ class QGPT2LMHeadModel(GPT2LMHeadModel):
         self.q_attention.set_fhe_mode(fhe=fhe, true_float=true_float)
 
     def compile(
-        self, inputset_ids: torch.Tensor, configuration: Optional[Configuration] = None
+        self,
+        inputset_ids: torch.Tensor,
+        configuration: Optional[Configuration] = None,
+        msbs_round: Optional[int] = None,
+        rounding_kwargs: Optional[Dict] = None,
     ) -> Circuit:
         """Compile the model using the stored calibration data.
 
@@ -104,6 +108,8 @@ class QGPT2LMHeadModel(GPT2LMHeadModel):
             inputset_ids (torch.Tensor): The token ids to consider as an inputset.
             configuration (Optional[Configuration]): The configuration to use during compilation.
                 Default to None.
+            msbs_round (Optional[int]): msbs to keep after rounding
+            rounding_kwargs (Optional[Dict]): optional keyword arguments of `InsertRounding`
 
         Returns:
             Circuit: The underlying FHE circuit.
@@ -119,7 +125,9 @@ class QGPT2LMHeadModel(GPT2LMHeadModel):
 
         # Compile the attention module using stored calibration data (made of intermediary hidden
         # states)
-        return self.q_attention.q_module.compile(configuration=configuration)
+        return self.q_attention.q_module.compile(
+            configuration=configuration, msbs_round=msbs_round, rounding_kwargs=rounding_kwargs
+        )
 
 
 class SingleHeadAttention(QGPT2):
