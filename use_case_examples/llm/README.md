@@ -77,7 +77,7 @@ The multi-head attention (MHA) and single-head variants now use a rounding appro
 
 See [rounded table lookup](https://docs.zama.ai/concrete/v/main-1/tutorials/rounded_table_lookups) from the Concrete library for more details.
 
-For the single-head model, the execution time is 242.76 seconds on a single 196 cores CPU machine (an hp7c from AWS). The multi-head attention model, which is a full attention block from GPT-2, now runs in about 1832.38 seconds (~30 minutes) under the same conditions. All these timings are actual FHE execution on encrypted data.
+For the single-head model, the execution time is 166.38 seconds on a single 196 cores CPU machine (an hp7c from AWS). The multi-head attention model, which is a full attention block from GPT-2, now runs in about 862.97 seconds (~14 minutes) under the same conditions. All these timings are actual FHE execution on encrypted data.
 
 Note that, computations were done using 8 input tokens.
 

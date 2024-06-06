@@ -121,7 +121,7 @@ class InsertRounding(GraphProcessor):
     def __init__(
         self,
         msbs_to_keep: Optional[int],
-        exactness: Exactness = Exactness.EXACT,
+        exactness: Exactness = Exactness.APPROXIMATE,
         overflow_protection: bool = True,
         rounding_function=round_bit_pattern,
     ):
