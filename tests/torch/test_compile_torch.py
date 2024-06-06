@@ -36,6 +36,8 @@ from concrete.ml.pytest.torch_models import (
     EncryptedMatrixMultiplicationModel,
     ExpandModel,
     FCSmall,
+    IdentityExpandModel,
+    IdentityExpandMultiOutputModel,
     MultiInputNN,
     MultiInputNNConfigurable,
     MultiInputNNDifferentSize,
@@ -43,6 +45,7 @@ from concrete.ml.pytest.torch_models import (
     NetWithLoops,
     PaddingNet,
     ShapeOperationsNet,
+    SimpleNet,
     SimpleQAT,
     SingleMixNet,
     StepActivationModule,
@@ -1479,10 +1482,59 @@ def test_rounding_mode(rounding_method, expected_reinterpret, default_configurat
         assert "reinterpret_precision" not in mlir, "Unexpected 'reinterpret_precision' found."
 
 
-def test_composition_mapping_error_raise(default_configuration):
-    """Test that using composition mappings in a wrong manner raises the proper errors."""
-    model = FCSmall(input_output=5, activation_function=nn.ReLU)
+def test_composition_compilation(default_configuration):
+    default_configuration.composable = True
     torch_inputset = torch.randn(10, 5)
+
+    model = SimpleNet()
+    composition_mapping = {0: 0}
+
+    # Check that we can compile a simple torch model with a proper composition mapping
+    _compile_torch_or_onnx_model(
+        model,
+        torch_inputset,
+        configuration=default_configuration,
+        composition_mapping=composition_mapping,
+    )
+
+    torch_inputset_multi_input = (torch.randn(10, 5), torch.randn(10, 5))
+
+    model = MultiOutputModel()
+    composition_mapping = {1: 0}
+
+    # Check that we can compile a multi-output torch model that does not consider all outputs for
+    # composition
+    _compile_torch_or_onnx_model(
+        model,
+        torch_inputset_multi_input,
+        configuration=default_configuration,
+        composition_mapping=composition_mapping,
+    )
+
+    model = MultiOutputModel()
+    composition_mapping = {0: 1}
+
+    # Check that we can compile a multi-input torch model that does not consider all inputs for
+    # composition
+    _compile_torch_or_onnx_model(
+        model,
+        torch_inputset_multi_input,
+        configuration=default_configuration,
+        composition_mapping=composition_mapping,
+    )
+
+
+def test_composition_errors(default_configuration):
+    """Test that using composition in a wrong manner raises the proper errors."""
+    torch_inputset = torch.randn(10, 5)
+
+    check_composition_mapping_error_raise(default_configuration, torch_inputset)
+    check_composition_shape_mismatch_error(default_configuration, torch_inputset)
+
+
+def check_composition_mapping_error_raise(default_configuration, torch_inputset):
+    """Check that using composition mappings in a wrong manner raises the proper errors."""
+    model = FCSmall(input_output=5, activation_function=nn.ReLU)
     composition_mapping = {0: 2}
 
     with pytest.raises(ValueError, match="Composition must be enabled in 'configuration'.*"):
@@ -1528,6 +1580,35 @@ def test_composition_mapping_error_raise(default_configuration):
     composition_mapping = {0: 20}
 
     with pytest.raises(ValueError, match=r"Input positions \(values\) must not be greater.*"):
+        _compile_torch_or_onnx_model(
+            model,
+            torch_inputset,
+            configuration=default_configuration,
+            composition_mapping=composition_mapping,
+        )
+
+
+def check_composition_shape_mismatch_error(default_configuration, torch_inputset):
+    """Check that composing a model with shape mismatches raises the proper errors.
+
+    This could be done by either wrongly creating a torch model or by providing an unexpected
+    composition mapping.
+    """
+    default_configuration.composable = True
+
+    model = IdentityExpandModel()
+    composition_mapping = {0: 0}
+    with pytest.raises(ValueError, match="A shape mismatch has been found.*"):
+        _compile_torch_or_onnx_model(
+            model,
+            torch_inputset,
+            configuration=default_configuration,
+            composition_mapping=composition_mapping,
+        )
+
+    model = IdentityExpandMultiOutputModel()
+    composition_mapping = {1: 0}
+    with pytest.raises(ValueError, match="A shape mismatch has been found.*"):
         _compile_torch_or_onnx_model(
             model,
             torch_inputset,

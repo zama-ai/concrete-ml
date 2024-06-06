@@ -550,12 +550,42 @@ class QuantizedModule:
         # Remove this once we handle the re-quantization step in post-training only
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4472
         if self._composition_mapping is not None:
-            q_results = tuple(
-                self.input_quantizers[input_i].quant(
-                    self.output_quantizers[output_i].dequant(q_results[output_i])
-                )
+            mismatch_shapes = list(
+                f"Output {output_i}: {q_results[output_i].shape} -> Input {input_i}: {q_x[input_i].shape}"
                 for output_i, input_i in self._composition_mapping.items()
             )
+
+            if not all(
+                q_x[input_i].shape == q_results[output_i].shape
+                for output_i, input_i in self._composition_mapping.items()
+            ):
+                raise ValueError(
+                    "A shape mismatch has been found between inputs and outputs when composing the "
+                    "forward pass. Please check the given composition mapping. Got "
+                    f"{self._composition_mapping}, which gives the following shape mapping:\n"
+                    + "\n".join(mismatch_shapes)
+                )
+
+            # Only add a re-quantization step to outputs that appear in the composition mapping.
+            # This is because some outputs might not be used as inputs when composing a circuit
+            q_results = tuple(
+                (
+                    self.input_quantizers[self._composition_mapping[i]].quant(
+                        self.output_quantizers[i].dequant(q_result)
+                    )
+                    if i in self._composition_mapping
+                    else q_result
+                )
+                for i, q_result in enumerate(q_results)
+            )
+
+        # Check that the number of outputs properly matches the number of output quantizers. This is
+        # to make sure that no processing like, for example, composition mapping has altered the
+        # number of outputs
+        assert len(q_results) == len(self.output_quantizers), (
+            "The number of outputs does not match the number of output quantizers. Got "
+            f"{len(q_results)=} != {len(self.output_quantizers)=} "
+        )
 
         if len(q_results) == 1:
             return q_results[0]
