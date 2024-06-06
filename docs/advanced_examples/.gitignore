@@ -1,0 +1,5 @@
+# MNIST data
+data/MNIST/
+
+# FHE training deployment files
+fhe_training/

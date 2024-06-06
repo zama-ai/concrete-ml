@@ -333,7 +333,7 @@ class RemoteModule(nn.Module):
             inferences.append(decrypted_prediction)
 
         # Concatenate results and move them back to proper device
-        return torch.Tensor(inferences).to(device=base_device)
+        return torch.Tensor(numpy.array(inferences)).to(device=base_device)
 
 
 class HybridFHEModel:

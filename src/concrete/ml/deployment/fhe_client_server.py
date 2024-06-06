@@ -14,8 +14,10 @@ from concrete import fhe
 from ..common.debugging.custom_assert import assert_true
 from ..common.serialization.dumpers import dump
 from ..common.serialization.loaders import load
-from ..common.utils import deserialize_encrypted_values, serialize_encrypted_values, to_tuple
+from ..common.utils import to_tuple
+from ..quantization import QuantizedModule
 from ..version import __version__ as CML_VERSION
+from ._utils import deserialize_encrypted_values, serialize_encrypted_values
 
 try:
     # 3.8 and above
@@ -155,13 +157,13 @@ class FHEModelServer:
         # TODO: make desr / ser optional
         assert_true(self.server is not None, "Model has not been loaded.")
 
-        q_data_enc = to_tuple(serialized_encrypted_quantized_data)
+        input_quant_encrypted = to_tuple(serialized_encrypted_quantized_data)
 
         # Make sure no inputs are None, to avoid any crash in Concrete
-        assert not any(x is None for x in q_data_enc), "No input values should be None"
+        assert not any(x is None for x in input_quant_encrypted), "No input values should be None"
 
-        inputs_are_serialized = all(isinstance(x, bytes) for x in q_data_enc)
-        inputs_are_encrypted_values = all(isinstance(x, fhe.Value) for x in q_data_enc)
+        inputs_are_serialized = all(isinstance(x, bytes) for x in input_quant_encrypted)
+        inputs_are_encrypted_values = all(isinstance(x, fhe.Value) for x in input_quant_encrypted)
 
         # Make sure inputs are either only serialized values or encrypted values
         assert (
@@ -170,22 +172,24 @@ class FHEModelServer:
 
         # Deserialize the values if they are all serialized
         if inputs_are_serialized:
-            q_data_enc = to_tuple(deserialize_encrypted_values(*q_data_enc))
+            input_quant_encrypted = to_tuple(deserialize_encrypted_values(*input_quant_encrypted))
 
         # Deserialize the evaluation keys if they are serialized
         evaluation_keys = serialized_evaluation_keys
         if isinstance(evaluation_keys, bytes):
             evaluation_keys = fhe.EvaluationKeys.deserialize(evaluation_keys)
 
-        q_result_enc = self.server.run(*q_data_enc, evaluation_keys=evaluation_keys)
+        result_quant_encrypted = self.server.run(
+            *input_quant_encrypted, evaluation_keys=evaluation_keys
+        )
 
         # If inputs were serialized, return serialized values as well
         if inputs_are_serialized:
-            q_result_enc = serialize_encrypted_values(*to_tuple(q_result_enc))
+            result_quant_encrypted = serialize_encrypted_values(*to_tuple(result_quant_encrypted))
 
         # Mypy complains because the outputs of `serialize_encrypted_values` can be None, but here
         # we already made sure this is not the case
-        return q_result_enc  # type: ignore[return-value]
+        return result_quant_encrypted  # type: ignore[return-value]
 
 
 class FHEModelDev:
@@ -400,15 +404,15 @@ class FHEModelClient:
         """
 
         # Quantize the values
-        q_x = to_tuple(self.model.quantize_input(*x))
+        x_quant = to_tuple(self.model.quantize_input(*x))
 
         # Encrypt the values
-        q_x_enc = to_tuple(self.client.encrypt(*q_x))
+        x_quant_encrypted = to_tuple(self.client.encrypt(*x_quant))
 
         # Serialize the encrypted values to be sent to the server
-        q_x_enc_serialized = serialize_encrypted_values(*q_x_enc)
+        x_quant_encrypted_serialized = serialize_encrypted_values(*x_quant_encrypted)
 
-        return q_x_enc_serialized
+        return x_quant_encrypted_serialized
 
     # We should find a better name for `serialized_encrypted_quantized_result`
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4476
@@ -425,14 +429,14 @@ class FHEModelClient:
             Union[Any, Tuple[Any, ...]]: The decrypted and deserialized values.
         """
         # Deserialize the encrypted values
-        q_result_enc = to_tuple(
+        result_quant_encrypted = to_tuple(
             deserialize_encrypted_values(*serialized_encrypted_quantized_result)
         )
 
         # Decrypt the values
-        q_result = self.client.decrypt(*q_result_enc)
+        result_quant = self.client.decrypt(*result_quant_encrypted)
 
-        return q_result
+        return result_quant
 
     # We should find a better name for `serialized_encrypted_quantized_result`
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4476
@@ -449,17 +453,21 @@ class FHEModelClient:
             Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]: The clear float values.
         """
         # Decrypt and deserialize the values
-        q_result = to_tuple(self.deserialize_decrypt(*serialized_encrypted_quantized_result))
+        result_quant = to_tuple(self.deserialize_decrypt(*serialized_encrypted_quantized_result))
 
         # De-quantize the values
-        f_result = to_tuple(self.model.dequantize_output(*q_result))
+        result = to_tuple(self.model.dequantize_output(*result_quant))
 
         # Apply post-processing to the de-quantized values
         # Side note: `post_processing` method from built-in models (not Quantized Modules) only
         # handles a single input. Calling the following is however not an issue for now as we expect
-        # 'f_result' to be a tuple of length 1 in this case anyway. Still, we need to make sure this
+        # 'result' to be a tuple of length 1 in this case anyway. Still, we need to make sure this
         # does not break in the future if any built-in models starts to handle multiple outputs :
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4474
-        result = self.model.post_processing(*f_result)
+        assert len(result) == 1 or isinstance(
+            self.model, QuantizedModule
+        ), "Only 'QuantizedModule' instances can handle multi-outputs."
+
+        result = self.model.post_processing(*result)
 
         return result

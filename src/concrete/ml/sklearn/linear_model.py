@@ -181,7 +181,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         # Concrete ML attributes for FHE training
         # These values are hardcoded for now
         # We don't expose them in the __init__ arguments but they are taken
-        # into account when training, so wecan just modify them manually.
+        # into account when training, so we can just modify them manually.
         # The number of bits used for training should be adjusted according to n-bits
         # but for now we use this hardcoded values.
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4205
@@ -433,7 +433,9 @@ class SGDClassifier(SklearnSGDClassifierMixin):
 
         The is the underlying function that fits the model in FHE if 'fit_encrypted' is enabled.
         A quantized module is first built in order to generate the FHE circuit need for training.
-        Then, the method iterates over it in the clear.
+        Then, the method iterates over it in the clear so that outputs of an iteration are used as
+        inputs for the following iteration. Thanks to Concrete's composition feature, no
+        encryption/decryption steps are needed when the training is executed in FHE.
 
         For more details on some of these arguments please refer to:
         https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html
@@ -603,7 +605,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         # A partial fit is similar to running a fit with a single iteration
         max_iter = 1 if is_partial_fit else self.max_iter
 
-        # Quantize and encrypt the batches
+        # Iterate on the batches in order to quantize and encrypt them
         X_batches_enc, y_batches_enc = [], []
         for _ in range(max_iter):
 
