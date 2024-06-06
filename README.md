@@ -254,22 +254,18 @@ This software is distributed under the **BSD-3-Clause-Clear** license. Read [thi
 #### FAQ
 
 **Is Zama’s technology free to use?**
-
-> Zama’s libraries are free to use under the BSD 3-Clause Clear license only for development, research, prototyping, and experimentation purposes. However, for any commercial use of Zama's open source code, companies must purchase Zama’s commercial patent license.
+>Zama’s libraries are free to use under the BSD 3-Clause Clear license only for development, research, prototyping, and experimentation purposes. However, for any commercial use of Zama's open source code, companies must purchase Zama’s commercial patent license.
 >
-> All our work is open source and we strive for full transparency about Zama's IP strategy. To know more about what this means for Zama product users, read about how we monetize our open source products in [this blog post](https://www.zama.ai/post/open-source).
+>All our work is open source and we strive for full transparency about Zama's IP strategy. To know more about what this means for Zama product users, read about how we monetize our open source products in [this blog post](https://www.zama.ai/post/open-source).
 
 **What do I need to do if I want to use Zama’s technology for commercial purposes?**
-
-> To commercially use Zama’s technology you need to be granted Zama’s patent license. Please contact us at hello@zama.ai for more information.
+>To commercially use Zama’s technology you need to be granted Zama’s patent license. Please contact us at hello@zama.ai for more information.
 
 **Do you file IP on your technology?**
-
-> Yes, all of Zama’s technologies are patented.
+>Yes, all of Zama’s technologies are patented.
 
 **Can you customize a solution for my specific use case?**
-
-> We are open to collaborating and advancing the FHE space with our partners. If you have specific needs, please email us at hello@zama.ai.
+>We are open to collaborating and advancing the FHE space with our partners. If you have specific needs, please email us at hello@zama.ai.
 
 <p align="right">
   <a href="#about" > ↑ Back to top </a> 
