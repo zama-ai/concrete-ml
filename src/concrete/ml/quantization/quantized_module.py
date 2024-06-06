@@ -497,6 +497,8 @@ class QuantizedModule:
             (Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]): Predictions of the quantized model,
                 with integer values.
 
+        Raises:
+            ValueError: If composition is enabled and that mapped input-output shapes do not match.
         """
 
         q_inputs = [
@@ -551,7 +553,8 @@ class QuantizedModule:
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4472
         if self._composition_mapping is not None:
             mismatch_shapes = list(
-                f"Output {output_i}: {q_results[output_i].shape} -> Input {input_i}: {q_x[input_i].shape}"
+                f"Output {output_i}: {q_results[output_i].shape} "
+                f"-> Input {input_i}: {q_x[input_i].shape}"
                 for output_i, input_i in self._composition_mapping.items()
             )
 

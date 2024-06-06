@@ -1483,6 +1483,7 @@ def test_rounding_mode(rounding_method, expected_reinterpret, default_configurat
 
 
 def test_composition_compilation(default_configuration):
+    """Test that we can compile models with composition."""
     default_configuration.composable = True
     torch_inputset = torch.randn(10, 5)
 
@@ -1546,6 +1547,17 @@ def check_composition_mapping_error_raise(default_configuration, torch_inputset)
         )
 
     default_configuration.composable = True
+
+    # Disable mypy as this test is voluntarily made to fail
+    composition_mapping = [(0, 0)]  # type: ignore[assignment]
+
+    with pytest.raises(ValueError, match="Parameter 'composition_mapping' mus be a dictionary.*"):
+        _compile_torch_or_onnx_model(
+            model,
+            torch_inputset,
+            configuration=default_configuration,
+            composition_mapping=composition_mapping,
+        )
 
     composition_mapping = {-1: 2}
 

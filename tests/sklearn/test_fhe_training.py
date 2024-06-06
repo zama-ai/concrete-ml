@@ -574,3 +574,49 @@ def test_encrypted_fit_coherence(
         fhe="simulate",
         init_kwargs=early_break_kwargs,
     )
+
+
+@pytest.mark.parametrize("n_bits, max_iter, parameter_min_max", [pytest.param(7, 5, 1.0)])
+def test_encrypted_fit_in_fhe(n_bits, max_iter, parameter_min_max, check_accuracy):
+    """Test that encrypted fitting works properly when executed in FHE."""
+
+    # Model parameters
+    random_state = numpy.random.randint(0, 2**15)
+    parameters_range = (-parameter_min_max, parameter_min_max)
+    fit_intercept = True
+
+    # Generate a data-set with binary target classes
+    x, y = get_blob_data(scale_input=True, parameters_range=parameters_range)
+    y = y + 1
+
+    weights_disable, bias_disable, y_pred_proba_disable, y_pred_class_disable, _ = (
+        check_encrypted_fit(
+            x,
+            y,
+            n_bits,
+            random_state,
+            parameters_range,
+            max_iter,
+            fit_intercept,
+            check_accuracy=check_accuracy,
+            fhe="disable",
+        )
+    )
+
+    weights_fhe, bias_fhe, y_pred_proba_fhe, y_pred_class_fhe, _ = check_encrypted_fit(
+        x,
+        y,
+        n_bits,
+        random_state,
+        parameters_range,
+        max_iter,
+        fit_intercept,
+        check_accuracy=check_accuracy,
+        fhe="execute",
+    )
+
+    # Make sure weight, bias and prediction values are identical between clear and fhe training
+    assert array_allclose_and_same_shape(weights_fhe, weights_disable)
+    assert array_allclose_and_same_shape(bias_fhe, bias_disable)
+    assert array_allclose_and_same_shape(y_pred_proba_fhe, y_pred_proba_disable)
+    assert array_allclose_and_same_shape(y_pred_class_fhe, y_pred_class_disable)
