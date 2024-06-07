@@ -12,8 +12,6 @@ do
    case "$1" in
         "--wheel" )
             USE_PIP_WHEEL='true'
-            shift
-            CONCRETE_PYTHON="$1"
             ;;
         
         "--codeblocks" )
@@ -68,8 +66,7 @@ if ${USE_PIP_WHEEL}; then
     # Install the dependencies as PyPI would do using the wheel file as well as the given
     # Concrete-Python version
     PYPI_WHEEL=$(find dist -type f -name "*.whl")
-    python -m pip install "${PYPI_WHEEL}"
-    python -m pip install --extra-index-url https://pypi.zama.ai "${CONCRETE_PYTHON}"
+    python -m pip install --extra-index-url https://pypi.zama.ai "${PYPI_WHEEL}"
 else
     if [ -z "${VERSION}" ]; then
         python -m pip install concrete-ml
