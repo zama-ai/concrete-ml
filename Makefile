@@ -518,7 +518,7 @@ pytest_codeblocks:
 
 .PHONY: pytest_codeblocks_pypi_wheel_cml # Test code blocks using the PyPI local wheel of Concrete ML
 pytest_codeblocks_pypi_wheel_cml:
-	./script/make_utils/pytest_pypi_cml.sh --wheel "$(CONCRETE_PYTHON_VERSION)" --codeblocks
+	./script/make_utils/pytest_pypi_cml.sh --wheel --codeblocks
 
 .PHONY: pytest_codeblocks_pypi_cml # Test code blocks using PyPI Concrete ML
 pytest_codeblocks_pypi_cml:
@@ -761,11 +761,11 @@ check_unused_images:
 
 .PHONY: pytest_pypi_wheel_cml # Run tests using PyPI local wheel of Concrete ML
 pytest_pypi_wheel_cml:
-	./script/make_utils/pytest_pypi_cml.sh --wheel "$(CONCRETE_PYTHON_VERSION)"
+	./script/make_utils/pytest_pypi_cml.sh --wheel
 
 .PHONY: pytest_pypi_wheel_cml_no_flaky # Run tests (except flaky ones) using PyPI local wheel of Concrete ML
 pytest_pypi_wheel_cml_no_flaky:
-	./script/make_utils/pytest_pypi_cml.sh --wheel "$(CONCRETE_PYTHON_VERSION)" --noflaky
+	./script/make_utils/pytest_pypi_cml.sh --wheel --noflaky
 
 .PHONY: pytest_pypi_cml # Run tests using PyPI Concrete ML
 pytest_pypi_cml:
