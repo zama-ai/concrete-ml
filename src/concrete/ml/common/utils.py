@@ -383,9 +383,6 @@ def _get_dtype(values: Any):
         >>> _get_dtype(X_tensor)
         {'torch.float32'}
     """
-    if values is None:
-        return set((None,))
-
     # Specific case: if `values` is a Dict, return all items in a string format and in a single set
     if isinstance(values, Dict):
         return set(map(str, sum(values.items(), ())))
