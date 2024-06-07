@@ -25,7 +25,6 @@ pip install -r requirements.txt
 
 ## How to Use
 
-How to Use
 You can use this code to predict the next token based on an input sentence via various GPT-2 models. There are three distinct modes of inference:
 
 1. Clear Quantized: Inference on unencrypted data.
@@ -74,19 +73,15 @@ The evaluation details are also available in the [QGPT2Evaluate.ipynb](./QGPT2Ev
 
 ## FHE Execution
 
-The multi-head attention (MHA) and single-head variants, in their current implementation, have not been optimized sufficiently in terms of precision to provide relevant execution times.
+The multi-head attention (MHA) and single-head variants now use a rounding approach, significantly improving their execution times in Fully Homomorphic Encryption (FHE) mode.
 
-If you aim to operate in FHE, it would be necessary to reduce the overall precision. A potential way to effectively achieve this is by using [rounded table lookup](https://docs.zama.ai/concrete/v/main-1/tutorials/rounded_table_lookups) from the Concrete library.
+See [rounded table lookup](https://docs.zama.ai/concrete/v/main-1/tutorials/rounded_table_lookups) from the Concrete library for more details.
 
-Also note that, as with the standard transformer architecture, the execution time is heavily reliant on the number of input tokens. For example, a precision of 4 bits for the single head model takes 11 minutes to run on a single 128 cores CPU machine (an m6i.metal from aws). You can easily replicate this run by setting the FHE mode to "execute" as shown below:
+For the single-head model, the execution time is 166.38 seconds on a single 196 cores CPU machine (an hp7c from AWS). The multi-head attention model, which is a full attention block from GPT-2, now runs in about 862.97 seconds (~14 minutes) under the same conditions. All these timings are actual FHE execution on encrypted data.
 
-<!--pytest-codeblocks:skip-->
+Note that, computations were done using 8 input tokens.
 
-```python
-proj_single_head_qgpt2.set_fhe_mode(fhe="execute")
-```
-
-and then doing a standard inference on an input.
+You can replicate these results by running the [QGPT2Evaluate.ipynb](./QGPT2Evaluate.ipynb) notebook.
 
 ## Additional Classes and Functions
 
