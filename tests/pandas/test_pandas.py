@@ -714,7 +714,9 @@ def check_invalid_schema_values():
     ):
         client.encrypt_from_pandas(pandas_df, schema=schema_float_column)
 
-    schema_float_oob = {f"{feat_name}_float_1": {"min": float_min // 2, "max": float_max // 2}}
+    # Here, we want to make sure that either min or max is out of the distribution. We make sure
+    # this is always the case (not subject to randomization) by setting 'min' to 'float_max'
+    schema_float_oob = {f"{feat_name}_float_1": {"min": float_max, "max": float_max}}
 
     with pytest.raises(
         ValueError,
