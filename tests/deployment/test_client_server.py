@@ -458,7 +458,7 @@ def quantize_encrypt_batches(
         y_batches_enc.append(y_batch_enc)
 
         # Stop at 'max_iter' iterations
-        if max_iter is not None and i >= max_iter - 1:
+        if max_iter is not None and (i // batch_size) >= max_iter - 1:
             break
 
     # Quantize and encrypt the weight and bias values
@@ -486,20 +486,22 @@ def fhe_training_run(
     y_batches_enc,
     weights_enc,
     bias_enc,
-    evaluation_keys,
+    evaluation_keys=None,
     fhe_server=None,
-    quantized_module=None,
+    fhe_circuit=None,
 ):
     """Run encrypted training for several iterations."""
 
     assert (fhe_server is None) ^ (
-        quantized_module is None
-    ), "Either provide a server or a QuantizedModule instance"
+        fhe_circuit is None
+    ), "Either provide a server or a fhe.Circuit instance"
 
     # Deserialize weights, bias and evaluations keys if in client-server mode
     if fhe_server is not None:
         weights_enc = fhe.Value.deserialize(weights_enc)
         bias_enc = fhe.Value.deserialize(bias_enc)
+
+        assert evaluation_keys is not None, "Please provide evaluations keys in client-server mode"
 
         evaluation_keys = fhe.EvaluationKeys.deserialize(evaluation_keys)
 
@@ -515,9 +517,7 @@ def fhe_training_run(
                 (x_batch, y_batch, weights_enc, bias_enc), evaluation_keys
             )
         else:
-            weights_enc, bias_enc = quantized_module.fhe_circuit.run(
-                x_batch, y_batch, weights_enc, bias_enc
-            )
+            weights_enc, bias_enc = fhe_circuit.run(x_batch, y_batch, weights_enc, bias_enc)
 
     # Serialize the output weight and bias values if in client-server mode
     if fhe_server is not None:
@@ -592,7 +592,7 @@ def check_client_server_training(
         y_batches_enc,
         weights_enc,
         bias_enc,
-        evaluation_keys,
+        evaluation_keys=evaluation_keys,
         fhe_server=fhe_model_server,
     )
 
@@ -621,8 +621,7 @@ def check_client_server_training(
         y_batches_enc_dev,
         weights_enc_dev,
         bias_enc_dev,
-        evaluation_keys,
-        quantized_module=model.training_quantized_module,
+        fhe_circuit=model.training_quantized_module.fhe_circuit,
     )
 
     # Dev side : Deserialize, decrypt and de-quantize the result

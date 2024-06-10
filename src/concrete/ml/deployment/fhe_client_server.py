@@ -468,6 +468,8 @@ class FHEModelClient:
             self.model, QuantizedModule
         ), "Only 'QuantizedModule' instances can handle multi-outputs."
 
+        # In training mode, note that this step does not make much sense for now. Still, nothing
+        # breaks since QuantizedModule don't do anything in post-processing
         result = self.model.post_processing(*result)
 
         return result
