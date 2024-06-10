@@ -55,6 +55,7 @@ python -m pip install pytest==7.4.1 pandas==2.0.3 tensorflow==2.12.0 tf2onnx==1.
 python -m pip install pytest-xdist==3.3.1
 python -m pip install pytest-randomly==3.15.0
 python -m pip install pytest-repeat==0.9.1
+python -m pip install pytest-subtests==0.11.0
 
 if ${USE_PIP_WHEEL}; then
     # Delete the directory where the pypi wheel file will be created (if it already exists)
