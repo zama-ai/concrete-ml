@@ -90,7 +90,7 @@ def test_client_server_sklearn_inference(
     model = instantiate_model_generic(model_class, n_bits=n_bits)
 
     # Fit the model
-    model.fit(x_train, y_train)
+    model.fit(x_train, y_train, fhe="disable")
 
     key_dir = default_configuration.insecure_key_cache_location
 
@@ -360,8 +360,8 @@ def test_save_mode_handling(n_bits, fit_encrypted, mode, error_message):
         n_bits=n_bits,
     )
 
-    # Fit the model
-    model.fit(x_train, y_train)
+    # Fit the model in the clear
+    model.fit(x_train, y_train, fhe="disable")
 
     # Compile
     model.compile(X=x_train)
