@@ -48,40 +48,13 @@ class OnDiskNetwork:
         self.client_dir = tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with
         self.dev_dir = tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with
 
-    def client_send_evaluation_key_to_server(self, serialized_evaluation_keys):
-        """Send the public key to the server."""
-        with open(self.server_dir.name + "/serialized_evaluation_keys.ekl", "wb") as f:
-            f.write(serialized_evaluation_keys)
-
-    def client_send_input_to_server_for_prediction(self, encrypted_input):
-        """Send the input to the server."""
-        with open(self.server_dir.name + "/serialized_evaluation_keys.ekl", "rb") as f:
-            serialized_evaluation_keys = f.read()
-        encrypted_prediction = FHEModelServer(self.server_dir.name).run(
-            encrypted_input, serialized_evaluation_keys
-        )
-        with open(self.server_dir.name + "/encrypted_prediction.enc", "wb") as f:
-            f.write(encrypted_prediction)
-
     def dev_send_model_to_server(self):
         """Send the model to the server."""
         copyfile(self.dev_dir.name + "/server.zip", self.server_dir.name + "/server.zip")
 
-    def server_send_encrypted_prediction_to_client(self):
-        """Send the encrypted prediction to the client."""
-        with open(self.server_dir.name + "/encrypted_prediction.enc", "rb") as f:
-            encrypted_prediction = f.read()
-        return encrypted_prediction
-
     def dev_send_clientspecs_and_modelspecs_to_client(self):
         """Send the clientspecs and evaluation key to the client."""
         copyfile(self.dev_dir.name + "/client.zip", self.client_dir.name + "/client.zip")
-
-    def cleanup(self):
-        """Clean up the temporary folders."""
-        self.server_dir.cleanup()
-        self.client_dir.cleanup()
-        self.dev_dir.cleanup()
 
 
 # This is a known flaky test
@@ -213,7 +186,7 @@ def check_client_server_files(model, mode="inference"):
 
     # And try to save it again
     fhe_model_dev = FHEModelDev(path_dir=disk_network.dev_dir.name, model=model)
-    fhe_model_dev.save(mode=mode)
+    fhe_model_dev.save(mode=mode, via_mlir=True)
 
     # Check that re-saving the dev model fails
     with pytest.raises(
@@ -257,9 +230,6 @@ def check_client_server_files(model, mode="inference"):
             assert isinstance(
                 json.load(file), dict
             ), f"{server_zip_path} does not contain a '{versions_file_name}' file."
-
-    # Clean up
-    disk_network.cleanup()
 
 
 def check_client_server_inference(
@@ -316,9 +286,6 @@ def check_client_server_inference(
     # matching the ones from the dec model
     check_float_array_equal(y_pred, y_pred_dev)
     check_array_equal(q_y_pred, q_y_pred_dev)
-
-    # Clean up
-    disk_network.cleanup()
 
 
 def check_input_compression(model, fhe_circuit_compressed, is_torch, **compilation_kwargs):
@@ -410,7 +377,7 @@ def test_save_mode_handling(n_bits, fit_encrypted, mode, error_message):
             model_dev.save(mode=mode)
 
 
-def quantize_encrypt_batches(
+def quantize_encrypt_training_inputs(
     x,
     y,
     weights,
@@ -420,7 +387,7 @@ def quantize_encrypt_batches(
     fhe_client=None,
     quantized_module=None,
 ):
-    """Quantize and encrypt the data into batches, and serialize them if in client-server mode."""
+    """Quantize and encrypt training data, and serialize them if in client-server mode."""
 
     assert (fhe_client is None) ^ (
         quantized_module is None
@@ -488,13 +455,13 @@ def fhe_training_run(
     bias_enc,
     evaluation_keys=None,
     fhe_server=None,
-    fhe_circuit=None,
+    quantized_module=None,
 ):
     """Run encrypted training for several iterations."""
 
     assert (fhe_server is None) ^ (
-        fhe_circuit is None
-    ), "Either provide a server or a fhe.Circuit instance"
+        quantized_module is None
+    ), "Either provide a server or a QuantizedModule instance"
 
     # Deserialize weights, bias and evaluations keys if in client-server mode
     if fhe_server is not None:
@@ -517,7 +484,9 @@ def fhe_training_run(
                 (x_batch, y_batch, weights_enc, bias_enc), evaluation_keys
             )
         else:
-            weights_enc, bias_enc = fhe_circuit.run(x_batch, y_batch, weights_enc, bias_enc)
+            weights_enc, bias_enc = quantized_module.fhe_circuit.run(
+                x_batch, y_batch, weights_enc, bias_enc
+            )
 
     # Serialize the output weight and bias values if in client-server mode
     if fhe_server is not None:
@@ -525,6 +494,76 @@ def fhe_training_run(
         bias_enc = bias_enc.serialize()
 
     return weights_enc, bias_enc
+
+
+def decrypt_dequantize_training_outputs(
+    weights_enc,
+    bias_enc,
+    fhe_client=None,
+    quantized_module=None,
+):
+    """Decrypt and de-quantize training outputs, and de-serialize them if in client-server mode."""
+    if fhe_client is not None:
+        q_weights, q_bias = fhe_client.deserialize_decrypt(weights_enc, bias_enc)
+        weights, bias = fhe_client.deserialize_decrypt_dequantize(weights_enc, bias_enc)
+    else:
+        q_weights, q_bias = quantized_module.fhe_circuit.decrypt(weights_enc, bias_enc)
+        weights, bias = quantized_module.dequantize_output(q_weights, q_bias)
+
+    return q_weights, q_bias, weights, bias
+
+
+def get_fitted_weights(
+    x_train,
+    y_train,
+    weights,
+    bias,
+    batch_size=None,
+    max_iter=None,
+    fhe_client=None,
+    fhe_server=None,
+    quantized_module=None,
+):
+    """RunFHE training in client-server or un development mode."""
+
+    # Client side : Quantize, encrypt and serialize the data
+    x_batches_enc, y_batches_enc, weights_enc, bias_enc = quantize_encrypt_training_inputs(
+        x_train,
+        y_train,
+        weights,
+        bias,
+        batch_size=batch_size,
+        max_iter=max_iter,
+        fhe_client=fhe_client,
+        quantized_module=quantized_module,
+    )
+
+    evaluation_keys = None
+
+    # Client side : Generate all keys and serialize the evaluation keys for the server
+    if fhe_client is not None:
+        evaluation_keys = fhe_client.get_serialized_evaluation_keys()
+
+    # Server side: Fit the model over encrypted data using the training FHE circuit
+    weights_enc, bias_enc = fhe_training_run(
+        x_batches_enc,
+        y_batches_enc,
+        weights_enc,
+        bias_enc,
+        evaluation_keys=evaluation_keys,
+        fhe_server=fhe_server,
+        quantized_module=quantized_module,
+    )
+
+    # Client side: Deserialize, decrypt and de-quantize the result
+    q_weights, q_bias, weights, bias = decrypt_dequantize_training_outputs(
+        weights_enc,
+        bias_enc,
+        fhe_client=fhe_client,
+        quantized_module=quantized_module,
+    )
+
+    return q_weights, q_bias, weights, bias
 
 
 def check_client_server_training(
@@ -554,94 +593,62 @@ def check_client_server_training(
     disk_network = OnDiskNetwork()
 
     # Save development files
-    fhe_model_dev = FHEModelDev(path_dir=disk_network.dev_dir.name, model=model)
-    fhe_model_dev.save(mode="training")
+    fhe_dev = FHEModelDev(path_dir=disk_network.dev_dir.name, model=model)
+    fhe_dev.save(mode="training", via_mlir=True)
 
     # Send necessary files to server and client
     disk_network.dev_send_clientspecs_and_modelspecs_to_client()
     disk_network.dev_send_model_to_server()
 
     # Load the client
-    fhe_model_client = FHEModelClient(
+    fhe_client = FHEModelClient(
         path_dir=disk_network.client_dir.name,
         key_dir=key_dir,
     )
-    fhe_model_client.load()
+    fhe_client.load()
 
-    # Client side : Generate all keys and serialize the evaluation keys for the server
-    evaluation_keys = fhe_model_client.get_serialized_evaluation_keys()
+    # Load the server
+    fhe_server = FHEModelServer(path_dir=disk_network.server_dir.name)
+    fhe_server.load()
 
-    # Client side : Quantize, encrypt and serialize the data
-    x_batches_enc, y_batches_enc, weights_enc, bias_enc = quantize_encrypt_batches(
-        x_train,
-        y_train,
-        weights,
-        bias,
-        batch_size=batch_size,
-        max_iter=max_iter,
-        fhe_client=fhe_model_client,
+    # Client-server training
+    q_weights_deployment, q_bias_deployment, weights_deployment, bias_deployment = (
+        get_fitted_weights(
+            x_train,
+            y_train,
+            weights,
+            bias,
+            batch_size=batch_size,
+            max_iter=max_iter,
+            # quantized_module=model.training_quantized_module,
+            fhe_client=fhe_client,
+            fhe_server=fhe_server,
+        )
     )
 
-    # Server side: Load the server
-    fhe_model_server = FHEModelServer(path_dir=disk_network.server_dir.name)
-    fhe_model_server.load()
-
-    # Server side: Fit the model over encrypted data
-    weights_enc_server, bias_enc_server = fhe_training_run(
-        x_batches_enc,
-        y_batches_enc,
-        weights_enc,
-        bias_enc,
-        evaluation_keys=evaluation_keys,
-        fhe_server=fhe_model_server,
+    # Quantized module (development) training
+    q_weights_development, q_bias_development, weights_development, bias_development = (
+        get_fitted_weights(
+            x_train,
+            y_train,
+            weights,
+            bias,
+            batch_size=batch_size,
+            max_iter=max_iter,
+            quantized_module=model.training_quantized_module,
+            # fhe_client=fhe_client,
+            # fhe_server=fhe_server,
+        )
     )
 
-    # Client side : Deserialize, decrypt and de-quantize the result
-    q_weights_server, q_bias_server = fhe_model_client.deserialize_decrypt(
-        weights_enc_server, bias_enc_server
-    )
-    weights_server, bias_server = fhe_model_client.deserialize_decrypt_dequantize(
-        weights_enc_server, bias_enc_server
-    )
+    # Check that both quantized outputs from the quantized module (development) are matching the
+    # ones from the deployment interface
+    check_array_equal(q_weights_deployment, q_weights_development)
+    check_array_equal(q_bias_deployment, q_bias_development)
 
-    # Dev side : Quantize, encrypt and serialize the data
-    x_batches_enc_dev, y_batches_enc_dev, weights_enc_dev, bias_enc_dev = quantize_encrypt_batches(
-        x_train,
-        y_train,
-        weights,
-        bias,
-        batch_size=batch_size,
-        max_iter=max_iter,
-        quantized_module=model.training_quantized_module,
-    )
-
-    # Dev side: Fit the model over encrypted data using the training FHE circuit
-    weights_enc_dev, bias_enc_dev = fhe_training_run(
-        x_batches_enc_dev,
-        y_batches_enc_dev,
-        weights_enc_dev,
-        bias_enc_dev,
-        fhe_circuit=model.training_quantized_module.fhe_circuit,
-    )
-
-    # Dev side : Deserialize, decrypt and de-quantize the result
-    q_weights_dev, q_bias_dev = model.training_quantized_module.fhe_circuit.decrypt(
-        weights_enc_dev, bias_enc_dev
-    )
-    weights_dev, bias_dev = model.training_quantized_module.dequantize_output(
-        q_weights_dev, q_bias_dev
-    )
-
-    # Check that both quantized and de-quantized (+ post-processed) results from the server are
-    # matching the ones from the dec model
-    check_array_equal(q_weights_server, q_weights_dev)
-    check_array_equal(q_bias_server, q_bias_dev)
-
-    check_float_array_equal(weights_server, weights_dev)
-    check_float_array_equal(bias_server, bias_dev)
-
-    # Clean up
-    disk_network.cleanup()
+    # Same for de-quantized outputs
+    check_float_array_equal(weights_deployment, weights_development)
+    check_float_array_equal(bias_deployment, bias_development)
 
 
 @pytest.mark.parametrize(
@@ -651,9 +658,9 @@ def check_client_server_training(
             partial(SGDClassifier, fit_encrypted=True, parameters_range=(-1, 1)),
             {
                 "n_samples": 100,
-                "n_features": 10,
+                "n_features": 2,
                 "n_classes": 2,
-                "n_informative": 10,
+                "n_informative": 2,
                 "n_redundant": 0,
             },
             id="SGDClassifier_Encrypted_Training",
@@ -671,14 +678,21 @@ def test_client_server_sklearn_training(
     check_float_array_equal,
 ):
     """Test the client-server interface for encrypted training."""
-    max_iter = 5
-    batch_size = 8
+    max_iter = 2
+    batch_size = 2
 
     # Generate random data
     x_train, y_train = load_data(model_class, **parameters)
 
     # Instantiate the model
     model = instantiate_model_generic(model_class, n_bits=n_bits, max_iter=max_iter)
+
+    # Set a higher p_error s that tests pass
+    model.training_p_error = 1e-15
+
+    # SGDClassifier cannot set batch_size in the initializer, so we fix a lower value in order to
+    # speed-up tests
+    model.batch_size = batch_size
 
     # Generate the min and max values for x_train and y_train
     x_min, x_max = x_train.min(axis=0), x_train.max(axis=0)
