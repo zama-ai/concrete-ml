@@ -620,7 +620,6 @@ def check_client_server_training(
             bias,
             batch_size=batch_size,
             max_iter=max_iter,
-            # quantized_module=model.training_quantized_module,
             fhe_client=fhe_client,
             fhe_server=fhe_server,
         )
@@ -636,8 +635,6 @@ def check_client_server_training(
             batch_size=batch_size,
             max_iter=max_iter,
             quantized_module=model.training_quantized_module,
-            # fhe_client=fhe_client,
-            # fhe_server=fhe_server,
         )
     )
 
@@ -688,11 +685,13 @@ def test_client_server_sklearn_training(
     model = instantiate_model_generic(model_class, n_bits=n_bits, max_iter=max_iter)
 
     # Set a higher p_error s that tests pass
-    model.training_p_error = 1e-15
+    model.training_p_error = 2 ** (-40)
 
-    # SGDClassifier cannot set batch_size in the initializer, so we fix a lower value in order to
-    # speed-up tests
+    # SGDClassifier cannot set teh training batch size and number of bits through the initializer,
+    # so we fix a lower value in order to speed-up tests, especially since we do not actually check
+    # any score here
     model.batch_size = batch_size
+    model.n_bits_training = 2
 
     # Generate the min and max values for x_train and y_train
     x_min, x_max = x_train.min(axis=0), x_train.max(axis=0)
