@@ -1,4 +1,6 @@
+# TODO: auto-optim doesn't compile because for some reason the bit-width is not correct
 import argparse
+import random
 from pathlib import Path
 
 import numpy as np
@@ -9,9 +11,25 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from trainer import accuracy, get_test_set, get_train_set
 
+from concrete import fhe
+from concrete.ml.common.preprocessors import TLUDeltaBasedOptimizer
 from concrete.ml.torch.compile import compile_brevitas_qat_model
 
 CURRENT_DIR = Path(__file__).resolve().parent
+
+
+def seed_everything(seed):
+    random.seed(seed)
+    seed += 1
+    np.random.seed(seed % 2**32)
+    seed += 1
+    torch.manual_seed(seed)
+    seed += 1
+    torch.use_deterministic_algorithms(True)
+    return seed
+
+
+seed_everything(0)
 
 
 def evaluate(torch_model, cml_model, device, num_workers):
@@ -94,7 +112,7 @@ def main(args):
 
     # Create a representative input-set from the training set that will be used used for both
     # computing quantization parameters and compiling the model
-    num_samples = 100
+    num_samples = 1_000
     input_set = torch.stack(
         [train_set[index][0] for index in range(min(num_samples, len(train_set)))]
     )
@@ -103,9 +121,16 @@ def main(args):
     model.eval()
 
     # Multi-parameter strategy is used in order to speed-up the FHE executions
+    tlu_optimizer = TLUDeltaBasedOptimizer(
+        internal_bit_width_target=24,
+        exactness=fhe.Exactness.APPROXIMATE,
+    )
     cfg = Configuration(
         verbose=True,
         show_optimizer=args.show_optimizer,
+        additional_pre_processors=[
+            tlu_optimizer,
+        ],
     )
 
     for rounding_threshold_bits in rounding_threshold_bits_list:
