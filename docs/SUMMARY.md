@@ -2,7 +2,7 @@
 
 - [Welcome](README.md)
 
-## Getting Started
+## Get Started
 
 - [What is Concrete ML?](getting-started/README.md)
 - [Installation](getting-started/pip_installing.md)
