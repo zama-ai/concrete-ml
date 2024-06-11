@@ -90,7 +90,10 @@ def test_client_server_sklearn_inference(
     model = instantiate_model_generic(model_class, n_bits=n_bits)
 
     # Fit the model
-    model.fit(x_train, y_train, fhe="disable")
+    if getattr(model, "fit_encrypted", False):
+        model.fit(x_train, y_train, fhe="disable")
+    else:
+        model.fit(x_train, y_train)
 
     key_dir = default_configuration.insecure_key_cache_location
 
@@ -361,7 +364,10 @@ def test_save_mode_handling(n_bits, fit_encrypted, mode, error_message):
     )
 
     # Fit the model in the clear
-    model.fit(x_train, y_train, fhe="disable")
+    if getattr(model, "fit_encrypted", False):
+        model.fit(x_train, y_train, fhe="disable")
+    else:
+        model.fit(x_train, y_train)
 
     # Compile
     model.compile(X=x_train)
@@ -691,7 +697,7 @@ def test_client_server_sklearn_training(
     # so we fix a lower value in order to speed-up tests, especially since we do not actually check
     # any score here
     model.batch_size = batch_size
-    model.n_bits_training = 2
+    model.n_bits_training = n_bits
 
     # Generate the min and max values for x_train and y_train
     x_min, x_max = x_train.min(axis=0), x_train.max(axis=0)

@@ -11,11 +11,10 @@ from concrete.ml.common.utils import array_allclose_and_same_shape
 from concrete.ml.sklearn import SGDClassifier
 
 
-def get_blob_data(n_classes=2, scale_input=False, parameters_range=None):
+def get_blob_data(
+    n_samples=1000, n_classes=2, n_features=8, scale_input=False, parameters_range=None
+):
     """Get the training data."""
-
-    n_samples = 1000
-    n_features = 8
 
     # Generate the input and target values
     # pylint: disable-next=unbalanced-tuple-unpacking
@@ -576,8 +575,8 @@ def test_encrypted_fit_coherence(
     )
 
 
-@pytest.mark.parametrize("n_bits, max_iter, parameter_min_max", [pytest.param(7, 5, 1.0)])
-def test_encrypted_fit_in_fhe(n_bits, max_iter, parameter_min_max, check_accuracy):
+@pytest.mark.parametrize("n_bits, max_iter, parameter_min_max", [pytest.param(7, 2, 1.0)])
+def test_encrypted_fit_in_fhe(n_bits, max_iter, parameter_min_max):
     """Test that encrypted fitting works properly when executed in FHE."""
 
     # Model parameters
@@ -586,9 +585,12 @@ def test_encrypted_fit_in_fhe(n_bits, max_iter, parameter_min_max, check_accurac
     fit_intercept = True
 
     # Generate a data-set with binary target classes
-    x, y = get_blob_data(scale_input=True, parameters_range=parameters_range)
+    x, y = get_blob_data(n_features=2, scale_input=True, parameters_range=parameters_range)
     y = y + 1
 
+    # Avoid checking the accuracy. Since this test is mostly here to make sure that FHE execution
+    # properly matches the quantized clear one, some parameters (for example, the number of
+    # features) were set to make it quicker, without considering the model's accuracy
     weights_disable, bias_disable, y_pred_proba_disable, y_pred_class_disable, _ = (
         check_encrypted_fit(
             x,
@@ -598,11 +600,11 @@ def test_encrypted_fit_in_fhe(n_bits, max_iter, parameter_min_max, check_accurac
             parameters_range,
             max_iter,
             fit_intercept,
-            check_accuracy=check_accuracy,
             fhe="disable",
         )
     )
 
+    # Same, avoid checking the accuracy
     weights_fhe, bias_fhe, y_pred_proba_fhe, y_pred_class_fhe, _ = check_encrypted_fit(
         x,
         y,
@@ -611,7 +613,6 @@ def test_encrypted_fit_in_fhe(n_bits, max_iter, parameter_min_max, check_accurac
         parameters_range,
         max_iter,
         fit_intercept,
-        check_accuracy=check_accuracy,
         fhe="execute",
     )
 
