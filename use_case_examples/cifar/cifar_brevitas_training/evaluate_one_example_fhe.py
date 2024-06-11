@@ -15,7 +15,7 @@ from torch.utils.data import DataLoader
 from trainer import get_test_set
 
 from concrete import fhe
-from concrete.ml.common.preprocessors import Debug, InsertRounding, TLU1bitDecomposition
+from concrete.ml.common.preprocessors import InsertRounding, TLU1bitDecomposition
 from concrete.ml.quantization import QuantizedModule
 from concrete.ml.torch.compile import compile_brevitas_qat_model
 
