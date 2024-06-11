@@ -63,11 +63,11 @@ class OnDiskNetwork:
 @pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
 @pytest.mark.parametrize("n_bits", [2])
 def test_client_server_sklearn_inference(
-    default_configuration,
     model_class,
     parameters,
     n_bits,
     load_data,
+    default_configuration,
     check_is_good_execution_for_cml_vs_circuit,
     check_array_equal,
     check_float_array_equal,

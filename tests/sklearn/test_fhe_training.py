@@ -312,6 +312,7 @@ def check_encrypted_fit(
     parameters_range,
     max_iter,
     fit_intercept,
+    configuration,
     check_accuracy=None,
     fhe=None,
     partial_fit=False,
@@ -355,6 +356,8 @@ def check_encrypted_fit(
 
     # We need to lower the p-error to make sure that the test passes
     model.training_p_error = 1e-15
+
+    model.training_fhe_configuration = configuration
 
     if partial_fit:
         # Check that we can swap between disable and simulation modes without any impact on the
@@ -418,7 +421,13 @@ def check_encrypted_fit(
 @pytest.mark.parametrize("label_offset", [0, 1])
 @pytest.mark.parametrize("n_bits, max_iter, parameter_min_max", [pytest.param(7, 30, 1.0)])
 def test_encrypted_fit_coherence(
-    fit_intercept, label_offset, n_bits, max_iter, parameter_min_max, check_accuracy
+    fit_intercept,
+    label_offset,
+    n_bits,
+    max_iter,
+    parameter_min_max,
+    check_accuracy,
+    simulation_configuration,
 ):
     """Test that encrypted fitting works properly."""
 
@@ -439,6 +448,7 @@ def test_encrypted_fit_coherence(
             parameters_range,
             max_iter,
             fit_intercept,
+            simulation_configuration,
             check_accuracy=check_accuracy,
             fhe="disable",
         )
@@ -453,6 +463,7 @@ def test_encrypted_fit_coherence(
             parameters_range,
             max_iter,
             fit_intercept,
+            simulation_configuration,
             check_accuracy=check_accuracy,
             fhe="simulate",
         )
@@ -474,6 +485,7 @@ def test_encrypted_fit_coherence(
             parameters_range,
             max_iter,
             fit_intercept,
+            simulation_configuration,
             check_accuracy=check_accuracy,
             partial_fit=True,
         )
@@ -496,6 +508,7 @@ def test_encrypted_fit_coherence(
         parameters_range,
         max_iter,
         fit_intercept,
+        simulation_configuration,
         check_accuracy=check_accuracy,
         warm_fit=True,
         init_kwargs=warm_fit_init_kwargs,
@@ -519,6 +532,7 @@ def test_encrypted_fit_coherence(
         parameters_range,
         first_iterations,
         fit_intercept,
+        simulation_configuration,
         check_accuracy=check_accuracy,
         fhe="simulate",
     )
@@ -542,6 +556,7 @@ def test_encrypted_fit_coherence(
             parameters_range,
             last_iterations,
             fit_intercept,
+            simulation_configuration,
             check_accuracy=check_accuracy,
             fhe="simulate",
             random_number_generator=rng_coef_init,
@@ -569,6 +584,7 @@ def test_encrypted_fit_coherence(
         parameters_range,
         max_iter,
         fit_intercept,
+        simulation_configuration,
         check_accuracy=None,
         fhe="simulate",
         init_kwargs=early_break_kwargs,
@@ -576,7 +592,7 @@ def test_encrypted_fit_coherence(
 
 
 @pytest.mark.parametrize("n_bits, max_iter, parameter_min_max", [pytest.param(7, 2, 1.0)])
-def test_encrypted_fit_in_fhe(n_bits, max_iter, parameter_min_max):
+def test_encrypted_fit_in_fhe(n_bits, max_iter, parameter_min_max, default_configuration):
     """Test that encrypted fitting works properly when executed in FHE."""
 
     # Model parameters
@@ -600,6 +616,7 @@ def test_encrypted_fit_in_fhe(n_bits, max_iter, parameter_min_max):
             parameters_range,
             max_iter,
             fit_intercept,
+            default_configuration,
             fhe="disable",
         )
     )
@@ -613,6 +630,7 @@ def test_encrypted_fit_in_fhe(n_bits, max_iter, parameter_min_max):
         parameters_range,
         max_iter,
         fit_intercept,
+        default_configuration,
         fhe="execute",
     )
 

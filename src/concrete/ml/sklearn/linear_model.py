@@ -190,6 +190,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         self.learning_rate_value = 1.0
         self.batch_size = 8
         self.training_p_error = 0.01
+        self.training_fhe_configuration = None
 
         self.fit_encrypted = fit_encrypted
         self.parameters_range = parameters_range
@@ -344,10 +345,15 @@ class SGDClassifier(SklearnSGDClassifierMixin):
             fit_bias=self.fit_intercept,
         )
 
+        if self.training_fhe_configuration is None:
+            configuration = Configuration()
+        else:
+            configuration = self.training_fhe_configuration
+
         # Enable the underlying FHE circuit to be composed with itself
         # This feature is used in order to be able to iterate in the clear n times without having
         # to encrypt/decrypt the weight/bias values between each loop
-        configuration = Configuration(composable=True, compress_evaluation_keys=True)
+        configuration.composable = True
 
         composition_mapping = {0: 2, 1: 3}
 
