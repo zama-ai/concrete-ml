@@ -8,7 +8,7 @@ from pprint import pprint
 
 import numpy as np
 import torch
-from concrete.fhe import Exactness
+from concrete.fhe import Exactness, round_bit_pattern, truncate_bit_pattern
 from concrete.fhe.compilation.configuration import Configuration
 from models import cnv_2w2a
 from torch.utils.data import DataLoader
@@ -85,12 +85,15 @@ x, labels = next(iter(test_loader))
 # Multi-parameter strategy is used in order to speed-up the FHE executions
 base_configuration = Configuration()
 
-exactness = fhe.Exactness.APPROXIMATE
+exactness = Exactness.APPROXIMATE
+msbs_to_keep = 4
+rounding_function = truncate_bit_pattern
 
 tlu_optimizer = TLU1bitDecomposition(
     n_jumps_limit=2,
     exactness=exactness,
-    msbs_to_keep=4,
+    msbs_to_keep=msbs_to_keep,
+    rounding_function=rounding_function,
 )
 rounding = InsertRounding(6, exactness=exactness)
 

@@ -130,8 +130,9 @@ def main(args):
     rounding_function = round_bit_pattern
     msbs = 1
 
-    # truncate - exact - msbs=4: work
-    exactness = fhe.Exactness.EXACT
+    # truncate - exact - msbs=4: works fine
+
+    exactness = fhe.Exactness.APPROXIMATE
     rounding_function = truncate_bit_pattern
     msbs = 4
 
