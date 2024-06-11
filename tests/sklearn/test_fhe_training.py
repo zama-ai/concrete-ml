@@ -11,11 +11,10 @@ from concrete.ml.common.utils import array_allclose_and_same_shape
 from concrete.ml.sklearn import SGDClassifier
 
 
-def get_blob_data(n_classes=2, scale_input=False, parameters_range=None):
+def get_blob_data(
+    n_samples=1000, n_classes=2, n_features=8, scale_input=False, parameters_range=None
+):
     """Get the training data."""
-
-    n_samples = 1000
-    n_features = 8
 
     # Generate the input and target values
     # pylint: disable-next=unbalanced-tuple-unpacking
@@ -57,7 +56,7 @@ def test_init_error_raises(n_bits, parameter_min_max):
         )
 
     with pytest.raises(
-        ValueError, match="Setting 'parameter_range' is mandatory if FHE training is enabled."
+        ValueError, match="Setting 'parameters_range' is mandatory if FHE training is enabled."
     ):
         SGDClassifier(
             n_bits=n_bits,
@@ -67,13 +66,31 @@ def test_init_error_raises(n_bits, parameter_min_max):
             fit_intercept=True,
         )
 
-    SGDClassifier(
-        n_bits=n_bits,
-        fit_encrypted=True,
-        random_state=random_state,
-        parameters_range=parameters_range,
-        fit_intercept=False,
-    )
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Only 'log_loss' is currently supported if FHE training is enabled"
+            " (fit_encrypted=True). Got loss='perceptron'"
+        ),
+    ):
+        SGDClassifier(
+            n_bits=n_bits,
+            fit_encrypted=True,
+            loss="perceptron",
+            random_state=random_state,
+            parameters_range=parameters_range,
+        )
+
+    with pytest.raises(
+        ValueError, match="Setting 'parameters_range' is mandatory if FHE training is enabled."
+    ):
+        SGDClassifier(
+            n_bits=n_bits,
+            fit_encrypted=True,
+            random_state=random_state,
+            parameters_range=None,
+            fit_intercept=True,
+        )
 
 
 @pytest.mark.parametrize("n_classes", [1, 3])
@@ -448,24 +465,6 @@ def test_encrypted_fit_coherence(
     assert array_allclose_and_same_shape(y_pred_proba_simulated, y_pred_proba_disable)
     assert array_allclose_and_same_shape(y_pred_class_simulated, y_pred_class_disable)
 
-    # Define early break parameters, with a very high tolerance
-    early_break_kwargs = {"early_stopping": True, "tol": 1e100}
-
-    # We don't have any way to properly test early break, we therefore disable the accuracy check
-    # in order to avoid flaky issues
-    check_encrypted_fit(
-        x,
-        y,
-        n_bits,
-        random_state,
-        parameters_range,
-        max_iter,
-        fit_intercept,
-        check_accuracy=None,
-        fhe="simulate",
-        init_kwargs=early_break_kwargs,
-    )
-
     weights_partial, bias_partial, y_pred_proba_partial, y_pred_class_partial, _ = (
         check_encrypted_fit(
             x,
@@ -512,7 +511,7 @@ def test_encrypted_fit_coherence(
 
     # Fit the model for max_iter // 2 iterations and retrieved the weight/bias values, as well as
     # the RNG object
-    weights_coef_init, bias_coef_init, _, _, rng_coef_init = check_encrypted_fit(
+    weights_coef_init_partial, bias_coef_init_partial, _, _, rng_coef_init = check_encrypted_fit(
         x,
         y,
         n_bits,
@@ -528,8 +527,8 @@ def test_encrypted_fit_coherence(
 
     # Define coef parameters
     coef_init_fit_kwargs = {
-        "coef_init": weights_coef_init,
-        "intercept_init": bias_coef_init,
+        "coef_init": weights_coef_init_partial,
+        "intercept_init": bias_coef_init_partial,
     }
 
     # Fit the model for the remaining iterations starting at the previous weight/bias values. It is
@@ -556,3 +555,69 @@ def test_encrypted_fit_coherence(
     assert array_allclose_and_same_shape(bias_disable, bias_coef_init)
     assert array_allclose_and_same_shape(y_pred_proba_disable, y_pred_proba_coef_init)
     assert array_allclose_and_same_shape(y_pred_class_disable, y_pred_class_coef_init)
+
+    # Define early break parameters, with a very high tolerance
+    early_break_kwargs = {"early_stopping": True, "tol": 1e100}
+
+    # We don't have any way to properly test early break, we therefore disable the accuracy check
+    # in order to avoid flaky issues
+    check_encrypted_fit(
+        x,
+        y,
+        n_bits,
+        random_state,
+        parameters_range,
+        max_iter,
+        fit_intercept,
+        check_accuracy=None,
+        fhe="simulate",
+        init_kwargs=early_break_kwargs,
+    )
+
+
+@pytest.mark.parametrize("n_bits, max_iter, parameter_min_max", [pytest.param(7, 2, 1.0)])
+def test_encrypted_fit_in_fhe(n_bits, max_iter, parameter_min_max):
+    """Test that encrypted fitting works properly when executed in FHE."""
+
+    # Model parameters
+    random_state = numpy.random.randint(0, 2**15)
+    parameters_range = (-parameter_min_max, parameter_min_max)
+    fit_intercept = True
+
+    # Generate a data-set with binary target classes
+    x, y = get_blob_data(n_features=2, scale_input=True, parameters_range=parameters_range)
+    y = y + 1
+
+    # Avoid checking the accuracy. Since this test is mostly here to make sure that FHE execution
+    # properly matches the quantized clear one, some parameters (for example, the number of
+    # features) were set to make it quicker, without considering the model's accuracy
+    weights_disable, bias_disable, y_pred_proba_disable, y_pred_class_disable, _ = (
+        check_encrypted_fit(
+            x,
+            y,
+            n_bits,
+            random_state,
+            parameters_range,
+            max_iter,
+            fit_intercept,
+            fhe="disable",
+        )
+    )
+
+    # Same, avoid checking the accuracy
+    weights_fhe, bias_fhe, y_pred_proba_fhe, y_pred_class_fhe, _ = check_encrypted_fit(
+        x,
+        y,
+        n_bits,
+        random_state,
+        parameters_range,
+        max_iter,
+        fit_intercept,
+        fhe="execute",
+    )
+
+    # Make sure weight, bias and prediction values are identical between clear and fhe training
+    assert array_allclose_and_same_shape(weights_fhe, weights_disable)
+    assert array_allclose_and_same_shape(bias_fhe, bias_disable)
+    assert array_allclose_and_same_shape(y_pred_proba_fhe, y_pred_proba_disable)
+    assert array_allclose_and_same_shape(y_pred_class_fhe, y_pred_class_disable)

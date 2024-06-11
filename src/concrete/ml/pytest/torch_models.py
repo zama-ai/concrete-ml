@@ -33,7 +33,7 @@ class MultiOutputModel(nn.Module):
             y (torch.Tensor): The input of the model.
 
         Returns:
-            Tuple[torch.Tensor. torch.Tensor]: Output of the network.
+            Tuple[torch.Tensor. torch.Tensor]: Outputs of the network.
         """
         return x + y + self.value, (x - y) ** 2
 
@@ -1564,3 +1564,39 @@ class Conv1dModel(nn.Module):
         x = self.bn1(x)
         x = self.fc1(x)
         return x
+
+
+class IdentityExpandModel(nn.Module):
+    """Model that only adds an empty dimension at axis 0.
+
+    This model is mostly useful for testing the composition feature.
+    """
+
+    def forward(self, x):  # pylint: disable-next=no-self-use
+        """Forward pass.
+
+        Args:
+            x (torch.Tensor): The input of the model.
+
+        Returns:
+            Tuple[torch.Tensor. torch.Tensor]: Outputs of the network.
+        """
+        return x.unsqueeze(0)
+
+
+class IdentityExpandMultiOutputModel(nn.Module):
+    """Model that only adds an empty dimension at axis 0, and returns the initial input as well.
+
+    This model is mostly useful for testing the composition feature.
+    """
+
+    def forward(self, x):  # pylint: disable-next=no-self-use
+        """Forward pass.
+
+        Args:
+            x (torch.Tensor): The input of the model.
+
+        Returns:
+            Tuple[torch.Tensor. torch.Tensor]: Outputs of the network.
+        """
+        return x, x.unsqueeze(0)

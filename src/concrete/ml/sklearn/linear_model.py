@@ -3,16 +3,18 @@
 import itertools
 import time
 import warnings
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 import numpy
 import sklearn.linear_model
+from concrete.fhe import Configuration
+from concrete.fhe import Value as EncryptedValue
 from sklearn.preprocessing import LabelEncoder
 
 from ..common.utils import FheMode
 from ..onnx.ops_impl import numpy_sigmoid
 from ..quantization import QuantizedModule
-from ..torch.compile import compile_torch_model
+from ..torch.compile import _compile_torch_or_onnx_model
 from ._fhe_training_utils import LogisticRegressionTraining, binary_cross_entropy
 from .base import (
     Data,
@@ -246,9 +248,10 @@ class SGDClassifier(SklearnSGDClassifierMixin):
 
             if self.parameters_range is None:
                 raise ValueError(
-                    "Setting 'parameter_range' is mandatory if FHE training is enabled "
+                    "Setting 'parameters_range' is mandatory if FHE training is enabled "
                     f"({fit_encrypted=}). Got {parameters_range=}"
                 )
+
         else:
             supported_losses = ["log_loss", "modified_huber"]
             if self.loss not in supported_losses:
@@ -341,18 +344,27 @@ class SGDClassifier(SklearnSGDClassifierMixin):
             fit_bias=self.fit_intercept,
         )
 
+        # Enable the underlying FHE circuit to be composed with itself
+        # This feature is used in order to be able to iterate in the clear n times without having
+        # to encrypt/decrypt the weight/bias values between each loop
+        configuration = Configuration(composable=True)
+
+        composition_mapping = {0: 2, 1: 3}
+
         # Compile the model using the compile set
         if self.verbose:
             print("Compiling training circuit ...")
 
         start = time.time()
-        training_quantized_module = compile_torch_model(
+        training_quantized_module = _compile_torch_or_onnx_model(
             trainer,
             compile_set,
             n_bits=self.n_bits_training,
             rounding_threshold_bits=self.rounding_training,
             p_error=self.training_p_error,
+            configuration=configuration,
             reduce_sum_copy=True,
+            composition_mapping=composition_mapping,
         )
         end = time.time()
 
@@ -360,6 +372,51 @@ class SGDClassifier(SklearnSGDClassifierMixin):
             print(f"Compilation took {end - start:.4f} seconds.")
 
         return training_quantized_module
+
+    def _decrypt_dequantize_training_output(
+        self,
+        weights_enc: Union[numpy.ndarray, EncryptedValue],
+        bias_enc: Union[numpy.ndarray, EncryptedValue],
+        fhe: Union[str, FheMode] = FheMode.DISABLE,
+    ) -> Tuple[numpy.ndarray, numpy.ndarray]:
+        """Decrypt and de-quantize the outputs using the training circuit.
+
+        Args:
+            weights_enc (Union[numpy.ndarray, EncryptedValue]): The weight values to decrypt (if
+                encrypted) and de-quantize.
+            bias_enc (Union[numpy.ndarray, EncryptedValue]): The bias values to decrypt (if
+                encrypted) and de-quantize.
+            fhe (Union[str, FheMode]): The mode to use for FHE training.
+                Can be FheMode.DISABLE for Concrete ML Python (quantized) training,
+                FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.
+                Can also be the string representation of any of these values. Default to
+                FheMode.DISABLE.
+
+        Returns:
+            weights_float, bias_float (Tuple[numpy.ndarray, numpy.ndarray]): The weight and bias
+                float values.
+        """
+        # Mypy
+        assert self.training_quantized_module is not None
+        assert self.training_quantized_module.fhe_circuit is not None
+
+        # If the training is done in FHE, decrypt the weight and bias values
+        if fhe == "execute":
+            q_weights, q_bias = self.training_quantized_module.fhe_circuit.decrypt(
+                weights_enc, bias_enc
+            )
+
+        else:
+            q_weights, q_bias = weights_enc, bias_enc
+
+        weights_float, bias_float = self.training_quantized_module.dequantize_output(
+            q_weights, q_bias
+        )
+
+        # Reshape parameters to fit what scikit-learn expects
+        weights_float, bias_float = weights_float.squeeze(0), bias_float.squeeze(0)
+
+        return weights_float, bias_float
 
     # pylint: disable-next=too-many-branches, too-many-statements, too-many-locals
     def _fit_encrypted(
@@ -376,7 +433,9 @@ class SGDClassifier(SklearnSGDClassifierMixin):
 
         The is the underlying function that fits the model in FHE if 'fit_encrypted' is enabled.
         A quantized module is first built in order to generate the FHE circuit need for training.
-        Then, the method iterates over it in the clear.
+        Then, the method iterates over it in the clear so that outputs of an iteration are used as
+        inputs for the following iteration. Thanks to Concrete's composition feature, no
+        encryption/decryption steps are needed when the training is executed in FHE.
 
         For more details on some of these arguments please refer to:
         https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html
@@ -426,6 +485,10 @@ class SGDClassifier(SklearnSGDClassifierMixin):
                     f" was: {self.classes_}"
                 )
 
+        n_samples, n_features = X.shape
+        weight_shape = (1, n_features, 1)
+        bias_shape = (1, 1, 1)
+
         # Build the quantized module
         # In case of a partial fit, only do so if it has not been done already (which indicates
         # that this is the partial fit's first call)
@@ -471,9 +534,11 @@ class SGDClassifier(SklearnSGDClassifierMixin):
 
         y = self.label_encoder.transform(y)
 
+        # Mypy
+        assert self.training_quantized_module.fhe_circuit is not None
+
         # Key generation
         if fhe == "execute":  # pragma: no cover
-            assert self.training_quantized_module.fhe_circuit is not None
 
             # Generate the keys only if necessary. This is already done using the `force=False`
             # parameter, but here we also avoid printing too much verbose if activated
@@ -493,19 +558,19 @@ class SGDClassifier(SklearnSGDClassifierMixin):
 
         # Initialize the weight values with the given ones if some are provided
         if coef_init is not None:
-            weights = coef_init
+            weights = coef_init.reshape(weight_shape)
 
         # Else, if warm start is activated or this is a partial fit, use some already computed
         # weight values have if there are some
         elif (self.warm_start or is_partial_fit) and self._weights_encrypted_fit is not None:
-            weights = self._weights_encrypted_fit
+            weights = self._weights_encrypted_fit.reshape(weight_shape)
 
         # Else, initialize the values randomly
         else:
             weights = self.random_number_generator.uniform(
                 low=self.parameters_range[0],
                 high=self.parameters_range[1],
-                size=(1, X.shape[1], 1),
+                size=weight_shape,
             )
 
         # If the mode should fit the bias values as well
@@ -513,82 +578,137 @@ class SGDClassifier(SklearnSGDClassifierMixin):
 
             # Initialize the bias values with the given ones if some are provided
             if intercept_init is not None:
-                bias = intercept_init
+                bias = intercept_init.reshape(bias_shape)
 
             # Else, if warm start is activated or this is a partial fit, use some already computed
             # bias values have if there are some
             elif (self.warm_start or is_partial_fit) and self._bias_encrypted_fit is not None:
-                bias = self._bias_encrypted_fit
+                bias = self._bias_encrypted_fit.reshape(bias_shape)
 
             # Else, initialize the values randomly
             else:
                 bias = self.random_number_generator.uniform(
                     low=self.parameters_range[0],
                     high=self.parameters_range[1],
-                    size=(1, 1, 1),
+                    size=bias_shape,
                 )
 
         # Else, initialize the bias with zeros
         else:
-            bias = numpy.zeros((1, 1, 1))
+            bias = numpy.zeros(bias_shape)
 
-        loss_value_moving_average = None
-
-        if self.verbose:
+        # Only print this verbose once if in training using `partial_fit``
+        if self.verbose and (not is_partial_fit or self.training_quantized_module is None):
             mode_string = " (simulation)" if fhe == "simulate" else ""
             print(f"Training on encrypted data{mode_string}...")
 
         # A partial fit is similar to running a fit with a single iteration
         max_iter = 1 if is_partial_fit else self.max_iter
 
-        # Iterate on the training quantized module in the clear
-        for iteration_step in range(max_iter):
+        # Iterate on the batches in order to quantize and encrypt them
+        X_batches_enc, y_batches_enc = [], []
+        for _ in range(max_iter):
 
             # Sample the batches from X and y in the clear
             batch_indexes = self.random_number_generator.choice(
-                len(X), size=self.batch_size, replace=False
+                n_samples, size=self.batch_size, replace=False
             )
 
             # Mypy
             assert isinstance(batch_indexes, numpy.ndarray)
 
             # Build the batches
-            X_batch = X[batch_indexes].astype(float).reshape((1, len(batch_indexes), X.shape[1]))
+            X_batch = X[batch_indexes].astype(float).reshape((1, self.batch_size, n_features))
             y_batch = y[batch_indexes].reshape((1, self.batch_size, 1)).astype(float)
 
-            weights = weights.reshape(1, X.shape[1], 1)
-            bias = bias.reshape(1, 1, 1)
+            # The underlying quantized module expects (X, y, weight, bias) as inputs. We thus only
+            # quantize the input and target values using the first and second positional parameter
+            q_X_batch, q_y_batch, _, _ = self.training_quantized_module.quantize_input(
+                X_batch, y_batch, None, None
+            )
 
-            # Mypy
-            assert self.training_quantized_module is not None
+            # If the training is done in FHE, encrypt the input and target values
+            if fhe == "execute":
 
+                # Similarly, the underlying FHE circuit expects (X, y, weight, bias) as inputs, and
+                # so does the encrypt method
+                X_batch_enc, y_batch_enc, _, _ = self.training_quantized_module.fhe_circuit.encrypt(
+                    q_X_batch, q_y_batch, None, None
+                )
+
+            else:
+                X_batch_enc, y_batch_enc = q_X_batch, q_y_batch
+
+            X_batches_enc.append(X_batch_enc)
+            y_batches_enc.append(y_batch_enc)
+
+        # Similarly, we only quantize the weight and bias values using the third and fourth
+        # position parameter
+        _, _, q_weights, q_bias = self.training_quantized_module.quantize_input(
+            None, None, weights, bias
+        )
+
+        # If the training is done in FHE, encrypt the weight and bias values
+        if fhe == "execute":
+
+            # Similarly, we only encrypt using the third and fourth position parameter
+            _, _, weights_enc, bias_enc = self.training_quantized_module.fhe_circuit.encrypt(
+                None, None, q_weights, q_bias
+            )
+
+        else:
+            weights_enc, bias_enc = q_weights, q_bias
+
+        # This variable is used for computing the loss and handle early stopping (see at the end of
+        # the loop)
+        loss_value_moving_average = None
+
+        # Iterate on the training quantized module in the clear
+        for iteration_step in range(max_iter):
+            X_batch_enc_i, y_batch_enc_i = (
+                X_batches_enc[iteration_step],
+                y_batches_enc[iteration_step],
+            )
             # Train the model over one iteration
             inference_start = time.time()
-            weights, bias = self.training_quantized_module.forward(  # type: ignore[assignment]
-                X_batch, y_batch, weights, bias, fhe=fhe
-            )
+
+            # If the training is done in FHE, execute the underlying FHE circuit directly on the
+            # encrypted values
+            if fhe == "execute":
+                weights_enc, bias_enc = self.training_quantized_module.fhe_circuit.run(
+                    X_batch_enc_i,
+                    y_batch_enc_i,
+                    weights_enc,
+                    bias_enc,
+                )
+
+            # Else, use the quantized module on the quantized values (works for both quantized
+            # clear and FHE simulation modes). It is important to note that 'quantized_forward'
+            # with 'fhe="execute"' is executing Concrete's 'encrypt_run_decrypt' method, as opposed
+            # to the 'run' method right above. We thus need to separate these cases since values
+            # are already encrypted here.
+            else:
+                weights_enc, bias_enc = self.training_quantized_module.quantized_forward(
+                    X_batch_enc_i, y_batch_enc_i, weights_enc, bias_enc, fhe=fhe
+                )
 
             if self.verbose:
                 print(
-                    f"Iteration {iteration_step} took {time.time() - inference_start:.4f} seconds."
+                    f"Iteration {iteration_step} took {time.time() - inference_start:.2f} seconds."
                 )
 
-            # Mypy
-            assert isinstance(weights, numpy.ndarray)
-            assert isinstance(bias, numpy.ndarray)
-
-            # Reshape parameters to fit what scikit-learn expects
-            weights = weights.squeeze(0)
-            bias = bias.squeeze(0)  # pylint: disable=no-member
-
-            # If early stopping is enabled, compute the loss and stop the training if it gets under
-            # the given tolerance
+            # If early stopping is enabled, decrypt (if needed) and de-quantize the weight and bias
+            # values. Then, compute the loss and stop the training if it gets under the given
+            # tolerance
             # Additionally, there is no point in computing the following in case of a partial fit,
             # as it only represents a single iteration
             if self.early_stopping and not is_partial_fit:
+                weights_float, bias_float = self._decrypt_dequantize_training_output(
+                    weights_enc, bias_enc, fhe=fhe
+                )
 
                 # Evaluate the model on the full dataset and compute the loss
-                logits = ((X @ weights) + bias).squeeze()
+                logits = ((X @ weights_float) + bias_float).squeeze()
                 loss_value = binary_cross_entropy(y_true=y, logits=logits)
 
                 # If this is the first training iteration, store the loss value computed above
@@ -608,6 +728,11 @@ class SGDClassifier(SklearnSGDClassifierMixin):
                     if loss_difference < self.tol:
                         break
 
+        # Decrypt (if needed) and de-quantize the fitted weight and bias values
+        fitted_weights, fitted_bias = self._decrypt_dequantize_training_output(
+            weights_enc, bias_enc, fhe=fhe
+        )
+
         # Initialize the underlying scikit-learn model if it has not already been done
         # This model should be directly initialized in the model's __init__ method instead
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3373
@@ -619,12 +744,12 @@ class SGDClassifier(SklearnSGDClassifierMixin):
             self.sklearn_model = self.sklearn_model_class(**params)
 
         # Build the underlying scikit-learn model with the computed weight and bias values
-        self.sklearn_model.coef_ = weights.T
-        self.sklearn_model.intercept_ = bias
+        self.sklearn_model.coef_ = fitted_weights.T
+        self.sklearn_model.intercept_ = fitted_bias
 
         # Update the model's Concrete ML parameters
-        self._weights_encrypted_fit = weights
-        self._bias_encrypted_fit = bias
+        self._weights_encrypted_fit = fitted_weights
+        self._bias_encrypted_fit = fitted_bias
         self._is_fitted = True
         self._quantize_model(X)
 

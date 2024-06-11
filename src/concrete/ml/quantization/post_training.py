@@ -687,9 +687,8 @@ class ONNXConverter:
         Following https://arxiv.org/abs/1712.05877 guidelines.
 
         Args:
-            *calibration_data (numpy.ndarray):  Data that will be used to compute the bounds,
-                                                scales and zero point values for every quantized
-                                                object.
+            calibration_data (numpy.ndarray):  Data that will be used to compute the bounds,
+                scales and zero point values for every quantized object.
 
         Returns:
             QuantizedModule: Quantized numpy module

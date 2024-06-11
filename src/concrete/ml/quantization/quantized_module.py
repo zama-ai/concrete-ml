@@ -139,6 +139,9 @@ class QuantizedModule:
         else:
             self.output_quantizers = []
 
+        # Input-output quantizer mapping for composition is not enabled at initialization
+        self._composition_mapping: Optional[Dict] = None
+
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4127
     def set_reduce_sum_copy(self):
         """Set reduce sum to copy or not the inputs.
@@ -274,7 +277,7 @@ class QuantizedModule:
         Returns:
             List[UniformQuantizer]: List of output quantizers.
         """
-        output_layers = (
+        output_layers = list(
             self.quant_layers_dict[output_name][1]
             for output_name in self.ordered_module_output_names
         )
@@ -289,6 +292,61 @@ class QuantizedModule:
             for output_layer in output_layers
         )
         return output_quantizers
+
+    # Remove this once we handle the re-quantization step in post-training only
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4472
+    def _add_requant_for_composition(self, composition_mapping: Optional[Dict]):
+        """Trigger a re-quantization step for outputs using an input-output mapping for quantizers.
+
+        Args:
+            composition_mapping (Optional[Dict]): Dictionary that maps output positions with input
+                positions in the case of composable circuits. Setting this parameter triggers a
+                re-quantization step at the end of the FHE circuit. This makes sure outputs are
+                de-quantized using their output quantizer and then re-quantized using their
+                associated input quantizer. Default to None.
+
+        Raises:
+            ValueError: If the mapping is not properly constructed: it must be a dictionary of
+                positive integers, mapping output positions to input positions, where positions
+                must not be greater than the model's number of outputs/inputs.
+        """
+        if not isinstance(composition_mapping, Dict):
+            raise ValueError(
+                "Parameter 'composition_mapping' mus be a dictionary. Got "
+                f"{type(composition_mapping)}"
+            )
+
+        max_output_pos = len(self.output_quantizers) - 1
+        max_input_pos = len(self.input_quantizers) - 1
+
+        for output_position, input_position in composition_mapping.items():
+            if not isinstance(output_position, int) or output_position < 0:
+                raise ValueError(
+                    "Output positions (keys) must be positive integers. Got "
+                    f"{type(output_position)}"
+                )
+
+            if output_position > max_output_pos:
+                raise ValueError(
+                    "Output positions (keys) must not be greater than the model's number of "
+                    f"outputs. Expected position '{max_output_pos}' at most, but got "
+                    f"'{output_position}'"
+                )
+
+            if not isinstance(input_position, int) or input_position < 0:
+                raise ValueError(
+                    "Input positions (values) must be positive integers. Got "
+                    f"{type(input_position)}"
+                )
+
+            if input_position > max_input_pos:
+                raise ValueError(
+                    "Input positions (values) must not be greater than the model's number of "
+                    f"inputs. Expected position '{max_input_pos}' at most, but got "
+                    f"'{input_position}'"
+                )
+
+        self._composition_mapping = composition_mapping
 
     @property
     def onnx_model(self):
@@ -439,6 +497,8 @@ class QuantizedModule:
             (Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]): Predictions of the quantized model,
                 with integer values.
 
+        Raises:
+            ValueError: If composition is enabled and that mapped input-output shapes do not match.
         """
 
         q_inputs = [
@@ -485,12 +545,55 @@ class QuantizedModule:
         # The output of a graph must be a QuantizedArray
         assert all(isinstance(elt, QuantizedArray) for elt in output_quantized_arrays)
 
-        results = tuple(
+        q_results = tuple(
             elt.qvalues for elt in output_quantized_arrays if isinstance(elt, QuantizedArray)
         )
-        if len(results) == 1:
-            return results[0]
-        return results
+
+        # Remove this once we handle the re-quantization step in post-training only
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4472
+        if self._composition_mapping is not None:
+            mismatch_shapes = list(
+                f"Output {output_i}: {q_results[output_i].shape} "
+                f"-> Input {input_i}: {q_x[input_i].shape}"
+                for output_i, input_i in self._composition_mapping.items()
+            )
+
+            if not all(
+                q_x[input_i].shape == q_results[output_i].shape
+                for output_i, input_i in self._composition_mapping.items()
+            ):
+                raise ValueError(
+                    "A shape mismatch has been found between inputs and outputs when composing the "
+                    "forward pass. Please check the given composition mapping. Got "
+                    f"{self._composition_mapping}, which gives the following shape mapping:\n"
+                    + "\n".join(mismatch_shapes)
+                )
+
+            # Only add a re-quantization step to outputs that appear in the composition mapping.
+            # This is because some outputs might not be used as inputs when composing a circuit
+            q_results = tuple(
+                (
+                    self.input_quantizers[self._composition_mapping[i]].quant(
+                        self.output_quantizers[i].dequant(q_result)
+                    )
+                    if i in self._composition_mapping
+                    else q_result
+                )
+                for i, q_result in enumerate(q_results)
+            )
+
+        # Check that the number of outputs properly matches the number of output quantizers. This is
+        # to make sure that no processing like, for example, composition mapping has altered the
+        # number of outputs
+        assert len(q_results) == len(self.output_quantizers), (
+            "The number of outputs does not match the number of output quantizers. Got "
+            f"{len(q_results)=} != {len(self.output_quantizers)=} "
+        )
+
+        if len(q_results) == 1:
+            return q_results[0]
+
+        return q_results
 
     def _fhe_forward(
         self, *q_x: numpy.ndarray, simulate: bool = True
@@ -561,17 +664,21 @@ class QuantizedModule:
             return q_results[0]
         return q_results
 
-    def quantize_input(self, *x: numpy.ndarray) -> Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]:
+    def quantize_input(
+        self, *x: Optional[numpy.ndarray]
+    ) -> Union[numpy.ndarray, Tuple[Optional[numpy.ndarray], ...]]:
         """Take the inputs in fp32 and quantize it using the learned quantization parameters.
 
         Args:
-            x (numpy.ndarray): Floating point x.
+            x (Optional[numpy.ndarray]): Floating point x or None.
 
         Returns:
-            Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]: Quantized (numpy.int64) x.
+            Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]: Quantized (numpy.int64) x, or None if
+                the corresponding input is None.
         """
         n_inputs = len(self.input_quantizers)
         n_values = len(x)
+
         assert_true(
             n_values == n_inputs,
             f"Got {n_values} inputs, expected {n_inputs}. Either the quantized module has not been "
@@ -579,12 +686,30 @@ class QuantizedModule:
             ValueError,
         )
 
-        q_x = tuple(self.input_quantizers[idx].quant(x[idx]) for idx in range(len(x)))
+        assert not all(x_i is None for x_i in x), "Please provide at least one input to quantize."
+
+        # Ignore [arg-type] check from mypy as it is not able to see that the input to `quant`
+        # cannot be None
+        q_x = tuple(
+            (
+                self.input_quantizers[idx].quant(x[idx])  # type: ignore[arg-type]
+                if x[idx] is not None
+                else None
+            )
+            for idx in range(len(x))
+        )
 
         # Make sure all inputs are quantized to int64
-        assert all_values_are_of_dtype(*q_x, dtypes="int64"), "Inputs were not quantized to int64"
+        assert all_values_are_of_dtype(
+            *q_x, dtypes="int64", allow_none=True
+        ), "Inputs were not quantized to int64"
 
-        return q_x[0] if len(q_x) == 1 else q_x
+        if len(q_x) == 1:
+            assert q_x[0] is not None
+
+            return q_x[0]
+
+        return q_x
 
     def dequantize_output(
         self, *q_y_preds: numpy.ndarray
@@ -608,8 +733,10 @@ class QuantizedModule:
             numpy.array(output_quantizer.dequant(q_y_pred))
             for q_y_pred, output_quantizer in zip(q_y_preds, self.output_quantizers)
         )
+
         if len(y_preds) == 1:
             return y_preds[0]
+
         return y_preds
 
     def set_inputs_quantization_parameters(self, *input_q_params: UniformQuantizer):
@@ -730,8 +857,15 @@ class QuantizedModule:
         # Quantize the inputs
         q_inputs = self.quantize_input(*inputs)
 
+        # Make sure all inputs are quantized to int64 and are not None
+        assert all_values_are_of_dtype(
+            *to_tuple(q_inputs), dtypes="int64", allow_none=False
+        ), "Inputs were not quantized to int64"
+
         # Generate the input-set with proper dimensions
-        inputset = _get_inputset_generator(q_inputs)
+        # Ignore [arg-type] check from mypy as it is not able to see that no values in `q_inputs`
+        # is None
+        inputset = _get_inputset_generator(q_inputs)  # type: ignore[arg-type]
 
         # Check that p_error or global_p_error is not set in both the configuration and in the
         # direct parameters

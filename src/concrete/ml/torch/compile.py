@@ -125,9 +125,11 @@ def build_quantized_module(
     # only work over shape of (1, ., .). For example, some reshape have newshape hardcoded based
     # on the inputset we sent in the NumpyModule.
     quantized_module = post_training_quant.quantize_module(*inputset_as_numpy_tuple)
+
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4127
     if reduce_sum_copy:
         quantized_module.set_reduce_sum_copy()
+
     return quantized_module
 
 
@@ -145,7 +147,8 @@ def _compile_torch_or_onnx_model(
     global_p_error: Optional[float] = None,
     verbose: bool = False,
     inputs_encryption_status: Optional[Sequence[str]] = None,
-    reduce_sum_copy=False,
+    reduce_sum_copy: bool = False,
+    composition_mapping: Optional[Dict] = None,
 ) -> QuantizedModule:
     """Compile a torch module or ONNX into an FHE equivalent.
 
@@ -181,15 +184,31 @@ def _compile_torch_or_onnx_model(
             for each input. By default all arguments will be encrypted.
         reduce_sum_copy (bool): if the inputs of QuantizedReduceSum should be copied to avoid
             bit-width propagation
+        composition_mapping (Optional[Dict]): Dictionary that maps output positions with input
+            positions in the case of composable circuits. Setting this parameter triggers a
+            re-quantization step at the end of the FHE circuit. This makes sure outputs are
+            de-quantized using their output quantizer and then re-quantized using their associated
+            input quantizer. Default to None.
 
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
+
+    Raises:
+        ValueError: If a input-output mapping ('composition_mapping') is set but composition is not
+            enabled at the Concrete level (in 'configuration').
     """
     rounding_threshold_bits = process_rounding_threshold_bits(rounding_threshold_bits)
 
     inputset_as_numpy_tuple = tuple(
         convert_torch_tensor_or_numpy_array_to_numpy_array(val) for val in to_tuple(torch_inputset)
     )
+
+    # Check that composition is enabled if an input-output mapping has been set
+    if composition_mapping is not None and (configuration is None or not configuration.composable):
+        raise ValueError(
+            "Composition must be enabled in 'configuration' in order to trigger a re-quantization "
+            "step on the circuit's outputs."
+        )
 
     # Build the quantized module
     quantized_module = build_quantized_module(
@@ -218,6 +237,13 @@ def _compile_torch_or_onnx_model(
 
     # Find the right way to set parameters for compiler, depending on the way we want to default
     p_error, global_p_error = manage_parameters_for_pbs_errors(p_error, global_p_error)
+
+    # If a mapping between input and output quantizers is set, add a re-quantization step at the
+    # end of the forward call. This is only useful for composable circuits in order to make sure
+    # that input and output quantizers match
+    if composition_mapping is not None:
+        # pylint: disable-next=protected-access
+        quantized_module._add_requant_for_composition(composition_mapping)
 
     quantized_module.compile(
         inputset_as_numpy_tuple,
