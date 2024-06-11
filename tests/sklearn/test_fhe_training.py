@@ -413,32 +413,40 @@ def test_encrypted_fit_coherence(
     x, y = get_blob_data(scale_input=True, parameters_range=parameters_range)
     y = y + label_offset
 
-    weights_disable, bias_disable, y_pred_proba_disable, y_pred_class_disable, _ = (
-        check_encrypted_fit(
-            x,
-            y,
-            n_bits,
-            random_state,
-            parameters_range,
-            max_iter,
-            fit_intercept,
-            check_accuracy=check_accuracy,
-            fhe="disable",
-        )
+    (
+        weights_disable,
+        bias_disable,
+        y_pred_proba_disable,
+        y_pred_class_disable,
+        _,
+    ) = check_encrypted_fit(
+        x,
+        y,
+        n_bits,
+        random_state,
+        parameters_range,
+        max_iter,
+        fit_intercept,
+        check_accuracy=check_accuracy,
+        fhe="disable",
     )
 
-    weights_simulated, bias_simulated, y_pred_proba_simulated, y_pred_class_simulated, _ = (
-        check_encrypted_fit(
-            x,
-            y,
-            n_bits,
-            random_state,
-            parameters_range,
-            max_iter,
-            fit_intercept,
-            check_accuracy=check_accuracy,
-            fhe="simulate",
-        )
+    (
+        weights_simulated,
+        bias_simulated,
+        y_pred_proba_simulated,
+        y_pred_class_simulated,
+        _,
+    ) = check_encrypted_fit(
+        x,
+        y,
+        n_bits,
+        random_state,
+        parameters_range,
+        max_iter,
+        fit_intercept,
+        check_accuracy=check_accuracy,
+        fhe="simulate",
     )
 
     # Make sure weight, bias and prediction values are identical between clear and
@@ -466,18 +474,22 @@ def test_encrypted_fit_coherence(
         init_kwargs=early_break_kwargs,
     )
 
-    weights_partial, bias_partial, y_pred_proba_partial, y_pred_class_partial, _ = (
-        check_encrypted_fit(
-            x,
-            y,
-            n_bits,
-            random_state,
-            parameters_range,
-            max_iter,
-            fit_intercept,
-            check_accuracy=check_accuracy,
-            partial_fit=True,
-        )
+    (
+        weights_partial,
+        bias_partial,
+        y_pred_proba_partial,
+        y_pred_class_partial,
+        _,
+    ) = check_encrypted_fit(
+        x,
+        y,
+        n_bits,
+        random_state,
+        parameters_range,
+        max_iter,
+        fit_intercept,
+        check_accuracy=check_accuracy,
+        partial_fit=True,
     )
 
     # Make sure weight, bias and prediction values are identical between clear and partial fitting
@@ -534,20 +546,24 @@ def test_encrypted_fit_coherence(
 
     # Fit the model for the remaining iterations starting at the previous weight/bias values. It is
     # necessary to provide the RNG object as well in order to keep data shuffle consistent
-    weights_coef_init, bias_coef_init, y_pred_proba_coef_init, y_pred_class_coef_init, _ = (
-        check_encrypted_fit(
-            x,
-            y,
-            n_bits,
-            random_state,
-            parameters_range,
-            last_iterations,
-            fit_intercept,
-            check_accuracy=check_accuracy,
-            fhe="simulate",
-            random_number_generator=rng_coef_init,
-            fit_kwargs=coef_init_fit_kwargs,
-        )
+    (
+        weights_coef_init,
+        bias_coef_init,
+        y_pred_proba_coef_init,
+        y_pred_class_coef_init,
+        _,
+    ) = check_encrypted_fit(
+        x,
+        y,
+        n_bits,
+        random_state,
+        parameters_range,
+        last_iterations,
+        fit_intercept,
+        check_accuracy=check_accuracy,
+        fhe="simulate",
+        random_number_generator=rng_coef_init,
+        fit_kwargs=coef_init_fit_kwargs,
     )
 
     # Make sure weight, bias and prediction values are identical between clear fitting with and

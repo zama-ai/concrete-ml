@@ -5,14 +5,19 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from concrete.fhe import Configuration
+from concrete.fhe import Configuration, round_bit_pattern, truncate_bit_pattern
 from models import cnv_2w2a
 from torch.utils.data import DataLoader, Subset
 from tqdm import tqdm
 from trainer import accuracy, get_test_set, get_train_set
 
 from concrete import fhe
-from concrete.ml.common.preprocessors import Debug, InsertRounding, TLU1bitDecomposition
+from concrete.ml.common.preprocessors import (
+    Breakpoint,
+    InsertRounding,
+    ShowGraph,
+    TLU1bitDecomposition,
+)
 from concrete.ml.torch.compile import compile_brevitas_qat_model
 
 CURRENT_DIR = Path(__file__).resolve().parent
@@ -29,14 +34,11 @@ def seed_everything(seed):
     return seed
 
 
-seed_everything(0)
-
-
 def evaluate(torch_model, cml_model, device, num_workers):
 
     # Import and load the CIFAR test dataset (following bnn_pynq_train.py)
     test_set = get_test_set(dataset="CIFAR10", datadir=CURRENT_DIR / ".datasets/")
-    if False:  # Useful for debug purposes
+    if True:  # Useful for debug purposes
         test_set = Subset(test_set, np.arange(128))
     test_loader = DataLoader(test_set, batch_size=128, shuffle=False, num_workers=num_workers)
 
@@ -122,18 +124,41 @@ def main(args):
     # Eval mode
     model.eval()
 
+    # todo: debug why truncate msbs=1 doesn't work
+    # todo: debug why rounding msbs=4 doesn't work
+    exactness = fhe.Exactness.APPROXIMATE
+    rounding_function = round_bit_pattern
+    msbs = 1
+
+    # truncate - exact - msbs=4: work
     exactness = fhe.Exactness.EXACT
+    rounding_function = truncate_bit_pattern
+    msbs = 4
+
     # Multi-parameter strategy is used in order to speed-up the FHE executions
-    tlu_optimizer = TLU1bitDecomposition(n_jumps_limit=2, exactness=exactness, msbs_to_keep=4)
+    tlu_optimizer = TLU1bitDecomposition(
+        n_jumps_limit=2,
+        exactness=exactness,
+        msbs_to_keep=msbs,
+        rounding_function=rounding_function,
+        overflow_protection=True,
+    )
     insert_rounding = InsertRounding(6, exactness=exactness)
-    # debug_processor = Debug()
+    show_processor = ShowGraph()
+    breakpoint_processor = Breakpoint()
     cfg = Configuration(
         verbose=True,
         show_optimizer=args.show_optimizer,
-        additional_pre_processors=[tlu_optimizer, insert_rounding],
-        additional_post_processors=[
-            # debug_processor,
+        additional_pre_processors=[
+            tlu_optimizer,
+            insert_rounding,
+            show_processor,
         ],
+        additional_post_processors=[
+            show_processor,
+            breakpoint_processor,
+        ],
+        multi_parameter_strategy=fhe.MultiParameterStrategy.PRECISION_AND_NORM2,
     )
 
     for rounding_threshold_bits in rounding_threshold_bits_list:
@@ -146,11 +171,11 @@ def main(args):
             input_set,
             n_bits={"model_inputs": 8, "model_outputs": 8},
             configuration=cfg,
-            rounding_threshold_bits=(
-                {"n_bits": rounding_threshold_bits, "method": "APPROXIMATE"}
-                if rounding_threshold_bits is not None
-                else None
-            ),
+            # rounding_threshold_bits=(
+            #     {"n_bits": rounding_threshold_bits, "method": "APPROXIMATE"}
+            #     if rounding_threshold_bits is not None
+            #     else None
+            # ),
         )
 
         # Print max bit-width in the circuit
@@ -183,6 +208,14 @@ if __name__ == "__main__":
         default=0,
         help="Number of workers",
     )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=0,
+        dest="seed",
+        help="Random seed",
+    )
 
     args = parser.parse_args()
+    seed_everything(args.seed)
     main(args)

@@ -214,12 +214,6 @@ def merge_tlu_constant_shapes(constant_shapes: List[Tuple[int, ...]]) -> Tuple[i
     return tuple(merged_shape)
 
 
-#    return tuple(
-#        max(constant_shape[idx] for constant_shape in constant_shapes if len(constant_shape) > idx)
-#        for idx in range(max(len(elt) for elt in constant_shapes))
-#    )
-
-
 def add_rounding_node(
     a_node: Node,
     lsbs_to_remove: int,
@@ -819,9 +813,10 @@ def decompose_1_bit_tlu(
     n_jumps_limit: Optional[int] = None,
     msbs_to_keep=1,
 ):
-    assert (
-        rounding_function.__name__ == "round_bit_pattern"
-    ), "Only round is supported for TLU adjustment for now"
+    assert rounding_function.__name__ in {
+        "round_bit_pattern",
+        "truncate_bit_pattern",
+    }, f"{rounding_function.__name__=}"
 
     x_min, x_max = bounds
     assert x_min < x_max
@@ -924,6 +919,8 @@ def decompose_1_bit_tlu(
     if rounding_function.__name__ == "round_bit_pattern":
         offsets_to_apply += 2 ** (lsbs_to_remove - 1)
 
+    # todo: add sanity check on accumulator size right before rounding
+
     # Sanity check
     rounded = rounding_function(
         (subgraph_inputs[..., np.newaxis] - offsets_to_apply).astype(np.int64),
@@ -940,8 +937,17 @@ def decompose_1_bit_tlu(
         slice_index = tuple(
             [slice(0, subgraph_inputs.shape[0])] + [0 for _ in subgraph_inputs.shape[1:]]
         )
-        ax.plot(subgraph_inputs[slice_index], pred[slice_index], label="debug", linestyle="--")
-        ax.plot(subgraph_inputs[slice_index], subgraph_outputs[slice_index], label="reference")
+        ax.plot(
+            subgraph_inputs[slice_index],
+            pred[slice_index],
+            label="debug",
+            linestyle="--",
+        )
+        ax.plot(
+            subgraph_inputs[slice_index],
+            subgraph_outputs[slice_index],
+            label="reference",
+        )
         plt.legend()
         plt.savefig("debug.png")
         plt.close("all")
@@ -1498,11 +1504,17 @@ class InsertRounding(GraphProcessor):
                 # print("SKIPPING BECAUSE MORE THAN 1 INPUT")
                 continue
 
-            if pred_nodes[0].properties["name"] in {"round_bit_pattern", "truncate_bit_pattern"}:
+            if pred_nodes[0].properties["name"] in {
+                "round_bit_pattern",
+                "truncate_bit_pattern",
+            }:
                 # print("SKIPPING BECAUSE ROUNDING ALREADY PRESENT")
                 continue
 
-            if tlu_node.properties["name"] in {"round_bit_pattern", "truncate_bit_pattern"}:
+            if tlu_node.properties["name"] in {
+                "round_bit_pattern",
+                "truncate_bit_pattern",
+            }:
                 # print("SKIPPING BECAUSE NODE IS ROUNDING NODE")
                 continue
 
@@ -1574,7 +1586,7 @@ def update_constant_node(node, new_value):
 
 
 def add_extra_shape_to_subgraph(tlu_node, extra_dim: Tuple[int, ...]):
-    # TODO: maybe collect all shapes and just broadcast everything to the correct shape
+    # todo: maybe collect all shapes and just broadcast everything to the correct shape
     # and reshape if constant
     # print()
     # print()
@@ -1599,17 +1611,14 @@ def add_extra_shape_to_subgraph(tlu_node, extra_dim: Tuple[int, ...]):
 
         node.output.shape = deepcopy(node.output.shape)
 
+        # todo: test without it at some point to make sure that everything is fine
         if node.output.shape[-1:] == extra_dim:  # BIG HACK
             continue
 
         node.output.shape = node.output.shape + extra_dim
-    #     print(f"{node.output.shape=}")
-    #     print(f"{node}")
-    # print()
-    # print()
 
 
-class Debug(GraphProcessor):
+class ShowGraph(GraphProcessor):
     def __init__(
         self,
     ) -> None:
@@ -1619,6 +1628,16 @@ class Debug(GraphProcessor):
         print(graph.format())
 
 
+class Breakpoint(GraphProcessor):
+    def __init__(
+        self,
+    ) -> None:
+        super().__init__()
+
+    def apply(self, graph: Graph) -> None:
+        breakpoint()
+
+
 # todo: fix insert rounding to make sure that it only adds rounding if there is
 # no rounding already -> Put TLU-1bit and then InsertRounding in CIFAR
 class TLU1bitDecomposition(GraphProcessor):
@@ -1626,14 +1645,16 @@ class TLU1bitDecomposition(GraphProcessor):
         self,
         n_jumps_limit: int = 4,
         exactness: Exactness = Exactness.APPROXIMATE,
-        msbs_to_keep=1,
+        msbs_to_keep=1,  # Here mainly for experimental reasons
+        rounding_function=round_bit_pattern,
+        overflow_protection=True,
     ) -> None:
         super().__init__()
         self.exactness = exactness
         self.n_jumps_limit = n_jumps_limit
         self.statistics = {}
-        self.rounding_function = round_bit_pattern
-        self.overflow_protection = True
+        self.rounding_function = rounding_function
+        self.overflow_protection = overflow_protection
         self.verbose = True
         self.msbs_to_keep = msbs_to_keep
 
@@ -1674,7 +1695,7 @@ class TLU1bitDecomposition(GraphProcessor):
             # Using per-element bounds would allow us to improve the optimization
             min_bound, max_bound = extract_tlu_input_bounds(variable_input_node)
 
-            # # Create input with proper shape on the bounds for optimization
+            # Create input with proper shape on the bounds for optimization
             # expected_shape = variable_input_node.output.shape
 
             # We reduce to 1 the dimension of the axis if no constant rely on it
@@ -1706,23 +1727,28 @@ class TLU1bitDecomposition(GraphProcessor):
             if not shape_:
                 subgraph_inputs, reference = reduce_output_tensor(subgraph_inputs, reference)
 
-            number_of_tlus, lsbs_to_remove, max_acc_size, offsets, coefficients, base = (
-                decompose_1_bit_tlu(
-                    subgraph_inputs=subgraph_inputs,
-                    subgraph_outputs=reference,
-                    shape_=shape_,
-                    bounds=(int(min_bound), int(max_bound)),
-                    n_jumps_limit=self.n_jumps_limit,
-                    msbs_to_keep=self.msbs_to_keep,
-                )
+            (
+                number_of_tlus,
+                lsbs_to_remove,
+                max_acc_size,
+                offsets,
+                coefficients,
+                base,
+            ) = decompose_1_bit_tlu(
+                subgraph_inputs=subgraph_inputs,
+                subgraph_outputs=reference,
+                shape_=shape_,
+                bounds=(int(min_bound), int(max_bound)),
+                n_jumps_limit=self.n_jumps_limit,
+                msbs_to_keep=self.msbs_to_keep,
+                rounding_function=self.rounding_function,
             )
+
             assert isinstance(lsbs_to_remove, int)
             assert isinstance(max_acc_size, int)
 
-            # print(f"{number_of_tlus=}, {lsbs_to_remove=} {coefficients.shape=}, {offsets.shape=}")
             if number_of_tlus == -1:
                 # Don't do here for now
-                # print("SKIPPING NODE")
                 continue
 
             # ####################### This is the part where we modify the graph ###############
@@ -1771,6 +1797,7 @@ class TLU1bitDecomposition(GraphProcessor):
             # 4. Modify LUT to compute a basic sign operation
             def sign_function(args, **kwargs):
                 return (args >= 0).astype(np.int64)
+
             tlu_node.evaluator = GenericEvaluator(
                 operation=sign_function,
                 properties={"args": {}, "kwargs": {}},
@@ -1795,9 +1822,14 @@ class TLU1bitDecomposition(GraphProcessor):
             # 5. Multiply by coefficients and sum
             # (sign * deltas).sum(axis=-1) + base
             current_node = tlu_node
+
+            # todo: move the coefficient to the TLU
             current_node = add_leveled_op_with_cst(
                 current_node, coefficients.astype(np.int64), multiply, graph=graph.graph
             )
+            print(f"{np.abs(coefficients).max()=}")
+            print(f"{np.abs(coefficients).min()=}")
+
             current_node = add_sum(current_node, axis=(-1,), graph=graph.graph)
             current_node = add_leveled_op_with_cst(
                 current_node, base.astype(np.int64), add, graph=graph.graph
@@ -1847,7 +1879,7 @@ class TLU1bitDecomposition(GraphProcessor):
 
         previous_node = variable_input_node
 
-        # 1. Multiply 
+        # 1. Multiply
         a_int = a.astype(np.int64)
         if np.any(a_int != 1):
             previous_node = add_leveled_op_with_cst(previous_node, a_int, multiply, graph.graph)
