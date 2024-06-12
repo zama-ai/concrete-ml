@@ -41,7 +41,7 @@ def run_hybrid_llm_test(
     configuration = Configuration(
         single_precision=False,
         compress_input_ciphertexts=True,
-        compress_eval_keys=True,
+        compress_evaluation_keys=True,
     )
 
     # Create a hybrid model

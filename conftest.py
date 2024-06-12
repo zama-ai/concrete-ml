@@ -155,7 +155,7 @@ def default_configuration():
         fhe_simulation=False,
         fhe_execution=True,
         compress_input_ciphertexts=os.environ.get("USE_INPUT_COMPRESSION", "1") == "1",
-        compress_eval_keys=True,
+        compress_evaluation_keys=True,
     )
 
 
