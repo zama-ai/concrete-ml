@@ -53,6 +53,11 @@ QUANT_ROUND_LIKE_ROUND_PBS = False
 # However, for internal testing purposes, we retain the capability to disable this feature
 os.environ["USE_INPUT_COMPRESSION"] = os.environ.get("USE_INPUT_COMPRESSION", "1")
 
+# Enable PBS evaluation key compression (~4x size reduction)
+# Note: This setting is fixed and cannot be altered by users
+# However, for internal testing purposes, we retain the capability to disable this feature
+os.environ["USE_KEY_COMPRESSION"] = os.environ.get("USE_KEY_COMPRESSION", "1")
+
 
 class FheMode(str, enum.Enum):
     """Enum representing the execution mode.
