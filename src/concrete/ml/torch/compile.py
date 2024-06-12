@@ -254,6 +254,7 @@ def _compile_torch_or_onnx_model(
         global_p_error=global_p_error,
         verbose=verbose,
         inputs_encryption_status=inputs_encryption_status,
+        compress_eval_keys=True,
     )
 
     return quantized_module

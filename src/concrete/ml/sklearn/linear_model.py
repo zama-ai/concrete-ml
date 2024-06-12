@@ -347,7 +347,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         # Enable the underlying FHE circuit to be composed with itself
         # This feature is used in order to be able to iterate in the clear n times without having
         # to encrypt/decrypt the weight/bias values between each loop
-        configuration = Configuration(composable=True)
+        configuration = Configuration(composable=True, compress_evaluation_keys=True)
 
         composition_mapping = {0: 2, 1: 3}
 

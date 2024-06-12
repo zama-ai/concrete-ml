@@ -582,6 +582,7 @@ class BaseEstimator:
             fhe_simulation=False,
             fhe_execution=True,
             compress_input_ciphertexts=enable_input_compression,
+            compress_eval_keys=True,
         )
 
         self._is_compiled = True
