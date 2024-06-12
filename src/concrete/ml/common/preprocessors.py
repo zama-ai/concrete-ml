@@ -914,19 +914,45 @@ def decompose_1_bit_tlu(
             acc_size = bit_width(scale_up(input_range, scaling_factor=1, bias=offset))
             max_acc_size = max(max_acc_size, acc_size)
 
+
     lsbs_to_remove = max_acc_size - msbs_to_keep
 
-    if rounding_function.__name__ == "round_bit_pattern":
-        offsets_to_apply += 2 ** (lsbs_to_remove - 1)
+    # todo: properly support this
+    if lsbs_to_remove < 1:
+        return (
+            max_number_of_thresholds,
+            0,
+            max_acc_size,
+            offsets_to_apply,
+            coefficients,
+            base,
+        )
 
-    # todo: add sanity check on accumulator size right before rounding
+    # todo verify this offset to do truncation
+    if rounding_function.__name__ == "round_bit_pattern":
+        half = 1 << (lsbs_to_remove - 1)
+        offsets_to_apply += half
 
     # Sanity check
+    data_before_rounding = (subgraph_inputs[..., np.newaxis] - offsets_to_apply).astype(np.int64)
+    updated_acc_size = bit_width(data_before_rounding)
+
+    if (bit_width(data_before_rounding) != max_acc_size) and (rounding_function.__name__ == "round_bit_pattern"):
+        offsets_to_apply -= half
+        lsbs_to_remove = updated_acc_size - msbs_to_keep
+        half = 1 << (lsbs_to_remove - 1)
+        offsets_to_apply += half
+
+    data_before_rounding = (subgraph_inputs[..., np.newaxis] - offsets_to_apply).astype(np.int64)
+    new_updated_acc_size = bit_width(data_before_rounding)
+    assert new_updated_acc_size == updated_acc_size, f"{new_updated_acc_size=}, {updated_acc_size=} {max_acc_size=}"
+
     rounded = rounding_function(
-        (subgraph_inputs[..., np.newaxis] - offsets_to_apply).astype(np.int64),
+        data_before_rounding,
         lsbs_to_remove=int(lsbs_to_remove),
     )
-    pred = ((rounded >= 0).astype(np.int64) * coefficients).sum(axis=-1) + base
+    signs = (rounded >= 0).astype(np.int64)
+    pred = (signs * coefficients).sum(axis=-1) + base
 
     if (subgraph_outputs != pred).any():
         # TODO: DEBUG
@@ -1640,6 +1666,7 @@ class Breakpoint(GraphProcessor):
 
 # todo: fix insert rounding to make sure that it only adds rounding if there is
 # no rounding already -> Put TLU-1bit and then InsertRounding in CIFAR
+# todo: put coefficients in the TLU to avoid multiplication
 class TLU1bitDecomposition(GraphProcessor):
     def __init__(
         self,

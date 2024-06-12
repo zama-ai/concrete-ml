@@ -1,5 +1,6 @@
 # TODO: auto-optim doesn't compile because for some reason the bit-width is not correct
 import argparse
+from os import truncate
 import random
 from pathlib import Path
 
@@ -126,15 +127,12 @@ def main(args):
 
     # todo: debug why truncate msbs=1 doesn't work
     # todo: debug why rounding msbs=4 doesn't work
-    exactness = fhe.Exactness.APPROXIMATE
-    rounding_function = round_bit_pattern
-    msbs = 1
 
     # truncate - exact - msbs=4: works fine
 
-    exactness = fhe.Exactness.APPROXIMATE
-    rounding_function = truncate_bit_pattern
-    msbs = 4
+    exactness: fhe.Exactness = args.exactness
+    rounding_function = args.rounding_function
+    msbs: int = args.msbs
 
     # Multi-parameter strategy is used in order to speed-up the FHE executions
     tlu_optimizer = TLU1bitDecomposition(
@@ -157,7 +155,7 @@ def main(args):
         ],
         additional_post_processors=[
             show_processor,
-            breakpoint_processor,
+            # breakpoint_processor,
         ],
         multi_parameter_strategy=fhe.MultiParameterStrategy.PRECISION_AND_NORM2,
     )
@@ -215,6 +213,40 @@ if __name__ == "__main__":
         default=0,
         dest="seed",
         help="Random seed",
+    )
+
+    parser.add_argument(
+        "--exactness",
+        type=fhe.Exactness,
+        default=fhe.Exactness("approximate"),
+        dest="exactness",
+        help="Exactness",
+        # choices=["approximate", "exact"]
+    )
+
+    def round_function_selection(function_name):
+        if function_name == "round_bit_pattern":
+            return round_bit_pattern
+        elif function_name == "truncate_bit_pattern":
+            return truncate_bit_pattern
+        else:
+            raise ValueError()
+
+    parser.add_argument(
+        "--rounding_function",
+        type=round_function_selection,
+        default=round_bit_pattern,
+        dest="rounding_function",
+        help="Rounding function",
+        # choices=["round_bit_pattern", "truncate_bit_pattern"]
+    )
+
+    parser.add_argument(
+        "--msbs",
+        type=int,
+        default=1,
+        dest="msbs",
+        help="Msbs to keep",
     )
 
     args = parser.parse_args()
