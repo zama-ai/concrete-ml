@@ -86,8 +86,8 @@ x, labels = next(iter(test_loader))
 base_configuration = Configuration()
 
 exactness = Exactness.APPROXIMATE
-msbs_to_keep = 4
-rounding_function = truncate_bit_pattern
+msbs_to_keep = 1
+rounding_function = round_bit_pattern
 
 tlu_optimizer = TLU1bitDecomposition(
     n_jumps_limit=2,
