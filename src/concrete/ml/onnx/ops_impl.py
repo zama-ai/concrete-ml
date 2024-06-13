@@ -26,7 +26,9 @@ from concrete.ml.onnx.onnx_impl_utils import (
 
 
 class RawOpOutput(numpy.ndarray):
-    """Type construct that marks an ndarray as a raw output of a quantized op."""
+    """Type construct that marks an ndarray as a raw output of a quantized op.
+    A raw output is an output that is a clear constant such as a shape, a constant float, an index..
+    """
 
 
 # This function is only used for comparison operators that return boolean values by default.
