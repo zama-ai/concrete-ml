@@ -718,6 +718,7 @@ jobs:
           )
           && steps.conformance.outcome == 'success' 
           && !cancelled()
+
         shell: bash +e {0}
         run: |
           if [[ "${{ env.IS_WEEKLY }}" == "true" ]]; then
@@ -1112,8 +1113,8 @@ jobs:
   # basically when the `matrix-preparation` has not been skipped
   # Side note: environmental variables cannot be used for jobs conditions, so we need to determine 
   # if the job should be run or not in an previous job and store it in its output
-  send-report:
-    name: Send Slack report
+  slack-report:
+    name: Slack report
     runs-on: ubuntu-20.04
     if: |
       always() 
@@ -1198,7 +1199,7 @@ jobs:
 
           echo "EOF" >> "$GITHUB_ENV"
 
-      - name: Slack report
+      - name: Send Slack report
         uses: rtCamp/action-slack-notify@4e5fb42d249be6a45a298f3c9543b111b02f7907
         env:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
@@ -1210,3 +1211,29 @@ jobs:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
           SLACKIFY_MARKDOWN: true
 
+
+  stop-ec2-failure-slack-alert:
+    name: Stop EC2 failure Slack alert
+    runs-on: ubuntu-20.04
+    if: |
+      always() 
+      && needs.matrix-preparation.result != 'skipped' 
+      && needs.stop-runner-linux.result == 'failure'
+    timeout-minutes: 2
+    needs:
+      [
+        matrix-preparation,
+        stop-runner-linux,
+      ]
+
+    steps:
+      - name: Send stop EC2 failure Slack alert
+        uses: rtCamp/action-slack-notify@4e5fb42d249be6a45a298f3c9543b111b02f7907
+        env:
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+          SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
+          SLACK_COLOR: 'failure'
+          SLACK_TITLE: 'Stopping EC2 instances (linux) failed ❌'
+          SLACK_MESSAGE: '<!channel> EC2 instances must be terminated manually as soon as possible'
+          SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
