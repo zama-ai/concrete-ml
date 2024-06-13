@@ -119,9 +119,24 @@ def test_client_server_sklearn_inference(
     max_bit_width = fhe_circuit.graph.maximum_integer_bit_width()
     print(f"Max width {max_bit_width}")
 
-    # Compare the FHE predictions with the clear ones. Simulated predictions are not considered in
-    # this test.
+    # Check that key compression is enabled
+    assert os.environ.get("USE_KEY_COMPRESSION") == "1", "'USE_KEY_COMPRESSION' is not enabled"
+
+    # Check with key compression
     check_is_good_execution_for_cml_vs_circuit(x_test, model, simulate=False, n_allowed_runs=1)
+
+    # Check without key compression
+    with pytest.MonkeyPatch.context() as mp_context:
+
+        # Disable input ciphertext compression
+        mp_context.setenv("USE_KEY_COMPRESSION", "0")
+
+        # Check that input ciphertext compression is disabled
+        assert os.environ.get("USE_KEY_COMPRESSION") == "0", "'USE_KEY_COMPRESSION' is not disabled"
+
+        # Compare the FHE predictions with the clear ones. Simulated predictions are not
+        # considered in this test.
+        check_is_good_execution_for_cml_vs_circuit(x_test, model, simulate=False, n_allowed_runs=1)
 
     # Check client/server FHE predictions vs the FHE predictions of the dev model
     check_client_server_inference(
