@@ -164,12 +164,12 @@ def save_client_server(client_path: Path = CLIENT_PATH, server_path: Path = SERV
     # Get the input-set and circuit generating functions
     inputset = config["get_inputset"]()
     cp_func = config["to_compile"]
-    compilation_configuration = Configuration(compress_evaluation_keys=True)
+    configuration = Configuration(
+        composable=True, compress_evaluation_keys=True, compress_input_ciphertexts=True
+    )
 
     # Compile the circuit and allow it to be composable with itself
-    merge_circuit = cp_func.compile(
-        inputset, composable=True, configuration=compilation_configuration
-    )
+    merge_circuit = cp_func.compile(inputset, configuration=configuration)
 
     # Save the client and server files using the MLIR
     merge_circuit.client.save(client_path)

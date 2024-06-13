@@ -37,17 +37,9 @@ def run_hybrid_llm_test(
 ):
     """Run the test for any model with its private module names."""
 
-    # Multi-parameter strategy is used in order to speed-up the FHE executions
-    configuration = Configuration(
-        single_precision=False,
-        compress_input_ciphertexts=True,
-    )
-
     # Create a hybrid model
     hybrid_model = HybridFHEModel(model, module_names)
-    hybrid_model.compile_model(
-        inputs, p_error=0.01, n_bits=8, rounding_threshold_bits=8, configuration=configuration
-    )
+    hybrid_model.compile_model(inputs, p_error=0.01, n_bits=8, rounding_threshold_bits=8)
 
     # Check we can run the simulate locally
     logits_simulate = hybrid_model(inputs, fhe="simulate").logits
