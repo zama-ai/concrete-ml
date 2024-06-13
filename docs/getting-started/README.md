@@ -107,12 +107,9 @@ If you have built awesome projects using Concrete ML, feel free to let us know a
 
 ## Additional resources
 
-- [Dedicated Concrete ML community support](https://community.zama.ai/c/concrete-ml/8)
+- [Community channels](https://zama.ai/community-channels)
 - [Zama's blog](https://www.zama.ai/blog)
-- [FHE.org community](https://fhe.org)
 
 ## Support
 
-- Support forum: [https://community.zama.ai](https://community.zama.ai) (we answer in less than 24 hours).
-- Live discussion on the FHE.org Discord server: [https://discord.fhe.org](https://discord.fhe.org) (inside the #**concrete** channel).
-- Do you have a question about Zama? Write us on [Twitter](https://twitter.com/zama_fhe) or send us an email at: **hello@zama.ai**
+- [Community channels](https://zama.ai/community-channels) (we answer in less than 24 hours).
