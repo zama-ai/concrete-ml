@@ -131,7 +131,7 @@ then
     fi
 
     poetry install --only main
-    python -m pip install -U --pre --extra-index-url https://pypi.zama.ai "${CP_VERSION}"
+    python -m pip install -U --pre --extra-index-url https://pypi.zama.ai/cpu "${CP_VERSION}"
     python -m pip install pip-licenses
 
     # In --format=csv such that the column length (and so, the diff) do not change with longer
