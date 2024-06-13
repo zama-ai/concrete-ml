@@ -277,7 +277,7 @@ This software is distributed under the **BSD-3-Clause-Clear** license. Read [thi
 
 ## Support
 
-<a target="_blank" href="https://community.zama.ai">
+<a target="_blank" href="https://zama.ai/community-channels">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://github.com/zama-ai/concrete-ml/assets/157474013/86502167-4ea4-49e9-a881-0cf97d141818">
   <source media="(prefers-color-scheme: light)" srcset="https://github.com/zama-ai/concrete-ml/assets/157474013/3dcf41e2-1c00-471b-be53-2c804879b8cb">

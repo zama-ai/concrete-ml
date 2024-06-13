@@ -42,7 +42,6 @@
 ## References
 
 - [API](references/api/README.md)
-- [Pandas support](references/pandas.md)
 
 ## Explanations
 
