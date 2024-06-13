@@ -75,7 +75,7 @@ do
 
         # Install the dependencies as PyPI would do using the wheel file
         PYPI_WHEEL=$(find dist -type f -name "*.whl")
-        python -m pip install --extra-index-url https://pypi.zama.ai "${PYPI_WHEEL}"
+        python -m pip install --extra-index-url https://pypi.zama.ai/cpu "${PYPI_WHEEL}"
 
     elif [ "$METHOD" == "pip" ]
     then

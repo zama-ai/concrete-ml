@@ -48,3 +48,4 @@ tzdata, 2024.1, Apache Software License
 urllib3, 2.2.1, MIT License
 xgboost, 1.6.2, Apache Software License
 z3-solver, 4.13.0.0, MIT License
+zipp, 3.19.2, MIT License
