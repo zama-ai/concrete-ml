@@ -718,7 +718,7 @@ jobs:
           )
           && steps.conformance.outcome == 'success' 
           && !cancelled()
-          && false
+
         shell: bash +e {0}
         run: |
           if [[ "${{ env.IS_WEEKLY }}" == "true" ]]; then
@@ -1002,9 +1002,6 @@ jobs:
           label: ${{ needs.start-runner-linux.outputs.label-310 }}
           ec2-instance-id: ${{ needs.start-runner-linux.outputs.ec2-instance-id-310 }}
           mode: stop
-      
-      - name: trigger error
-        run: exit 1
 
   build-macos-intel:
     name: Python ${{ matrix.python_version }} (macOS, intel)
