@@ -876,6 +876,7 @@ class QuantizedModule:
 
         # Enable input ciphertext compression
         enable_input_compression = os.environ.get("USE_INPUT_COMPRESSION", "1") == "1"
+        enable_key_compression = os.environ.get("USE_KEY_COMPRESSION", "1") == "1"
 
         self.fhe_circuit = compiler.compile(
             inputset,
@@ -889,6 +890,7 @@ class QuantizedModule:
             fhe_simulation=False,
             fhe_execution=True,
             compress_input_ciphertexts=enable_input_compression,
+            compress_evaluation_keys=enable_key_compression,
         )
 
         self._is_compiled = True

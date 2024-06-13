@@ -75,6 +75,7 @@ def ml_check(args, keyring_dir_as_str):
         enable_unsafe_features=True,
         use_insecure_key_cache=is_fast,
         insecure_key_cache_location=keyring_dir_as_str,
+        compress_input_ciphertexts=True,
     )
 
     # We first compile the model with some data, here the training set
@@ -120,6 +121,8 @@ def cn_check(args, keyring_dir_as_str):
         enable_unsafe_features=is_fast,
         use_insecure_key_cache=is_fast,
         insecure_key_cache_location=keyring_dir_as_str,
+        compress_input_ciphertexts=True,
+        compress_evaluation_keys=True,
     )
 
     print("Compiling...")

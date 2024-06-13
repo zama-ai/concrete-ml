@@ -40,6 +40,7 @@ def run_hybrid_llm_test(
     # Multi-parameter strategy is used in order to speed-up the FHE executions
     configuration = Configuration(
         single_precision=False,
+        compress_input_ciphertexts=True,
     )
 
     # Create a hybrid model
