@@ -52,13 +52,36 @@ concrete_clf.fit(X, y)
 
 concrete_clf.compile(X, debug_config)
 ```
+## Common compilation errors
 
-## Compilation error debugging
-
-Compilation errors that signal that the ML model is not FHE compatible are usually of two types:
+The most common compilation errors stem from the following causes:
 
 1. TLU input maximum bit-width is exceeded
+
+This error can occur when `rounding_threshold_bits` is not used and accumulated intermediate values in the computation exceed 16-bits. The most common approaches to fix this issue are:
+ - Reduce quantization `n_bits`. However, this may reduce accuracy. When quantization `n_bits` must be below 6, it is best to use [Quantization Aware Training](../deep-learning/fhe_friendly_models.md). 
+ - Use `rounding_threshold_bits`. This feature is described [here](../explanations/advanced_features.md#rounded-activations-and-quantizers). It is recommended to use the [`fhe.Exactness.APPROXIMATE`](../references/api/concrete.ml.torch.compile.md#function-compile_torch_model) setting, and set the rounding bits to 1 or 2 bits higher than the quantization `n_bits`
+ - Use [pruning](../explanations/pruning.md)
+
 1. No crypto-parameters can be found for the ML model: `RuntimeError: NoParametersFound` is raised by the compiler
+
+This error occurs when using `rounding_threshold_bits` in the `compile_torch_model` function. The solutions in this case are similar to the ones for the previous error.
+
+1. Quantization failed with `Could not determine a unique scale for the quantization!`. 
+
+This error is a related to the concatenation operator. When using quantization aware training with Brevitas the following approach will fix this error:
+
+  1. Add a new `QuantIdentity` layer in your model. Suppose it is called `quant_concat`.
+  2. In the `forward` function, before concatenation of `x` and `y`, apply it to both tensors that are concatenated:
+
+<!--pytest-codeblocks:skip-->
+```python
+torch.cat([self.quant_concat(x), self.quant_concat(y)])
+```
+
+## Debugging compilation errors
+
+Compilation errors due to FHE incompatible models, such as maximum bit-width exceeded or `NoParametersFound` can be debugged by examining the bit-widths associated with various intermediate values of the FHE computation.
 
 The following produces a neural network that is not FHE-compatible:
 
@@ -115,6 +138,8 @@ Function you are trying to compile cannot be compiled:
 ```
 
 The error `this 17-bit value is used as an input to a table lookup` indicates that the 16-bit limit on the input of the Table Lookup (TLU) operation has been exceeded. To pinpoint the model layer that causes the error, Concrete ML provides the [bitwidth_and_range_report](../references/api/concrete.ml.quantization.quantized_module.md#method-bitwidth_and_range_report) helper function. First, the model must be compiled so that it can be [simulated](fhe_assistant.md#simulation).
+
+On the other hand, `NoParametersFound` is encountered when using `rounding_threshold_bits`. When using this setting, the 16-bit accumulator limit is relaxed. However, reducing bit-width, or reducing the `rounding_threshold_bits`, or using  using the [`fhe.Exactness.APPROXIMATE`](../references/api/concrete.ml.torch.compile.md#function-compile_torch_model) rounding method can help.
 
 ### Fixing compilation errors
 
