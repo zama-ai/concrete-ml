@@ -7,7 +7,11 @@ import pandas
 
 from concrete import fhe
 from concrete.ml.pandas._development import CLIENT_PATH, CURRENT_API_VERSION, get_encrypt_config
-from concrete.ml.pandas._processing import check_schema_format, post_process_to_pandas, pre_process_from_pandas
+from concrete.ml.pandas._processing import (
+    check_schema_format,
+    post_process_to_pandas,
+    pre_process_from_pandas,
+)
 from concrete.ml.pandas._utils import decrypt_elementwise, encrypt_elementwise, encrypt_value
 from concrete.ml.pandas.dataframe import EncryptedDataFrame
 

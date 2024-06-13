@@ -5,11 +5,12 @@ from functools import partial
 from pathlib import Path
 from typing import Dict, List, Tuple, Union
 
+import numpy
 from concrete.fhe import Configuration
 from concrete.fhe.tracing import Tracer
-import numpy
 
 from concrete import fhe
+
 from ..quantization.quantized_module import _get_inputset_generator
 
 script_dir = Path(__file__).parent
@@ -33,20 +34,24 @@ SERVER_PATH = CLIENT_SERVER_DIR / "server.zip"
 
 N_BITS_PANDAS = 4
 
-from ..sklearn._fhe_training_utils  import LogisticRegressionTraining, make_training_inputset
-from ..torch.compile import build_quantized_module
 from ..common.utils import generate_proxy_function
+from ..sklearn._fhe_training_utils import LogisticRegressionTraining, make_training_inputset
+from ..torch.compile import build_quantized_module
+
 
 class DFApiV2Helper:
     _N_DIMS_TRAINING = 1
 
-    _training_input_set = make_training_inputset(
-        numpy.zeros((_N_DIMS_TRAINING, ), dtype=numpy.int64), 
-        numpy.ones((_N_DIMS_TRAINING, ) , dtype=numpy.int64) * 2**N_BITS_PANDAS - 1, 
-        0, 
-        2**N_BITS_PANDAS-1, 
-        8, True
+    # Expect data and weight values to be between -1 and 1
+    _training_calibration_set = make_training_inputset(
+        x_min=numpy.ones((_N_DIMS_TRAINING,), dtype=numpy.float32) * (-1),
+        x_max=numpy.ones((_N_DIMS_TRAINING,), dtype=numpy.float32),
+        param_min=-1,
+        param_max=1,
+        batch_size=8,
+        fit_intercept=True,
     )
+
     # Build the quantized module
     _training_module = build_quantized_module(
         model=LogisticRegressionTraining(
@@ -54,7 +59,7 @@ class DFApiV2Helper:
             iterations=1,
             fit_bias=False,
         ),
-        torch_inputset=_training_input_set,
+        torch_inputset=_training_calibration_set,
         import_qat=False,
         n_bits=N_BITS_PANDAS,
         rounding_threshold_bits=6,
@@ -64,22 +69,19 @@ class DFApiV2Helper:
         _training_module._clear_forward, _training_module.ordered_module_input_names
     )
 
+    _training_q_input_set = _training_module.quantize_input(*_training_calibration_set)
+
 
 @fhe.module()
 class DFApiV2:
-    @fhe.function(
-        {"val_1": "encrypted", "val_2": "encrypted", "left_key": "encrypted", "right_key": "encrypted"}
-    )
-    def train_log_reg(
-        val_1: Union[Tracer, int],
-        val_2: Union[Tracer, int],
-        left_key: Union[Tracer, int],
-        right_key: Union[Tracer, int],
-    ):
-        return DFApiV2Helper._forward_proxy(val_1, val_2, left_key, right_key)
 
     @fhe.function(
-        {"val_1": "encrypted", "val_2": "encrypted", "left_key": "encrypted", "right_key": "encrypted"}
+        {
+            "val_1": "encrypted",
+            "val_2": "encrypted",
+            "left_key": "encrypted",
+            "right_key": "encrypted",
+        }
     )
     def left_right_join_to_compile(
         val_1: Union[Tracer, int],
@@ -88,6 +90,42 @@ class DFApiV2:
         right_key: Union[Tracer, int],
     ) -> Union[Tracer, int]:
         return _left_right_join_to_compile_internal(val_1, val_2, left_key, right_key)
+
+    @fhe.function(
+        {
+            "a": "encrypted",
+            "b": "encrypted",
+            "c": "encrypted",
+            "d": "encrypted",
+            "e": "encrypted",
+            "f": "encrypted",
+            "g": "encrypted",
+            "h": "encrypted",
+        }
+    )
+    def to_encrypted_tensor(a, b, c, d, e, f, g, h):
+        output = fhe.array([a, b, c, d, e, f, g, h])
+        return output
+
+    @fhe.function({"x": "encrypted", "y": "encrypted", "weights": "encrypted", "bias": "encrypted"})
+    def train_log_reg(
+        x: Union[Tracer, int],
+        y: Union[Tracer, int],
+        weights: Union[Tracer, int],
+        bias: Union[Tracer, int],
+    ):
+        return DFApiV2Helper._forward_proxy(x, y, weights, bias)
+
+    composition = fhe.Wired(
+        [
+            fhe.Wire(
+                fhe.AllOutputs(left_right_join_to_compile), fhe.AllInputs(to_encrypted_tensor)
+            ),
+            fhe.Wire(fhe.AllOutputs(to_encrypted_tensor), fhe.Input(train_log_reg, 0)),
+            fhe.Wire(fhe.AllOutputs(to_encrypted_tensor), fhe.Input(train_log_reg, 1)),
+        ]
+    )
+
 
 def identity_pbs(value: Union[Tracer, int]) -> Union[Tracer, int]:
     """Define an identity TLU.
@@ -121,6 +159,7 @@ def left_right_join_to_compile(
         Union[Tracer, int]): The new accumulated sum.
     """
     return _left_right_join_to_compile_internal(val_1, val_2, left_key, right_key)
+
 
 def _left_right_join_to_compile_internal(
     val_1: Union[Tracer, int],
@@ -194,8 +233,19 @@ def get_left_right_join_inputset(n_bits: int) -> List:
 
     return inputset
 
-def get_training_inputset():
-    return _get_inputset_generator(tuple(map(lambda x: x.astype(numpy.int64), DFApiV2Helper._training_input_set)))
+
+def get_to_encrypted_tensor_inputset(n_bits, n_inputs):
+    high = get_left_right_join_max_value(n_bits)
+
+    min_max_values = tuple([[0, high]] * n_inputs)
+
+    inputset = list(itertools.product(*min_max_values))
+    return inputset
+
+
+def get_training_q_inputset():
+    return _get_inputset_generator(DFApiV2Helper._training_q_input_set)
+
 
 # Store the configuration functions and parameters to their associated operator
 PANDAS_OPS_TO_CIRCUIT_CONFIG = {
@@ -208,14 +258,23 @@ PANDAS_OPS_TO_CIRCUIT_CONFIG = {
         },
     },
     2: {
-        "get_inputset": { "left_right_join_to_compile": partial(get_left_right_join_inputset, n_bits=N_BITS_PANDAS), "train_log_reg": get_training_inputset},
+        "get_inputset": {
+            "left_right_join_to_compile": partial(
+                get_left_right_join_inputset, n_bits=N_BITS_PANDAS
+            ),
+            "to_encrypted_tensor": partial(
+                get_to_encrypted_tensor_inputset, n_bits=N_BITS_PANDAS, n_inputs=8
+            ),
+            "train_log_reg": get_training_q_inputset,
+        },
         "to_compile": DFApiV2,
         "encrypt_config": {
             "n": 4,
             "pos": 1,
         },
-    }
+    },
 }
+
 
 def get_encrypt_config() -> Dict:
     """Get the configuration parameters to use when encrypting the input values.
@@ -248,7 +307,7 @@ def save_client_server(client_path: Path = CLIENT_PATH, server_path: Path = SERV
 
     Args:
         client_path (Path): The path where to save the client file. Default to CLIENT_PATH.
-        server_path (Path): The path where to save the client file. Default to SERVER_PATH.
+        server_path (Path): The path where to save the server file. Default to SERVER_PATH.
     """
     client_path, server_path = Path(client_path), Path(server_path)
 
@@ -265,13 +324,12 @@ def save_client_server(client_path: Path = CLIENT_PATH, server_path: Path = SERV
 
     cp_func = config["to_compile"]
     cp_func.dump_artifacts_on_unexpected_failures = False
-    
+
     # Configuration used for this API version
     configuration = API_VERSION_SPECS[CURRENT_API_VERSION]["configuration"]
-    configuration.parameter_selection_strategy = "v0"
 
     # Compile the circuit and allow it to be composable with itself
-    merge_circuit = cp_func.compile(inputset, composable=True, configuration=configuration)
+    merge_circuit = cp_func.compile(inputset, configuration=configuration)
 
     # Save the client and server files using the MLIR
     merge_circuit.client.save(client_path)

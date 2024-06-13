@@ -15,7 +15,11 @@ from ..common.utils import FheMode
 from ..onnx.ops_impl import numpy_sigmoid
 from ..quantization import QuantizedModule
 from ..torch.compile import _compile_torch_or_onnx_model
-from ._fhe_training_utils import LogisticRegressionTraining, binary_cross_entropy, make_training_inputset
+from ._fhe_training_utils import (
+    LogisticRegressionTraining,
+    binary_cross_entropy,
+    make_training_inputset,
+)
 from .base import (
     Data,
     SklearnLinearClassifierMixin,
@@ -298,7 +302,14 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         # Compile and return the training quantized module
         # 54 = 2 classes * 3 values for x * 2 values for the weights * 2 values for the bias
         # Number of combination of extreme values
-        compile_set = make_training_inputset(x_min, x_max, self.parameters_range[0], self.parameters_range[1], self.batch_size, self.fit_intercept)
+        compile_set = make_training_inputset(
+            x_min,
+            x_max,
+            self.parameters_range[0],
+            self.parameters_range[1],
+            self.batch_size,
+            self.fit_intercept,
+        )
 
         # Instantiate the LogisticRegressor model
         trainer = LogisticRegressionTraining(
