@@ -59,21 +59,29 @@ The most common compilation errors stem from the following causes:
 
 #### 1. TLU input maximum bit-width is exceeded
 
-This error can occur when `rounding_threshold_bits` is not used and accumulated intermediate values in the computation exceed 16-bits. The most common approaches to fix this issue are:
+**Error message**: `this [N]-bit value is used as an input to a table lookup`
+
+**Cause**: This error can occur when `rounding_threshold_bits` is not used and accumulated intermediate values in the computation exceed 16-bits. The most common approaches to fix this issue are:
+
+**Possible solutions**:
 
 - Reduce quantization `n_bits`. However, this may reduce accuracy. When quantization `n_bits` must be below 6, it is best to use [Quantization Aware Training](../deep-learning/fhe_friendly_models.md).
 - Use `rounding_threshold_bits`. This feature is described [here](../explanations/advanced_features.md#rounded-activations-and-quantizers). It is recommended to use the [`fhe.Exactness.APPROXIMATE`](../references/api/concrete.ml.torch.compile.md#function-compile_torch_model) setting, and set the rounding bits to 1 or 2 bits higher than the quantization `n_bits`
 - Use [pruning](../explanations/pruning.md)
 
-#### 2. No crypto-parameters can be found for the ML model: `RuntimeError: NoParametersFound` is raised by the compiler
+#### 2. No crypto-parameters can be found
 
-This error occurs when using `rounding_threshold_bits` in the `compile_torch_model` function. The solutions in this case are similar to the ones for the previous error.
+**Error message**: `RuntimeError: NoParametersFound` is raised by the compiler
 
-#### 3. Quantization import failed with
+**Cause**: This error occurs when using `rounding_threshold_bits` in the `compile_torch_model` function.
 
-The error associated is `Error occurred during quantization aware training (QAT) import [...] Could not determine a unique scale for the quantization!`.
+**Possible solutions**: The solutions in this case are similar to the ones for the previous error.
 
-This error is a due to missing quantization operators in the model that is imported as a quantized aware training model. See [this guide](../deep-learning/fhe_friendly_models.md) for a guide on how to use Brevitas layers. This error message is generated when not all layers take inputs that are quantized through `QuantIdentity` layers.
+#### 3. Quantization import failed
+
+**Error message**: `Error occurred during quantization aware training (QAT) import [...] Could not determine a unique scale for the quantization!`.
+
+**Cause**: This error is a due to missing quantization operators in the model that is imported as a quantized aware training model. See [this guide](../deep-learning/fhe_friendly_models.md) for a guide on how to use Brevitas layers. This error message is generated when not all layers take inputs that are quantized through `QuantIdentity` layers.
 
 A common example is related to the concatenation operator. Suppose two tensors `x` and `y` are produced by two layers and need to be concatenated:
 
@@ -85,18 +93,18 @@ y = self.dense2(y)
 z = torch.cat([x, y])
 ```
 
-In the example above, the `x` and `y` layers need quantization before being concatenated. When using quantization aware training with Brevitas the following approach will fix this error:
+In the example above, the `x` and `y` layers need quantization before being concatenated.
 
-1. Add a new `QuantIdentity` layer in your model. Suppose it is called `quant_concat`.
-1. In the `forward` function, before concatenation of `x` and `y`, apply it to both tensors that are concatenated:
+**Possible solutions**:
+
+1. If the error occurs for the first layer of the model: Add a  `QuantIdentity` layer in your model and apply it on the input of the `forward` function, before the first layer is computed.
+1. If the error occurs for a concatenation or addition layer: Add a new `QuantIdentity` layer in your model. Suppose it is called `quant_concat`. In the `forward` function, before concatenation of `x` and `y`, apply it to both tensors that are concatenated. The usage of a common `Quantidentity` layer to quantize both tensors that are concatenated ensures that they have the same scale:
 
 <!--pytest-codeblocks:skip-->
 
 ```python
 z = torch.cat([self.quant_concat(x), self.quant_concat(y)])
 ```
-
-The usage of a common `Quantidentity` layer to quantize both tensors that are concatenated ensures that they have the same scale.
 
 ## Debugging compilation errors
 

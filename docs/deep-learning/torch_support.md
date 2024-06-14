@@ -5,7 +5,7 @@ In addition to the built-in models, Concrete ML supports generic machine learnin
 There are two approaches to build [FHE-compatible deep networks](../getting-started/concepts.md#model-accuracy-considerations-under-fhe-constraints):
 
 - [Quantization Aware Training (QAT)](../explanations/quantization.md) requires using custom layers, but can quantize weights and activations to low bit-widths. Concrete ML works with [Brevitas](../explanations/inner-workings/external_libraries.md#brevitas), a library providing QAT support for PyTorch. To use this mode, compile models using `compile_brevitas_qat_model`
-- Post-training Quantization: in this mode a vanilla PyTorch model can be compiled. However, when quantizing weights & activations to fewer than 7 bits the accuracy can decrease strongly. To use this mode, compile models with `compile_torch_model`.
+- Post-training Quantization: in this mode a vanilla PyTorch model can be compiled. However, when quantizing weights & activations to fewer than 7 bits the accuracy can decrease strongly. On the other hand, depending on the model size, quantizing with 6-8 bits can be incompatible with FHE constraints. To use this mode, compile models with `compile_torch_model`.
 
 Both approaches should be used with the `rounding_threshold_bits` parameter set accordingly. The best values for this parameter need to be determined through experimentation. A good initial value to try is `6`. See [here](../explanations/advanced_features.md#rounded-activations-and-quantizers) for more details.
 
@@ -15,7 +15,7 @@ Both approaches should be used with the `rounding_threshold_bits` parameter set 
 
 ## Quantization-aware training
 
-The following example uses a simple QAT PyTorch model that implements a fully connected neural network with two hidden layers. Due to its small size, making this model respect FHE constraints is relatively easy.
+The following example uses a simple QAT PyTorch model that implements a fully connected neural network with two hidden layers. Due to its small size, making this model respect FHE constraints is relatively easy. To use QAT, Brevitas `QuantIdentity` nodes must be inserted in the PyTorch model, including one that quantizes the input of the `forward` function.
 
 ```python
 import brevitas.nn as qnn
@@ -63,6 +63,10 @@ quantized_module = compile_brevitas_qat_model(
 
 ```
 
+{% hint style="warning" %}
+If `QuantIdentity` layers are missing for any input or intermediate value, the compile function will raise an error. See the [common compilation errors page](./fhe_assistant.md#common-compilation-errors) for an explanation.
+{% endhint %}
+
 ## Post-training quantization
 
 The following example uses a simple PyTorch model that implements a fully connected neural network with two hidden layers. The model is compiled to use FHE using `compile_torch_model`.
@@ -103,7 +107,11 @@ quantized_module = compile_torch_model(
 
 ## Configuring quantization parameters
 
-The PyTorch/Brevitas models, created following the example above, require the user to configure quantization parameters such as `bit_width` (activation bit-width) and `weight_bit_width`. The quantization parameters, along with the number of neurons on each layer, will determine the accumulator bit-width of the network. Larger accumulator bit-widths result in higher accuracy but slower FHE inference time.
+With QAT, the PyTorch/Brevitas models, created following the example above, require the user to configure quantization parameters such as `bit_width` (activation bit-width) and `weight_bit_width`. When using this mode, set `n_bits=None` in the `compile_brevitas_qat_model`.
+
+With PTQ, the user needs to set the `n_bits` value in the `compile_torch_model` function. A trade-off between accuracy and FHE compatibility and latency must be determined manually.
+
+The quantization parameters, along with the number of neurons on each layer, will determine the accumulator bit-width of the network. Larger accumulator bit-widths result in higher accuracy but slower FHE inference time.
 
 ## Running encrypted inference
 
