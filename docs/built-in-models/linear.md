@@ -32,7 +32,7 @@ The same quantization parameters such as scale and zero-point are applied on all
 
 ## Pre-trained models
 
-You can convert an already trained scikit-learn linear model to a *Concrete ML one by using the [`from_sklearn_model`](../references/api/concrete.ml.sklearn.base.md#classmethod-from_sklearn_model) method. See [the following example](linear.md#loading-a-pre-trained-model). This functionality is only available for linear models.
+You can convert an already trained scikit-learn linear model to a *Concrete ML one by using the [`from_sklearn_model`](../references/api/concrete.ml.sklearn.base.md#classmethod-from_sklearn_model) method. See [the following example](linear.md#loading-a-pre-trained-model). 
 
 ## Example
 
