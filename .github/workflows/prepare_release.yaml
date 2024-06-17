@@ -12,7 +12,7 @@ concurrency:
 
 env:
   BRANCH_NAME: ${{ github.ref_name }}
-  BRANCH_IS_MAIN: ${{ github.ref_name == 'main' }} 
+  BRANCH_IS_MAIN: ${{ github.ref_name == 'main' }}
   BRANCH_IS_RELEASE: ${{ startsWith(github.ref_name, 'release/') }}
 
 jobs:
@@ -64,7 +64,7 @@ jobs:
           python -m pip install poetry==1.7.1
           make setup_env
 
-      # Make sure that the workflow has been triggered from a release branch if this is a patch 
+      # Make sure that the workflow has been triggered from a release branch if this is a patch
       # release or from main otherwise. If not, the release preparation process is stopped
       # Additionally, for dot/patch releases, if the release branch name does not match the current
       # release version, the release preparation process is stopped as well
@@ -80,7 +80,7 @@ jobs:
               exit 1
 
             else
-              # Release branches are only used for non-release candidates and have a special naming 
+              # Release branches are only used for non-release candidates and have a special naming
               # format (for example, "release/1.1.x" is used for all patch versions related to version 1.1)
               VERSION_MAJOR_MINOR=$(echo "${VERSION}" | cut -d '.' -f -2)
               EXPECTED_BRANCH_NAME="release/${VERSION_MAJOR_MINOR}.x"
@@ -126,7 +126,7 @@ jobs:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: ${{ job.status }}
-          SLACK_MESSAGE: "Preparing release ${{ env.VERSION }} finished with status \ 
+          SLACK_MESSAGE: "Preparing release ${{ env.VERSION }} finished with status \
             ${{ job.status }} (${{ env.ACTION_RUN_URL }})"
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
