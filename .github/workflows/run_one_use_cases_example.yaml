@@ -92,7 +92,7 @@ jobs:
           apt-get install -y python3-venv make git git-lfs binutils
 
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
         with:
           lfs: true
 
@@ -134,7 +134,7 @@ jobs:
     name: Send Slack notification
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
 
       - name: Prepare whole job status
         if: ${{ always() }}
