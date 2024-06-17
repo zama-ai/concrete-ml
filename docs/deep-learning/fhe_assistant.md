@@ -81,7 +81,7 @@ The most common compilation errors stem from the following causes:
 
 **Error message**: `Error occurred during quantization aware training (QAT) import [...] Could not determine a unique scale for the quantization!`.
 
-**Cause**: This error is a due to missing quantization operators in the model that is imported as a quantized aware training model. See [this guide](../deep-learning/fhe_friendly_models.md) on how to use Brevitas layers. This error message is generated when not all layers take inputs that are quantized through `QuantIdentity` layers.
+**Cause**: This error occurs when the model imported as a quantized-aware training model lacks quantization operators. See [this guide](../deep-learning/fhe_friendly_models.md) on how to use Brevitas layers. This error message indicates that some layers do not take inputs quantized through `QuantIdentity` layers.
 
 A common example is related to the concatenation operator. Suppose two tensors `x` and `y` are produced by two layers and need to be concatenated:
 
