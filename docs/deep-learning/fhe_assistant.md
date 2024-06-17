@@ -53,12 +53,60 @@ concrete_clf.fit(X, y)
 concrete_clf.compile(X, debug_config)
 ```
 
-## Compilation error debugging
+## Common compilation errors
 
-Compilation errors that signal that the ML model is not FHE compatible are usually of two types:
+#### 1. TLU input maximum bit-width is exceeded
 
-1. TLU input maximum bit-width is exceeded
-1. No crypto-parameters can be found for the ML model: `RuntimeError: NoParametersFound` is raised by the compiler
+**Error message**: `this [N]-bit value is used as an input to a table lookup`
+
+**Cause**: This error can occur when `rounding_threshold_bits` is not used and accumulated intermediate values in the computation exceed 16 bits.
+
+**Possible solutions**:
+
+- Reduce quantization `n_bits`. However, this may reduce accuracy. When quantization `n_bits` must be below 6, it is best to use [Quantization Aware Training](../deep-learning/fhe_friendly_models.md).
+- Use `rounding_threshold_bits`. This feature is described [here](../explanations/advanced_features.md#rounded-activations-and-quantizers). It is recommended to use the [`fhe.Exactness.APPROXIMATE`](../references/api/concrete.ml.torch.compile.md#function-compile_torch_model) setting, and set the rounding bits to 1 or 2 bits higher than the quantization `n_bits`
+- Use [pruning](../explanations/pruning.md)
+
+#### 2. No crypto-parameters can be found
+
+**Error message**: `RuntimeError: NoParametersFound`
+
+**Cause**: This error occurs when using `rounding_threshold_bits` in the `compile_torch_model` function.
+
+**Possible solutions**: The solutions in this case are similar to the ones for the previous error.
+
+#### 3. Quantization import failed
+
+**Error message**: `Error occurred during quantization aware training (QAT) import [...] Could not determine a unique scale for the quantization!`.
+
+**Cause**: This error occurs when the model imported as a quantized-aware training model lacks quantization operators. See [this guide](../deep-learning/fhe_friendly_models.md) on how to use Brevitas layers. This error message indicates that some layers do not take inputs quantized through `QuantIdentity` layers.
+
+A common example is related to the concatenation operator. Suppose two tensors `x` and `y` are produced by two layers and need to be concatenated:
+
+<!--pytest-codeblocks:skip-->
+
+```python
+x = self.dense1(x)
+y = self.dense2(y)
+z = torch.cat([x, y])
+```
+
+In the example above, the `x` and `y` layers need quantization before being concatenated.
+
+**Possible solutions**:
+
+1. If the error occurs for the first layer of the model: Add a  `QuantIdentity` layer in your model and apply it on the input of the `forward` function, before the first layer is computed.
+1. If the error occurs for a concatenation or addition layer: Add a new `QuantIdentity` layer in your model. Suppose it is called `quant_concat`. In the `forward` function, before concatenation of `x` and `y`, apply it to both tensors that are concatenated. The usage of a common `Quantidentity` layer to quantize both tensors that are concatenated ensures that they have the same scale:
+
+<!--pytest-codeblocks:skip-->
+
+```python
+z = torch.cat([self.quant_concat(x), self.quant_concat(y)])
+```
+
+## Debugging compilation errors
+
+Compilation errors due to FHE incompatible models, such as maximum bit-width exceeded or `NoParametersFound` can be debugged by examining the bit-widths associated with various intermediate values of the FHE computation.
 
 The following produces a neural network that is not FHE-compatible:
 
@@ -115,6 +163,8 @@ Function you are trying to compile cannot be compiled:
 ```
 
 The error `this 17-bit value is used as an input to a table lookup` indicates that the 16-bit limit on the input of the Table Lookup (TLU) operation has been exceeded. To pinpoint the model layer that causes the error, Concrete ML provides the [bitwidth_and_range_report](../references/api/concrete.ml.quantization.quantized_module.md#method-bitwidth_and_range_report) helper function. First, the model must be compiled so that it can be [simulated](fhe_assistant.md#simulation).
+
+On the other hand, `NoParametersFound` is encountered when using `rounding_threshold_bits`. When using this setting, the 16-bit accumulator limit is relaxed. However, reducing bit-width, or reducing the `rounding_threshold_bits`, or using  using the [`fhe.Exactness.APPROXIMATE`](../references/api/concrete.ml.torch.compile.md#function-compile_torch_model) rounding method can help.
 
 ### Fixing compilation errors
 
