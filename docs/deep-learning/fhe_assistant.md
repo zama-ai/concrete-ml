@@ -61,7 +61,7 @@ The most common compilation errors stem from the following causes:
 
 **Error message**: `this [N]-bit value is used as an input to a table lookup`
 
-**Cause**: This error can occur when `rounding_threshold_bits` is not used and accumulated intermediate values in the computation exceed 16-bits. The most common approaches to fix this issue are:
+**Cause**: This error can occur when `rounding_threshold_bits` is not used and accumulated intermediate values in the computation exceed 16 bits. 
 
 **Possible solutions**:
 
