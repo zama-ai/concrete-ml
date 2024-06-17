@@ -129,7 +129,7 @@ In this example, the input values `x_test` and the predicted values `y_pred` are
 
 ## Simulated FHE Inference in the clear
 
-One can perform the inference on clear data in order to evaluate the impact of quantization and of FHE computation on the accuracy of their model. See [this section](../deep-learning/fhe_assistant.md#simulation) for more details. Two approaches exist:
+You can perform the inference on clear data in order to evaluate the impact of quantization and of FHE computation on the accuracy of their model. See [this section](../deep-learning/fhe_assistant.md#simulation) for more details. Two approaches exist:
 
 - `quantized_module.forward(quantized_x, fhe="simulate")`: simulates FHE execution taking into account Table Lookup errors.\
   De-quantization must be done in a second step as for actual FHE execution. Simulation takes into account the `p_error`/`global_p_error` parameters
