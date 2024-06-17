@@ -3,6 +3,7 @@
 This document explains how to train [SGD Logistic Regression](../references/api/concrete.ml.sklearn.linear_model.md#class-sgdclassifier) on encrypted data. The [logistic regression training](../advanced_examples/LogisticRegressionTraining.ipynb) example shows this feature in action.
 
 ## Example
+
 This example shows how to instantiate a logistic regression model that trains on encrypted data:
 
 ```python

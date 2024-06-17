@@ -1,4 +1,5 @@
 # Neural networks
+
 This document introduces the simple built-in neural networks models that Concrete ML provides with a scikit-learn interface through the `NeuralNetClassifier` and `NeuralNetRegressor` classes.
 
 ## Supported models
@@ -48,29 +49,27 @@ The folowing figure shows the Concrete ML neural network trained with Quantizati
 
 ![Comparison neural networks](../figures/neural_nets_builtin.png)
 
-
-
 ## Architecture parameters
 
 - `module__n_layers`: number of layers in the FCNN.
-    - This parameter must be at least 1. Note that this is the total number of layers. For a single, hidden layer NN model, set `module__n_layers=2`
+  - This parameter must be at least 1. Note that this is the total number of layers. For a single, hidden layer NN model, set `module__n_layers=2`
 - `module__activation_function`: can be one of the Torch activations (such as nn.ReLU)
-    - See the full list of Torch activations [here](../deep-learning/torch_support.md#activation-functions).
-    -  Neural networks with `nn.ReLU` activation benefit from specific optimizations that make them around 10x faster than networks with other activation functions.
+  - See the full list of Torch activations [here](../deep-learning/torch_support.md#activation-functions).
+  - Neural networks with `nn.ReLU` activation benefit from specific optimizations that make them around 10x faster than networks with other activation functions.
 
 ## Quantization parameters
 
 - `n_w_bits` (default 3): number of bits for weights
 - `n_a_bits` (default 3): number of bits for activations and inputs
 - `n_accum_bits`: maximum accumulator bit width that is desired
-    - By default, this is unbounded, which, for weight and activation bit-width settings, [may make the trained networks fail in compilation](neural-networks.md#overflow-errors). When used, the implementation will attempt to keep accumulators under this bit width through [pruning](../explanations/pruning.md) (for example, setting some weights to zero).
+  - By default, this is unbounded, which, for weight and activation bit-width settings, [may make the trained networks fail in compilation](neural-networks.md#overflow-errors). When used, the implementation will attempt to keep accumulators under this bit width through [pruning](../explanations/pruning.md) (for example, setting some weights to zero).
 - `power_of_two_scaling` (default True): forces quantization scales to be powers-of-two
-    - When coupled with the ReLU activation, this optimize strongly the FHE inference time.
-    - See this [section](../explanations/quantization.md#quantization-special-cases) in the quantization documentation for more details.
+  - When coupled with the ReLU activation, this optimize strongly the FHE inference time.
+  - See this [section](../explanations/quantization.md#quantization-special-cases) in the quantization documentation for more details.
 
 ### Training parameters (from skorch)
 
-- `max_epochs` (default 10): The number of epochs to train the network 
+- `max_epochs` (default 10): The number of epochs to train the network
 - `verbose` (default: False): Whether to log loss/metrics during training
 - `lr` (default 0.001): Learning rate
 
@@ -79,8 +78,8 @@ You can find other parameters from skorch in the [skorch documentation](https://
 ### Advanced parameters
 
 - `module__n_hidden_neurons_multiplier` (default 4): The number of hidden neurons.
-    - This parameter will be automatically set proportional to the dimensionality of the input. It controls the proportionality factor. This value gives good accuracy while avoiding accumulator overflow.
-    - See the [pruning](../explanations/pruning.md) and [quantization](../explanations/quantization.md) sections for more info.
+  - This parameter will be automatically set proportional to the dimensionality of the input. It controls the proportionality factor. This value gives good accuracy while avoiding accumulator overflow.
+  - See the [pruning](../explanations/pruning.md) and [quantization](../explanations/quantization.md) sections for more info.
 
 ### Class weights
 

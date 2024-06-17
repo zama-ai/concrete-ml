@@ -1,9 +1,8 @@
 # Tree-based models
+
 This document introduces several [scikit-learn](https://scikit-learn.org/stable/)'s linear models for  `classification` and `regression` tree models that Concrete ML provides.
 
 ## Supported models
-
-
 
 |                                             Concrete ML                                              |                                                                           scikit-learn                                                                           |
 | :--------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------: |
@@ -119,7 +118,7 @@ We can plot and compare the decision boundaries of the Concrete ML model and the
 
 ## Quantization parameters
 
-When using a sufficiently high bit width, quantization has little impact on the decision boundaries of the Concrete ML FHE decision tree model, as quantization is done individually on each input feature. It means FHE models can achieve similar accuracy levels as floating point models. Using 6 bits for quantization is effective in reaching or even exceeding floating point accuracy. 
+When using a sufficiently high bit width, quantization has little impact on the decision boundaries of the Concrete ML FHE decision tree model, as quantization is done individually on each input feature. It means FHE models can achieve similar accuracy levels as floating point models. Using 6 bits for quantization is effective in reaching or even exceeding floating point accuracy.
 
 To adjust the number of bits for quantization, use the `n_bits` parameter. Setting `n_bits` to a low value may introduce artifacts, potentially reducing accuracy. However, the execution speed in FHE could improve. This adjustment allows you to manage the accuracy/speed trade-off. Additionally, you can recover some accuracy by increasing the `n_estimators` parameter.
 

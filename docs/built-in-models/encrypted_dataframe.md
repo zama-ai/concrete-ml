@@ -1,7 +1,9 @@
 # Working with Encrypted DataFrames
+
 This document introduces how to construct and perform operations on encrypted DataFrames using Fully Homomorphic Encryption (FHE).
 
 ## Introduction
+
 Encrypted DataFrames are a storage format for encrypted tabular data. You can exchange encrypted DataFrames with third parties to collaborate without privacy risks. Potential applications include:
 
 - Encrypt storage of tabular datasets
@@ -44,15 +46,15 @@ df_decrypted = client.decrypt_to_pandas(df_encrypted)
 - **String Enum**: String columns are mapped to integers starting from 1. This mapping is stored and later used for de-quantization. If the number of unique strings exceeds 15, a `ValueError` is raised.
 
 ## Supported operations
+
 Encrypted DataFrame is designed to support a subset of operations that are available for pandas DataFrames. For now, only the `merge` operation is supported. More operations will be added in the future releases.
 
 ### Merge operation
 
-Merge operation allows you to left or right join two DataFrames. 
+Merge operation allows you to left or right join two DataFrames.
 
-> [!NOTE]  
->The merge operation on Encrypted DataFrames can be **securely** performed on a third-party server, meaning that the server can execute the merge without ever having access to the unencrypted data. The server only requires the encrypted DataFrames.
-
+> \[!NOTE\]\
+> The merge operation on Encrypted DataFrames can be **securely** performed on a third-party server, meaning that the server can execute the merge without ever having access to the unencrypted data. The server only requires the encrypted DataFrames.
 
 <!--pytest-codeblocks:cont-->
 
@@ -72,7 +74,7 @@ df_encrypted_merged = df_encrypted.merge(df_encrypted2, how="left", on="index")
 
 You can serialize encrypted DataFrame objects to a file format for storage or transfer. When serialized, they contain the encrypted data and [public evaluation keys](../getting-started/concepts.md#cryptography-concepts) necessary to perform computations.
 
-> [!NOTE]  
+> \[!NOTE\]\
 > Serialized DataFrames do not contain any [private encryption keys](../getting-started/concepts.md#cryptography-concepts) . The DataFrames can be exchanged with any third-party without any risk.
 
 To save or load an encrypted DataFrame from a file, use the following commands:

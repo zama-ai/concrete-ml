@@ -21,8 +21,8 @@ Here is a simple example of classification on encrypted data using logistic regr
 This example shows the typical flow of a Concrete ML model:
 
 1. **Training the model**: Train the model on unencrypted (plaintext) data using scikit-learn. Since Fully Homomorphic Encryption (FHE) operates over integers, Concrete ML quantizes the model to use only integers during inference.
-2. **Compiling the model**: Compile the quantized model to an FHE equivalent. Under the hood, the model is first converted to a Concrete Python program and then compiled.
-3. **Performing inference**: Perform inference on encrypted data. The example above shows encrypted inference in the model-development phase. Alternatively, during [deployment](cloud.md) in a client/server setting, the client encrypts the data, the server processes it securely, and then the client decrypts the results.
+1. **Compiling the model**: Compile the quantized model to an FHE equivalent. Under the hood, the model is first converted to a Concrete Python program and then compiled.
+1. **Performing inference**: Perform inference on encrypted data. The example above shows encrypted inference in the model-development phase. Alternatively, during [deployment](cloud.md) in a client/server setting, the client encrypts the data, the server processes it securely, and then the client decrypts the results.
 
 ```python
 from sklearn.datasets import make_classification
@@ -87,8 +87,6 @@ print("Probability with `predict_proba`: ", y_proba_fhe)
 print("Probability with encrypt/run/decrypt calls: ", y0)
 ```
 
-
-
 ## Current limitations
 
 - **Precision and accuracy**: In order to run models in FHE, Concrete ML requires models to be within the precision limit, currently 16-bit integers. Thus, machine learning models must be quantized and it sometimes leads to a loss of accuracy versus the original model that operates on plaintext.
@@ -96,12 +94,13 @@ print("Probability with encrypt/run/decrypt calls: ", y0)
 - **Models availability**: Concrete ML currently only supports _training_ on encrypted data for some models, while it supports _inference_ for a large variety of models.
 
 - **Processing**: Concrete currently doesn't support pre-processing model inputs and post-processing model outputs. These processing stages may involve:
-    - Text-to-numerical feature transformation
-    - Dimensionality reduction
-    - KNN or clustering
-    - Featurization
-    - Normalization
-    - The mixing of ensemble models' results.
+
+  - Text-to-numerical feature transformation
+  - Dimensionality reduction
+  - KNN or clustering
+  - Featurization
+  - Normalization
+  - The mixing of ensemble models' results.
 
 These issues are currently being addressed, and significant improvements are expected to be released in the near future.
 
