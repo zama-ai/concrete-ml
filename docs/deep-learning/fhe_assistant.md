@@ -55,12 +55,11 @@ concrete_clf.compile(X, debug_config)
 
 ## Common compilation errors
 
-
 #### 1. TLU input maximum bit-width is exceeded
 
 **Error message**: `this [N]-bit value is used as an input to a table lookup`
 
-**Cause**: This error can occur when `rounding_threshold_bits` is not used and accumulated intermediate values in the computation exceed 16 bits. 
+**Cause**: This error can occur when `rounding_threshold_bits` is not used and accumulated intermediate values in the computation exceed 16 bits.
 
 **Possible solutions**:
 
