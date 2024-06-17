@@ -52,7 +52,7 @@ Concrete ML and Concrete abstract the details of the underlying cryptography sch
    - **Public evaluation key**: A public evaluation key is used to perform homomorphic operations on encrypted data, typically by a server.
 
 -  **Guaranteed correctness of encrypted computations:** To ensure security, TFHE adds random noise to ciphertexts. Depending on the noise parameters, it can cause errors during encrypted data processing. By default, Concrete ML uses parameters that guarantee the correctness of encrypted computations, so the results on encrypted data equals to those of simulations on clear data.
-- **Programmable Boostrapping (PBS)** : TBD
+- **Programmable Boostrapping (PBS)** : Programmable Bootstrapping enables the homomorphic evaluation of any function of a ciphertext, with a controlled level of noise. Learn more about PBS in [this paper](https://eprint.iacr.org/2021/091).
 
 For a deeper understanding of the cryptography behind the Concrete stack, refer to the [whitepaper on TFHE and Programmable Boostrapping](https://whitepaper.zama.ai/) or [this series of blogs](https://www.zama.ai/post/tfhe-deep-dive-part-1). 
 

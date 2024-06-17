@@ -26,9 +26,15 @@ This document introduces some [scikit-learn](https://scikit-learn.org/stable/)'s
 
 The `n_bits` parameter controls the bit width of the inputs and weights of the linear models. Linear models do not use table lookups and thus alllows weight and inputs to be high precision integers.
 
-For models with input dimensions up to `300`, the parameter `n_bits` can be set to `8` or more. When the input dimensions are larger, `n_bits` must be reduced to `6-7`. Quantized models can preserve all performance metrics compared to the non-quantized float models from scikit-learn when `n_bits` is down to `6`.
+For models with input dimensions up to `300`, the parameter `n_bits` can be set to `8` or more. When the input dimensions are larger, `n_bits` must be reduced to `6-7`. In many cases, quantized models can preserve all performance metrics compared to the non-quantized float models from scikit-learn when `n_bits` is down to `6`. You should validate accuracy on held-out test sets and adjust `n_bits` accordingly.
 
-The same quantization parameters such as scale and zero-point are applied on all features, so you should try to make all feature distribution similar by using standard or min-max normalization. For a more detailed comparison of the impact of such pre-processing please refer to [the logistic regression notebook](../advanced_examples/LogisticRegression.ipynb).
+{% hint style="warning" %}
+
+For optimal results, you can use standard or min-max normalization to achieve a similar distribution of individual features. When there are many one-hot features, consider [Principal Component Analysis](https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.PCA.html)  as a pre-processing stage. 
+
+For a more detailed comparison of the impact of such pre-processing,  please refer to [the logistic regression notebook](../advanced_examples/LogisticRegression.ipynb).
+
+{% endhint %}
 
 ## Pre-trained models
 
@@ -82,7 +88,7 @@ print(
 #  100 examples over 100 have an FHE inference equal to the clear inference
 ```
 ## Model accuracy
-We can plot the decision boundary of the classifier and compare those results with a scikit-learn model executed in clear. You can find the complete code in the [LogisticRegression notebook](../tutorials/ml_examples.md).
+The figure below compares the decision boundary of the FHE classifier and a scikit-learn model executed in clear. You can find the complete code in the [LogisticRegression notebook](../tutorials/ml_examples.md).
 
 The overall accuracy scores are identical (93%) between the scikit-learn model (executed in the clear) and the *Concrete ML one (executed in FHE). In fact, quantization has little impact on the decision boundaries, as linear models can use large precision numbers when quantizing inputs and weights in *Concrete ML. Additionally, as the linear models do not use [Programmable Boostrapping](/getting-started/concepts.md#cryptography-concepts), the FHE computations are always exact, irrespective of the [PBS error tolerance setting](../explanations/advanced_features.md#approximate-computations). This ensures that the FHE predictions are always identical to the quantized clear ones.
 
