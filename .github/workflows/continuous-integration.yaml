@@ -498,7 +498,7 @@ jobs:
           && steps.install-deps.outcome == 'success'
           && steps.make-pcc.outcome == 'success' 
           && !cancelled()
-        uses: tj-actions/changed-files@v44.5.2
+        uses: tj-actions/changed-files@d6babd6899969df1a11d14c368283ea4436bca78 # v44.5.2
         with:
           files_yaml: |
             src:
@@ -756,7 +756,7 @@ jobs:
 
       # Upload the list of flaky tests that have been re-run (if the only failed tests were flaky)
       - name: Upload flaky tests list (weekly)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
         if: |
           fromJSON(env.IS_WEEKLY) 
           && steps.pytest.outcome == 'success' 
@@ -1166,7 +1166,7 @@ jobs:
       # Retrieve the list of flaky tests that have been re-run if they were some
       # Enable 'merge-multiple' to download all files in the root directory
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
         with:
           merge-multiple: true
           pattern: failed_flaky_*
