@@ -55,7 +55,6 @@ concrete_clf.compile(X, debug_config)
 
 ## Common compilation errors
 
-The most common compilation errors stem from the following causes:
 
 #### 1. TLU input maximum bit-width is exceeded
 
