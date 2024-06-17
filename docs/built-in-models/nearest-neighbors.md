@@ -1,8 +1,8 @@
 # Nearest neighbors
-This document introduces the nearest neighbors non-parametric classification models that *Concrete ML provides with a scikit-learn interface through the `KNeighborsClassifier` class.
+This document introduces the nearest neighbors non-parametric classification models that Concrete ML provides with a scikit-learn interface through the `KNeighborsClassifier` class.
 
 
-|                                              *Concrete ML                                              | scikit-learn                                                                                                          |
+|                                              Concrete ML                                              | scikit-learn                                                                                                          |
 | :---------------------------------------------------------------------------------------------------: | --------------------------------------------------------------------------------------------------------------------- |
 | [KNeighborsClassifier](../references/api/concrete.ml.sklearn.neighbors.md#class-kneighborsclassifier) | [KNeighborsClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html) |
 

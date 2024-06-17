@@ -98,7 +98,7 @@ During the pre-processing and post-processing stages, the `ValueError` can happe
 
 - A column contains values outside the allowed range for integers
 - Too many unique strings
-- Unsupported data type by *Concrete ML
+- Unsupported data type by Concrete ML
 - Unsupported data type by the operation attempted
 
 ## Example workflow
