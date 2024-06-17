@@ -71,7 +71,7 @@ The most common compilation errors stem from the following causes:
 
 #### 2. No crypto-parameters can be found
 
-**Error message**: `RuntimeError: NoParametersFound` is raised by the compiler
+**Error message**: `RuntimeError: NoParametersFound`
 
 **Cause**: This error occurs when using `rounding_threshold_bits` in the `compile_torch_model` function.
 
