@@ -6,7 +6,6 @@ from typing import List, Union
 
 import pytest
 import torch
-from concrete.fhe import Configuration
 from transformers import GPT2LMHeadModel, GPT2Tokenizer
 
 from concrete.ml.pytest.torch_models import PartialQATModel
