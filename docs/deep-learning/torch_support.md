@@ -111,7 +111,7 @@ With QAT (the PyTorch/Brevitas models created following the example above), you 
 
 With PTQ, you need to set the `n_bits` value in the `compile_torch_model` function and must manually determine the trade-off between accuracy, FHE compatibility, and latency.
 
-The quantization parameters, along with the number of neurons on each layer, will determine the accumulator bit-width of the network. Larger accumulator bit-widths result in higher accuracy but slower FHE inference time.
+The quantization parameters, along with the number of neurons on each layer, will determine the accumulator bit width of the network. Larger accumulator bit widths result in higher accuracy but slower FHE inference time.
 
 ## Running encrypted inference
 
