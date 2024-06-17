@@ -2,7 +2,7 @@
 
 This document illustrate how Concrete ML model and DataFrames are deployed in client/server setting when creating privacy-preserving services in the cloud.
 
-Once compiled to FHE, a Concrete ML model or DataFrame generates machine code that execute prediction, training or pre-processing on encrypted data. During this process, Concrete ML generates [the private encryption keys](/docs/getting-started/concepts.md#cryptography-concepts) and [the pubic evaluation keys](/docs/getting-started/concepts.md#cryptography-concepts).
+Once compiled to FHE, a Concrete ML model or DataFrame generates machine code that execute prediction, training or pre-processing on encrypted data. During this process, Concrete ML generates [the private encryption keys](concepts.md#cryptography-concepts) and [the pubic evaluation keys](concepts.md#cryptography-concepts).
 
 ## Communication protocols
 

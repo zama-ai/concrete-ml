@@ -90,7 +90,7 @@ print(
 
 The figure below compares the decision boundary of the FHE classifier and a scikit-learn model executed in clear. You can find the complete code in the [LogisticRegression notebook](../tutorials/ml_examples.md).
 
-The overall accuracy scores are identical (93%) between the scikit-learn model (executed in the clear) and the Concrete ML one (executed in FHE). In fact, quantization has little impact on the decision boundaries, as linear models can use large precision numbers when quantizing inputs and weights in Concrete ML. Additionally, as the linear models do not use [Programmable Boostrapping](/getting-started/concepts.md#cryptography-concepts), the FHE computations are always exact, irrespective of the [PBS error tolerance setting](../explanations/advanced_features.md#approximate-computations). This ensures that the FHE predictions are always identical to the quantized clear ones.
+The overall accuracy scores are identical (93%) between the scikit-learn model (executed in the clear) and the Concrete ML one (executed in FHE). In fact, quantization has little impact on the decision boundaries, as linear models can use large precision numbers when quantizing inputs and weights in Concrete ML. Additionally, as the linear models do not use [Programmable Boostrapping](../getting-started/concepts.md#cryptography-concepts), the FHE computations are always exact, irrespective of the [PBS error tolerance setting](../explanations/advanced_features.md#approximate-computations). This ensures that the FHE predictions are always identical to the quantized clear ones.
 
 ![Sklearn model decision boundaries](../figures/logistic_regression_clear.png) ![FHE model decision boundaries](../figures/logistic_regression_fhe.png)
 

@@ -65,7 +65,7 @@ For a deeper understanding of the cryptography behind the Concrete stack, refer 
 
 FHE requires all inputs, constants, and intermediate values to be integers of maximum 16 bits. To make machine learning models compatible with FHE, Concrete ML implements some techniques with accuracy considerations:
 
-- **Quantization**: Concrete ML quantizes inputs, outputs, weights, and activations to meet FHE limitations. See [the quantization documentation](<(../explanations/quantization.md)>) for details.
+- **Quantization**: Concrete ML quantizes inputs, outputs, weights, and activations to meet FHE limitations. See [the quantization documentation](../explanations/quantization.md) for details.
 
   - **Accuracy trade-off**: Quantization may reduce accuracy, but careful selection of quantization parameters or of the training approach can mitigate this. Concrete ML offers built-in quantized models; users only configure parameters like bit-width. For more details of quantization configurations, see [the advanced quantization guide](../explanations/quantization.md#configuring-model-quantization-parameters).
 
