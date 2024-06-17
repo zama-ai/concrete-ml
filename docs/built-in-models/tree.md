@@ -1,6 +1,8 @@
 # Tree-based models
 
-Concrete ML provides several of the most popular `classification` and `regression` tree models that can be found in [scikit-learn](https://scikit-learn.org/stable/):
+This document introduces several [scikit-learn](https://scikit-learn.org/stable/)'s linear models for  `classification` and `regression` tree models that Concrete ML provides.
+
+## Supported models
 
 |                                             Concrete ML                                              |                                                                           scikit-learn                                                                           |
 | :--------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------: |
@@ -21,12 +23,12 @@ For a formal explanation of the mechanisms that enable FHE-compatible decision t
 {% endhint %}
 
 {% hint style="info" %}
-As the maximum depth parameter of decision trees and tree-ensemble models strongly increases the number of nodes in the trees, we recommend using the XGBoost models which achieve better performance with lower depth.
+Using the maximum depth parameter of decision trees and tree-ensemble models strongly increases the number of nodes in the trees. Therefore, we recommend using the XGBoost models which achieve better performance with lower depth.
 {% endhint %}
 
 ## Example
 
-Here's an example of how to use this model in FHE on a popular data-set using some of scikit-learn's pre-processing tools. A more complete example can be found in the [XGBClassifier notebook](../tutorials/ml_examples.md).
+Here's an example of how to use this model in FHE on a popular data-set using some of scikit-learn's pre-processing tools. You can find a more complete example in the [XGBClassifier notebook](../tutorials/ml_examples.md).
 
 ```python
 from sklearn.datasets import load_breast_cancer
@@ -110,15 +112,15 @@ print(f"{(y_pred_fhe == y_pred_clear[:N_TEST_FHE]).sum()} "
 #  1 examples over 1 have an FHE inference equal to the clear inference
 ```
 
-Similarly, the decision boundaries of the Concrete ML model can be plotted and compared to the results of the classical XGBoost model executed in the clear. A 6-bit model is shown in order to illustrate the impact of quantization on classification. Similar plots can be found in the [Classifier Comparison notebook](../tutorials/ml_examples.md).
+We can plot and compare the decision boundaries of the Concrete ML model and the classical XGBoost model executed in the clear. Here we show a 6-bit model to illustrate the impact of quantization on classification. You will find similar plots in the [Classifier Comparison notebook](../tutorials/ml_examples.md).
 
 ![Comparison of clasification decision boundaries between FHE and plaintext models](../figures/xgb_comparison_pipeline.png)
 
 ## Quantization parameters
 
-This graph above shows that, when using a sufficiently high bit-width, quantization has little impact on the decision boundaries of the Concrete ML FHE decision tree models. As quantization is done individually on each input feature, the impact of quantization is strongly reduced. This means that FHE tree-based models reach a similar level of accuracy as their floating point equivalents. Using 6 bits for quantization means that the Concrete ML model reaches, or exceeds, the floating point accuracy. The number of bits for quantization can be adjusted through the `n_bits` parameter.
+When using a sufficiently high bit-width, quantization has little impact on the decision boundaries of the Concrete ML FHE decision tree model, as quantization is done individually on each input feature. It means FHE models can achieve similar accuracy levels as floating point models. Using 6 bits for quantization is effective in reaching or even exceeding floating point accuracy.
 
-When `n_bits` is set to a low value, the quantization process may sometimes create some artifacts that could lead to a decrease in accuracy. At the same time, the execution speed in FHE could improve. In this way, it is possible to adjust the accuracy/speed trade-off, and some accuracy can be recovered by increasing the `n_estimators` parameter.
+To adjust the number of bits for quantization, use the `n_bits` parameter. Setting `n_bits` to a low value may introduce artifacts, potentially reducing accuracy. However, the execution speed in FHE could improve. This adjustment allows you to manage the accuracy/speed trade-off. Additionally, you can recover some accuracy by increasing the `n_estimators` parameter.
 
 The following graph shows that using 5-6 bits of quantization is usually sufficient to reach the performance of a non-quantized XGBoost model on floating point data. The metrics plotted are accuracy and F1-score on the `spambase` data-set.
 

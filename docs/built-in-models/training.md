@@ -1,6 +1,8 @@
 # Encrypted training
 
-Concrete ML offers the possibility to train [SGD Logistic Regression](../references/api/concrete.ml.sklearn.linear_model.md#class-sgdclassifier) on encrypted data. The [logistic regression training](../advanced_examples/LogisticRegressionTraining.ipynb) example shows this feature in action.
+This document explains how to train [SGD Logistic Regression](../references/api/concrete.ml.sklearn.linear_model.md#class-sgdclassifier) on encrypted data. The [logistic regression training](../advanced_examples/LogisticRegressionTraining.ipynb) example shows this feature in action.
+
+## Example
 
 This example shows how to instantiate a logistic regression model that trains on encrypted data:
 
@@ -16,7 +18,7 @@ model = SGDClassifier(
 )
 ```
 
-To activate encrypted training simply set `fit_encrypted=True` in the constructor. If this value is not set, training is performed on clear data using `scikit-learn` gradient descent.
+To activate encrypted training, simply set `fit_encrypted=True` in the constructor. If this value is not set, training is performed on clear data using `scikit-learn` gradient descent.
 
 Next, to perform the training on encrypted data, call the `fit` function with the `fhe="execute"` argument:
 
@@ -38,6 +40,6 @@ The `parameters_range` parameter determines the initialization of the coefficien
 
 ## Capabilities and Limitations
 
-The logistic model that can be trained uses Stochastic Gradient Descent (SGD) and quantizes for data, weights, gradients and the error measure. It currently supports training 6-bit models, training both the coefficients and the bias.
+The trainable logistic model uses Stochastic Gradient Descent (SGD) and quantizes the data, weights, gradients and the error measure. It currently supports training 6-bit models, including g both the coefficients and the bias.
 
-The `SGDClassifier` does not currently support training models with other values for the bit-widths. The execution time to train a model is proportional to the number of features and the number of training examples in the batch. The `SGDClassifier` training does not currently support client/server deployment for training.
+The `SGDClassifier` does not currently support training models with other bit-width values. The execution time to train a model is proportional to the number of features and the number of training examples in the batch. The `SGDClassifier` training does not currently support client/server deployment for training.

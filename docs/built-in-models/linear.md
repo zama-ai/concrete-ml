@@ -1,6 +1,10 @@
 # Linear models
 
-Concrete ML provides several of the most popular linear models for `regression` and `classification` that can be found in [scikit-learn](https://scikit-learn.org/stable/):
+This document introduces some [scikit-learn](https://scikit-learn.org/stable/)'s linear models for `regression` and `classification` that Concrete ML provides.
+
+## Supported models
+
+The use of the following models in FHE is very similar to the use of scikit-learn's [API](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.linear_model). They are also compatible with some of scikit-learn's main workflows, such as `Pipeline()` and `GridSearch()`.
 
 |                                             Concrete ML                                              |                                                                         scikit-learn                                                                         |
 | :--------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------: |
@@ -16,25 +20,27 @@ Concrete ML provides several of the most popular linear models for `regression` 
 |         [ElasticNet](../references/api/concrete.ml.sklearn.linear_model.md#class-elasticnet)         |             [ElasticNet](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.ElasticNet.html#sklearn.linear_model.ElasticNet)             |
 |       [SGDRegressor](../references/api/concrete.ml.sklearn.linear_model.md#class-sgdregressor)       |                           [SGDRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html)                           |
 
-Using these models in FHE is extremely similar to what can be done with scikit-learn's [API](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.linear_model), making it easy for data scientists who have used this framework to get started with Concrete ML.
+## Quantization parameters
 
-Models are also compatible with some of scikit-learn's main workflows, such as `Pipeline()` and `GridSearch()`.
+The `n_bits` parameter controls the bit-width of the inputs and weights of the linear models. Linear models do not use table lookups and thus alllows weight and inputs to be high precision integers.
+
+For models with input dimensions up to `300`, the parameter `n_bits` can be set to `8` or more. When the input dimensions are larger, `n_bits` must be reduced to `6-7`. In many cases, quantized models can preserve all performance metrics compared to the non-quantized float models from scikit-learn when `n_bits` is down to `6`. You should validate accuracy on held-out test sets and adjust `n_bits` accordingly.
+
+{% hint style="warning" %}
+
+For optimal results, you can use standard or min-max normalization to achieve a similar distribution of individual features. When there are many one-hot features, consider [Principal Component Analysis](https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.PCA.html)  as a pre-processing stage.
+
+For a more detailed comparison of the impact of such pre-processing,  please refer to [the logistic regression notebook](../advanced_examples/LogisticRegression.ipynb).
+
+{% endhint %}
 
 ## Pre-trained models
 
-It is possible to convert an already trained scikit-learn linear model to a Concrete ML one by using the [`from_sklearn_model`](../references/api/concrete.ml.sklearn.base.md#classmethod-from_sklearn_model) method. See [below for an example](linear.md#loading-a-pre-trained-model). This functionality is only available for linear models.
-
-## Quantization parameters
-
-The `n_bits` parameter controls the bit-width of the inputs and weights of the linear models. When non-linear mapping is applied by the model, such as _exp_ or _sigmoid_, Concrete ML applies it on the client-side, on clear-text values that are the decrypted output of the linear part of the model. Thus, Linear Models do not use table lookups, and can, therefore, use high precision integers for weight and inputs.
-
-The `n_bits` parameter can be set to `8` or more bits for models with up to `300` input dimensions. When the input has more dimensions, `n_bits` must be reduced to `6-7`. All performance metrics are preserved down to `n_bits=6`, compared to the non-quantized float models from scikit-learn.
-
-The same quantization parameters (i.e., scale and zero-point) are applied on all features, so it can be beneficial to make all feature distribution similar by using standard or min-max normalization. For a more detailed comparison of the impact of such pre-processing please refer to [the logistic regression notebook](../advanced_examples/LogisticRegression.ipynb).
+You can convert an already trained scikit-learn linear model to a Concrete ML one by using the [`from_sklearn_model`](../references/api/concrete.ml.sklearn.base.md#classmethod-from_sklearn_model) method. See [the following example](linear.md#loading-a-pre-trained-model).
 
 ## Example
 
-The following snippet gives an example about training a LogisticRegression model on a simple data-set followed by inference on encrypted data with FHE. A more complete example can be found in the [LogisticRegression notebook](../tutorials/ml_examples.md).
+The following example shows how to train a LogisticRegression model on a simple data-set and then use FHE to perform inference on encrypted data. You can find a more complete example in the [LogisticRegression notebook](../tutorials/ml_examples.md).
 
 ```python
 from sklearn.datasets import make_classification
@@ -80,11 +86,13 @@ print(
 #  100 examples over 100 have an FHE inference equal to the clear inference
 ```
 
-We can then plot the decision boundary of the classifier and compare those results with a scikit-learn model executed in clear. The complete code can be found in the [LogisticRegression notebook](../tutorials/ml_examples.md).
+## Model accuracy
 
-![Sklearn model decision boundaries](../figures/logistic_regression_clear.png) ![FHE model decision boundarires](../figures/logistic_regression_fhe.png)
+The figure below compares the decision boundary of the FHE classifier and a scikit-learn model executed in clear. You can find the complete code in the [LogisticRegression notebook](../tutorials/ml_examples.md).
 
-The overall accuracy scores are identical (93%) between the scikit-learn model (executed in the clear) and the Concrete ML one (executed in FHE). In fact, quantization has little impact on the decision boundaries, as linear models are able to consider large precision numbers when quantizing inputs and weights in Concrete ML. Additionally, as the linear models do not use PBS, the FHE computations are always exact. This means that the FHE predictions are always identical to the quantized clear ones.
+The overall accuracy scores are identical (93%) between the scikit-learn model (executed in the clear) and the Concrete ML one (executed in FHE). In fact, quantization has little impact on the decision boundaries, as linear models can use large precision numbers when quantizing inputs and weights in Concrete ML. Additionally, as the linear models do not use [Programmable Boostrapping](../getting-started/concepts.md#cryptography-concepts), the FHE computations are always exact, irrespective of the [PBS error tolerance setting](../explanations/advanced_features.md#approximate-computations). This ensures that the FHE predictions are always identical to the quantized clear ones.
+
+![Sklearn model decision boundaries](../figures/logistic_regression_clear.png) ![FHE model decision boundaries](../figures/logistic_regression_fhe.png)
 
 ## Loading a pre-trained model
 
