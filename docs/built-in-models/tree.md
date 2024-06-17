@@ -28,7 +28,7 @@ Using the maximum depth parameter of decision trees and tree-ensemble models str
 
 ## Example
 
-Here's an example of how to use this model in FHE on a popular dataset using some of scikit-learn's pre-processing tools. You can find a more complete example in the [XGBClassifier notebook](../tutorials/ml_examples.md).
+Here's an example of how to use this model in FHE on a popular data-set using some of scikit-learn's pre-processing tools. You can find a more complete example in the [XGBClassifier notebook](../tutorials/ml_examples.md).
 
 ```python
 from sklearn.datasets import load_breast_cancer
@@ -118,18 +118,18 @@ We can plot and compare the decision boundaries of the Concrete ML model and the
 
 ## Quantization parameters
 
-When using a sufficiently high bit width, quantization has little impact on the decision boundaries of the Concrete ML FHE decision tree model, as quantization is done individually on each input feature. It means FHE models can achieve similar accuracy levels as floating point models. Using 6 bits for quantization is effective in reaching or even exceeding floating point accuracy.
+When using a sufficiently high bit-width, quantization has little impact on the decision boundaries of the Concrete ML FHE decision tree model, as quantization is done individually on each input feature. It means FHE models can achieve similar accuracy levels as floating point models. Using 6 bits for quantization is effective in reaching or even exceeding floating point accuracy.
 
 To adjust the number of bits for quantization, use the `n_bits` parameter. Setting `n_bits` to a low value may introduce artifacts, potentially reducing accuracy. However, the execution speed in FHE could improve. This adjustment allows you to manage the accuracy/speed trade-off. Additionally, you can recover some accuracy by increasing the `n_estimators` parameter.
 
-The following graph shows that using 5-6 bits of quantization is usually sufficient to reach the performance of a non-quantized XGBoost model on floating point data. The metrics plotted are accuracy and F1-score on the `spambase` dataset.
+The following graph shows that using 5-6 bits of quantization is usually sufficient to reach the performance of a non-quantized XGBoost model on floating point data. The metrics plotted are accuracy and F1-score on the `spambase` data-set.
 
 ![XGBoost n_bits comparison](../figures/XGBClassifier_nbits.png)
 
 ## FHE Inference time considerations
 
-The inference time in FHE is strongly dependant on the maximum circuit bit width. For trees, in most cases, the quantization bit width will be the same as the circuit bit width. Therefore, reducing the quantization bit width to 4 or less will result in fast inference times. Adding more bits will increase FHE inference time exponentially.
+The inference time in FHE is strongly dependant on the maximum circuit bit-width. For trees, in most cases, the quantization bit-width will be the same as the circuit bit-width. Therefore, reducing the quantization bit-width to 4 or less will result in fast inference times. Adding more bits will increase FHE inference time exponentially.
 
-In some rare cases, the bit width of the circuit can be higher than the quantization bit width. This could happen when the quantization bit width is low but the tree-depth is high. In such cases, the circuit bit width is upper bounded by `ceil(log2(max_depth + 1) + 1)`.
+In some rare cases, the bit-width of the circuit can be higher than the quantization bit-width. This could happen when the quantization bit-width is low but the tree-depth is high. In such cases, the circuit bit-width is upper bounded by `ceil(log2(max_depth + 1) + 1)`.
 
 For more information on the inference time of FHE decision trees and tree-ensemble models please see [Privacy-Preserving Tree-Based Inference with Fully Homomorphic Encryption, arXiv:2303.01254](https://arxiv.org/abs/2303.01254).

@@ -22,7 +22,7 @@ The use of the following models in FHE is very similar to the use of scikit-lear
 
 ## Quantization parameters
 
-The `n_bits` parameter controls the bit width of the inputs and weights of the linear models. Linear models do not use table lookups and thus alllows weight and inputs to be high precision integers.
+The `n_bits` parameter controls the bit-width of the inputs and weights of the linear models. Linear models do not use table lookups and thus alllows weight and inputs to be high precision integers.
 
 For models with input dimensions up to `300`, the parameter `n_bits` can be set to `8` or more. When the input dimensions are larger, `n_bits` must be reduced to `6-7`. In many cases, quantized models can preserve all performance metrics compared to the non-quantized float models from scikit-learn when `n_bits` is down to `6`. You should validate accuracy on held-out test sets and adjust `n_bits` accordingly.
 
@@ -40,7 +40,7 @@ You can convert an already trained scikit-learn linear model to a Concrete ML on
 
 ## Example
 
-The following example shows how to train a LogisticRegression model on a simple dataset and then use FHE to perform inference on encrypted data. You can find a more complete example in the [LogisticRegression notebook](../tutorials/ml_examples.md).
+The following example shows how to train a LogisticRegression model on a simple data-set and then use FHE to perform inference on encrypted data. You can find a more complete example in the [LogisticRegression notebook](../tutorials/ml_examples.md).
 
 ```python
 from sklearn.datasets import make_classification

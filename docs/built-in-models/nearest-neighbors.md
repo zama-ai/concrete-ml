@@ -16,7 +16,7 @@ concrete_classifier = KNeighborsClassifier(n_bits=2, n_neighbors=3)
 
 ## Quantization parameters
 
-The `KNeighborsClassifier` class quantizes the training dataset provided to `.fit` using the specified number of bits (`n_bits`). To comply with [accumulator size constraints](../getting-started/concepts.md#model-accuracy-considerations-under-fhe-constraints), you must keep this value low. The model's accuracy will depend significantly on a well-chosen `n_bits` value and the dimensionality of the data.
+The `KNeighborsClassifier` class quantizes the training data-set provided to `.fit` using the specified number of bits (`n_bits`). To comply with [accumulator size constraints](../getting-started/concepts.md#model-accuracy-considerations-under-fhe-constraints), you must keep this value low. The model's accuracy will depend significantly on a well-chosen `n_bits` value and the dimensionality of the data.
 
 The `predict` method of the `KNeighborsClassifier` performs the following steps:
 
@@ -26,6 +26,6 @@ The `predict` method of the `KNeighborsClassifier` performs the following steps:
 
 ## Inference time considerations
 
-The FHE inference latency of this model is heavily influenced by the `n_bits` and the dimensionality of the data. Additionally, the dataset size has a linear impact on the data complexity. The number of nearest neighbors (`n_neighbors`) also affects performance.
+The FHE inference latency of this model is heavily influenced by the `n_bits` and the dimensionality of the data. Additionally, the data-set size has a linear impact on the data complexity. The number of nearest neighbors (`n_neighbors`) also affects performance.
 
-The KNN computation executes in FHE in $$O(Nlog^2k)$$ steps, where $$N$$ is the training data-set size and $$k$$ is `n_neighbors`. Each step requires several [PBS operations](/docs/getting-started/concepts.md#cryptography-concepts), with their runtime affected by the factors listed above. These factors determine the precision needed to represent the distances between test vectors and training dataset vectors. The PBS input precision required by the circuit is related to the precision of the distance values.
+The KNN computation executes in FHE in $$O(Nlog^2k)$$ steps, where $$N$$ is the training data-set size and $$k$$ is `n_neighbors`. Each step requires several [PBS operations](/docs/getting-started/concepts.md#cryptography-concepts), with their runtime affected by the factors listed above. These factors determine the precision needed to represent the distances between test vectors and training data-set vectors. The PBS input precision required by the circuit is related to the precision of the distance values.

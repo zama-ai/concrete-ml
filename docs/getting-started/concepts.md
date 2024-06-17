@@ -67,6 +67,6 @@ FHE requires all inputs, constants, and intermediate values to be integers of ma
 
 - **Quantization**: Concrete ML quantizes inputs, outputs, weights, and activations to meet FHE limitations. See [the quantization documentation](<(../explanations/quantization.md)>) for details.
 
-  - **Accuracy trade-off**: Quantization may reduce accuracy, but careful selection of quantization parameters or of the training approach can mitigate this. Concrete ML offers built-in quantized models; users only configure parameters like bit width. For more details of quantization configurations, see [the advanced quantization guide](../explanations/quantization.md#configuring-model-quantization-parameters).
+  - **Accuracy trade-off**: Quantization may reduce accuracy, but careful selection of quantization parameters or of the training approach can mitigate this. Concrete ML offers built-in quantized models; users only configure parameters like bit-width. For more details of quantization configurations, see [the advanced quantization guide](../explanations/quantization.md#configuring-model-quantization-parameters).
 
 - **Additional methods**: Dimensionality reduction and pruning are additional ways to make programs compatible for FHE. See [Poisson regression example](../advanced_examples/PoissonRegression.ipynb) for dimensionality reduction and [built-in neural networks](../built-in-models/neural-networks.md) for pruning.

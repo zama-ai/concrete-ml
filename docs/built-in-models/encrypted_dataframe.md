@@ -6,7 +6,7 @@ This document introduces how to construct and perform operations on encrypted Da
 
 Encrypted DataFrames are a storage format for encrypted tabular data. You can exchange encrypted DataFrames with third parties to collaborate without privacy risks. Potential applications include:
 
-- Encrypt storage of tabular datasets
+- Encrypt storage of tabular data-sets
 - Joint data analysis efforts between multiple parties
 - Data preparation steps before machine learning tasks, such as inference or training
 - Secure outsourcing of data analysis to untrusted third parties
