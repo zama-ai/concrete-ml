@@ -7,7 +7,7 @@ There are two approaches to build [FHE-compatible deep networks](../getting-star
 - [Quantization Aware Training (QAT)](../explanations/quantization.md) requires using custom layers, but can quantize weights and activations to low bit-widths. Concrete ML works with [Brevitas](../explanations/inner-workings/external_libraries.md#brevitas), a library providing QAT support for PyTorch. To use this mode, compile models using `compile_brevitas_qat_model`
 - **Post-training Quantization**: This mode allows a vanilla PyTorch model to be compiled. However, when quantizing weights & activations to fewer than 7 bits, the accuracy can decrease strongly. On the other hand, depending on the model size, quantizing with 6-8 bits can be incompatible with FHE constraints. To use this mode, compile models with `compile_torch_model`.
 
-Both approaches should be used with the `rounding_threshold_bits` parameter set accordingly. The best values for this parameter need to be determined through experimentation. A good initial value to try is `6`. See [here](../explanations/advanced_features.md#rounded-activations-and-quantizers) for more details.
+Both approaches require the `rounding_threshold_bits` parameter to be set accordingly. The best values for this parameter need to be determined through experimentation. A good initial value to try is `6`. See [here](../explanations/advanced_features.md#rounded-activations-and-quantizers) for more details.
 
 {% hint style="info" %}
 **See the [common compilation errors page](./fhe_assistant.md#common-compilation-errors) for an explanation of some error messages that the compilation function may raise.**
