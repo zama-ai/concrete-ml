@@ -109,7 +109,7 @@ quantized_module = compile_torch_model(
 
 With QAT (the PyTorch/Brevitas models created following the example above), you need to configure quantization parameters such as `bit_width` (activation bit-width) and `weight_bit_width`. When using this mode, set `n_bits=None` in the `compile_brevitas_qat_model`.
 
-With PTQ, the user needs to set the `n_bits` value in the `compile_torch_model` function. A trade-off between accuracy and FHE compatibility and latency must be determined manually.
+With PTQ, you need to set the `n_bits` value in the `compile_torch_model` function and must manually determine the trade-off between accuracy, FHE compatibility, and latency.
 
 The quantization parameters, along with the number of neurons on each layer, will determine the accumulator bit-width of the network. Larger accumulator bit-widths result in higher accuracy but slower FHE inference time.
 
