@@ -1,3 +1,8 @@
+"""
+This file is a modification of the original ResNet implementation from:
+https://github.com/pytorch/vision/blob/bf01bab6125c5f1152e4f336b470399e52a8559d/torchvision/models/resnet.py
+"""
+
 from functools import partial
 from typing import Any, Callable, List, Optional, Type, Union
 
@@ -702,7 +707,7 @@ def resnet18_custom(
 
     Args:
         weights (:class:`~torchvision.models.ResNet18_Weights`, optional): The
-            pretrained weights to use. See
+            pre-trained weights to use. See
             :class:`~torchvision.models.ResNet18_Weights` below for
             more details, and possible values. By default, no pre-trained
             weights are used.

@@ -19,6 +19,7 @@ on:
           - federated_learning
           - hybrid_model
           - llm
+          - resnet
           - sentiment_analysis_with_transformer
           - titanic
           # --- refresh_use_cases_list.py: refresh list of use cases currently available [END] ---
