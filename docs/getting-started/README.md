@@ -12,7 +12,7 @@ Concrete ML is an open source, privacy-preserving, machine learning framework ba
 
 - **Training on encrypted data**: FHE is an encryption technique that allows computing directly on encrypted data, without needing to decrypt it. With FHE, you can build private-by-design applications without compromising on features. Learn more about FHE in [this introduction](https://www.zama.ai/post/tfhe-deep-dive-part-1) or join the [FHE.org](https://fhe.org) community.
 
-- **Federated learning**: Training on encrypted data provides the highest level of privacy but is slower than training on clear data. Federated learning is an alternative approach, where data privacy can be ensured by using a trusted gradient aggregator, coupled with optional _differential privacy_ instead of encryption. Concrete ML can import all types of models: linear, tree-based and neural networks, that are trained using federated learning using the [`from_sklearn_model` function](linear.md#pre-trained-models) and the [`compile_torch_model`](../deep-learning/torch_support.md) function.
+- **Federated learning**: Training on encrypted data provides the highest level of privacy but is slower than training on clear data. Federated learning is an alternative approach, where data privacy can be ensured by using a trusted gradient aggregator, coupled with optional _differential privacy_ instead of encryption. Concrete ML can import all types of models: linear, tree-based and neural networks, that are trained using federated learning using the [`from_sklearn_model` function](../built-in-models/linear.md#pre-trained-models) and the [`compile_torch_model`](../deep-learning/torch_support.md) function.
 
 ## Example usage
 
