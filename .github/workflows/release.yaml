@@ -308,6 +308,7 @@ jobs:
       PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
       GIT_TAG: ${{ needs.release-checks.outputs.git_tag }}
       PROJECT_VERSION: ${{ needs.release-checks.outputs.project_version }}
+      IS_RC: ${{needs.release-checks.outputs.is_rc}}
 
     # Jobs are separated runners, we therefore need to install dependencies again in order to
     # pursue (without using cache or upload/download them as artifacts)
@@ -584,17 +585,17 @@ jobs:
           docker image push --all-tags "${PUBLIC_RELEASE_IMAGE_BASE}"
 
       - name: Push package to PyPi
-        if: ${{ success() && !cancelled() }}
+        if: ${{ (env.IS_RC == 'false') && success() && !cancelled() }}
         run: |
           poetry run twine upload \
           -u __token__ -p ${{ secrets.PYPI_BOT_TOKEN }} \
           -r pypi "${{ env.ARTIFACTS_PACKAGED_DIR }}"/*.whl
 
-      # This step is kept if Concrete ML starts to publish private nightly release one day. For now,
-      # since release candidates and actual releases are public, we don't need to publish anything
-      # to the private internal repo
+      # Release candidates are pushed to the internal pypi
+      # because it depends on the internal builds of Concrete Python
+      # and pypi doesn't allow external dependencies.
       - name: Push package to Internal PyPi
-        if: false
+        if: ${{ env.IS_RC == 'true' }}
         run: |
           poetry run twine upload \
           -u "${{ secrets.INTERNAL_PYPI_BOT_USERNAME }}" -p "${{ secrets.INTERNAL_PYPI_BOT_PASSWORD }}" \
