@@ -19,7 +19,7 @@ The compiled model (`server.zip`) is deployed to a server and the cryptographic 
 
 The `FHEModelDev`, `FHEModelClient`, and `FHEModelServer` classes in the `concrete.ml.deployment` module make it easy to deploy and interact between the client and server:
 
-- **`FHEModelDev`**: This class is used during the development phase to prepare and save the model artifacts (`client.zip` and `server.zip`). It handles the serialization of the underlying FHE circuit as well as the crypto-parameters used for generating the keys.
+- **`FHEModelDev`**: Use the `save` method of this class during the development phase to prepare and save the model artifacts (`client.zip` and `server.zip`). This class handles the serialization of the underlying FHE circuit as well as the crypto-parameters used for generating the keys. By changing the `mode` parameter of the `save` method, you can deploy a trained model or a [training FHE program](../built-in-models/training.md).
 
 - **`FHEModelClient`**: This class is used on the client side to generate and serialize the cryptographic keys, encrypt the data before sending it to the server, and decrypt the results received from the server. It also handles the loading of quantization parameters and pre/post-processing from `serialized_processing.json`.
 
