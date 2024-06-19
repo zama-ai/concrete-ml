@@ -28,7 +28,7 @@ Using the maximum depth parameter of decision trees and tree-ensemble models str
 
 ## Pre-trained models
 
-You can convert an already trained scikit-learn tree-based model to a Concrete ML one by using the [`from_sklearn_model`](../references/api/concrete.ml.sklearn.base.md#classmethod-from_sklearn_model) method. 
+You can convert an already trained scikit-learn tree-based model to a Concrete ML one by using the [`from_sklearn_model`](../references/api/concrete.ml.sklearn.base.md#classmethod-from_sklearn_model) method.
 
 ## Example
 
