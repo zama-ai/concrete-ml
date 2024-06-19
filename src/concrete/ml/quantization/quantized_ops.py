@@ -1592,8 +1592,8 @@ class QuantizedDiv(QuantizedMixingOp):
         **kwargs,
     ) -> None:
         super().__init__(*args, rounding_threshold_bits=rounding_threshold_bits, **kwargs)
-        self.divider_quantizer: UniformQuantizer
-        self.min_non_zero_value: numpy.float64
+        self.divider_quantizer: Optional[UniformQuantizer] = None
+        self.min_non_zero_value: Optional[numpy.float64] = None
 
     def calibrate(self, *inputs: numpy.ndarray) -> numpy.ndarray:
         """Create corresponding QuantizedArray for the output of the activation function.
@@ -1605,9 +1605,11 @@ class QuantizedDiv(QuantizedMixingOp):
             numpy.ndarray: the output values for the provided calibration samples.
         """
 
-        # If two inputs, compute the divider
+        # If the op can not be fused and that the two inputs are not constants
+        # we need to compute the quantizer of the divider since we are doing
+        # an encrypted division where both numerator and denominator are encrypted
         if not self.can_fuse() and len(inputs) == 2:
-            min_non_zero_value = numpy.min(numpy.abs(inputs[1]))
+            min_non_zero_value = inputs[1][numpy.abs(inputs[1]).argmin()]
 
             # mypy
             assert min_non_zero_value is not None and min_non_zero_value > 0
@@ -1627,13 +1629,8 @@ class QuantizedDiv(QuantizedMixingOp):
         **attrs,
     ) -> ONNXOpInputOutputType:
 
-        # If the op can be fused or if any input
-        # is a RawOpOutput, perform the op in the clear
-        if (
-            len(q_inputs) == 1
-            or any(isinstance(input, RawOpOutput) for input in q_inputs)
-            or self.can_fuse()
-        ):
+        # If the op can be fused we perform the op in the clear
+        if self.can_fuse():
             return super().q_impl(*q_inputs, **attrs)
 
         # For mypy
@@ -1657,13 +1654,17 @@ class QuantizedDiv(QuantizedMixingOp):
         # Dequantize
         input_1 = q_input_1.dequant()
 
-        # Replace input_1 with min_non_zero_qvalue if input_1 is 0
+        # Replace input_1 with min_non_zero_value if input_1 is 0
+        # mypy
+        assert self.min_non_zero_value is not None
         input_1 = numpy.where(input_1 == 0, self.min_non_zero_value, input_1)
 
         # Compute the inverse of input_1
         input_1_inv = 1.0 / input_1
 
         # Re-quantize the inverse using the same quantization parameters as q_input_1
+        # mypy
+        assert self.divider_quantizer is not None
         q_input_1_inv_rescaled = self.divider_quantizer.quant(input_1_inv)
 
         # The product of quantized encrypted integer values
@@ -1700,6 +1701,7 @@ class QuantizedDiv(QuantizedMixingOp):
             # Apply Concrete rounding (if relevant)
             product_q_values = self.cnp_round(product_q_values, calibrate_rounding)
 
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4546
         # De-quantize the product
         dequant_product = (product_q_values - new_zero_point) * new_scale
 
@@ -1714,27 +1716,10 @@ class QuantizedDiv(QuantizedMixingOp):
             params=self.output_quant_params,
         )
 
-    def dump_dict(self) -> Dict:
-        metadata = super().dump_dict()
-        if hasattr(self, "min_non_zero_value"):
-            metadata["min_non_zero_value"] = self.min_non_zero_value
-        if hasattr(self, "divider_quantizer"):
-            metadata["divider_quantizer"] = self.divider_quantizer
-        return metadata
-
-    @staticmethod
-    def load_dict(metadata: Dict):
-        obj = super(QuantizedDiv, QuantizedDiv).load_dict(metadata)
-        if "min_non_zero_value" in metadata:
-            obj.min_non_zero_value = metadata.pop("min_non_zero_value")
-        if "divider_quantizer" in metadata:
-            obj.divider_quantizer = metadata.pop("divider_quantizer")
-        return obj
-
     def can_fuse(self) -> bool:
         """Determine if this op can be fused.
 
-        Add operation can be computed in float and fused if it operates over inputs produced
+        Div operation can be computed in float and fused if it operates over inputs produced
         by a single integer tensor.
 
         Returns:
@@ -1850,7 +1835,7 @@ class QuantizedMul(QuantizedMixingOp):
     def can_fuse(self) -> bool:
         """Determine if this op can be fused.
 
-        Add operation can be computed in float and fused if it operates over inputs produced
+        Mul operation can be computed in float and fused if it operates over inputs produced
         by a single integer tensor.
 
         Returns:

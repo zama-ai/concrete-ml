@@ -312,9 +312,9 @@ ARITH_N_BITS_LIST = [20, 16, 8]
 @pytest.mark.parametrize(
     "generator",
     [
-        partial(numpy.random.uniform, 0, 1),
-        partial(numpy.random.normal, 0, 1),
-        partial(numpy.random.gamma, 1, 2),
+        pytest.param(partial(numpy.random.uniform, 0, 1), id="uniform"),
+        pytest.param(partial(numpy.random.normal, 0, 1), id="normal"),
+        pytest.param(partial(numpy.random.gamma, 1, 2), id="gamma"),
     ],
 )
 @pytest.mark.parametrize("is_signed", IS_SIGNED)
