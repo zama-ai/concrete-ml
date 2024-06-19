@@ -67,3 +67,9 @@ Two different configurations of the built-in, fully-connected neural networks ar
 - [Regressor comparison](../advanced_examples/RegressorComparison.ipynb)
 
 Based on three different synthetic data-sets, all the built-in classifiers are demonstrated in this notebook, showing accuracies, inference times, accumulator bit-widths, and decision boundaries.
+
+### 7. Training on encrypted data
+
+- [LogisticRegression training](../advanced_examples/LogisticRegressionTraining.ipynb)
+
+This example shows how to configure a training algorithm that works on encrypted data and how to deploy it in a client/server application.
