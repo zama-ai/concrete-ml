@@ -29,7 +29,7 @@ model.fit(X_binary, y_binary, fhe="execute")
 ```
 
 {% hint style="info" %}
-Training on encrypted data provides the highest level of privacy but is slower than training on clear data. Federated learning is an alternative approach, where data privacy can be ensured by using a trusted gradient aggregator, coupled with optional _differential privacy_ instead of encryption. Concrete ML can import linear models, including logistic regression, that are trained using federated learning using the [`from_sklearn` function](linear.md#pre-trained-models).
+Training on encrypted data provides the highest level of privacy but is slower than training on clear data. Federated learning is an alternative approach, where data privacy can be ensured by using a trusted gradient aggregator, coupled with optional _differential privacy_ instead of encryption. Concrete ML can import all types of model: linear, tree-based and neural networks, that are trained using federated learning using the [`from_sklearn` function](linear.md#pre-trained-models) and the [`compile_torch_model`](../deep-learning/torch_support.md) function.
 {% endhint %}
 
 ## Training configuration
