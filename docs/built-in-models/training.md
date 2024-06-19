@@ -57,4 +57,4 @@ The `SGDClassifier` does not currently support training models with other bit-wi
 
 ## Deployment
 
-Once you have tested an `SGDClassifier` that trains on encrypted data, is is possible to build an FHE training service by deploying the FHE training program of the `SGDClassifier`. See the [Production Deloyment](../guides/client_server.md) page for more details on how to the Concrete ML deployment utility classes. To deploy an FHE training program, the `mode='training'` parameter must be passed to the `FHEModelDev` class.
+Once you have tested an `SGDClassifier` that trains on encrypted data, you can build an FHE training service by deploying the FHE training program of the `SGDClassifier`. See the [Production Deloyment](../guides/client_server.md) page for more details on how to the Concrete ML deployment utility classes. To deploy an FHE training program, you must pass the `mode='training'` parameter to the `FHEModelDev` class.
