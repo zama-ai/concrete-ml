@@ -1601,6 +1601,7 @@ class IdentityExpandMultiOutputModel(nn.Module):
         """
         return x, x.unsqueeze(0)
 
+
 class TorchDivide(torch.nn.Module):
     """Torch model that performs a encrypted division between two inputs."""
 
