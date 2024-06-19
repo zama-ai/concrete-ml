@@ -1,6 +1,6 @@
 # Debugging models
 
-This section provides a set of tools and guidelines to help users build optimized FHE-compatible models. It discusses FHE simulation, the key-cache functionality that helps speed-up FHE result debugging, and gives a guide to evaluate circuit complexity.
+This section provides a set of tools and guidelines to help users debug errors and build optimized models that are compatible with Fully Homomorphic Encryption (FHE).
 
 ## Simulation
 
@@ -104,11 +104,11 @@ In the example above, the `x` and `y` layers need quantization before being conc
 z = torch.cat([self.quant_concat(x), self.quant_concat(y)])
 ```
 
-## Debugging compilation errors
+## Debugging compilation errors [TBD]
 
-Compilation errors due to FHE incompatible models, such as maximum bit-width exceeded or `NoParametersFound` can be debugged by examining the bit-widths associated with various intermediate values of the FHE computation.
+You can debug compilation errors due to FHE incompatible models, such as maximum bit-width exceeded or `NoParametersFound` , by examining the bit-widths associated with various intermediate values of the FHE computation.
 
-The following produces a neural network that is not FHE-compatible:
+The following example produces a neural network that is not FHE-compatible:
 
 ```python
 import numpy
@@ -162,11 +162,11 @@ Function you are trying to compile cannot be compiled:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 17-bit value is used as an input to a table lookup
 ```
 
-The error `this 17-bit value is used as an input to a table lookup` indicates that the 16-bit limit on the input of the Table Lookup (TLU) operation has been exceeded. To pinpoint the model layer that causes the error, Concrete ML provides the [bitwidth_and_range_report](../references/api/concrete.ml.quantization.quantized_module.md#method-bitwidth_and_range_report) helper function. First, the model must be compiled so that it can be [simulated](fhe_assistant.md#simulation).
+The error `this 17-bit value is used as an input to a table lookup` indicates that the input of the Table Lookup (TLU) has exceeded the the 16-bit limit. To pinpoint the model layer that causes the error, Concrete ML provides the [bitwidth_and_range_report](../references/api/concrete.ml.quantization.quantized_module.md#method-bitwidth_and_range_report) helper function. To use this function, the model must be compiled first so that it can be [simulated](fhe_assistant.md#simulation).
 
-On the other hand, `NoParametersFound` is encountered when using `rounding_threshold_bits`. When using this setting, the 16-bit accumulator limit is relaxed. However, reducing bit-width, or reducing the `rounding_threshold_bits`, or using  using the [`fhe.Exactness.APPROXIMATE`](../references/api/concrete.ml.torch.compile.md#function-compile_torch_model) rounding method can help.
+On the other hand, `NoParametersFound` occurs when using `rounding_threshold_bits`. With this setting, the 16-bit accumulator limit is relaxed. However, reducing bit-width, or reducing the `rounding_threshold_bits`, or using the [`fhe.Exactness.APPROXIMATE`](../references/api/concrete.ml.torch.compile.md#function-compile_torch_model) rounding method can help.
 
-### Fixing compilation errors
+### Fixing compilation errors [TBD]
 
 To make this network FHE-compatible one can apply several techniques:
 
@@ -214,20 +214,20 @@ quantized_numpy_module = compile_torch_model(
 )
 ```
 
-## Complexity analysis
+## PBS complexity and optimization
 
-In FHE, univariate functions are encoded as table lookups, which are then implemented using Programmable Bootstrapping (PBS). PBS is a powerful technique but will require significantly more computing resources, and thus time, compared to simpler encrypted operations such as matrix multiplications, convolution, or additions.
+In FHE, univariate functions are encoded as Table Lookups, which are then implemented using [Programmable Bootstrapping (PBS)](/docs/getting-started/concepts.md#cryptography-concepts). PBS is a powerful technique but requires significantly more computing resources compared to simpler encrypted operations such as matrix multiplications, convolution, or additions.
 
-Furthermore, the cost of PBS will depend on the bit-width of the compiled circuit. Every additional bit in the maximum bit-width raises the complexity of the PBS by a significant factor. It may be of interest to the model developer, then, to determine the bit-width of the circuit and the amount of PBS it performs.
+Furthermore, the cost of PBS depends on the bit-width of the compiled circuit. Every additional bit in the maximum bit-width significantly increase the complexity of the PBS. Therefore, it's important to determine the bit-width of the circuit and the amount of PBS it performs in order to optimize the performance.
 
-This can be done by inspecting the MLIR code produced by the Compiler:
+To inspect the MLIR code produced by the compiler, use the following command:
 
 <!--pytest-codeblocks:cont-->
 
 ```python
 print(quantized_numpy_module.fhe_circuit.mlir)
 ```
-
+Example output:
 ```
 MLIR
 --------------------------------------------------------------------------------
@@ -262,9 +262,9 @@ module {
 --------------------------------------------------------------------------------
 ```
 
-There are several calls to `FHELinalg.apply_mapped_lookup_table` and `FHELinalg.apply_lookup_table`. These calls apply PBS to the cells of their input tensors. Their inputs in the listing above are: `tensor<1x2x!FHE.eint<8>>` for the first and last call and `tensor<1x50x!FHE.eint<8>>` for the two calls in the middle. Thus, PBS is applied 104 times.
+In the MLIR code, there are several calls to `FHELinalg.apply_mapped_lookup_table` and `FHELinalg.apply_lookup_table`. These calls apply PBS to the cells of their input tensors. For example, in the code above, the inputs are: `tensor<1x2x!FHE.eint<8>>` for the first and last call and `tensor<1x50x!FHE.eint<8>>` for the two calls in the middle. Thus, PBS is applied 104 times.
 
-Retrieving the bit-width of the circuit is then simply:
+To retrieve the bit-width of the circuit, use this command:
 
 <!--pytest-codeblocks:cont-->
 
@@ -272,4 +272,4 @@ Retrieving the bit-width of the circuit is then simply:
 print(quantized_numpy_module.fhe_circuit.graph.maximum_integer_bit_width())
 ```
 
-Decreasing the number of bits and the number of PBS applications induces large reductions in the computation time of the compiled circuit.
+Reducing the number of bits and the number of PBS applications can significantly decrease the computation time of the compiled circuit.

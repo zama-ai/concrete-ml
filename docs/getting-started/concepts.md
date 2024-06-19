@@ -14,8 +14,8 @@ With Concrete ML, you can train a model on clear or encrypted data, then deploy 
 
 1. **Quantization:** Quantization converts inputs, model weights, and all intermediate values of the inference computation to integer equivalents. More information is available [here](../explanations/quantization.md). Concrete ML performs this step in two ways depending on model type:
 
-   - During training (Quantization Aware Training)
-   - After training (Post-training Quantization)
+   - During training (Quantization Aware Training): Add explanation
+   - After training (Post Training Quantization): Add explanation
 
 1. **Simulation:** Simulation allows you to execute a model that was quantized, to measure its accuracy in FHE, and to determine the modifications required to make it FHE compatible. Simulation is described in more detail [here](../explanations/compilation.md#fhe-simulation).
 
