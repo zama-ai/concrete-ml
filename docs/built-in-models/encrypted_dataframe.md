@@ -49,7 +49,7 @@ df_decrypted = client.decrypt_to_pandas(df_encrypted)
 
 Before encryption, the data is preprocessed. For example **string enums** first need to be mapped to integers, and floating point values must be quantized. By default, this mapping is done automatically. However, when two different clients encrypt their data separately, the automatic mappings may differ, possibly due to some missing values in one of the client's DataFrame. Thus the column can not be selected when merging encrypted DataFrames.
 
-The Encrypted DataFrame supports user-defined mappings. These schemas a are defined as a dictionary where keys represent column names and values contain meta-data about the column. Supported column meta-data are:
+The encrypted DataFrame supports user-defined mappings. These schemas are defined as a dictionary where keys represent column names and values contain meta-data about the column. Supported column meta-data are:
 
 - string columns: mapping between string values and integers.
 - float columns: the min/max range that the column values lie in.
