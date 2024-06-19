@@ -10,7 +10,7 @@ import torch
 from concrete.fhe import Configuration
 from transformers import GPT2LMHeadModel, GPT2Tokenizer
 
-from concrete.ml.pytest.torch_models import PartialQATModel
+from concrete.ml.pytest.torch_models import MultiInputNNConfigurable, PartialQATModel
 from concrete.ml.torch.hybrid_model import (
     HybridFHEModel,
     tuple_to_underscore_str,
@@ -185,6 +185,57 @@ def test_gpt2_hybrid_mlp(
     )
 
 
+def test_multi_input_model():
+    """Test hybrid multi-input sub-module."""
+    input_shape = 32
+    dataset_size = 100
+
+    class Model(torch.nn.Module):
+        """Test model"""
+
+        def __init__(
+            self,
+        ):  # pylint: disable=unused-argument
+            super().__init__()
+            self.sub_model = MultiInputNNConfigurable(
+                use_conv=False, use_qat=False, input_output=input_shape, n_bits=None
+            )
+
+        def forward(self, x, y):
+            """Forward method
+
+            Arguments:
+                x (torch.Tensor): first input
+                y (torch.Tensor): second input
+
+            Returns:
+                torch.Tensor: output of the model
+            """
+            return self.sub_model(x, y)
+
+    inputs = (
+        torch.randn(
+            (
+                dataset_size,
+                input_shape,
+            )
+        ),
+        torch.randn(
+            (
+                dataset_size,
+                input_shape,
+            )
+        ),
+    )
+
+    model = Model()
+    # Run the test with using a single module in FHE
+    model(*inputs)
+    assert isinstance(model, torch.nn.Module)
+    hybrid_model = HybridFHEModel(model, module_names="sub_model")
+    hybrid_model.compile_model(*inputs, rounding_threshold_bits=6, n_bits=6)
+
+
 def test_hybrid_brevitas_qat_model():
     """Test GPT2 hybrid."""
     n_bits = 3
@@ -203,7 +254,7 @@ def test_hybrid_brevitas_qat_model():
     model(inputs)
     assert isinstance(model, torch.nn.Module)
     hybrid_model = HybridFHEModel(model, module_names="sub_module")
-    hybrid_model.compile_model(x=inputs)
+    hybrid_model.compile_model(*inputs)
 
 
 # Dependency 'huggingface-hub' raises a 'FutureWarning' from version 0.23.0 when calling the

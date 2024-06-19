@@ -535,9 +535,10 @@ def to_tuple(x: Any) -> tuple:
         tuple: The input as a tuple.
     """
     # If the input is not a tuple, return a tuple of a single element
+    if isinstance(x, list):
+        return tuple(x)
     if not isinstance(x, tuple):
         return (x,)
-
     return x
 
 
