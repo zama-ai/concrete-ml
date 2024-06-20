@@ -54,6 +54,8 @@ The encrypted DataFrame supports user-defined mappings. These schemas are define
 - string columns: mapping between string values and integers.
 - float columns: the min/max range that the column values lie in.
 
+<!--pytest-codeblocks:cont-->
+
 ```python
 schema = {
     "string_column": {"abc": 1, "bcd": 2 },
