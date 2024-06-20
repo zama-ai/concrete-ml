@@ -40,9 +40,9 @@ def evaluate_model(model, processor, images, labels):
     print(f"Top-5 Accuracy of the ResNet18 model on the images: {topk_accuracy*100:.2f}%")
 
 
-def compile_model(model, images):
+def compile_model(model, images, use_gpu=False):
     # Enable TLU fusing to optimize the number of TLUs in the residual connections
-    config = Configuration(enable_tlu_fusing=True, print_tlu_fusing=False)
+    config = Configuration(enable_tlu_fusing=True, print_tlu_fusing=False, use_gpu=use_gpu)
     print("Compiling the model...")
     return compile_torch_model(
         model,
@@ -111,6 +111,9 @@ def main():
     parser.add_argument(
         "--export_statistics", action="store_true", help="Export the circuit statistics."
     )
+    parser.add_argument(
+        "--use_gpu", action="store_true", help="Use the available GPU at FHE runtime."
+    )
     args = parser.parse_args()
 
     resnet18 = load_model()
@@ -118,7 +121,7 @@ def main():
 
     evaluate_model(resnet18, processor, images, labels)
 
-    q_module = compile_model(resnet18, calib_images)
+    q_module = compile_model(resnet18, calib_images, use_gpu=args.use_gpu)
 
     if args.export_statistics:
         export_statistics(q_module)
