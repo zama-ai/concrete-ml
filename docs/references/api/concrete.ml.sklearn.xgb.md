@@ -8,7 +8,7 @@ Implements XGBoost models.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/xgb.py#L17"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/xgb.py#L19"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `XGBClassifier`
 
@@ -16,7 +16,7 @@ Implements the XGBoost classifier.
 
 See https://xgboost.readthedocs.io/en/stable/python/python_api.html#module-xgboost.sklearn for more information about the parameters used.
 
-<a href="../../../src/concrete/ml/sklearn/xgb.py#L29"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/xgb.py#L31"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -44,14 +44,24 @@ __init__(
     missing: float = nan,
     num_parallel_tree: Optional[int] = None,
     monotone_constraints: Optional[Dict[str, int], str] = None,
-    interaction_constraints: Optional[str, List[Tuple[str]]] = None,
+    interaction_constraints: Optional[str, Sequence[Sequence[str]]] = None,
     importance_type: Optional[str] = None,
     gpu_id: Optional[int] = None,
     validate_parameters: Optional[bool] = None,
     predictor: Optional[str] = None,
     enable_categorical: bool = False,
+    use_label_encoder: bool = False,
     random_state: Optional[int] = None,
-    verbosity: Optional[int] = None
+    verbosity: Optional[int] = None,
+    max_bin: Optional[int] = None,
+    callbacks: Optional[List[TrainingCallback]] = None,
+    early_stopping_rounds: Optional[int] = None,
+    max_leaves: Optional[int] = None,
+    eval_metric: Optional[str, List[str], Callable] = None,
+    max_cat_to_onehot: Optional[int] = None,
+    grow_policy: Optional[str] = None,
+    sampling_method: Optional[str] = None,
+    **kwargs
 )
 ```
 
@@ -125,7 +135,7 @@ Using this attribute is deprecated.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/xgb.py#L114"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/xgb.py#L137"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -135,7 +145,7 @@ dump_dict() → Dict[str, Any]
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/xgb.py#L162"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/xgb.py#L205"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -145,7 +155,7 @@ load_dict(metadata: Dict)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/xgb.py#L222"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/xgb.py#L274"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `XGBRegressor`
 
@@ -153,7 +163,7 @@ Implements the XGBoost regressor.
 
 See https://xgboost.readthedocs.io/en/stable/python/python_api.html#module-xgboost.sklearn for more information about the parameters used.
 
-<a href="../../../src/concrete/ml/sklearn/xgb.py#L234"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/xgb.py#L286"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -162,7 +172,7 @@ __init__(
     n_bits: Union[int, Dict[str, int]] = 6,
     max_depth: Optional[int] = 3,
     learning_rate: Optional[float] = None,
-    n_estimators: Optional[int] = 20,
+    n_estimators: int = 20,
     objective: Optional[str] = 'reg:squarederror',
     booster: Optional[str] = None,
     tree_method: Optional[str] = None,
@@ -181,14 +191,23 @@ __init__(
     missing: float = nan,
     num_parallel_tree: Optional[int] = None,
     monotone_constraints: Optional[Dict[str, int], str] = None,
-    interaction_constraints: Optional[str, List[Tuple[str]]] = None,
+    interaction_constraints: Optional[str, Sequence[Sequence[str]]] = None,
     importance_type: Optional[str] = None,
     gpu_id: Optional[int] = None,
     validate_parameters: Optional[bool] = None,
     predictor: Optional[str] = None,
     enable_categorical: bool = False,
-    random_state: Optional[int] = None,
-    verbosity: Optional[int] = None
+    random_state: Optional[RandomState, int] = None,
+    verbosity: Optional[int] = None,
+    eval_metric: Optional[str, List[str], Callable] = None,
+    sampling_method: Optional[str] = None,
+    max_leaves: Optional[int] = None,
+    max_bin: Optional[int] = None,
+    max_cat_to_onehot: Optional[int] = None,
+    grow_policy: Optional[str] = None,
+    callbacks: Optional[List[TrainingCallback]] = None,
+    early_stopping_rounds: Optional[int] = None,
+    **kwargs: Any
 )
 ```
 
@@ -238,7 +257,7 @@ Is None if the model is not fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/xgb.py#L342"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/xgb.py#L413"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -248,7 +267,7 @@ dump_dict() → Dict[str, Any]
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/xgb.py#L319"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/xgb.py#L389"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -258,7 +277,7 @@ fit(X, y, *args, **kwargs) → Any
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/xgb.py#L390"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/xgb.py#L480"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -268,7 +287,7 @@ load_dict(metadata: Dict)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/xgb.py#L334"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/xgb.py#L404"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
