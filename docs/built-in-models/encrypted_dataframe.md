@@ -45,6 +45,24 @@ df_decrypted = client.decrypt_to_pandas(df_encrypted)
 - **Quantized Float**: Floating-point numbers are quantized to integers within the supported range. This is achieved by computing a scale and zero point for each column, which are used to map the floating-point numbers to the quantized integer space.
 - **String Enum**: String columns are mapped to integers starting from 1. This mapping is stored and later used for de-quantization. If the number of unique strings exceeds 15, a `ValueError` is raised.
 
+### Using a user-defined schema
+
+Before encryption, the data is preprocessed. For example **string enums** first need to be mapped to integers, and floating point values must be quantized. By default, this mapping is done automatically. However, when two different clients encrypt their data separately, the automatic mappings may differ, possibly due to some missing values in one of the client's DataFrame. Thus the column can not be selected when merging encrypted DataFrames.
+
+The encrypted DataFrame supports user-defined mappings. These schemas are defined as a dictionary where keys represent column names and values contain meta-data about the column. Supported column meta-data are:
+
+- string columns: mapping between string values and integers.
+- float columns: the min/max range that the column values lie in.
+
+<!--pytest-codeblocks:cont-->
+
+```python
+schema = {
+    "string_column": {"abc": 1, "bcd": 2 },
+    "float_column": {"min": 0.1, "max": 0.5 }
+}
+```
+
 ## Supported operations
 
 Encrypted DataFrame is designed to support a subset of operations that are available for pandas DataFrames. For now, only the `merge` operation is supported. More operations will be added in the future releases.

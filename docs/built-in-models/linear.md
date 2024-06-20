@@ -1,10 +1,10 @@
 # Linear models
 
-This document introduces some [scikit-learn](https://scikit-learn.org/stable/)'s linear models for `regression` and `classification` that Concrete ML provides.
+This page explains Concrete ML linear models for both classification and regression. These models are based on [scikit-learn](https://scikit-learn.org/stable/) linear models.
 
-## Supported models
+## Supported models for encrypted inference
 
-The use of the following models in FHE is very similar to the use of scikit-learn's [API](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.linear_model). They are also compatible with some of scikit-learn's main workflows, such as `Pipeline()` and `GridSearch()`.
+The following models are supported for training on clear data and predicting on encrypted data. Their API is similar the one of [scikit-learn](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.linear_model). These models are also compatible with some of scikit-learn's main workflows, such as `Pipeline()` and `GridSearch()`.
 
 |                                             Concrete ML                                              |                                                                         scikit-learn                                                                         |
 | :--------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------: |
@@ -19,6 +19,12 @@ The use of the following models in FHE is very similar to the use of scikit-lear
 |              [Ridge](../references/api/concrete.ml.sklearn.linear_model.md#class-ridge)              |                    [Ridge](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html#sklearn.linear_model.Ridge)                     |
 |         [ElasticNet](../references/api/concrete.ml.sklearn.linear_model.md#class-elasticnet)         |             [ElasticNet](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.ElasticNet.html#sklearn.linear_model.ElasticNet)             |
 |       [SGDRegressor](../references/api/concrete.ml.sklearn.linear_model.md#class-sgdregressor)       |                           [SGDRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html)                           |
+
+## Supported models for encrypted training
+
+In addition to predicting on encrypted data, the following models  support training on encrypted data.
+
+|       [SGDClassifier](../references/api/concrete.ml.sklearn.linear_model.md#class-sgdclassifier)       |                           [SGDClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html)                           |
 
 ## Quantization parameters
 

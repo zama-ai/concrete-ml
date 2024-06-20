@@ -26,6 +26,10 @@ For a formal explanation of the mechanisms that enable FHE-compatible decision t
 Using the maximum depth parameter of decision trees and tree-ensemble models strongly increases the number of nodes in the trees. Therefore, we recommend using the XGBoost models which achieve better performance with lower depth.
 {% endhint %}
 
+## Pre-trained models
+
+You can convert an already trained scikit-learn tree-based model to a Concrete ML one by using the [`from_sklearn_model`](../references/api/concrete.ml.sklearn.base.md#classmethod-from_sklearn_model) method.
+
 ## Example
 
 Here's an example of how to use this model in FHE on a popular data-set using some of scikit-learn's pre-processing tools. You can find a more complete example in the [XGBClassifier notebook](../tutorials/ml_examples.md).
