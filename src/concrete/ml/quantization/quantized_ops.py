@@ -1717,7 +1717,7 @@ class QuantizedDiv(QuantizedMixingOp):
     def can_fuse(self) -> bool:
         """Determine if this op can be fused.
 
-        Add operation can be computed in float and fused if it operates over inputs produced
+        Div operation can be computed in float and fused if it operates over inputs produced
         by a single integer tensor.
 
         Returns:
@@ -1833,7 +1833,7 @@ class QuantizedMul(QuantizedMixingOp):
     def can_fuse(self) -> bool:
         """Determine if this op can be fused.
 
-        Add operation can be computed in float and fused if it operates over inputs produced
+        Mul operation can be computed in float and fused if it operates over inputs produced
         by a single integer tensor.
 
         Returns:
