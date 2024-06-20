@@ -12,13 +12,13 @@ Define the framework used for managing keys (encrypt, decrypt) for encrypted dat
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pandas/client_engine.py#L17"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pandas/client_engine.py#L21"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `ClientEngine`
 
 Define a framework that manages keys.
 
-<a href="../../../src/concrete/ml/pandas/client_engine.py#L20"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pandas/client_engine.py#L24"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -28,7 +28,7 @@ __init__(keygen: bool = True, keys_path: Optional[Path, str] = None)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pandas/client_engine.py#L70"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pandas/client_engine.py#L80"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `decrypt_to_pandas`
 
@@ -48,12 +48,15 @@ Decrypt an encrypted data-frame using the loaded client and return a Pandas data
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pandas/client_engine.py#L40"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pandas/client_engine.py#L44"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `encrypt_from_pandas`
 
 ```python
-encrypt_from_pandas(pandas_dataframe: DataFrame) → EncryptedDataFrame
+encrypt_from_pandas(
+    pandas_dataframe: DataFrame,
+    schema: Optional[Dict] = None
+) → EncryptedDataFrame
 ```
 
 Encrypt a Pandas data-frame using the loaded client.
@@ -61,6 +64,7 @@ Encrypt a Pandas data-frame using the loaded client.
 **Args:**
 
 - <b>`pandas_dataframe`</b> (DataFrame):  The Pandas data-frame to encrypt.
+- <b>`schema`</b> (Optional\[Dict\]):  The input schema to consider. Default to None.
 
 **Returns:**
 
@@ -68,7 +72,7 @@ Encrypt a Pandas data-frame using the loaded client.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pandas/client_engine.py#L26"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pandas/client_engine.py#L30"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `keygen`
 

@@ -43,7 +43,7 @@ Forward pass.
 
 **Returns:**
 
-- <b>`Tuple[torch.Tensor. torch.Tensor]`</b>:  Output of the network.
+- <b>`Tuple[torch.Tensor. torch.Tensor]`</b>:  Outputs of the network.
 
 ______________________________________________________________________
 
@@ -1563,3 +1563,63 @@ Forward pass.
 **Returns:**
 
 - <b>`torch.Tensor`</b>:  The model's output.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1569"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>class</kbd> `IdentityExpandModel`
+
+Model that only adds an empty dimension at axis 0.
+
+This model is mostly useful for testing the composition feature.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1575"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `forward`
+
+```python
+forward(x)
+```
+
+Forward pass.
+
+**Args:**
+
+- <b>`x`</b> (torch.Tensor):  The input of the model.
+
+**Returns:**
+
+- <b>`Tuple[torch.Tensor. torch.Tensor]`</b>:  Outputs of the network.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1587"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>class</kbd> `IdentityExpandMultiOutputModel`
+
+Model that only adds an empty dimension at axis 0, and returns the initial input as well.
+
+This model is mostly useful for testing the composition feature.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1593"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `forward`
+
+```python
+forward(x)
+```
+
+Forward pass.
+
+**Args:**
+
+- <b>`x`</b> (torch.Tensor):  The input of the model.
+
+**Returns:**
+
+- <b>`Tuple[torch.Tensor. torch.Tensor]`</b>:  Outputs of the network.

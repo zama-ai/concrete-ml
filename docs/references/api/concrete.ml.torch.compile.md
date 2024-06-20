@@ -91,7 +91,7 @@ Take a model in torch or ONNX, turn it to numpy, quantize its inputs / weights /
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/compile.py#L237"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/compile.py#L263"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_torch_model`
 
@@ -141,7 +141,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/compile.py#L321"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/compile.py#L347"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_onnx_model`
 
@@ -191,7 +191,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/compile.py#L401"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/compile.py#L427"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_brevitas_qat_model`
 

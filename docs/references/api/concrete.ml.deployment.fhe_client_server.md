@@ -12,7 +12,7 @@ APIs for FHE deployment.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L28"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L51"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_concrete_versions`
 
@@ -34,13 +34,21 @@ This function loads the version JSON file found in client.zip or server.zip file
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L81"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L32"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>class</kbd> `DeploymentMode`
+
+Mode for the FHE API.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L104"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `FHEModelServer`
 
 Server API to load and run the FHE circuit.
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L86"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L109"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -56,7 +64,7 @@ Initialize the FHE API.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L98"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L121"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `load`
 
@@ -68,37 +76,37 @@ Load the circuit.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L106"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L135"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `run`
 
 ```python
 run(
-    serialized_encrypted_quantized_data: bytes,
+    serialized_encrypted_quantized_data: Union[bytes, Value, Tuple[bytes, ], Tuple[Value, ]],
     serialized_evaluation_keys: bytes
-) → bytes
+) → Union[bytes, Value, Tuple[bytes, ], Tuple[Value, ]]
 ```
 
 Run the model on the server over encrypted data.
 
 **Args:**
 
-- <b>`serialized_encrypted_quantized_data`</b> (bytes):  the encrypted, quantized  and serialized data
-- <b>`serialized_evaluation_keys`</b> (bytes):  the serialized evaluation keys
+- <b>`serialized_encrypted_quantized_data`</b> (Union\[bytes, fhe.Value, Tuple\[bytes, ...\],                 Tuple\[fhe.Value, ...\]\]):  The encrypted and quantized values to consider. If these  values are serialized (in bytes), they are first deserialized.
+- <b>`serialized_evaluation_keys`</b> (bytes):  The evaluation keys. If they are serialized (in  bytes), they are first deserialized.
 
 **Returns:**
 
-- <b>`bytes`</b>:  the result of the model
+- <b>`Union[bytes, fhe.Value, Tuple[bytes, ...], Tuple[fhe.Value, ...]]`</b>:  The model's encrypted  and quantized results. If the inputs were initially serialized, the outputs are also  serialized.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L134"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L195"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `FHEModelDev`
 
 Dev API to save the model and then load and run the FHE circuit.
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L139"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L200"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -115,33 +123,38 @@ Initialize the FHE API.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L176"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L242"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `save`
 
 ```python
-save(via_mlir: bool = False)
+save(
+    mode: DeploymentMode = <DeploymentMode.INFERENCE: 'inference'>,
+    via_mlir: bool = False
+)
 ```
 
 Export all needed artifacts for the client and server.
 
 **Arguments:**
 
-- <b>`via_mlir`</b> (bool):  serialize with `via_mlir` option from Concrete-Python.  For more details on the topic please refer to Concrete-Python's documentation.
+- <b>`mode`</b> (DeploymentMode):  the mode to save the FHE circuit,  either "inference" or "training".
+- <b>`via_mlir`</b> (bool):  serialize with `via_mlir` option from Concrete-Python.
 
 **Raises:**
 
-- <b>`Exception`</b>:  path_dir is not empty
+- <b>`Exception`</b>:  path_dir is not empty or training module does not exist
+- <b>`ValueError`</b>:  if mode is not "inference" or "training"
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L228"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L318"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `FHEModelClient`
 
 Client API to encrypt and decrypt FHE data.
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L233"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L323"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -158,49 +171,51 @@ Initialize the FHE API.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L318"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L419"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `deserialize_decrypt`
 
 ```python
-deserialize_decrypt(serialized_encrypted_quantized_result: bytes) → ndarray
+deserialize_decrypt(
+    *serialized_encrypted_quantized_result: Optional[bytes]
+) → Union[Any, Tuple[Any, ]]
 ```
 
 Deserialize and decrypt the values.
 
 **Args:**
 
-- <b>`serialized_encrypted_quantized_result`</b> (bytes):  the serialized, encrypted  and quantized result
+- <b>`serialized_encrypted_quantized_result`</b> (Optional\[bytes\]):  The serialized, encrypted and  quantized values.
 
 **Returns:**
 
-- <b>`numpy.ndarray`</b>:  the decrypted and deserialized values
+- <b>`Union[Any, Tuple[Any, ...]]`</b>:  The decrypted and deserialized values.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L340"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L443"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `deserialize_decrypt_dequantize`
 
 ```python
 deserialize_decrypt_dequantize(
-    serialized_encrypted_quantized_result: bytes
-) → ndarray
+    *serialized_encrypted_quantized_result: Optional[bytes]
+) → Union[ndarray, Tuple[ndarray, ]]
 ```
 
 Deserialize, decrypt and de-quantize the values.
 
 **Args:**
 
-- <b>`serialized_encrypted_quantized_result`</b> (bytes):  the serialized, encrypted  and quantized result
+- <b>`serialized_encrypted_quantized_result`</b> (Optional\[bytes\]):  The serialized, encrypted and  quantized result
 
 **Returns:**
 
-- <b>`numpy.ndarray`</b>:  the decrypted (de-quantized) values
+- <b>`Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]`</b>:  The clear float values.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L283"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L375"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `generate_private_and_evaluation_keys`
 
@@ -216,7 +231,7 @@ Generate the private and evaluation keys.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L291"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L383"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_serialized_evaluation_keys`
 
@@ -232,7 +247,7 @@ Get the serialized evaluation keys.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L251"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L341"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `load`
 
@@ -244,20 +259,22 @@ Load the quantizers along with the FHE specs.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L299"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L394"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_encrypt_serialize`
 
 ```python
-quantize_encrypt_serialize(x: ndarray) → bytes
+quantize_encrypt_serialize(
+    *x: Optional[ndarray]
+) → Union[bytes, NoneType, Tuple[Union[bytes, NoneType], ]]
 ```
 
 Quantize, encrypt and serialize the values.
 
 **Args:**
 
-- <b>`x`</b> (numpy.ndarray):  the values to quantize, encrypt and serialize
+- <b>`x`</b> (Optional\[numpy.ndarray\]):  The values to quantize, encrypt and serialize.
 
 **Returns:**
 
-- <b>`bytes`</b>:  the quantized, encrypted and serialized values
+- <b>`Union[bytes, Tuple[bytes, ...]]`</b>:  The quantized, encrypted and serialized values.

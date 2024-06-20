@@ -41,7 +41,7 @@ ______________________________________________________________________
 ### <kbd>method</kbd> `compute_op_predecessors`
 
 ```python
-compute_op_predecessors() → DefaultDict[Optional[QuantizedOp], List[Tuple[Optional[QuantizedOp], str]]]
+compute_op_predecessors() → DefaultDict[Union[QuantizedOp, NoneType], List[Tuple[Union[QuantizedOp, NoneType], str]]]
 ```
 
 Compute the predecessors for each QuantizedOp in a QuantizedModule.
@@ -61,7 +61,7 @@ ______________________________________________________________________
 ```python
 detect_patterns(
     predecessors: DefaultDict[Optional[QuantizedOp], List[Tuple[Optional[QuantizedOp], str]]]
-) → Dict[QuantizedMixingOp, Tuple[List[Optional[QuantizedOp]], Optional[QuantizedOp]]]
+) → Dict[QuantizedMixingOp, Tuple[List[Union[QuantizedOp, NoneType]], Union[QuantizedOp, NoneType]]]
 ```
 
 Detect the patterns that can be optimized with roundPBS in the QuantizedModule.
@@ -107,7 +107,7 @@ ______________________________________________________________________
 ### <kbd>method</kbd> `process`
 
 ```python
-process() → Dict[QuantizedMixingOp, Tuple[List[Optional[QuantizedOp]], Optional[QuantizedOp]]]
+process() → Dict[QuantizedMixingOp, Tuple[List[Union[QuantizedOp, NoneType]], Union[QuantizedOp, NoneType]]]
 ```
 
 Analyze an ONNX graph and detect Gemm/Conv patterns that can use RoundPBS.
@@ -129,7 +129,7 @@ ______________________________________________________________________
 ```python
 process_patterns(
     valid_paths: Dict[QuantizedMixingOp, Tuple[List[Optional[QuantizedOp]], Optional[QuantizedOp]]]
-) → Dict[QuantizedMixingOp, Tuple[List[Optional[QuantizedOp]], Optional[QuantizedOp]]]
+) → Dict[QuantizedMixingOp, Tuple[List[Union[QuantizedOp, NoneType]], Union[QuantizedOp, NoneType]]]
 ```
 
 Configure the rounding bits of roundPBS for the optimizable operations.

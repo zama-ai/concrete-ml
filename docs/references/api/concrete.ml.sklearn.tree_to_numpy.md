@@ -15,19 +15,19 @@ Implements the conversion of a tree model to a numpy function.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L47"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L49"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_onnx_model`
 
 ```python
-get_onnx_model(model: Callable, x: ndarray, framework: str) → ModelProto
+get_onnx_model(model, x: ndarray, framework: str) → ModelProto
 ```
 
 Create ONNX model with Hummingbird convert method.
 
 **Args:**
 
-- <b>`model`</b> (Callable):  The tree model to convert.
+- <b>`model`</b>:  The tree model to convert.
 - <b>`x`</b> (numpy.ndarray):  Dataset used to trace the tree inference and convert the model to ONNX.
 - <b>`framework`</b> (str):  The framework from which the ONNX model is generated.
 - <b>`(options`</b>:  'xgboost', 'sklearn')
@@ -38,7 +38,7 @@ Create ONNX model with Hummingbird convert method.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L79"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L81"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `workaround_squeeze_node_xgboost`
 
@@ -56,7 +56,7 @@ FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2778 The squeeze o
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L104"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L106"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `assert_add_node_and_constant_in_xgboost_regressor_graph`
 
@@ -72,7 +72,7 @@ Assert if an Add node with a specific constant exists in the ONNX graph.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L140"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L142"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `add_transpose_after_last_node`
 
@@ -92,7 +92,7 @@ Add transpose after last node.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L171"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L173"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `preprocess_tree_predictions`
 
@@ -116,7 +116,7 @@ Apply post-processing from the graph.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L221"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L223"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `tree_onnx_graph_preprocessing`
 
@@ -141,7 +141,7 @@ Apply pre-processing onto the ONNX graph.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L284"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L286"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `tree_values_preprocessing`
 
@@ -168,13 +168,13 @@ Pre-process tree values.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L330"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L336"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `tree_to_numpy`
 
 ```python
 tree_to_numpy(
-    model: Callable,
+    model: BaseEstimator,
     x: ndarray,
     framework: str,
     use_rounding: bool = True,
@@ -198,3 +198,40 @@ Convert the tree inference to a numpy functions using Hummingbird.
 **Returns:**
 
 - <b>`Tuple[Callable, List[QuantizedArray], onnx.ModelProto]`</b>:  A tuple with a function that takes a  numpy array and returns a numpy array, QuantizedArray object to quantize and de-quantize  the output of the tree, and the ONNX model.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L530"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `onnx_fp32_model_to_quantized_model`
+
+```python
+onnx_fp32_model_to_quantized_model(
+    onnx_model: ModelProto,
+    n_bits: int,
+    framework: str,
+    expected_number_of_outputs: int,
+    n_features: int,
+    model_inputs: Optional[ndarray] = None
+)
+```
+
+Build a FHE-compliant onnx-model using a fitted scikit-learn model.
+
+**Args:**
+
+- <b>`onnx_model`</b> (onnx.ModelProto):  The fitted scikit-learn as a Hummingbird onnx model to convert
+- <b>`n_bits`</b> (int):  Number of bits to quantize the model. If an int is passed  for n_bits, the value will be used for quantizing inputs and weights. If a dict is  passed, then it should contain "op_inputs" and "op_weights" as keys with  corresponding number of quantization bits so that:
+  \- op_inputs : number of bits to quantize the input values
+  \- op_weights: number of bits to quantize the learned parameters
+- <b>`framework`</b> (str):  either sklearn or xgboost
+- <b>`expected_number_of_outputs`</b> (int):  expected number of outputs
+- <b>`n_features`</b> (int):  number of features as inputs of the model
+- <b>`model_inputs`</b> (Optional\[numpy.ndarray\]):  optional dataset to use for quantization
+
+**Returns:**
+
+- <b>`onnx.ModelProto`</b>:  The converted onnx model
+- <b>`Optional[Tuple[int, int]]`</b>:  Least significant bits to remove
+- <b>`list[UniformQuantizer]`</b>:  inputs quantizers
+- <b>`list[UniformQuantizer]`</b>:  outputs quantizers

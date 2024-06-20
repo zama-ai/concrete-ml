@@ -638,7 +638,7 @@ ______________________________________________________________________
 ### <kbd>method</kbd> `dequant`
 
 ```python
-dequant(qvalues: 'ndarray') → Union[ndarray, Tracer]
+dequant(qvalues: 'ndarray') → Union[float, ndarray, Tracer]
 ```
 
 De-quantize values.

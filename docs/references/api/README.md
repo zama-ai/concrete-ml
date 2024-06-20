@@ -60,6 +60,7 @@
 - [`decoder.ConcreteDecoder`](./concrete.ml.common.serialization.decoder.md#class-concretedecoder): Custom json decoder to handle non-native types found in serialized Concrete ML objects.
 - [`encoder.ConcreteEncoder`](./concrete.ml.common.serialization.encoder.md#class-concreteencoder): Custom json encoder to handle non-native types found in serialized Concrete ML objects.
 - [`utils.FheMode`](./concrete.ml.common.utils.md#class-fhemode): Enum representing the execution mode.
+- [`fhe_client_server.DeploymentMode`](./concrete.ml.deployment.fhe_client_server.md#class-deploymentmode): Mode for the FHE API.
 - [`fhe_client_server.FHEModelClient`](./concrete.ml.deployment.fhe_client_server.md#class-fhemodelclient): Client API to encrypt and decrypt FHE data.
 - [`fhe_client_server.FHEModelDev`](./concrete.ml.deployment.fhe_client_server.md#class-fhemodeldev): Dev API to save the model and then load and run the FHE circuit.
 - [`fhe_client_server.FHEModelServer`](./concrete.ml.deployment.fhe_client_server.md#class-fhemodelserver): Server API to load and run the FHE circuit.
@@ -84,6 +85,8 @@
 - [`torch_models.FCSeq`](./concrete.ml.pytest.torch_models.md#class-fcseq): Torch model that should generate MatMul->Add ONNX patterns.
 - [`torch_models.FCSeqAddBiasVec`](./concrete.ml.pytest.torch_models.md#class-fcseqaddbiasvec): Torch model that should generate MatMul->Add ONNX patterns.
 - [`torch_models.FCSmall`](./concrete.ml.pytest.torch_models.md#class-fcsmall): Torch model for the tests.
+- [`torch_models.IdentityExpandModel`](./concrete.ml.pytest.torch_models.md#class-identityexpandmodel): Model that only adds an empty dimension at axis 0.
+- [`torch_models.IdentityExpandMultiOutputModel`](./concrete.ml.pytest.torch_models.md#class-identityexpandmultioutputmodel): Model that only adds an empty dimension at axis 0, and returns the initial input as well.
 - [`torch_models.ManualLogisticRegressionTraining`](./concrete.ml.pytest.torch_models.md#class-manuallogisticregressiontraining): PyTorch module for performing SGD training.
 - [`torch_models.MultiInputNN`](./concrete.ml.pytest.torch_models.md#class-multiinputnn): Torch model to test multiple inputs forward.
 - [`torch_models.MultiInputNNConfigurable`](./concrete.ml.pytest.torch_models.md#class-multiinputnnconfigurable): Torch model to test multiple inputs forward.
@@ -372,6 +375,7 @@
 - [`tree_to_numpy.add_transpose_after_last_node`](./concrete.ml.sklearn.tree_to_numpy.md#function-add_transpose_after_last_node): Add transpose after last node.
 - [`tree_to_numpy.assert_add_node_and_constant_in_xgboost_regressor_graph`](./concrete.ml.sklearn.tree_to_numpy.md#function-assert_add_node_and_constant_in_xgboost_regressor_graph): Assert if an Add node with a specific constant exists in the ONNX graph.
 - [`tree_to_numpy.get_onnx_model`](./concrete.ml.sklearn.tree_to_numpy.md#function-get_onnx_model): Create ONNX model with Hummingbird convert method.
+- [`tree_to_numpy.onnx_fp32_model_to_quantized_model`](./concrete.ml.sklearn.tree_to_numpy.md#function-onnx_fp32_model_to_quantized_model): Build a FHE-compliant onnx-model using a fitted scikit-learn model.
 - [`tree_to_numpy.preprocess_tree_predictions`](./concrete.ml.sklearn.tree_to_numpy.md#function-preprocess_tree_predictions): Apply post-processing from the graph.
 - [`tree_to_numpy.tree_onnx_graph_preprocessing`](./concrete.ml.sklearn.tree_to_numpy.md#function-tree_onnx_graph_preprocessing): Apply pre-processing onto the ONNX graph.
 - [`tree_to_numpy.tree_to_numpy`](./concrete.ml.sklearn.tree_to_numpy.md#function-tree_to_numpy): Convert the tree inference to a numpy functions using Hummingbird.

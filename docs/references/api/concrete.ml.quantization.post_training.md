@@ -122,7 +122,7 @@ Following https://arxiv.org/abs/1712.05877 guidelines.
 
 **Args:**
 
-- <b>`*calibration_data (numpy.ndarray)`</b>:   Data that will be used to compute the bounds,  scales and zero point values for every quantized  object.
+- <b>`calibration_data`</b> (numpy.ndarray):   Data that will be used to compute the bounds,  scales and zero point values for every quantized object.
 
 **Returns:**
 
@@ -130,7 +130,7 @@ Following https://arxiv.org/abs/1712.05877 guidelines.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/post_training.py#L823"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/post_training.py#L822"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `PostTrainingAffineQuantization`
 
@@ -221,7 +221,7 @@ Following https://arxiv.org/abs/1712.05877 guidelines.
 
 **Args:**
 
-- <b>`*calibration_data (numpy.ndarray)`</b>:   Data that will be used to compute the bounds,  scales and zero point values for every quantized  object.
+- <b>`calibration_data`</b> (numpy.ndarray):   Data that will be used to compute the bounds,  scales and zero point values for every quantized object.
 
 **Returns:**
 
@@ -229,7 +229,7 @@ Following https://arxiv.org/abs/1712.05877 guidelines.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/post_training.py#L974"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/post_training.py#L973"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `PostTrainingQATImporter`
 
@@ -305,7 +305,7 @@ Following https://arxiv.org/abs/1712.05877 guidelines.
 
 **Args:**
 
-- <b>`*calibration_data (numpy.ndarray)`</b>:   Data that will be used to compute the bounds,  scales and zero point values for every quantized  object.
+- <b>`calibration_data`</b> (numpy.ndarray):   Data that will be used to compute the bounds,  scales and zero point values for every quantized object.
 
 **Returns:**
 

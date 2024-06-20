@@ -102,7 +102,7 @@ __init__(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/hybrid_model.py#L217"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/hybrid_model.py#L216"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -157,7 +157,7 @@ Set the clients keys.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/hybrid_model.py#L278"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/hybrid_model.py#L277"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `remote_call`
 

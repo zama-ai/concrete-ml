@@ -59,7 +59,7 @@ Get the numpy equivalent forward of the provided torch Module.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/convert.py#L178"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/convert.py#L179"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `preprocess_onnx_model`
 
@@ -84,7 +84,7 @@ Get the numpy equivalent forward of the provided ONNX model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/convert.py#L240"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/convert.py#L241"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_equivalent_numpy_forward_from_onnx`
 
@@ -108,7 +108,7 @@ Get the numpy equivalent forward of the provided ONNX model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/convert.py#L265"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/convert.py#L266"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_equivalent_numpy_forward_from_onnx_tree`
 
