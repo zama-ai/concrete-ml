@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project executes the ResNet18 image classification model using Fully Homomorphic Encryption (FHE) with Concrete ML. The model is adapted for FHE compatibility and tested on a small subset of tiny-imagenet (up-sampled) images.
+This project executes the ResNet18 image classification model using Fully Homomorphic Encryption (FHE) with Concrete ML. The model is adapted for FHE compatibility and tested on a small subset of imagenet images.
 
 ## ResNet18
 
@@ -17,9 +17,9 @@ The rest is left unchanged.
 
 ## Evaluation dataset
 
-The model is evaluated on images from [the Tiny ImageNet dataset](https://huggingface.co/datasets/zh-plus/tiny-imagenet).
+The model is evaluated on images from the [ImageNet-1k dataset](https://huggingface.co/datasets/timm/imagenet-1k-wds).
 
-The `TinyImageNetProcessor` class in `utils_resnet.py` preprocesses the Tiny ImageNet data-set and aligns it with ImageNet labels for model evaluation.
+The `ImageNetProcessor` class in `utils_resnet.py` preprocesses the ImageNet validation set for model evaluation. It uses a subset of the validation data to ensure efficient processing and evaluation.
 
 ## Usage
 
@@ -45,8 +45,24 @@ pip install -r requirements.txt
 4. Run the script:
 
 ```bash
-python resnet_fhe.py [--run_fhe] [--export_statistics]
+python run_resnet18_fhe.py [--run_fhe] [--export_statistics] [--use_gpu] [--run_experiment] [--dataset_cache_dir <path>] [--num_images <number>]
 ```
+
+The script `run_resnet18_fhe.py` accepts several command-line arguments to control its behavior:
+
+- `--run_fhe`: runs the actual FHE execution of the ResNet18 model. If not set, the script will run the model without FHE.
+
+- `--export_statistics`: exports the circuit statistics after running the model. This can be useful for analyzing the performance and characteristics of the FHE execution.
+
+- `--use_gpu`: utilizes the available GPU for FHE runtime, potentially speeding up the execution. If not set, the script will run on the CPU.
+
+- `--run_experiment`: runs experiments with different `n_bits` and `rounding_threshold_bits` configurations. This can help in finding the optimal settings for the model.
+
+- `--dataset_cache_dir <path>`: specifies the path to the directory where the dataset is cached. If not provided, the dataset will be downloaded and cached in the default location.
+
+- `--num_images <number>`: specifies the number of images to process in the FHE execution. The default value is 1. Increasing this number will process more images but may take longer to execute.
+
+
 
 Example of output when running the script:
 
@@ -55,15 +71,22 @@ python resnet_fhe.py --run_fhe
 ```
 
 ```
-Accuracy of the ResNet18 model on the images: 56.00%
-Top-5 Accuracy of the ResNet18 model on the images: 82.00%
-Compiling the model...
+Accuracy of the ResNet18 model on the images: 67.00%
+Top-5 Accuracy of the ResNet18 model on the images: 87.00%
+Compiling the model with compile_torch_model...
 Model compiled successfully.
-Quantized Model Accuracy of the FHEResNet18 on the images: 54.00%
-Quantized Model Top-5 Accuracy of the FHEResNet18 on the images: 77.00%
-FHE Simulation Accuracy of the FHEResNet18 on the images: 53.00%
-FHE Simulation Top-5 Accuracy of the FHEResNet18 on the images: 75.00%
-Time taken for one FHE execution: 5482.5433 seconds
+Quantized Model Accuracy of the FHEResNet18 on the images: 67.00%
+Quantized Model Top-5 Accuracy of the FHEResNet18 on the images: 87.00%
+FHE simulation Accuracy of the FHEResNet18 on the images: 66.00%
+FHE simulation Top-5 Accuracy of the FHEResNet18 on the images: 87.00%
+Processing 1 image(s)...
+
+Image 1:
+  Running FHE execution...
+  FHE execution completed in 811.8710 seconds
+  FHE top 5 labels: 636, 588, 502, 774, 459
+  Running simulation...
+  Simulation top 5 labels: 636, 588, 502, 774, 459
 ```
 
 ## Timings and Accuracy in FHE
@@ -71,19 +94,18 @@ Time taken for one FHE execution: 5482.5433 seconds
 CPU machine: 196 cores CPU machine (hp7c from AWS)
 GPU machine: TBD
 
-Summary of the accuracy evaluation on tinyImageNet (100 images):
+Summary of the accuracy evaluation on ImageNet (100 images):
 
-| w&a bits | p_error | Accuracy | Top-5 Accuracy | Runtime (hours) | Device |
+| w&a bits | p_error | Accuracy | Top-5 Accuracy | Runtime         | Device |
 | -------- | ------- | -------- | -------------- | --------------- | ------ |
-| 6/6      | 0.05    | 50%      | 75%            | **1.52**        | CPU    |
-| 6/6      | 0.05    | 50%      | 75%            | TBD             | GPU    |
-| 6/7      | 0.05    | 53%      | 76%            | 2.2             | CPU    |
-| 6/7      | 0.005   | 57%      | 74%            | 5.2             | CPU    |
+| fp32     | -       | 67%      | 87%            | -               | -      |
+| 6/6      | 0.05    | 55%      | 78%            | 56 min          | GPU    |
+| 6/6      | 0.05    | 55%      | 78%            | 1 h 31 min      | CPU    |
+| 7/7      | 0.05    | **66%**  | **87%**        | **2 h 12 min**  | CPU    |
 
-Note that the original model in fp32 achieved 56% accuracy and 82% top-5 accuracy.
 
-Recommended configuration: 6/6 with p_error = 0.05
+6/6 `n_bits` configuration: {"model_inputs": 8, "op_inputs": 6, "op_weights": 6, "model_outputs": 9}
 
-6/6 `n_bits` configuration: {"model_inputs": 8, "op_inputs": 6, "op_weights": 6, "model_outputs": 8}
+7/7 `n_bits` configuration: {"model_inputs": 8, "op_inputs": 7, "op_weights": 7, "model_outputs": 9}
 
-6/7 `n_bits` configuration: {"model_inputs": 8, "op_inputs": 7, "op_weights": 6, "model_outputs": 8}
+For each setting, we use a the following config for the `rounding_threshold_bits`: `{"n_bits": 7, "method": "APPROXIMATE"}`.

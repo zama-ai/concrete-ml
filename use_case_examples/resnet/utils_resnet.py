@@ -1,122 +1,109 @@
 import torch
 from datasets import load_dataset
+from torch.utils.data import DataLoader
 from torchvision import transforms
 
 
-class TinyImageNetProcessor:
-    """Processor for Tiny ImageNet dataset to align it with ImageNet labels for model evaluation.
+class ImageNetProcessor:
+    def __init__(
+        self,
+        num_samples=1000,
+        calibration_samples=100,
+        batch_size=32,
+        num_workers=4,
+        image_size=224,
+        seed=42,
+        cache_dir=None,
+    ):
+        self.num_samples = num_samples
+        self.calibration_samples = calibration_samples
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+        self.seed = seed
 
-    It preprocesses images to ImageNet standards, maps labels between Tiny ImageNet and ImageNet,
-    and evaluates model predictions with these mappings.
-    """
+        # Set the global seed for Torch
+        torch.manual_seed(self.seed)
 
-    def __init__(self, imagenet_classes_path):
-        """Initializes the processor with the path to ImageNet classes and loads the dataset.
+        # Load the validation set in streaming mode
+        dataset = load_dataset(
+            "timm/imagenet-1k-wds", split="validation", streaming=True, cache_dir=cache_dir
+        )
 
-        Args:
-            imagenet_classes_path (str): Path to the file containing ImageNet class labels.
-        """
-        self.imagenet_classes_path = imagenet_classes_path
-        self.dataset = load_dataset("zh-plus/tiny-imagenet")
-        self.target_imagenet_to_tiny, self.target_tiny_to_imagenet = self._load_and_map_labels()
+        # Shuffle the dataset and take required samples
+        shuffled_dataset = dataset.shuffle(seed=seed)
+        self.main_dataset = shuffled_dataset.take(num_samples)
+        self.calibration_dataset = shuffled_dataset.skip(num_samples).take(calibration_samples)
 
-    def _load_and_map_labels(self):
-        """Loads ImageNet labels from a file and creates mappings with the dataset labels.
-
-        Returns:
-            tuple: Two dictionaries for label mapping between ImageNet and Tiny ImageNet.
-        """
-        try:
-            with open(self.imagenet_classes_path, "r") as file:
-                lines = file.readlines()
-        except IOError:
-            raise FileNotFoundError("The ImageNet classes file was not found.")
-
-        label_to_imagenet_idx = {line.split()[0]: idx for idx, line in enumerate(lines)}
-        tiny_labels = {
-            label: idx for idx, label in enumerate(self.dataset["train"].features["label"].names)
-        }
-
-        common_labels = set(label_to_imagenet_idx.keys()) & set(tiny_labels.keys())
-        imagenet_to_tiny = {
-            label_to_imagenet_idx[label]: tiny_labels[label] for label in common_labels
-        }
-        tiny_to_imagenet = {v: k for k, v in imagenet_to_tiny.items()}
-
-        return imagenet_to_tiny, tiny_to_imagenet
-
-    def get_image_label_tensors(self, num_samples=100):
-        """Fetches and preprocesses a specified number of image samples.
-
-        Args:
-            num_samples (int): Number of samples to process.
-
-        Returns:
-            tuple: Tensors of images and their corresponding labels.
-        """
-        transform = transforms.Compose(
+        # Define the transforms
+        self.transform = transforms.Compose(
             [
                 transforms.Resize(256),
-                transforms.CenterCrop(224),
+                transforms.CenterCrop(image_size),
                 transforms.ToTensor(),
                 transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
             ]
         )
 
-        rgb_samples = []
-        for sample in self.dataset["valid"].shuffle(seed=0):
-            if (
-                sample["image"].mode == "RGB"
-                and sample["label"] in self.target_imagenet_to_tiny.values()
-            ):
-                rgb_samples.append((transform(sample["image"]), sample["label"]))
-            if len(rgb_samples) == num_samples:
-                break
-        images, labels = zip(*rgb_samples) if rgb_samples else ([], [])
-        return torch.stack(images), torch.tensor(labels)
+        # Create the main dataloader
+        self.dataloader = self._create_dataloader(self.main_dataset)
 
-    def compute_accuracy(self, outputs, labels):
-        """Computes the accuracy of model outputs compared to true labels.
+        # Create the calibration dataloader
+        self.calibration_dataloader = self._create_dataloader(self.calibration_dataset)
 
-        Args:
-            outputs (torch.Tensor): Model outputs.
-            labels (torch.Tensor): True labels.
+    def preprocess(self, example):
+        example["pixel_values"] = self.transform(example["jpg"].convert("RGB"))
+        return example
 
-        Returns:
-            float: Accuracy metric.
-        """
-        imagenet_labels = torch.tensor(
-            [self.target_tiny_to_imagenet[label.item()] for label in labels]
-        )
-        relevant_indices = [self.target_tiny_to_imagenet[label.item()] for label in labels]
-        filtered_outputs = outputs[:, relevant_indices]
+    def get_calibration_tensor(self):
+        # Process all calibration samples
+        calibration_samples = [self.preprocess(example) for example in self.calibration_dataset]
 
-        predicted_labels = torch.tensor(
-            [relevant_indices[idx] for idx in filtered_outputs.argmax(dim=-1)]
-        )
-        return (predicted_labels == imagenet_labels).float().mean().item()
+        # Stack all preprocessed images into a single tensor
+        calibration_tensor = torch.stack([sample["pixel_values"] for sample in calibration_samples])
 
-    def compute_topk_accuracy(self, outputs, labels, k=5):
-        """Computes top-k accuracy of the model outputs.
+        return calibration_tensor
 
-        Args:
-            outputs (torch.Tensor): Model outputs.
-            labels (torch.Tensor): True labels.
-            k (int): Top k predictions to consider.
+    def _create_dataloader(self, dataset):
+        def collate_fn(examples):
+            processed_examples = [self.preprocess(example) for example in examples]
+            pixel_values = torch.stack([example["pixel_values"] for example in processed_examples])
+            labels = torch.tensor([example["cls"] for example in processed_examples])
+            return {"pixel_values": pixel_values, "labels": labels}
 
-        Returns:
-            float: Top-k accuracy metric.
-        """
-        imagenet_labels = torch.tensor(
-            [self.target_tiny_to_imagenet[label.item()] for label in labels]
-        )
-        relevant_indices = [self.target_tiny_to_imagenet[label.item()] for label in labels]
-        filtered_outputs = outputs[:, relevant_indices]
+        # Create a Generator with a fixed seed
+        generator = torch.Generator()
+        generator.manual_seed(self.seed)
 
-        topk_preds = filtered_outputs.topk(k, dim=-1).indices
-        topk_labels = torch.tensor(
-            [[relevant_indices[pred] for pred in preds] for preds in topk_preds]
+        return DataLoader(
+            list(dataset),
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            collate_fn=collate_fn,
+            shuffle=True,
+            generator=generator,
+            worker_init_fn=lambda worker_id: torch.manual_seed(self.seed + worker_id),
         )
 
-        correct = sum(imagenet_labels[i] in topk_labels[i] for i in range(len(imagenet_labels)))
-        return correct / len(imagenet_labels)
+    @staticmethod
+    def compute_accuracy(outputs, targets, topk=(1,)):
+        with torch.no_grad():
+            maxk = max(topk)
+            batch_size = targets.size(0)
+
+            _, pred = outputs.topk(maxk, 1, True, True)
+            pred = pred.t()
+            correct = pred.eq(targets.view(1, -1).expand_as(pred))
+
+            res = []
+            for k in topk:
+                correct_k = correct[:k].reshape(-1).float().sum(0, keepdim=True)
+                res.append(correct_k.mul_(100.0 / batch_size))
+            return res
+
+    @classmethod
+    def accuracy(cls, outputs, targets):
+        return cls.compute_accuracy(outputs, targets, topk=(1,))[0].item()
+
+    @classmethod
+    def accuracy_top5(cls, outputs, targets):
+        return cls.compute_accuracy(outputs, targets, topk=(5,))[0].item()
