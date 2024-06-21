@@ -435,7 +435,7 @@ jobs:
         uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427
         with:
           pattern: '*.intoto.jsonl'
-          path: ${{ env.ARTIFACTS_PACKAGED_DIR }}/
+          path: ${{ env.ARTIFACTS_PACKAGED_DIR }}/../slsa/
 
       - name: Copy wheel to docker build context
         run: |
@@ -553,14 +553,18 @@ jobs:
             --repo ${{ github.repository }} \
             --verify-tag ${{ env.GIT_TAG }} \
             --title ${{ env.GIT_TAG }} \
-            ${{ env.ARTIFACTS_PACKAGED_DIR }}/*
+            ${{ env.ARTIFACTS_PACKAGED_DIR }}/* \
+            ${{ env.ARTIFACTS_PACKAGED_DIR }}/../slsa/*.intoto.jsonl/*
+
           else
             gh release create \
             --notes-file ${{ env.RELEASE_BODY_FILE }} \
             --repo ${{ github.repository }} \
             --verify-tag ${{ env.GIT_TAG }} \
             --title ${{ env.GIT_TAG }} \
-            ${{ env.ARTIFACTS_PACKAGED_DIR }}/*
+            ${{ env.ARTIFACTS_PACKAGED_DIR }}/* \
+            ${{ env.ARTIFACTS_PACKAGED_DIR }}/../slsa/*.intoto.jsonl/*
+
           fi
 
       - name: Get release link
