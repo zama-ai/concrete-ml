@@ -537,18 +537,31 @@ jobs:
           -u "${{ secrets.INTERNAL_PYPI_BOT_USERNAME }}" -p "${{ secrets.INTERNAL_PYPI_BOT_PASSWORD }}" \
           --repository-url "${{ secrets.INTERNAL_PYPI_URL }}" "${{ env.ARTIFACTS_PACKAGED_DIR }}"/*.whl
 
+      # We can't use softprops/action-gh-release because it's unreliable
+      # with the SLSA files
       - name: Create GitHub release
         if: ${{ success() && !cancelled() }}
         id: create-release
-        uses: softprops/action-gh-release@69320dbe05506a9a39fc8ae11030b214ec2d1f87
-        with:
-          body_path: ${{ env.RELEASE_BODY_FILE }}
-          prerelease: ${{ fromJSON(env.IS_PRERELEASE) }}
-          files: |
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ "${{ env.IS_PRERELEASE }}" == "true" ]];
+          then
+            gh release create \
+            --prerelease \
+            --notes-file ${{ env.RELEASE_BODY_FILE }} \
+            --repo ${{ github.repository }} \
+            --verify-tag ${{ env.GIT_TAG }} \
+            --title ${{ env.GIT_TAG }} \
             ${{ env.ARTIFACTS_PACKAGED_DIR }}/*
-          tag_name: ${{ env.GIT_TAG }}
-          fail_on_unmatched_files: true
-          token: ${{ secrets.BOT_TOKEN }}
+          else
+            gh release create \
+            --notes-file ${{ env.RELEASE_BODY_FILE }} \
+            --repo ${{ github.repository }} \
+            --verify-tag ${{ env.GIT_TAG }} \
+            --title ${{ env.GIT_TAG }} \
+            ${{ env.ARTIFACTS_PACKAGED_DIR }}/*
+          fi
 
       - name: Get release link
         id: get-release-link
