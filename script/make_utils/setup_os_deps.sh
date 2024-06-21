@@ -84,8 +84,9 @@ linux_install_github_cli () {
     # Installs github cli
     # https://github.com/cli/cli/blob/trunk/docs/install_linux.md#debian-ubuntu-linux-raspberry-pi-os-apt
     echo "Installing github-CLI"
-    wget https://github.com/cli/cli/releases/download/v2.14.7/gh_2.14.7_linux_amd64.deb
-    dpkg -i gh_2.14.7_linux_amd64.deb
+    export GH_CLI_VERSION="2.51.0"
+    wget https://github.com/cli/cli/releases/download/v${GH_CLI_VERSION}/gh_${GH_CLI_VERSION}_linux_amd64.deb
+    dpkg -i gh_${GH_CLI_VERSION}_linux_amd64.deb
 }
 
 OS_NAME=$(uname)
