@@ -413,6 +413,10 @@ jobs:
           mkdir -p "${ARTIFACTS_PACKAGED_DIR}"
           echo "ARTIFACTS_PACKAGED_DIR=${ARTIFACTS_PACKAGED_DIR}" >> "$GITHUB_ENV"
 
+          ARTIFACTS_SLSA_DIR=/tmp/release_artifacts/slsa
+          mkdir -p "${ARTIFACTS_SLSA_DIR}"
+          echo "ARTIFACTS_SLSA_DIR=${ARTIFACTS_SLSA_DIR}" >> "$GITHUB_ENV"
+
       - name: Download changelog
         if: ${{ success() && !cancelled() }}
         id: download-changelog
@@ -435,7 +439,7 @@ jobs:
         uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427
         with:
           pattern: '*.intoto.jsonl'
-          path: ${{ env.ARTIFACTS_PACKAGED_DIR }}/
+          path: ${{ env.ARTIFACTS_SLSA_DIR }}/
 
       - name: Copy wheel to docker build context
         run: |
@@ -553,14 +557,16 @@ jobs:
             --repo ${{ github.repository }} \
             --verify-tag ${{ env.GIT_TAG }} \
             --title ${{ env.GIT_TAG }} \
-            ${{ env.ARTIFACTS_PACKAGED_DIR }}/*
+            ${{ env.ARTIFACTS_PACKAGED_DIR }}/* \
+            ${{ env.ARTIFACTS_SLSA_DIR }}/*.intoto.jsonl/*
           else
             gh release create \
             --notes-file ${{ env.RELEASE_BODY_FILE }} \
             --repo ${{ github.repository }} \
             --verify-tag ${{ env.GIT_TAG }} \
             --title ${{ env.GIT_TAG }} \
-            ${{ env.ARTIFACTS_PACKAGED_DIR }}/*
+            ${{ env.ARTIFACTS_PACKAGED_DIR }}/* \
+            ${{ env.ARTIFACTS_SLSA_DIR }}/*.intoto.jsonl/*
           fi
 
       - name: Get release link
