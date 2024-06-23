@@ -109,7 +109,7 @@ jobs:
 
       # Run with current version
       - name: Checkout CML to run
-        uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
         with:
           fetch-depth: 1
           lfs: true
@@ -125,7 +125,7 @@ jobs:
       # Install specific version
       # Also pull LFS files (for example, for pulling the pre-trained deep learning model weights)
       - name: Checkout CML to install
-        uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
         with:
           fetch-depth: 1
           lfs: true
