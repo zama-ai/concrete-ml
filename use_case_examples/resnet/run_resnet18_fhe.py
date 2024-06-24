@@ -62,7 +62,7 @@ def compile_model(
         model: The PyTorch model to compile.
         images: The calibration images.
         n_bits: The number of bits for quantization (int). Can be a dictionary:
-            e.g.    {
+                    {
                         "model_inputs": 8,
                         "op_inputs": 6,
                         "op_weights": 6,

@@ -15,9 +15,9 @@ The ResNet18 model is adapted from torchvision the original https://github.com/p
 
 The rest is left unchanged.
 
-## Evaluation dataset
+## Evaluation data-set
 
-The model is evaluated on images from the [ImageNet-1k dataset](https://huggingface.co/datasets/timm/imagenet-1k-wds).
+The model is evaluated on images from the [ImageNet-1k data-set](https://huggingface.co/datasets/timm/imagenet-1k-wds).
 
 The `ImageNetProcessor` class in `utils_resnet.py` preprocesses the ImageNet validation set for model evaluation. It uses a subset of the validation data to ensure efficient processing and evaluation.
 
@@ -58,7 +58,7 @@ The script `run_resnet18_fhe.py` accepts several command-line arguments to contr
 
 - `--run_experiment`: runs experiments with different `n_bits` and `rounding_threshold_bits` configurations. This can help in finding the optimal settings for the model.
 
-- `--dataset_cache_dir <path>`: specifies the path to the directory where the dataset is cached. If not provided, the dataset will be downloaded and cached in the default location.
+- `--dataset_cache_dir <path>`: specifies the path to the directory where the data-set is cached. If not provided, the data-set will be downloaded and cached in the default location.
 
 - `--num_images <number>`: specifies the number of images to process in the FHE execution. The default value is 1. Increasing this number will process more images but may take longer to execute.
 
