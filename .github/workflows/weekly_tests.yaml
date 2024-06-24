@@ -15,8 +15,10 @@ concurrency:
 jobs:
   # The caller workflow's job (here 'weekly-tests') does not need to run on the current runner as 
   # the reusable workflow (here 'continuous-integration.yaml') uses its own runner
+  # Only allow weekly tests on the public repository
   weekly-tests:
     name: Run weekly tests
+    if: ${{ github.repository == 'zama-ai/concrete-ml' }}
     uses: ./.github/workflows/continuous-integration.yaml
     secrets: inherit
     with:

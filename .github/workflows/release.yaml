@@ -638,7 +638,7 @@ jobs:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: ${{ env.JOB_STATUS || 'failure' }}
-          SLACK_MESSAGE: "Creating release for ${{ env.GIT_TAG }} finished with status\
+          SLACK_MESSAGE: "Creating release for ${{ env.GIT_TAG }} finished with status: \
             ${{ env.JOB_STATUS || 'failure' }} (${{ env.ACTION_RUN_URL }})\n\
             - start-runner-linux: ${{ needs.start-runner-linux.result || 'Did not run.'}}\n\n\
             - release-checks: ${{ needs.release-checks.result || 'Did not run.' }}\n\n\
