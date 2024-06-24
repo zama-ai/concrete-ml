@@ -92,7 +92,7 @@ Image 1:
 ## Timings and Accuracy in FHE
 
 CPU machine: 196 cores CPU machine (hp7c from AWS)
-GPU machine: TBD
+GPU machine: 8xH100 GPU machine
 
 Summary of the accuracy evaluation on ImageNet (100 images):
 
