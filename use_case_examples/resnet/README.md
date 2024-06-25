@@ -25,6 +25,8 @@ The `ImageNetProcessor` class in `utils_resnet.py` preprocesses the ImageNet val
 
 1. Install a virtual Python environment and activate it:
 
+<!--pytest-codeblocks:skip-->
+
 ```bash
 python -m venv venv
 source venv/bin/activate
@@ -32,17 +34,23 @@ source venv/bin/activate
 
 2. Install Concrete ML:
 
+<!--pytest-codeblocks:skip-->
+
 ```bash
 pip install concrete-ml
 ```
 
 3. Install the dependencies:
 
+<!--pytest-codeblocks:skip-->
+
 ```bash
 pip install -r requirements.txt
 ```
 
 4. Run the script:
+
+<!--pytest-codeblocks:skip-->
 
 ```bash
 python run_resnet18_fhe.py [--run_fhe] [--export_statistics] [--use_gpu] [--run_experiment] [--dataset_cache_dir <path>] [--num_images <number>]
@@ -65,6 +73,8 @@ The script `run_resnet18_fhe.py` accepts several command-line arguments to contr
 
 
 Example of output when running the script:
+
+<!--pytest-codeblocks:skip-->
 
 ```bash
 python resnet_fhe.py --run_fhe
