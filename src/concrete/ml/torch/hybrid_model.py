@@ -18,7 +18,6 @@ import torch
 from brevitas.quant_tensor import QuantTensor
 from concrete.fhe import Configuration
 from torch import nn
-from transformers import Conv1D
 
 from ..common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE
 from ..deployment.fhe_client_server import FHEModelClient, FHEModelDev, FHEModelServer
@@ -76,6 +75,11 @@ def convert_conv1d_to_linear(layer_or_module):
         nn.Module or nn.Linear: The updated module with Conv1D layers converted to Linear layers,
             or the Conv1D layer converted to a Linear layer.
     """
+    try:
+        from transformers import Conv1D  # pylint: disable=import-outside-toplevel
+    except ImportError:  # pragma: no cover
+        return layer_or_module
+
     if isinstance(layer_or_module, Conv1D):
         # Get the weight size
         weight_size = layer_or_module.weight.size()
