@@ -511,9 +511,7 @@ class HybridFHEModel:
 
         model_path = Path(path)
         for module_name in self.module_names:
-            onnx_model = self.private_q_modules[  # pylint: disable=protected-access
-                module_name
-            ]._onnx_model
+            onnx_model = self.private_q_modules[module_name].onnx_model
 
             # mypy
             assert onnx_model is not None
