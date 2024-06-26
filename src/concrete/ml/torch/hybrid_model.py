@@ -38,6 +38,7 @@ class HybridFHEMode(enum.Enum):
     SIMULATE = "simulate"  # Use FHE simulation
     CALIBRATE = "calibrate"  # Use calibration (to run before FHE compilation)
     EXECUTE = "execute"  # Use FHE execution
+    TORCH = "torch"  # Use torch layers
 
 
 def tuple_to_underscore_str(tup: Tuple) -> str:
@@ -240,6 +241,7 @@ class RemoteModule(nn.Module):
         if self.fhe_local_mode not in {
             HybridFHEMode.CALIBRATE,
             HybridFHEMode.REMOTE,
+            HybridFHEMode.TORCH,
             None,
         }:
             # Using quantized module
@@ -258,7 +260,10 @@ class RemoteModule(nn.Module):
         elif self.fhe_local_mode == HybridFHEMode.REMOTE:  # pragma:no cover
             # Remote call
             y = self.remote_call(x)
-
+        elif self.fhe_local_mode == HybridFHEMode.TORCH:
+            # Using torch layers
+            assert self.private_module is not None
+            y = self.private_module(x)
         else:  # pragma:no cover
             # Shouldn't happen
             raise ValueError(f"{self.fhe_local_mode} is not recognized")
@@ -400,9 +405,7 @@ class HybridFHEModel:
         Returns:
             (torch.Tensor): The output tensor.
         """
-        # Set the fhe mode in each remote module
-        for module in self.remote_modules.values():
-            module.fhe_local_mode = HybridFHEMode(fhe)
+        self.set_fhe_mode(fhe)
         x = self.model(x)
         return x
 
