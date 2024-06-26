@@ -82,24 +82,20 @@ def run_hybrid_llm_test(
     # Get the topk indices for logits_disable and logits_simulate
     topk_disable = logits_disable.topk(k, dim=-1).indices
     topk_simulate = logits_simulate.topk(k, dim=-1).indices
+    topk_original = logits_original.topk(k, dim=-1).indices
 
-    # Prepare tensors for broadcasting
-    expanded_simulate = topk_simulate.unsqueeze(-1)
-    expanded_disable = topk_disable.unsqueeze(-2)
+    # Compute accuracy of disable and simulate by checking
+    # how many labels correspond with the topk_original
+    accuracy_disable = (topk_disable == topk_original).float().mean().item()
+    accuracy_simulate = (topk_simulate == topk_original).float().mean().item()
 
-    # Compute if elements of topk_simulate are in topk_disable for each token
-    (expanded_simulate == expanded_disable).any(-1)
-
-    # Make sure accuracy is above a certain threshold
-    # Even with a small tolerance the test is flaky
-    # Commenting the assertion for now until issue is resolved
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3905
-
-    # Compute average of these counts (the accuracy)
-    # accuracy = is_in.float().mean()
-    # To use expected accuracy until the check is done
-    assert expected_accuracy > -1
-    # assert accuracy >= expected_accuracy, "Expected accuracy GPT2 hybrid not matched."
+    # Assert that both accuracy values are above the expected threshold
+    assert (
+        accuracy_disable >= expected_accuracy
+    ), f"Disable accuracy {accuracy_disable:.4f} is below the expected {expected_accuracy:.4f}"
+    assert (
+        accuracy_simulate >= expected_accuracy
+    ), f"Simulate accuracy {accuracy_simulate:.4f} is below the expected {expected_accuracy:.4f}"
 
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_dir_path = Path(temp_dir)
@@ -127,9 +123,9 @@ def run_hybrid_llm_test(
 @pytest.mark.parametrize(
     "list_or_str_private_modules_names, expected_accuracy, has_pbs",
     [
-        ("transformer.h.0.mlp", 0.934, True),
-        (["transformer.h.0.mlp", "transformer.h.1.mlp"], 0.42, True),
-        ("transformer.h.0.mlp.c_fc", 0.986, False),
+        ("transformer.h.0.mlp", 1.0, True),
+        (["transformer.h.0.mlp", "transformer.h.1.mlp"], 1.0, True),
+        ("transformer.h.0.mlp.c_fc", 1.0, False),
     ],
 )
 def test_gpt2_hybrid_mlp(list_or_str_private_modules_names, expected_accuracy, has_pbs):

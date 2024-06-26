@@ -356,7 +356,7 @@ class HybridFHEModel:
             name: self._get_module_by_name(self.model, name) for name in self.module_names
         }
         self.remote_modules: Dict[str, RemoteModule] = {}
-        self.private_q_modules: Dict[QuantizedModule] = {}
+        self.private_q_modules: Dict[str, QuantizedModule] = {}
         self.configuration: Optional[Configuration] = None
         self.model_name = model_name
         self.verbose = verbose
@@ -508,12 +508,17 @@ class HybridFHEModel:
 
         model_path = Path(path)
         for module_name in self.module_names:
+            onnx_model = self.private_q_modules[  # pylint: disable=protected-access
+                module_name
+            ]._onnx_model
+
+            # mypy
+            assert onnx_model is not None
             input_shapes = [
                 tuple(elt.dim_value for elt in onnx_input.type.tensor_type.shape.dim)
-                for onnx_input in self.private_q_modules[  # pylint: disable=protected-access
-                    self.module_names[0]
-                ]._onnx_model.graph.input
+                for onnx_input in onnx_model.graph.input
             ]
+
             assert len(input_shapes) == 1, "Multi-input circuits not supported yet"
             model_module_path = model_path.resolve() / module_name
             model_module_path.mkdir(exist_ok=True)
