@@ -232,13 +232,12 @@ class RemoteModule(nn.Module):
         Raises:
             ValueError: if local_fhe_mode is not supported
         """
-        # - disable: torch module
+        # - disable: quantized module
         # - remote: client-server
         # - simulate: compiled simulation
         # - calibrate: calibration
 
         if self.fhe_local_mode not in {
-            HybridFHEMode.DISABLE,
             HybridFHEMode.CALIBRATE,
             HybridFHEMode.REMOTE,
             None,
@@ -248,14 +247,6 @@ class RemoteModule(nn.Module):
             y = torch.Tensor(
                 self.private_q_module.forward(x.detach().numpy(), fhe=self.fhe_local_mode.value)
             )
-
-        elif self.fhe_local_mode == HybridFHEMode.DISABLE:
-            # Calling torch
-            assert self.private_module is not None
-            y = self.private_module.forward(
-                x.detach(),
-            )
-            assert isinstance(y, (QuantTensor, torch.Tensor))
 
         elif self.fhe_local_mode == HybridFHEMode.CALIBRATE:
             # Calling torch + gathering calibration data
@@ -365,7 +356,7 @@ class HybridFHEModel:
             name: self._get_module_by_name(self.model, name) for name in self.module_names
         }
         self.remote_modules: Dict[str, RemoteModule] = {}
-        self.private_q_modules: dict = {}
+        self.private_q_modules: Dict[QuantizedModule] = {}
         self.configuration: Optional[Configuration] = None
         self.model_name = model_name
         self.verbose = verbose
@@ -474,9 +465,7 @@ class HybridFHEModel:
                 encryption parameters. If not specified, a default configuration is used.
         """
         # We do a forward pass where we accumulate inputs to use for compilation
-        for name in self.module_names:
-            # default is "calibrate"
-            self.remote_modules[name].fhe_local_mode = HybridFHEMode.CALIBRATE
+        self.set_fhe_mode(HybridFHEMode.CALIBRATE)
         self.model(x)
 
         self.configuration = configuration
