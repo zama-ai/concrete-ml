@@ -37,6 +37,7 @@ class HybridFHEMode(enum.Enum):
     SIMULATE = "simulate"  # Use FHE simulation
     CALIBRATE = "calibrate"  # Use calibration (to run before FHE compilation)
     EXECUTE = "execute"  # Use FHE execution
+    TORCH = "torch"  # Use torch layers
 
 
 def tuple_to_underscore_str(tup: Tuple) -> str:
@@ -236,15 +237,15 @@ class RemoteModule(nn.Module):
         Raises:
             ValueError: if local_fhe_mode is not supported
         """
-        # - disable: torch module
+        # - disable: quantized module
         # - remote: client-server
         # - simulate: compiled simulation
         # - calibrate: calibration
 
         if self.fhe_local_mode not in {
-            HybridFHEMode.DISABLE,
             HybridFHEMode.CALIBRATE,
             HybridFHEMode.REMOTE,
+            HybridFHEMode.TORCH,
             None,
         }:
             # Using quantized module
@@ -252,14 +253,6 @@ class RemoteModule(nn.Module):
             y = torch.Tensor(
                 self.private_q_module.forward(x.detach().numpy(), fhe=self.fhe_local_mode.value)
             )
-
-        elif self.fhe_local_mode == HybridFHEMode.DISABLE:
-            # Calling torch
-            assert self.private_module is not None
-            y = self.private_module.forward(
-                x.detach(),
-            )
-            assert isinstance(y, (QuantTensor, torch.Tensor))
 
         elif self.fhe_local_mode == HybridFHEMode.CALIBRATE:
             # Calling torch + gathering calibration data
@@ -271,7 +264,10 @@ class RemoteModule(nn.Module):
         elif self.fhe_local_mode == HybridFHEMode.REMOTE:  # pragma:no cover
             # Remote call
             y = self.remote_call(x)
-
+        elif self.fhe_local_mode == HybridFHEMode.TORCH:
+            # Using torch layers
+            assert self.private_module is not None
+            y = self.private_module(x)
         else:  # pragma:no cover
             # Shouldn't happen
             raise ValueError(f"{self.fhe_local_mode} is not recognized")
@@ -369,7 +365,7 @@ class HybridFHEModel:
             name: self._get_module_by_name(self.model, name) for name in self.module_names
         }
         self.remote_modules: Dict[str, RemoteModule] = {}
-        self.private_q_modules: dict = {}
+        self.private_q_modules: Dict[str, QuantizedModule] = {}
         self.configuration: Optional[Configuration] = None
         self.model_name = model_name
         self.verbose = verbose
@@ -413,9 +409,7 @@ class HybridFHEModel:
         Returns:
             (torch.Tensor): The output tensor.
         """
-        # Set the fhe mode in each remote module
-        for module in self.remote_modules.values():
-            module.fhe_local_mode = HybridFHEMode(fhe)
+        self.set_fhe_mode(fhe)
         x = self.model(x)
         return x
 
@@ -478,9 +472,7 @@ class HybridFHEModel:
                 encryption parameters. If not specified, a default configuration is used.
         """
         # We do a forward pass where we accumulate inputs to use for compilation
-        for name in self.module_names:
-            # default is "calibrate"
-            self.remote_modules[name].fhe_local_mode = HybridFHEMode.CALIBRATE
+        self.set_fhe_mode(HybridFHEMode.CALIBRATE)
         self.model(x)
 
         self.configuration = configuration
@@ -523,12 +515,15 @@ class HybridFHEModel:
 
         model_path = Path(path)
         for module_name in self.module_names:
+            onnx_model = self.private_q_modules[module_name].onnx_model
+
+            # mypy
+            assert onnx_model is not None
             input_shapes = [
                 tuple(elt.dim_value for elt in onnx_input.type.tensor_type.shape.dim)
-                for onnx_input in self.private_q_modules[  # pylint: disable=protected-access
-                    self.module_names[0]
-                ]._onnx_model.graph.input
+                for onnx_input in onnx_model.graph.input
             ]
+
             assert len(input_shapes) == 1, "Multi-input circuits not supported yet"
             model_module_path = model_path.resolve() / module_name
             model_module_path.mkdir(exist_ok=True)

@@ -50,7 +50,7 @@ def run_hybrid_llm_test(
     # Create a hybrid model
     hybrid_model = HybridFHEModel(model, module_names)
     hybrid_model.compile_model(
-        inputs, p_error=0.01, n_bits=8, rounding_threshold_bits=8, configuration=configuration
+        inputs, p_error=0.1, n_bits=9, rounding_threshold_bits=8, configuration=configuration
     )
 
     if has_pbs:
@@ -71,35 +71,34 @@ def run_hybrid_llm_test(
     # Check we can run the simulate locally
     logits_simulate = hybrid_model(inputs, fhe="simulate").logits
     logits_disable = hybrid_model(inputs, fhe="disable").logits
-    logits_original = model(inputs).logits
+    logits_original = hybrid_model(inputs, fhe="torch").logits
 
     # Ensure logits_disable and logits_original return the same output for the logits
-    assert torch.allclose(logits_disable, logits_original, atol=1e-7), "Outputs do not match!"
+    assert torch.allclose(logits_disable, logits_simulate, atol=1e-7), "Outputs do not match!"
 
     # Compare the topk accuracy of the FHE simulate circuit vs. the original.
-    k = 100
+    k = 5
+
+    # Check that the topk next tokens are similar for the different FHE modes
+    # and the original model.
 
     # Get the topk indices for logits_disable and logits_simulate
     topk_disable = logits_disable.topk(k, dim=-1).indices
     topk_simulate = logits_simulate.topk(k, dim=-1).indices
+    topk_original = logits_original.topk(k, dim=-1).indices
 
-    # Prepare tensors for broadcasting
-    expanded_simulate = topk_simulate.unsqueeze(-1)
-    expanded_disable = topk_disable.unsqueeze(-2)
+    # Compute accuracy of disable and simulate by checking
+    # how many labels correspond with the topk_original
+    accuracy_disable = (topk_disable == topk_original).float().mean().item()
+    accuracy_simulate = (topk_simulate == topk_original).float().mean().item()
 
-    # Compute if elements of topk_simulate are in topk_disable for each token
-    (expanded_simulate == expanded_disable).any(-1)
-
-    # Make sure accuracy is above a certain threshold
-    # Even with a small tolerance the test is flaky
-    # Commenting the assertion for now until issue is resolved
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3905
-
-    # Compute average of these counts (the accuracy)
-    # accuracy = is_in.float().mean()
-    # To use expected accuracy until the check is done
-    assert expected_accuracy > -1
-    # assert accuracy >= expected_accuracy, "Expected accuracy GPT2 hybrid not matched."
+    # Assert that both accuracy values are above the expected threshold
+    assert (
+        accuracy_disable >= expected_accuracy
+    ), f"Disable accuracy {accuracy_disable:.4f} is below the expected {expected_accuracy:.4f}"
+    assert (
+        accuracy_simulate >= expected_accuracy
+    ), f"Simulate accuracy {accuracy_simulate:.4f} is below the expected {expected_accuracy:.4f}"
 
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_dir_path = Path(temp_dir)
@@ -127,9 +126,9 @@ def run_hybrid_llm_test(
 @pytest.mark.parametrize(
     "list_or_str_private_modules_names, expected_accuracy, has_pbs",
     [
-        ("transformer.h.0.mlp", 0.934, True),
-        (["transformer.h.0.mlp", "transformer.h.1.mlp"], 0.42, True),
-        ("transformer.h.0.mlp.c_fc", 0.986, False),
+        ("transformer.h.0.mlp", 0.95, True),
+        (["transformer.h.0.mlp", "transformer.h.1.mlp"], 0.40, True),
+        ("transformer.h.0.mlp.c_fc", 1.0, False),
     ],
 )
 def test_gpt2_hybrid_mlp(list_or_str_private_modules_names, expected_accuracy, has_pbs):
