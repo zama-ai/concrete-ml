@@ -539,7 +539,7 @@ class HybridFHEModel:
             )
             model_dev.save(via_mlir=via_mlir)
 
-    def save_and_clear_private_info(self, path: Path, via_mlir=False):
+    def save_and_clear_private_info(self, path: Path, via_mlir=True):
         """Save the PyTorch model to the provided path and also saves the corresponding FHE circuit.
 
         Args:
