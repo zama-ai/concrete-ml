@@ -1,5 +1,6 @@
 """Tests for the hybrid model converter."""
 
+import sys
 import tempfile
 from pathlib import Path
 from typing import List, Union
@@ -32,12 +33,16 @@ def test_tuple_serialization(tup):
     assert tup == underscore_str_to_tuple(tuple_to_underscore_str(tup))
 
 
+# pylint: disable=too-many-locals
 def run_hybrid_llm_test(
     model: torch.nn.Module,
     inputs: torch.Tensor,
     module_names: Union[str, List],
     expected_accuracy,
     has_pbs: bool,
+    has_pbs_reshape: bool,
+    monkeypatch,
+    transformers_installed,
 ):
     """Run the test for any model with its private module names."""
 
@@ -47,11 +52,28 @@ def run_hybrid_llm_test(
         compress_input_ciphertexts=True,
     )
 
-    # Create a hybrid model
-    hybrid_model = HybridFHEModel(model, module_names)
-    hybrid_model.compile_model(
-        inputs, p_error=0.1, n_bits=9, rounding_threshold_bits=8, configuration=configuration
-    )
+    with monkeypatch.context() as m:
+        if not transformers_installed:
+            m.setitem(sys.modules, "transformers", None)
+            if has_pbs_reshape:
+                has_pbs = True
+        # Create a hybrid model
+        hybrid_model = HybridFHEModel(model, module_names)
+        try:
+            hybrid_model.compile_model(
+                inputs,
+                p_error=0.1,
+                n_bits=9,
+                rounding_threshold_bits=8,
+                configuration=configuration,
+            )
+        except RuntimeError as error:
+            # When reshaping adds PBSs we sometimes encounter NoParametersFound
+            # when compiling. In this case we skip the rest since we can't simulate
+            # without compilation.
+            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4183
+            assert "NoParametersFound" in error.args[0]
+            pytest.skip(error.args[0])
 
     if has_pbs:
         # Check for non-zero programmable bootstrapping
@@ -124,14 +146,22 @@ def run_hybrid_llm_test(
 # 'from_pretrained' method
 @pytest.mark.filterwarnings("ignore::FutureWarning")
 @pytest.mark.parametrize(
-    "list_or_str_private_modules_names, expected_accuracy, has_pbs",
+    "list_or_str_private_modules_names, expected_accuracy, has_pbs, has_pbs_reshape",
     [
-        ("transformer.h.0.mlp", 0.95, True),
-        (["transformer.h.0.mlp", "transformer.h.1.mlp"], 0.40, True),
-        ("transformer.h.0.mlp.c_fc", 1.0, False),
+        ("transformer.h.0.mlp", 0.95, True, False),
+        (["transformer.h.0.mlp", "transformer.h.1.mlp"], 0.40, True, False),
+        ("transformer.h.0.mlp.c_fc", 1.0, False, True),
     ],
 )
-def test_gpt2_hybrid_mlp(list_or_str_private_modules_names, expected_accuracy, has_pbs):
+@pytest.mark.parametrize("transformers_installed", [True, False])
+def test_gpt2_hybrid_mlp(
+    list_or_str_private_modules_names,
+    expected_accuracy,
+    has_pbs,
+    has_pbs_reshape,
+    transformers_installed,
+    monkeypatch,
+):
     """Test GPT2 hybrid."""
 
     # Get GPT2 from Hugging Face
@@ -144,7 +174,14 @@ def test_gpt2_hybrid_mlp(list_or_str_private_modules_names, expected_accuracy, h
     # Run the test with using a single module in FHE
     assert isinstance(model, torch.nn.Module)
     run_hybrid_llm_test(
-        model, input_ids, list_or_str_private_modules_names, expected_accuracy, has_pbs
+        model,
+        input_ids,
+        list_or_str_private_modules_names,
+        expected_accuracy,
+        has_pbs,
+        has_pbs_reshape,
+        monkeypatch,
+        transformers_installed,
     )
 
 

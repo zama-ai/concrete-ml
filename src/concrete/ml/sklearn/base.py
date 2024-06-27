@@ -1390,15 +1390,18 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # Get the expected number of ONNX outputs in the sklearn model.
         expected_number_of_outputs = 1 if is_regressor_or_partial_regressor(model) else 2
 
-        onnx_model, lsbs_to_remove_for_trees, input_quantizers, output_quantizers = (
-            onnx_fp32_model_to_quantized_model(
-                onnx_model,
-                n_bits,
-                framework,
-                expected_number_of_outputs,
-                n_features,
-                X,
-            )
+        (
+            onnx_model,
+            lsbs_to_remove_for_trees,
+            input_quantizers,
+            output_quantizers,
+        ) = onnx_fp32_model_to_quantized_model(
+            onnx_model,
+            n_bits,
+            framework,
+            expected_number_of_outputs,
+            n_features,
+            X,
         )
 
         model.input_quantizers = input_quantizers

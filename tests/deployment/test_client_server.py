@@ -633,30 +633,36 @@ def check_client_server_training(
     fhe_server.load()
 
     # Client-server training
-    q_weights_deployment, q_bias_deployment, weights_deployment, bias_deployment = (
-        get_fitted_weights(
-            x_train,
-            y_train,
-            weights,
-            bias,
-            batch_size=batch_size,
-            max_iter=max_iter,
-            fhe_client=fhe_client,
-            fhe_server=fhe_server,
-        )
+    (
+        q_weights_deployment,
+        q_bias_deployment,
+        weights_deployment,
+        bias_deployment,
+    ) = get_fitted_weights(
+        x_train,
+        y_train,
+        weights,
+        bias,
+        batch_size=batch_size,
+        max_iter=max_iter,
+        fhe_client=fhe_client,
+        fhe_server=fhe_server,
     )
 
     # Quantized module (development) training
-    q_weights_development, q_bias_development, weights_development, bias_development = (
-        get_fitted_weights(
-            x_train,
-            y_train,
-            weights,
-            bias,
-            batch_size=batch_size,
-            max_iter=max_iter,
-            quantized_module=model.training_quantized_module,
-        )
+    (
+        q_weights_development,
+        q_bias_development,
+        weights_development,
+        bias_development,
+    ) = get_fitted_weights(
+        x_train,
+        y_train,
+        weights,
+        bias,
+        batch_size=batch_size,
+        max_iter=max_iter,
+        quantized_module=model.training_quantized_module,
     )
 
     # Check that both quantized outputs from the quantized module (development) are matching the

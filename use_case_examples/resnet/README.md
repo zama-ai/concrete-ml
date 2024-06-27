@@ -70,8 +70,6 @@ The script `run_resnet18_fhe.py` accepts several command-line arguments to contr
 
 - `--num_images <number>`: specifies the number of images to process in the FHE execution. The default value is 1. Increasing this number will process more images but may take longer to execute.
 
-
-
 Example of output when running the script:
 
 <!--pytest-codeblocks:skip-->
@@ -106,13 +104,12 @@ GPU machine: 8xH100 GPU machine
 
 Summary of the accuracy evaluation on ImageNet (100 images):
 
-| w&a bits | p_error | Accuracy | Top-5 Accuracy | Runtime         | Device |
-| -------- | ------- | -------- | -------------- | --------------- | ------ |
-| fp32     | -       | 67%      | 87%            | -               | -      |
-| 6/6      | 0.05    | 55%      | 78%            | 56 min          | GPU    |
-| 6/6      | 0.05    | 55%      | 78%            | 1 h 31 min      | CPU    |
-| 7/7      | 0.05    | **66%**  | **87%**        | **2 h 12 min**  | CPU    |
-
+| w&a bits | p_error | Accuracy | Top-5 Accuracy | Runtime        | Device |
+| -------- | ------- | -------- | -------------- | -------------- | ------ |
+| fp32     | -       | 67%      | 87%            | -              | -      |
+| 6/6      | 0.05    | 55%      | 78%            | 56 min         | GPU    |
+| 6/6      | 0.05    | 55%      | 78%            | 1 h 31 min     | CPU    |
+| 7/7      | 0.05    | **66%**  | **87%**        | **2 h 12 min** | CPU    |
 
 6/6 `n_bits` configuration: {"model_inputs": 8, "op_inputs": 6, "op_weights": 6, "model_outputs": 9}
 
