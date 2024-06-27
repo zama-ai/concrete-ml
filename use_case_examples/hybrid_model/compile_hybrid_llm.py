@@ -34,7 +34,7 @@ def compile_model(
     models_dir.mkdir(exist_ok=True)
     model_dir = models_dir / model_name
     print(f"Saving to {model_dir}")
-    via_mlir = bool(int(os.environ.get("VIA_MLIR", 0)))
+    via_mlir = bool(int(os.environ.get("VIA_MLIR", 1)))
     hybrid_model.save_and_clear_private_info(model_dir, via_mlir=via_mlir)
 
 
@@ -101,7 +101,9 @@ These names might vary according to your model.
     max_context_size = 20
     num_samples = 50
 
-    dataset = load_dataset("wikipedia", "20220301.en")
+    dataset = load_dataset(
+        "wikimedia/wikipedia", "20231101.en", revision="b04c8d1ceb2f5cd4588862100d08de323dccfbaa"
+    )
     print(model)
     models_dir = Path(__file__).parent / os.environ.get("MODELS_DIR_NAME", "compiled_models")
     models_dir.mkdir(exist_ok=True)

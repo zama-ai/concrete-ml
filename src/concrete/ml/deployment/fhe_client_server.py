@@ -239,7 +239,7 @@ class FHEModelDev:
 
         return json_path
 
-    def save(self, mode: DeploymentMode = DeploymentMode.INFERENCE, via_mlir: bool = False):
+    def save(self, mode: DeploymentMode = DeploymentMode.INFERENCE, via_mlir: bool = True):
         """Export all needed artifacts for the client and server.
 
         Arguments:
