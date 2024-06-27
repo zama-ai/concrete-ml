@@ -1,6 +1,7 @@
 concrete-ml
 accelerate
 datasets
+transformers
 apache_beam==2.49.0 
 mwparserfromhell==0.6.4
 loguru==0.7.0
