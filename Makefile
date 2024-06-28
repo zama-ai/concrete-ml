@@ -49,7 +49,7 @@ setup_env:
 	if [[ $$(uname) != "Linux" ]] && [[ $$(uname) != "Darwin" ]]; then \
 		poetry install --only dev; \
 	else \
-		poetry install; \
+		poetry install --with dev; \
 	fi
 	echo "Finished installing poetry lock."
 
@@ -67,7 +67,7 @@ sync_env:
 		if [[ $$(uname) != "Linux" ]] && [[ $$(uname) != "Darwin" ]]; then \
 			poetry install --remove-untracked --only dev; \
 		else \
-			poetry install --remove-untracked; \
+			poetry install --remove-untracked --with dev; \
 		fi; \
 		"$(MAKE)" setup_env; \
 	fi
