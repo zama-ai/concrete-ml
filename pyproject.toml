@@ -58,18 +58,32 @@ numpy = "1.23.5"
 protobuf = "3.20.3"
 pandas = "2.0.3"
 
-# Needed to have the latest Concrete Python versions
+# Zama sources
 [[tool.poetry.source]]
 name = "zama-pypi-cpu"
 url = "https://pypi.zama.ai/cpu"
 priority = "explicit"
 
-[tool.poetry.dev-dependencies]
+[[tool.poetry.source]]
+name = "zama-pypi-gpu"
+url = "https://pypi.zama.ai/gpu"
+priority = "explicit"
+
+# GPU
+[tool.poetry.group.gpu]
+optional = true
+
+[tool.poetry.group.gpu.dependencies]
+concrete-python = {version="==2.7.0", source = "zama-pypi-gpu", markers = "sys_platform != 'darwin' and platform_machine != 'arm'"}
+
+# Development dependencies
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
 isort = "^5.10.1"
 black = "^24.3.0"
 pylint = "^2.13.0"
-# Coverage issue 
-# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2541
 pytest = "7.4.1"
 pytest-cov = "^4.1.0"
 pytest-xdist = "^3.3.1"
