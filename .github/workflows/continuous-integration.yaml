@@ -943,7 +943,7 @@ jobs:
   # and therefore expensive macOS testing
   linux-build-status:
     name: Build Status (Linux)
-    needs: [build-linux, provenance]
+    needs: [build-linux]
     runs-on: ubuntu-20.04
     timeout-minutes: 2
     if: success() || failure()
