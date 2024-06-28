@@ -47,15 +47,7 @@ source "${PYPI_VENV}/bin/activate"
 # Install additional dependencies that are required in order to run our tests but are not included
 # in PyPI
 # Investigate a better way of managing these dependencies 
-# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2685
 python -m pip install --upgrade pip
-python -m pip install pytest==7.4.1 pandas==2.0.3 tensorflow==2.12.0 tf2onnx==1.15.0 torchvision==0.14.1 transformers==4.40.0
-
-# Install additional pytest plugins
-python -m pip install pytest-xdist==3.3.1
-python -m pip install pytest-randomly==3.15.0
-python -m pip install pytest-repeat==0.9.1
-python -m pip install pytest-subtests==0.11.0
 
 if ${USE_PIP_WHEEL}; then
     # Delete the directory where the pypi wheel file will be created (if it already exists)
@@ -70,9 +62,9 @@ if ${USE_PIP_WHEEL}; then
     python -m pip install --extra-index-url https://pypi.zama.ai/cpu "${PYPI_WHEEL}"
 else
     if [ -z "${VERSION}" ]; then
-        python -m pip install concrete-ml
+        python -m pip install concrete-ml[dev]
     else
-        python -m pip install concrete-ml=="${VERSION}"
+        python -m pip install concrete-ml[dev]=="${VERSION}"
     fi
 fi
 
