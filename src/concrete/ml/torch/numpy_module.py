@@ -9,7 +9,7 @@ import torch
 from torch import nn
 
 from ..common.debugging import assert_true
-from ..common.utils import get_onnx_opset_version
+from ..common.utils import get_onnx_opset_version, to_tuple
 from ..onnx.convert import (
     OPSET_VERSION_FOR_ONNX_EXPORT,
     get_equivalent_numpy_forward_from_onnx,
@@ -43,7 +43,12 @@ class NumpyModule:
                 dummy_input is not None
             ), "dummy_input must be provided if model is a torch.nn.Module"
 
-            self.numpy_forward, self._onnx_model = get_equivalent_numpy_forward_from_torch(
+            (
+                self.numpy_preprocessing,
+                self._onnx_preprocessing,
+                self.numpy_forward,
+                self._onnx_model,
+            ) = get_equivalent_numpy_forward_from_torch(
                 model, dummy_input, debug_onnx_output_file_path
             )
 
@@ -56,7 +61,12 @@ class NumpyModule:
                 + f"but it is {onnx_model_opset_version}",
             )
 
-            self.numpy_forward, self._onnx_model = get_equivalent_numpy_forward_from_onnx(model)
+            (
+                self.numpy_preprocessing,
+                self._onnx_preprocessing,
+                self.numpy_forward,
+                self._onnx_model,
+            ) = get_equivalent_numpy_forward_from_onnx(model)
         else:
             raise ValueError(
                 f"model must be a torch.nn.Module or an onnx.ModelProto, got {type(model).__name__}"
@@ -73,8 +83,33 @@ class NumpyModule:
         """
         return self._onnx_model
 
+    @property
+    def onnx_preprocessing(self):
+        """Get the ONNX preprocessing.
+
+        .. # noqa: DAR201
+
+        Returns:
+           _onnx_preprocessing (onnx.ModelProto): the ONNX preprocessing
+        """
+        return self._onnx_preprocessing
+
     def __call__(self, *args: numpy.ndarray) -> Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]:
         return self.forward(*args)
+
+    def pre_processing(self, *args: numpy.ndarray) -> Tuple[numpy.ndarray, ...]:
+        """Apply a preprocessing pass on args with the equivalent numpy function only.
+
+        Args:
+            *args: the inputs of the preprocessing function
+
+        Returns:
+            Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]: result of the preprocessing on the
+                given inputs or the original inputs if no preprocessing function is defined
+        """
+        if self.numpy_preprocessing is None:
+            return args
+        return to_tuple(self.numpy_preprocessing(*args))
 
     def forward(self, *args: numpy.ndarray) -> Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]:
         """Apply a forward pass on args with the equivalent numpy function only.

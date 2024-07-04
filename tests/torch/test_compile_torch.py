@@ -33,6 +33,7 @@ from concrete.ml.pytest.torch_models import (
     ConcatFancyIndexing,
     Conv1dModel,
     DoubleQuantQATMixNet,
+    EmbeddingModel,
     EncryptedMatrixMultiplicationModel,
     ExpandModel,
     FCSmall,
@@ -1630,3 +1631,42 @@ def check_composition_shape_mismatch_error(default_configuration, torch_inputset
             configuration=default_configuration,
             composition_mapping=composition_mapping,
         )
+
+
+def test_compile_embedding_model(default_configuration):
+    """Test compiling the EmbeddingModel using compile_torch_model."""
+
+    # Set up the EmbeddingModel parameters
+    num_embeddings = 10
+    embedding_dim = 5
+
+    # Create the model
+    model = EmbeddingModel(num_embeddings, embedding_dim)
+
+    # Create integer input data
+    n_samples = 100
+    inputset = torch.randint(0, num_embeddings - 1, size=(n_samples, 1)).long()
+
+    # Compile the model
+    compiled_model = compile_torch_model(
+        model,
+        inputset,
+        n_bits=8,
+        configuration=default_configuration,
+        rounding_threshold_bits=8,
+        p_error=0.99,
+    )
+
+    # Test the compiled model
+    test_input = torch.tensor([[3], [6], [1]]).long()
+    torch_output = model(test_input).detach().numpy()
+    test_input_numpy = test_input.numpy()
+    compiled_output = compiled_model.forward(test_input_numpy)
+
+    # Check if the outputs are close
+    numpy.testing.assert_allclose(torch_output, compiled_output, atol=1e-1)
+
+    # Test FHE simulation
+    fhe_output = compiled_model.forward(test_input_numpy, fhe="simulate")
+
+    numpy.testing.assert_allclose(torch_output, fhe_output, atol=1e-1)

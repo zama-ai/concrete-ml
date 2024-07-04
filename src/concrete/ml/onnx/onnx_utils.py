@@ -277,6 +277,7 @@ from .ops_impl import (
     numpy_neg,
     numpy_not,
     numpy_not_float,
+    numpy_onehot,
     numpy_or,
     numpy_or_float,
     numpy_pad,
@@ -346,6 +347,7 @@ ONNX_OPS_TO_NUMPY_IMPL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
     "Cosh": numpy_cosh,
     "Div": numpy_div,
     "Elu": numpy_elu,
+    "OneHot": numpy_onehot,
     "Erf": numpy_erf,
     "Expand": numpy_expand,
     "Exp": numpy_exp,
@@ -399,25 +401,15 @@ ONNX_OPS_TO_NUMPY_IMPL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
 
 # Comparison operators needed for QuantizedOps as they cast the boolean outputs into floats.
 ONNX_COMPARISON_OPS_TO_NUMPY_IMPL_FLOAT: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
-    "Or": numpy_or_float,
-    "Not": numpy_not_float,
+    "Equal": numpy_equal_float,
     "Greater": numpy_greater_float,
     "GreaterOrEqual": numpy_greater_or_equal_float,
     "Less": numpy_less_float,
     "LessOrEqual": numpy_less_or_equal_float,
-    "Equal": numpy_equal_float,
+    "Not": numpy_not_float,
+    "Or": numpy_or_float,
 }
 
-# Comparison operators needed for QuantizedOps as they cast the boolean outputs into floats.
-ONNX_COMPARISON_OPS_TO_NUMPY_IMPL_FLOAT: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
-    "Equal": numpy_equal_float,
-    "Greater": numpy_greater_float,
-    "GreaterOrEqual": numpy_greater_or_equal_float,
-    "Less": numpy_less_float,
-    "LessOrEqual": numpy_less_or_equal_float,
-    "Not": numpy_not_float,
-    "Or": numpy_or_float,
-}
 
 # Comparison operators used in tree-based models as they keep the outputs' boolean dtype.
 ONNX_COMPARISON_OPS_TO_NUMPY_IMPL_BOOL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {

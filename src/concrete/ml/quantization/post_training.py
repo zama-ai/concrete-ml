@@ -693,6 +693,10 @@ class ONNXConverter:
         Returns:
             QuantizedModule: Quantized numpy module
         """
+
+        # Apply preprocessing
+        calibration_data = self.numpy_model.pre_processing(*calibration_data)
+
         # First transform all parameters to their quantized version
         self._quantize_params()
 
@@ -708,6 +712,11 @@ class ONNXConverter:
             ),
             quant_layers_dict=self.quant_ops_dict,
             onnx_model=self.numpy_model.onnx_model,
+        )
+
+        # Set the preprocessing onnx in the quantized module
+        quantized_module._onnx_preprocessing = (  # pylint: disable=protected-access
+            self.numpy_model.onnx_preprocessing
         )
 
         adapter = PowerOfTwoScalingRoundPBSAdapter(quantized_module)

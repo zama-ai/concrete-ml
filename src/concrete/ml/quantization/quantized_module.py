@@ -28,6 +28,7 @@ from ..common.utils import (
     manage_parameters_for_pbs_errors,
     to_tuple,
 )
+from ..torch.numpy_module import NumpyModule
 from .base_quantized_op import ONNXOpInputOutputType, QuantizedOp
 from .quantized_ops import QuantizedReduceSum
 from .quantizers import QuantizedArray, UniformQuantizer
@@ -81,6 +82,7 @@ def _get_inputset_generator(q_inputs: Union[numpy.ndarray, Tuple[numpy.ndarray, 
     return (numpy.expand_dims(q_input, 0) for q_input in q_inputs[0])
 
 
+# pylint: disable=too-many-instance-attributes
 class QuantizedModule:
     """Inference for a quantized model."""
 
@@ -90,6 +92,8 @@ class QuantizedModule:
     input_quantizers: List[UniformQuantizer]
     output_quantizers: List[UniformQuantizer]
     fhe_circuit: Union[None, Circuit]
+    _onnx_preprocessing: Optional[onnx.ModelProto] = None
+    _preprocessing_numpy: Optional[NumpyModule] = None
 
     def __init__(
         self,
@@ -170,6 +174,11 @@ class QuantizedModule:
         metadata["ordered_module_input_names"] = self.ordered_module_input_names
         metadata["ordered_module_output_names"] = self.ordered_module_output_names
         metadata["quant_layers_dict"] = self.quant_layers_dict
+        metadata["_onnx_preprocessing_str"] = (
+            self._onnx_preprocessing.SerializeToString()
+            if self._onnx_preprocessing is not None
+            else None
+        )
 
         return metadata
 
@@ -195,6 +204,13 @@ class QuantizedModule:
         obj.ordered_module_input_names = metadata["ordered_module_input_names"]
         obj.ordered_module_output_names = metadata["ordered_module_output_names"]
         obj.quant_layers_dict = metadata["quant_layers_dict"]
+
+        # Load onnx preprocessing and check the onnx
+        onnx_preprocessing = onnx.load_model_from_string(metadata["_onnx_preprocessing"])
+        if onnx_preprocessing is not None:
+            onnx.checker.check_model(onnx_preprocessing)
+        obj._onnx_preprocessing = onnx_preprocessing
+
         # pylint: enable=protected-access
 
         return obj
@@ -270,6 +286,24 @@ class QuantizedModule:
             Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]: The post-processed values.
         """
         return values[0] if len(values) == 1 else values
+
+    def pre_processing(self, *values: numpy.ndarray) -> Tuple[numpy.ndarray, ...]:
+        """Apply pre-processing to the input values.
+
+        For quantized modules, this method builds a NumpyModule for pre-processing
+        if it doesn't exist yet, and then applies it to the input values.
+
+        Args:
+            values (numpy.ndarray): The input values to pre-process.
+
+        Returns:
+            Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]: The pre-processed values.
+        """
+        if self._onnx_preprocessing is not None:
+            if self._preprocessing_numpy is None:
+                self._preprocessing_numpy = NumpyModule(self._onnx_preprocessing)
+            return to_tuple(self._preprocessing_numpy(*values))
+        return values
 
     def _set_output_quantizers(self) -> List[UniformQuantizer]:
         """Get the output quantizers.
@@ -414,6 +448,9 @@ class QuantizedModule:
             "'simulate' (resp. FheMode.SIMULATE) or 'execute' (resp. FheMode.EXECUTE). Got "
             f"{fhe}",
         )
+
+        # Pre-process input
+        x = self.pre_processing(*x)
 
         # Make sure that the inputs are floating points
         assert_true(
@@ -800,6 +837,9 @@ class QuantizedModule:
         """
         inputs = to_tuple(inputs)
 
+        # Apply pre_processing
+        inputs = self.pre_processing(*inputs)
+
         ref_len = inputs[0].shape[0]
         assert_true(
             all(input.shape[0] == ref_len for input in inputs),
@@ -809,7 +849,7 @@ class QuantizedModule:
         assert not numpy.any(
             numpy.array([numpy.issubdtype(input.dtype, numpy.integer) for input in inputs])
         ), (
-            "Inputs used for compiling a QuantizedModule should only be floating points and not"
+            "Inputs used for compiling a QuantizedModule should only be floating points and not "
             "already-quantized values."
         )
 
