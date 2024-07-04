@@ -4,13 +4,14 @@ import inspect
 import tempfile
 import warnings
 from pathlib import Path
-from typing import Callable, Optional, Tuple, TypeAlias, Union
+from typing import Callable, Optional, Tuple, Union
 
 import numpy
 import onnx
 import onnxoptimizer
 import torch
-from onnx import helper
+from onnx import checker, helper
+from typing_extensions import TypeAlias
 
 from ..common.debugging import assert_true
 from ..onnx.onnx_model_manipulations import convert_first_gather_to_matmul
