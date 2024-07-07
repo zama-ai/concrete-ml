@@ -638,7 +638,7 @@ jobs:
 
       - name: Upload changelog artifacts
         if: ${{ steps.changelog.outcome == 'success' && !cancelled() }}
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b
         with:
           name: changelog
           path: ${{ steps.changelog.outputs.changelog-file }}
@@ -666,7 +666,7 @@ jobs:
 
       - name: Upload wheel artifacts
         if: ${{ steps.build-wheel.outcome == 'success' && !cancelled() }}
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b
         with:
           name: py3-wheel
           path: dist/*.whl
@@ -743,7 +743,7 @@ jobs:
 
       # Upload the list of flaky tests that have been re-run (if the only failed tests were flaky)
       - name: Upload flaky tests list (weekly)
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
         if: |
           fromJSON(env.IS_WEEKLY)
           && steps.pytest.outcome == 'success'
