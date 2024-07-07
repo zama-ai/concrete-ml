@@ -340,7 +340,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@d70bba72b1f3fd22344832f00baa16ece964efeb # v3.3.0
+        uses: docker/setup-buildx-action@4fd812986e6c8c2a69e18311145f9371337f27d4 # v3.4.0
 
       - name: Set up Python
         uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d
