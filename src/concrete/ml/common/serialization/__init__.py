@@ -12,7 +12,6 @@ SUPPORTED_TORCH_ACTIVATIONS = [
     activation.CELU,
     activation.ELU,
     activation.GELU,
-    activation.Hardshrink,
     activation.Hardsigmoid,
     activation.Hardswish,
     activation.Hardtanh,

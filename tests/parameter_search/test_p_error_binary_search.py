@@ -8,7 +8,6 @@ import pytest
 import torch
 from sklearn.datasets import make_classification
 from sklearn.metrics import r2_score, top_k_accuracy_score
-from tensorflow import keras
 
 from concrete.ml.common.check_inputs import check_array_and_assert
 from concrete.ml.common.utils import get_model_name, is_regressor_or_partial_regressor
@@ -22,6 +21,7 @@ from concrete.ml.pytest.utils import (
     instantiate_model_generic,
     load_torch_model,
 )
+from concrete.ml.quantization import QuantizedModule
 from concrete.ml.search_parameters import BinarySearch
 
 # For built-in models (trees and QNNs) we use the fixture `load_data`
@@ -338,31 +338,10 @@ def test_binary_search_for_built_in_models(model_class, parameters, threshold, p
 
 
 @pytest.mark.parametrize("is_qat", [False, True])
-def test_invalid_estimator_for_custom_models(is_qat, load_data):
-    """Check that binary search raises an exception for unsupported models."""
+def test_invalid_estimator_for_custom_models(is_qat):
+    """Check that binary search raises an exception for invalid types."""
 
-    model_name = "CustomModel"
-    model = keras.Sequential(
-        [
-            keras.layers.InputLayer(
-                input_shape=(MODELS_ARGS[model_name]["dataset"]["n_features"],)
-            ),
-            keras.layers.Dense(units=32, activation="relu"),
-            keras.layers.Dense(units=16, activation="relu"),
-            keras.layers.Dense(
-                units=MODELS_ARGS[model_name]["dataset"]["n_classes"], activation="softmax"
-            ),
-        ]
-    )
-
-    model_for_data = load_torch_model(
-        MODELS_ARGS[model_name]["qat"]["model_class"],
-        MODELS_ARGS[model_name]["qat"]["path"],
-        MODELS_ARGS[model_name]["qat"]["params"],
-    )
-
-    x, y = load_data(model_for_data, **MODELS_ARGS[model_name]["dataset"])
-    x_calib, y = data_calibration_processing(data=x, targets=y, n_sample=1)
+    model = QuantizedModule()
 
     search = BinarySearch(
         estimator=model,
@@ -372,7 +351,7 @@ def test_invalid_estimator_for_custom_models(is_qat, load_data):
     )
 
     with pytest.raises(ValueError, match=".* is not supported. .*"):
-        search.run(x=x_calib, ground_truth=y, strategy=all, max_iter=1, n_simulation=1)
+        search.run(x=None, ground_truth=None, strategy=all, max_iter=1, n_simulation=1)
 
 
 # This test only concerns linear models since they do not contain any PBS

@@ -236,6 +236,7 @@ def tree_onnx_graph_preprocessing(
         fhe_ensembling (bool): Determines whether the sum of the trees' outputs is computed in FHE.
             Default to False.
     """
+
     # Make sure the ONNX version returned by Hummingbird is OPSET_VERSION_FOR_ONNX_EXPORT
     onnx_version = get_onnx_opset_version(onnx_model)
     assert_true(
@@ -370,7 +371,7 @@ def tree_to_numpy(
     )
 
     # Execute with 1 example for efficiency in large data scenarios to prevent slowdown
-    onnx_model = get_onnx_model(model, x[:1], framework)
+    onnx_model = get_onnx_model(model, x[:2] if x.shape[0] > 1 else x, framework)
 
     # Compute for tree-based models the LSB to remove in stage 1 and stage 2
     if use_rounding:
