@@ -174,11 +174,7 @@ class QuantizedModule:
         metadata["ordered_module_input_names"] = self.ordered_module_input_names
         metadata["ordered_module_output_names"] = self.ordered_module_output_names
         metadata["quant_layers_dict"] = self.quant_layers_dict
-        metadata["_onnx_preprocessing_str"] = (
-            self._onnx_preprocessing.SerializeToString()
-            if self._onnx_preprocessing is not None
-            else None
-        )
+        metadata["_onnx_preprocessing_str"] = self._onnx_preprocessing
 
         return metadata
 
@@ -204,12 +200,7 @@ class QuantizedModule:
         obj.ordered_module_input_names = metadata["ordered_module_input_names"]
         obj.ordered_module_output_names = metadata["ordered_module_output_names"]
         obj.quant_layers_dict = metadata["quant_layers_dict"]
-
-        # Load onnx preprocessing and check the onnx
-        onnx_preprocessing = onnx.load_model_from_string(metadata["_onnx_preprocessing"])
-        if onnx_preprocessing is not None:
-            onnx.checker.check_model(onnx_preprocessing)
-        obj._onnx_preprocessing = onnx_preprocessing
+        obj._onnx_preprocessing = metadata["_onnx_preprocessing_str"]
 
         # pylint: enable=protected-access
 

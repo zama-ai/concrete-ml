@@ -110,7 +110,12 @@ def build_quantized_module(
     # bit-width, but for tracing we only take a single one. We need the ONNX tracing batch size to
     # match the batch size during FHE inference which can only be 1 for the moment.
     dummy_input_for_tracing = tuple(
-        torch.from_numpy(val[[0], ::]) for val in inputset_as_numpy_tuple
+        (
+            torch.from_numpy(val[[0], ::]).float()
+            if val.dtype == numpy.float64
+            else torch.from_numpy(val[[0], ::])
+        )
+        for val in inputset_as_numpy_tuple
     )
 
     # Create corresponding numpy model
@@ -125,11 +130,6 @@ def build_quantized_module(
     # only work over shape of (1, ., .). For example, some reshape have newshape hardcoded based
     # on the inputset we sent in the NumpyModule.
 
-    # Ensure all values in the inputset are floats for our quantizers.
-    inputset_as_numpy_tuple = tuple(
-        val.astype(numpy.float32) if isinstance(val, numpy.ndarray) else val
-        for val in inputset_as_numpy_tuple
-    )
     quantized_module = post_training_quant.quantize_module(*inputset_as_numpy_tuple)
 
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4127

@@ -155,6 +155,8 @@ class NumpyModuleTest(NumpyModule):
     def __init__(self, onnx_model: onnx.ModelProto):
         self.numpy_forward = lambda x: x
         self._onnx_model = onnx_model
+        self._numpy_preprocessing = lambda x: x
+        self._onnx_preprocessing = None
 
 
 def test_post_training_quantization_constant_folding():

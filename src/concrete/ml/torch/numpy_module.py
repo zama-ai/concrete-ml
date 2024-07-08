@@ -107,9 +107,9 @@ class NumpyModule:
             Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]: result of the preprocessing on the
                 given inputs or the original inputs if no preprocessing function is defined
         """
-        if self.numpy_preprocessing is None:
-            return args
-        return to_tuple(self.numpy_preprocessing(*args))
+        return (
+            args if self.numpy_preprocessing is None else to_tuple(self.numpy_preprocessing(*args))
+        )
 
     def forward(self, *args: numpy.ndarray) -> Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]:
         """Apply a forward pass on args with the equivalent numpy function only.

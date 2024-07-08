@@ -10,6 +10,7 @@ import torch
 from numpy.random import RandomState
 from skorch.dataset import ValidSplit
 
+from ...common.utils import Exactness
 from ...quantization.base_quantized_op import ALL_QUANTIZED_OPS
 from ...quantization.quantized_module import QuantizedModule
 from ...quantization.quantizers import (
@@ -201,6 +202,9 @@ def object_hook(d: Any) -> Any:
             SERIALIZABLE_CLASSES = {
                 model_class.__name__: model_class for model_class in serializable_classes
             }
+
+        if type_name == "Exactness":
+            return Exactness(serialized_value)
 
         # If the value reaches this point and the initial object was properly serialized, we
         # expect it to be a class from Concrete ML that implements a `load_dict` method
