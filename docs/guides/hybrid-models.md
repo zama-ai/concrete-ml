@@ -1,20 +1,32 @@
 # Hybrid models
+This document explains how to use Concrete ML API to deploy hybrid models in Fully Homomorphic Encryption (FHE).
 
-FHE enables cloud applications to process private user data without running the risk of data leaks. Furthermore, deploying ML models in the cloud is advantageous as it eases model updates, allows to scale to large numbers of users by using large amounts of compute power, and protects model IP by keeping the model on a trusted server instead of the client device.
+## Introduction
+FHE allows cloud applications to process private user data securely, minimizing the risk of data leaks. Deploying machine learning (ML) models in the cloud offers several advantages:
 
-However, not all applications can be easily converted to FHE computation and the computation cost of FHE may make a full conversion exceed latency requirements.
+- Simplifies model updates.
+- Scales to large user bases by leveraging substantial compute power.
+- Protects model's Intellectual Property (IP) by keeping the model on a trusted server rather than on client devices.
 
-Hybrid models provide a balance between on-device deployment and cloud-based deployment. This approach entails executing parts of the model directly on the client side, while other parts are securely processed with FHE on the server side. Concrete ML facilitates the hybrid deployment of various neural network models, including MLP (multilayer perceptron), CNN (convolutional neural network), and Large Language Models.
+However, not all applications can be easily converted to FHE computation. The high computation cost of FHE might exceed latency requirements for full conversion.
+
+Hybrid models provide a balance between on-device deployment and cloud-based deployment. This approach involves:
+
+- Executing parts of the model on the client side.
+- Securely processing other parts with FHE on the server side.
+
+Concrete ML supports hybrid deployment for various neural network models, including Multilayer Perceptron (MLP), Convolutional Neural Network (CNN), and Large Language Models.
 
 {% hint style="warning" %}
-If model IP protection is important, care must be taken in choosing the parts of a model to be executed on the cloud. Some black-box model stealing attacks rely on knowledge distillation or on differential methods. As a general rule, the difficulty to steal a machine learning model is proportional to the size of the model, in terms of numbers of parameters and model depth.
+To protect model IP, carefully choose the model parts to execute in the cloud. Some black-box model stealing attacks use knowledge distillation or differential methods. Generally, the difficulty of stealing a machine learning model increases with the model's size, number of parameters, and depth.
 {% endhint %}
 
-The hybrid model deployment API provides an easy way to integrate the [standard deployment procedure](client_server.md) into neural network style models that are compiled with [`compile_brevitas_qat_model`](../references/api/concrete.ml.torch.compile.md#function-compile_brevitas_qat_model) or [`compile_torch_model`](../references/api/concrete.ml.torch.compile.md#function-compile_torch_model).
+The hybrid model deployment API simplifies integrating the [standard deployment procedure](client_server.md) into neural network style models that are compiled with [`compile_brevitas_qat_model`](../references/api/concrete.ml.torch.compile.md#function-compile_brevitas_qat_model) or [`compile_torch_model`](../references/api/concrete.ml.torch.compile.md#function-compile_torch_model).
 
 ## Compilation
+To use hybrid model deployment, the first step is to define which part of the PyTorch neural network model must be executed in FHE. Ensure the model part is a `nn.Module` and is identified by its key in the original model's `.named_modules()`.
 
-To use hybrid model deployment, the first step is to define what part of the PyTorch neural network model must be executed in FHE. The model part must be a `nn.Module` and is identified by its key in the original model's `.named_modules()`.
+Here is an example: 
 
 ```python
 import numpy as np
@@ -68,9 +80,12 @@ hybrid_model.save_and_clear_private_info(model_dir, via_mlir=True)
 
 ## Server Side Deployment
 
-The [`save_and_clear_private_info`](../references/api/concrete.ml.torch.hybrid_model.md#method-save_and_clear_private_info) function serializes the FHE circuits corresponding to the various parts of the model that were chosen to be moved server-side. It also saves the client-side model, removing the weights of the layers that are transferred server-side. Furthermore it saves all necessary information required to serve these sub-models with FHE, using the [`FHEModelDev`](../references/api/concrete.ml.deployment.fhe_client_server.md#class-fhemodeldev) class.
+The [`save_and_clear_private_info`](../references/api/concrete.ml.torch.hybrid_model.md#method-save_and_clear_private_info) functions as follows:
+- Serializes the FHE circuits for the model parts chosen to be server-side.
+- Saves the client-side model, removing the weights of the layers transferred to the server. 
+- Saves all necessary information required to serve these sub-models with FHE using the [`FHEModelDev`](../references/api/concrete.ml.deployment.fhe_client_server.md#class-fhemodeldev) class.
 
-The [`FHEModelServer`](../references/api/concrete.ml.deployment.fhe_client_server.md#class-fhemodelserver) class should be used to create a server application that creates end-points to serve these sub-models:
+To create a server application that serves these sub-models, use the [`FHEModelServer`](../references/api/concrete.ml.deployment.fhe_client_server.md#class-fhemodelserver) class:
 
 <!--pytest-codeblocks:skip-->
 
@@ -84,7 +99,7 @@ For more information about serving FHE models, see the [client/server section](c
 
 ## Client Side
 
-A client application that deploys a model with hybrid deployment can be developed in a very similar manner to on-premise deployment: the model is loaded normally with PyTorch, but an extra step is required to specify the remote endpoint and the model parts that are to be executed remotely.
+To develop a client application that deploys a model with hybrid deployment, follow a process similar to on-premise deployment. The model is loaded normally with PyTorch, but you need to specify the remote endpoint and the model parts to be executed remotely.
 
 <!--pytest-codeblocks:skip-->
 
@@ -99,7 +114,7 @@ hybrid_model = HybridFHEModel(
 )
 ```
 
-Next, the client application must obtain the parameters necessary to encrypt and quantize data, as detailed in the [client/server documentation](client_server.md#production-deployment).
+Next, obtain the parameters necessary to encrypt and quantize data, as detailed in the [client/server documentation](client_server.md#production-deployment).
 
 <!--pytest-codeblocks:skip-->
 
@@ -108,7 +123,7 @@ path_to_clients = Path(__file__).parent / "clients"
 hybrid_model.init_client(path_to_clients=path_to_clients)
 ```
 
-When the client application is ready to make inference requests to the server, it must set the operation mode of the `HybridFHEModel` instance to `HybridFHEMode.REMOTE`:
+When the client application is ready to make inference requests to the server, set the operation mode of the `HybridFHEModel` instance to `HybridFHEMode.REMOTE`:
 
 <!--pytest-codeblocks:skip-->
 
@@ -117,7 +132,7 @@ for module in hybrid_model.remote_modules.values():
     module.fhe_local_mode = HybridFHEMode.REMOTE    
 ```
 
-When performing inference with the `HybridFHEModel` instance, `hybrid_model`, only the regular `forward` method is called, as if the model was fully deployed locally:
+For inference with the `HybridFHEModel` instance, `hybrid_model`, call the regular `forward` method as if the model was fully deployed locally::
 
 <!--pytest-codeblocks:skip-->
 
@@ -125,4 +140,8 @@ When performing inference with the `HybridFHEModel` instance, `hybrid_model`, on
 hybrid_model.forward(torch.randn((dim, )))
 ```
 
-When calling `forward`, the `HybridFHEModel` handles, for each model part that is deployed remotely, all the necessary intermediate steps: quantizing the data, encrypting it, makes the request to the server using `requests` Python module, decrypting and de-quantizing the result.
+When calling `forward`, the `HybridFHEModel` handles all the necessary intermediate steps for each model part deployed remotely, including: 
+- Quantizing the data.
+- Encrypting the data.
+- Making the request to the server using `requests` Python module.
+- Decrypting and de-quantizing the result.
