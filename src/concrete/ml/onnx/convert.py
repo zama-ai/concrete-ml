@@ -251,6 +251,7 @@ def preprocess_onnx_model(
     # Convert the first Gather node to a matrix multiplication with one-hot encoding
     # In FHE, embedding is either a TLU or a matmul with a one-hot.
     # The second case allows for leveled operation thus much faster.
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4532
     onnx_preprocessing, equivalent_onnx_model = convert_first_gather_to_matmul(
         equivalent_onnx_model
     )

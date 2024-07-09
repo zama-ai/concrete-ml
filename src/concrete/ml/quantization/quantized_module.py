@@ -92,8 +92,7 @@ class QuantizedModule:
     input_quantizers: List[UniformQuantizer]
     output_quantizers: List[UniformQuantizer]
     fhe_circuit: Union[None, Circuit]
-    _onnx_preprocessing: Optional[onnx.ModelProto] = None
-    _preprocessing_numpy: Optional[NumpyModule] = None
+    _preprocessing_module: Optional[NumpyModule] = None
 
     def __init__(
         self,
@@ -101,6 +100,7 @@ class QuantizedModule:
         ordered_module_output_names: Optional[Iterable[str]] = None,
         quant_layers_dict: Optional[Dict[str, Tuple[Tuple[str, ...], QuantizedOp]]] = None,
         onnx_model: Optional[onnx.ModelProto] = None,
+        onnx_preprocessing: Optional[onnx.ModelProto] = None,
     ):
 
         all_or_none_params = [
@@ -146,6 +146,14 @@ class QuantizedModule:
         # Input-output quantizer mapping for composition is not enabled at initialization
         self._composition_mapping: Optional[Dict] = None
 
+        # Initialize _preprocessing_numpy
+        # The onnx graph is used to pre-process the inputs before FHE execution
+        self._preprocessing_module = NumpyModule(onnx_preprocessing) if onnx_preprocessing else None
+
+        # Ensure that there is no preprocessing step
+        if self._preprocessing_module is not None:
+            assert_true(self._preprocessing_module.onnx_preprocessing is None)
+
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4127
     def set_reduce_sum_copy(self):
         """Set reduce sum to copy or not the inputs.
@@ -174,7 +182,9 @@ class QuantizedModule:
         metadata["ordered_module_input_names"] = self.ordered_module_input_names
         metadata["ordered_module_output_names"] = self.ordered_module_output_names
         metadata["quant_layers_dict"] = self.quant_layers_dict
-        metadata["_onnx_preprocessing_str"] = self._onnx_preprocessing
+        metadata["onnx_preprocessing"] = (
+            self._preprocessing_module.onnx_model if self._preprocessing_module else None
+        )
 
         return metadata
 
@@ -200,7 +210,9 @@ class QuantizedModule:
         obj.ordered_module_input_names = metadata["ordered_module_input_names"]
         obj.ordered_module_output_names = metadata["ordered_module_output_names"]
         obj.quant_layers_dict = metadata["quant_layers_dict"]
-        obj._onnx_preprocessing = metadata["_onnx_preprocessing_str"]
+        obj._preprocessing_module = (
+            NumpyModule(metadata["onnx_preprocessing"]) if metadata["onnx_preprocessing"] else None
+        )
 
         # pylint: enable=protected-access
 
@@ -281,19 +293,16 @@ class QuantizedModule:
     def pre_processing(self, *values: numpy.ndarray) -> Tuple[numpy.ndarray, ...]:
         """Apply pre-processing to the input values.
 
-        For quantized modules, this method builds a NumpyModule for pre-processing
-        if it doesn't exist yet, and then applies it to the input values.
-
         Args:
             values (numpy.ndarray): The input values to pre-process.
 
         Returns:
-            Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]: The pre-processed values.
+            Tuple[numpy.ndarray, ...]: The pre-processed values.
         """
-        if self._onnx_preprocessing is not None:
-            if self._preprocessing_numpy is None:
-                self._preprocessing_numpy = NumpyModule(self._onnx_preprocessing)
-            return to_tuple(self._preprocessing_numpy(*values))
+
+        if self._preprocessing_module is not None:
+            return to_tuple(self._preprocessing_module(*values))
+
         return values
 
     def _set_output_quantizers(self) -> List[UniformQuantizer]:

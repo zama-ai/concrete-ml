@@ -712,15 +712,11 @@ class ONNXConverter:
             ),
             quant_layers_dict=self.quant_ops_dict,
             onnx_model=self.numpy_model.onnx_model,
+            onnx_preprocessing=self.numpy_model.onnx_preprocessing,
         )
 
-        # Set the preprocessing onnx in the quantized module
-        quantized_module._onnx_preprocessing = (  # pylint: disable=protected-access
-            self.numpy_model.onnx_preprocessing
-        )
-
-        adapter = PowerOfTwoScalingRoundPBSAdapter(quantized_module)
         # Apply the round PBS optimization if possible
+        adapter = PowerOfTwoScalingRoundPBSAdapter(quantized_module)
         adapter.process()
 
         self._process_input_quantizers(quantized_module, calibration_data)

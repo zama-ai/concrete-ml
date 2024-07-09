@@ -17,7 +17,6 @@ import torch.quantization
 from concrete.fhe import ParameterSelectionStrategy  # pylint: disable=ungrouped-imports
 from torch import nn
 
-from concrete.ml.common.serialization.loaders import loads
 from concrete.ml.common.utils import (
     array_allclose_and_same_shape,
     manage_parameters_for_pbs_errors,
@@ -1671,13 +1670,3 @@ def test_compile_embedding_model(default_configuration):
     fhe_output = compiled_model.forward(test_input_numpy, fhe="simulate")
 
     numpy.testing.assert_allclose(torch_output, fhe_output, atol=1e-1)
-
-    # Check serialization
-    serialized_model = compiled_model.dumps()
-    blank_model: QuantizedModule = loads(serialized_model)
-    blank_model.compile(
-        inputset.numpy(),
-        configuration=default_configuration,
-        p_error=0.01,
-    )
-    assert blank_model.fhe_circuit.mlir == compiled_model.fhe_circuit.mlir

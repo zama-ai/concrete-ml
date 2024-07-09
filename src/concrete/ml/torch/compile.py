@@ -109,6 +109,8 @@ def build_quantized_module(
     # this batch size. The input set contains many examples, to determine a representative
     # bit-width, but for tracing we only take a single one. We need the ONNX tracing batch size to
     # match the batch size during FHE inference which can only be 1 for the moment.
+    # We need to convert float64 to float32 to avoid errors later in the onnx export.
+    # When we have integer inputs, we can keep them as integers.
     dummy_input_for_tracing = tuple(
         (
             torch.from_numpy(val[[0], ::]).float()

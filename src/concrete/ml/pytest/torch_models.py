@@ -1645,11 +1645,11 @@ class TorchMultiply(torch.nn.Module):
 class EmbeddingModel(nn.Module):
     """A torch model with an embedding layer."""
 
-    def __init__(self, num_embeddings, embedding_dim):
+    def __init__(self, num_embeddings, embedding_dim, activation_function=nn.ReLU):
         super().__init__()
         self.embedding = nn.Embedding(num_embeddings, embedding_dim)
         self.linear = nn.Linear(embedding_dim, embedding_dim)
-        self.relu = nn.ReLU()
+        self.relu = activation_function()
 
     def forward(self, x):
         """Forward pass.

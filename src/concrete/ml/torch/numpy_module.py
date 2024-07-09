@@ -44,7 +44,7 @@ class NumpyModule:
             ), "dummy_input must be provided if model is a torch.nn.Module"
 
             (
-                self.numpy_preprocessing,
+                self._numpy_preprocessing,
                 self._onnx_preprocessing,
                 self.numpy_forward,
                 self._onnx_model,
@@ -62,7 +62,7 @@ class NumpyModule:
             )
 
             (
-                self.numpy_preprocessing,
+                self._numpy_preprocessing,
                 self._onnx_preprocessing,
                 self.numpy_forward,
                 self._onnx_model,
@@ -94,6 +94,15 @@ class NumpyModule:
         """
         return self._onnx_preprocessing
 
+    @property
+    def numpy_preprocessing(self):
+        """Get the numpy preprocessing function.
+
+        Returns:
+            Callable: The numpy preprocessing function or None if not set.
+        """
+        return self._numpy_preprocessing
+
     def __call__(self, *args: numpy.ndarray) -> Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]:
         return self.forward(*args)
 
@@ -108,7 +117,9 @@ class NumpyModule:
                 given inputs or the original inputs if no preprocessing function is defined
         """
         return (
-            args if self.numpy_preprocessing is None else to_tuple(self.numpy_preprocessing(*args))
+            args
+            if self._numpy_preprocessing is None
+            else to_tuple(self._numpy_preprocessing(*args))
         )
 
     def forward(self, *args: numpy.ndarray) -> Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]:
