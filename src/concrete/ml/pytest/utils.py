@@ -612,11 +612,12 @@ def check_serialization(
     dump_method_to_test = [False]
 
     # If the given object provides a `dump`, `dumps` `dump_dict` method (which indicates that they
-    # are Concrete ML serializable classes), run the check using these as well
+    # are Concrete ML serializable classes) and are instantiated, run the check using these as well
     if (
         hasattr(object_to_serialize, "dump")
         and hasattr(object_to_serialize, "dumps")
         and hasattr(object_to_serialize, "dump_dict")
+        and not isinstance(object_to_serialize, type)
     ):
         dump_method_to_test.append(True)
 

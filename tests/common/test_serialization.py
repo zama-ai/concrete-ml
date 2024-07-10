@@ -218,7 +218,6 @@ def test_serialize_numpy_array(dtype):
 )
 def test_serialize_type(value):
     """Test serialization of type objects (trusted by Skops)."""
-    value = torch.nn.modules.activation.ReLU
 
     check_serialization(value, type, check_str=False)
 
