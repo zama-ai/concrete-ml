@@ -57,7 +57,7 @@ setup_env:
 	poetry run python -m pip install -U --pre --extra-index-url https://pypi.zama.ai/cpu "$(CONCRETE_PYTHON_VERSION)"
 	"$(MAKE)" fix_omp_issues_for_intel_mac
 	poetry run python -c "import skorch" || true # Details above
-	poetry run python -c "import brevitas" || true # Details above
+	poetry run python -c "from brevitas.core.scaling import AccumulatorAwareParameterPreScaling" || true # Details above
 
 .PHONY: sync_env # Synchronise the environment
 sync_env: 
