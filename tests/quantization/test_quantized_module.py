@@ -503,7 +503,9 @@ def test_serialization(model_class, input_shape, rounding_threshold_bits):
     numpy_fc_model = NumpyModule(torch_fc_model, torch_input)
 
     # Quantize with post-training static method
-    post_training_quant = PostTrainingAffineQuantization(8, numpy_fc_model)
+    post_training_quant = PostTrainingAffineQuantization(
+        8, numpy_fc_model, rounding_threshold_bits=rounding_threshold_bits
+    )
     quantized_module = post_training_quant.quantize_module(numpy_input)
 
     check_serialization(
