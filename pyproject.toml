@@ -137,6 +137,7 @@ filterwarnings = [
     "ignore:lbfgs failed to converge,*:sklearn.exceptions.ConvergenceWarning",
     "ignore:Maximum number of iteration reached before convergence.*:sklearn.exceptions.ConvergenceWarning",
     "ignore:jax.xla_computation is deprecated. Please use the AOT APIs.",
+    "ignore:Named tensors and all their associated APIs*",
 ]
 
 [tool.semantic_release]
