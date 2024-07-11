@@ -27,7 +27,7 @@ def test_sklearn_args():
 
     assert test_counter == 21
 
-
+@pytest.mark.filterwarnings("ignore:Named tensors and all their associated APIs*:UserWarning")
 @pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
 def test_seed_sklearn(model_class, parameters, load_data):
     """Tests the random_state parameter."""

@@ -1966,6 +1966,7 @@ class SklearnSGDClassifierMixin(SklearnLinearClassifierMixin):
         model_for_onnx = LogisticRegression()
         model_for_onnx.coef_ = self.sklearn_model.coef_
         model_for_onnx.intercept_ = self.sklearn_model.intercept_
+        model_for_onnx.classes_ = self.sklearn_model.classes_
 
         self.onnx_model_ = hb_convert(
             model_for_onnx,
