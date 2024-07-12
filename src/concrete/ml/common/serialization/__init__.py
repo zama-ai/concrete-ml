@@ -42,5 +42,5 @@ UNSUPPORTED_TORCH_ACTIVATIONS = [
     activation.RReLU,
     activation.Softmax,
     activation.Softmax2d,
-    activation.Hardshrink
+    activation.Hardshrink,
 ]
