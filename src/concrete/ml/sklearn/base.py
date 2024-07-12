@@ -1374,7 +1374,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         # Get the onnx model, all operations needed to load it properly will be done on it.
         n_features = model.n_features_in_
-        dummy_input = numpy.zeros((1, n_features))
+        dummy_input = numpy.zeros((2, n_features))
         framework = "xgboost" if isinstance(sklearn_model, XGBModel) else "sklearn"
         onnx_model = get_onnx_model(
             model=sklearn_model,

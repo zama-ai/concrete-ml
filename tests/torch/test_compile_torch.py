@@ -676,7 +676,7 @@ def test_compile_brevitas_qat(
         pytest.param(
             FC,
             (
-                """graph torch_jit (
+                """graph main_graph (
   %x[FLOAT, 1x7]
 ) initializers (
   %fc1.weight[FLOAT, 128x7]
