@@ -15,54 +15,22 @@ This example uses Post-Training Quantization, i.e., the quantization is not perf
 ```python
 import numpy
 import onnx
-import tensorflow
-import tf2onnx
 
 from concrete.ml.torch.compile import compile_onnx_model
 from concrete.fhe.compilation import Configuration
 
 
-class FC(tensorflow.keras.Model):
-    """A fully-connected model."""
-
-    def __init__(self):
-        super().__init__()
-        hidden_layer_size = 10
-        output_size = 5
-
-        self.dense1 = tensorflow.keras.layers.Dense(
-            hidden_layer_size,
-            activation=tensorflow.nn.relu,
-        )
-        self.dense2 = tensorflow.keras.layers.Dense(output_size, activation=tensorflow.nn.relu6)
-        self.flatten = tensorflow.keras.layers.Flatten()
-
-    def call(self, inputs):
-        """Forward function."""
-        x = self.flatten(inputs)
-        x = self.dense1(x)
-        x = self.dense2(x)
-        return self.flatten(x)
-
 
 n_bits = 6
-input_output_feature = 2
+input_output_feature = 5
 input_shape = (input_output_feature,)
 num_inputs = 1
 n_examples = 5000
 
-# Define the Keras model
-keras_model = FC()
-keras_model.build((None,) + input_shape)
-keras_model.compute_output_shape(input_shape=(None, input_output_feature))
-
 # Create random input
 input_set = numpy.random.uniform(-100, 100, size=(n_examples, *input_shape))
 
-# Convert to ONNX
-tf2onnx.convert.from_keras(keras_model, opset=14, output_path="tmp.model.onnx")
-
-onnx_model = onnx.load("tmp.model.onnx")
+onnx_model = onnx.load(f"tests/data/tf_onnx/fc_{input_output_feature}.onnx")
 onnx.checker.check_model(onnx_model)
 
 # Compile
@@ -83,7 +51,7 @@ print("Equality:           ", numpy.sum(y_clear == y_fhe), "over", numpy.size(y_
 ```
 
 {% hint style="warning" %}
-While Keras was used in this example, it is not officially supported. Additional work is needed to test all of Keras's types of layers and models.
+While a Keras ONNX model was used in this example, Keras/Tensorflow support in Concrete ML is only partial and experimental.
 {% endhint %}
 
 ## Quantization Aware Training
@@ -106,7 +74,7 @@ quantized_numpy_module = compile_onnx_model(
 
 ## Supported operators
 
-The following operators are supported for evaluation and conversion to an equivalent FHE circuit. Other operators were not implemented, either due to FHE constraints or because they are rarely used in PyTorch activations or scikit-learn models.
+The following ONNX operators are supported for evaluation and conversion to an equivalent FHE circuit. Other operators were not implemented, either due to FHE constraints or because they are rarely used in PyTorch activations or scikit-learn models.
 
 <!--- gen_supported_ops.py: inject supported operations for evaluation [BEGIN] -->
 

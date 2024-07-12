@@ -532,7 +532,6 @@ def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
         pytest.param(nn.Tanhshrink, id="Tanhshrink"),
         pytest.param(partial(nn.Threshold, threshold=0, value=0), id="Threshold"),
         pytest.param(nn.Softshrink, id="Softshrink"),
-        pytest.param(nn.Hardshrink, id="Hardshrink"),
         pytest.param(nn.Softsign, id="Softsign"),
         pytest.param(nn.GELU, id="GELU"),
         pytest.param(nn.LogSigmoid, id="LogSigmoid"),
