@@ -395,7 +395,7 @@ jobs:
           git lfs pull --include "tests/data/**, src/concrete/ml/pandas/_client_server_files/**" --exclude  ""
 
       - name: Set up Python ${{ matrix.python_version }}
-        uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d
+        uses: actions/setup-python@39cd14951b08e74b54015e9e001cdefcf80e669f
         id: setup-python
         with:
           python-version: ${{ matrix.python_version }}
@@ -1042,7 +1042,7 @@ jobs:
           git lfs pull --include "tests/data/**, src/concrete/ml/pandas/_client_server_files/**" --exclude  ""
 
       - name: Set up Python ${{ matrix.python_version }}
-        uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d
+        uses: actions/setup-python@39cd14951b08e74b54015e9e001cdefcf80e669f
         with:
           python-version: ${{ matrix.python_version }}
 
