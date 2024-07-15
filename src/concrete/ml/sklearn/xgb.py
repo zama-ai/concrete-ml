@@ -219,7 +219,7 @@ class XGBClassifier(BaseTreeClassifierMixin):
         obj._fhe_ensembling = metadata["_fhe_ensembling"]
         obj._tree_inference = tree_to_numpy(
             obj.sklearn_model,
-            numpy.zeros((len(obj.input_quantizers),))[None, ...],
+            numpy.tile(numpy.zeros((len(obj.input_quantizers),))[None, ...], [2, 1]),
             framework=obj.framework,
             output_n_bits=obj.n_bits["op_leaves"] if isinstance(obj.n_bits, Dict) else obj.n_bits,
             fhe_ensembling=obj._fhe_ensembling,
