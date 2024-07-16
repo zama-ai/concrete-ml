@@ -217,6 +217,10 @@ class XGBClassifier(BaseTreeClassifierMixin):
         obj.onnx_model_ = metadata["onnx_model_"]
         obj.output_quantizers = metadata["output_quantizers"]
         obj._fhe_ensembling = metadata["_fhe_ensembling"]
+
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4545
+        # Execute with 2 example for efficiency in large data scenarios to prevent slowdown
+        # but also to work around the HB export issue.
         obj._tree_inference = tree_to_numpy(
             obj.sklearn_model,
             numpy.tile(numpy.zeros((len(obj.input_quantizers),))[None, ...], [2, 1]),
@@ -492,6 +496,10 @@ class XGBRegressor(BaseTreeRegressorMixin):
         obj.onnx_model_ = metadata["onnx_model_"]
         obj.output_quantizers = metadata["output_quantizers"]
         obj._fhe_ensembling = metadata["_fhe_ensembling"]
+
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4545
+        # Execute with 2 example for efficiency in large data scenarios to prevent slowdown
+        # but also to work around the HB export issue.
         obj._tree_inference = tree_to_numpy(
             obj.sklearn_model,
             numpy.tile(numpy.zeros((len(obj.input_quantizers),))[None, ...], [2, 1]),

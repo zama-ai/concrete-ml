@@ -13,7 +13,7 @@ from concrete.fhe import maxpool as fhe_maxpool
 from concrete.fhe import tag, univariate, zeros
 from typing_extensions import SupportsIndex
 
-from ..common.debugging import assert_true
+from ..common.debugging import assert_false, assert_true
 from ..onnx.onnx_impl_utils import (
     compute_onnx_pool_padding,
     numpy_onnx_pad,
@@ -1973,6 +1973,17 @@ class QuantizedBrevitasQuant(QuantizedOp):
 
         self.is_signed = bool(attrs["signed"])
         self.is_narrow = bool(attrs["narrow"])
+
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4544
+        # Remove this workaround when brevitas export is fixed
+        if self.is_signed is False and self.is_narrow is False:
+            self.is_signed = True
+            self.is_narrow = False
+
+        assert_false(
+            not self.is_signed and self.is_narrow,
+            "Can not use narrow range for non-signed Brevitas quantizers",
+        )
 
         # To ensure de-quantization produces floats, the following parameters must be float.
         # This should be default export setting in Brevitas

@@ -16,7 +16,7 @@ from typing_extensions import SupportsIndex
 
 # pylint: disable=ungrouped-imports
 from concrete.ml.common import utils
-from concrete.ml.common.debugging import assert_true
+from concrete.ml.common.debugging import assert_false, assert_true
 from concrete.ml.onnx.onnx_impl_utils import (
     compute_onnx_pool_padding,
     numpy_onnx_pad,
@@ -1807,6 +1807,17 @@ def numpy_brevitas_quant(
     assert_true(rounding_mode == "ROUND", "Only rounding quantization is supported for Brevitas")
     assert_true(signed in (1, 0), "Signed flag in Brevitas quantizer must be 0/1")
     assert_true(narrow in (1, 0), "Narrow range flag in Brevitas quantizer must be 0/1")
+
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4544
+    # Remove this workaround when brevitas export is fixed
+    if signed == 0 and narrow == 1:
+        signed = 1
+        narrow = 0
+
+    assert_false(
+        signed == 0 and narrow == 1,
+        "Can not use narrow range for non-signed Brevitas quantizers",
+    )
 
     # Compute the re-scaled values
     y = x / scale

@@ -370,7 +370,9 @@ def tree_to_numpy(
         f"framework={framework} is not supported. It must be either 'xgboost' or 'sklearn'",
     )
 
-    # Execute with 1 example for efficiency in large data scenarios to prevent slowdown
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4545
+    # Execute with 2 example for efficiency in large data scenarios to prevent slowdown
+    # but also to work around the HB export issue
     onnx_model = get_onnx_model(model, x[:2] if x.shape[0] > 1 else x, framework)
 
     # Compute for tree-based models the LSB to remove in stage 1 and stage 2
