@@ -1976,7 +1976,7 @@ class QuantizedBrevitasQuant(QuantizedOp):
 
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4544
         # Remove this workaround when brevitas export is fixed
-        if self.is_signed is False and self.is_narrow is False:
+        if self.is_signed is False and self.is_narrow is True:
             self.is_signed = True
             self.is_narrow = False
 
