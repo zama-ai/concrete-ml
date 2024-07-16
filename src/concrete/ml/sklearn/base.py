@@ -1970,7 +1970,11 @@ class SklearnSGDClassifierMixin(SklearnLinearClassifierMixin):
         model_for_onnx.coef_ = self.sklearn_model.coef_
         model_for_onnx.intercept_ = self.sklearn_model.intercept_
 
-        model_for_onnx.classes_ = getattr(self.sklearn_model, "classes_", [0])
+        assert_true(
+            hasattr(self.sklearn_model, "classes_"),
+            "The fit method should have been called on this model",
+        )
+        model_for_onnx.classes_ = getattr(self.sklearn_model, "classes_", None)
 
         self.onnx_model_ = hb_convert(
             model_for_onnx,
