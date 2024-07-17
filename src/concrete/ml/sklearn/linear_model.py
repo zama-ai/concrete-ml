@@ -753,6 +753,9 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         self.sklearn_model.coef_ = fitted_weights.T
         self.sklearn_model.intercept_ = fitted_bias
 
+        # Copy over the classes since they are needed by the HB ONNX export
+        self.sklearn_model.classes_ = self.classes_
+
         # Update the model's Concrete ML parameters
         self._weights_encrypted_fit = fitted_weights
         self._bias_encrypted_fit = fitted_bias

@@ -52,7 +52,6 @@ N_BITS_LIST = [
         pytest.param(nn.Tanhshrink, id="Tanhshrink"),
         pytest.param(partial(nn.Threshold, threshold=0, value=0), id="Threshold"),
         pytest.param(nn.Softshrink, id="Softshrink"),
-        pytest.param(nn.Hardshrink, id="Hardshrink"),
         pytest.param(nn.Softsign, id="Softsign"),
         pytest.param(nn.GELU, id="GELU"),
         pytest.param(nn.LogSigmoid, id="LogSigmoid"),

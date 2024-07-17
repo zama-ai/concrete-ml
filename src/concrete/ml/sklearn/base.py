@@ -1374,7 +1374,10 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         # Get the onnx model, all operations needed to load it properly will be done on it.
         n_features = model.n_features_in_
-        dummy_input = numpy.zeros((1, n_features))
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4545
+        # Execute with 2 example for efficiency in large data scenarios to prevent slowdown
+        # but also to work around the HB export issue.
+        dummy_input = numpy.zeros((2, n_features))
         framework = "xgboost" if isinstance(sklearn_model, XGBModel) else "sklearn"
         onnx_model = get_onnx_model(
             model=sklearn_model,
@@ -1966,6 +1969,12 @@ class SklearnSGDClassifierMixin(SklearnLinearClassifierMixin):
         model_for_onnx = LogisticRegression()
         model_for_onnx.coef_ = self.sklearn_model.coef_
         model_for_onnx.intercept_ = self.sklearn_model.intercept_
+
+        assert_true(
+            hasattr(self.sklearn_model, "classes_"),
+            "The fit method should have been called on this model",
+        )
+        model_for_onnx.classes_ = getattr(self.sklearn_model, "classes_", None)
 
         self.onnx_model_ = hb_convert(
             model_for_onnx,

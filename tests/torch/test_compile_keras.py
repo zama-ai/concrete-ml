@@ -1,53 +1,20 @@
 """Tests for Keras models (by conversion to ONNX)."""
 
-import tempfile
-import warnings
-from pathlib import Path
-
 import numpy
 import onnx
 import pytest
-
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore", category=DeprecationWarning)
-    import tensorflow
-    import tf2onnx
+import torch
 
 from concrete.ml.common.utils import to_tuple
 from concrete.ml.onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
+from concrete.ml.pytest.torch_models import SimpleNet
 from concrete.ml.torch.compile import compile_onnx_model
 
 INPUT_OUTPUT_FEATURE = [5, 10]
 
 
-class FC(tensorflow.keras.Model):
-    """A fully-connected model."""
-
-    def __init__(self):
-        super().__init__()
-        hidden_layer_size = 13
-        output_size = 5
-
-        self.dense1 = tensorflow.keras.layers.Dense(
-            hidden_layer_size,
-            activation=tensorflow.nn.relu,
-        )
-        self.dense2 = tensorflow.keras.layers.Dense(output_size, activation=tensorflow.nn.relu6)
-        self.flatten = tensorflow.keras.layers.Flatten()
-
-    # pylint: disable-next=unused-argument
-    def call(self, inputs, training=None, mask=None):
-        """Forward function."""
-        x = self.flatten(inputs)
-        x = self.dense1(x)
-        x = self.dense2(x)
-        return x
-
-
 def compile_and_test_keras(
     input_output_feature,
-    model,
-    opset,
     default_configuration,
     simulate,
     check_is_good_execution_for_cml_vs_circuit,
@@ -58,19 +25,11 @@ def compile_and_test_keras(
     input_shape = (input_output_feature,)
     n_examples = 50
 
-    # Define the Keras model
-    keras_model = model()
-    keras_model.build((None,) + input_shape)
-    keras_model.compute_output_shape(input_shape=(None, input_output_feature))
-
     # Create random input
     inputset = numpy.random.uniform(-100, 100, size=(n_examples, *input_shape))
 
     # Convert to ONNX
-    output_onnx_file_path = Path(tempfile.mkstemp(suffix=".onnx")[1])
-    onnx_model, _ = tf2onnx.convert.from_keras(
-        keras_model, opset=opset, output_path=str(output_onnx_file_path)
-    )
+    onnx_model = onnx.load(f"tests/data/tf_onnx/fc_{input_output_feature}.onnx")
     onnx.checker.check_model(onnx_model)
 
     # Compile
@@ -97,18 +56,11 @@ def compile_and_test_keras(
 
 
 @pytest.mark.parametrize(
-    "model",
-    [
-        pytest.param(FC),
-    ],
-)
-@pytest.mark.parametrize(
     "input_output_feature",
     [pytest.param(input_output_feature) for input_output_feature in INPUT_OUTPUT_FEATURE],
 )
 @pytest.mark.parametrize("simulate", [True, False])
 def test_compile_keras_networks(
-    model,
     input_output_feature,
     default_configuration,
     simulate,
@@ -118,27 +70,29 @@ def test_compile_keras_networks(
 
     compile_and_test_keras(
         input_output_feature,
-        model,
-        OPSET_VERSION_FOR_ONNX_EXPORT,
         default_configuration,
         simulate,
         check_is_good_execution_for_cml_vs_circuit,
     )
 
 
-def test_failure_wrong_offset(check_is_good_execution_for_cml_vs_circuit):
+def test_failure_wrong_opset():
     """Test that wrong ONNX opset version are caught."""
-    input_output_feature = 4
-    model = FC
+    model = SimpleNet()
 
     with pytest.raises(AssertionError) as excinfo:
-        compile_and_test_keras(
-            input_output_feature,
-            model,
-            OPSET_VERSION_FOR_ONNX_EXPORT - 1,
-            None,
-            None,
-            check_is_good_execution_for_cml_vs_circuit,
+        inputset = torch.Tensor([1.0])
+        torch.onnx.export(
+            model, inputset, "tmp.onnx", opset_version=OPSET_VERSION_FOR_ONNX_EXPORT - 1
+        )
+
+        onnx_model = onnx.load("tmp.onnx")
+
+        # Compile
+        _ = compile_onnx_model(
+            onnx_model,
+            inputset,
+            n_bits=8,
         )
 
     expected_string = (

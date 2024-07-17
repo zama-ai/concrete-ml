@@ -38,7 +38,7 @@ def check_onnx_file_dump(
     # Ignore long lines here
     # ruff: noqa: E501
     expected_strings = {
-        "LinearSVC": """graph torch_jit (
+        "LinearSVC": """graph main_graph (
   %input_0[DOUBLE, symx10]
 ) initializers (
   %_operators.0.coefficients[FLOAT, 10x1]
@@ -47,8 +47,8 @@ def check_onnx_file_dump(
   %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
   return %/_operators.0/Gemm_output_0
 }""",
-        "NeuralNetClassifier": """graph torch_jit (
-  %inp.1[FLOAT, 1x10]
+        "NeuralNetClassifier": """graph main_graph (
+  %x.197[FLOAT, 1x10]
 ) initializers (
   %features.fc0.bias[FLOAT, 40]
   %features.fc1.bias[FLOAT, 40]
@@ -69,21 +69,21 @@ def check_onnx_file_dump(
         + """
   %/features/fc2/weight_quant/export_handler/Constant_1_output_0[FLOAT, scalar]
 ) {
-  %/features/quant0/act_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%inp.1, %/features/quant0/act_quant/export_handler/Constant_1_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
-  %/features/fc0/weight_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%/features/fc0/weight_quant/export_handler/Constant_output_0, %/features/fc0/weight_quant/export_handler/Constant_1_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
+  %/features/quant0/act_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%x.197, %/features/quant0/act_quant/export_handler/Constant_1_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
+  %/features/fc0/weight_quant/export_handler/Quant_output_0 = Quant[narrow = 1, rounding_mode = 'ROUND', signed = 0](%/features/fc0/weight_quant/export_handler/Constant_output_0, %/features/fc0/weight_quant/export_handler/Constant_1_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
   %/features/fc0/Gemm_output_0 = Gemm[alpha = 1, beta = 1, transB = 1](%/features/quant0/act_quant/export_handler/Quant_output_0, %/features/fc0/weight_quant/export_handler/Quant_output_0, %features.fc0.bias)
   %/features/act0/Relu_output_0 = Relu(%/features/fc0/Gemm_output_0)
   %/features/quant1/act_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%/features/act0/Relu_output_0, %/features/quant1/act_quant/export_handler/Constant_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
-  %/features/fc1/weight_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%/features/fc1/weight_quant/export_handler/Constant_output_0, %/features/fc1/weight_quant/export_handler/Constant_1_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
+  %/features/fc1/weight_quant/export_handler/Quant_output_0 = Quant[narrow = 1, rounding_mode = 'ROUND', signed = 0](%/features/fc1/weight_quant/export_handler/Constant_output_0, %/features/fc1/weight_quant/export_handler/Constant_1_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
   %/features/fc1/Gemm_output_0 = Gemm[alpha = 1, beta = 1, transB = 1](%/features/quant1/act_quant/export_handler/Quant_output_0, %/features/fc1/weight_quant/export_handler/Quant_output_0, %features.fc1.bias)
   %/features/act1/Relu_output_0 = Relu(%/features/fc1/Gemm_output_0)
   %/features/quant2/act_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%/features/act1/Relu_output_0, %/features/quant2/act_quant/export_handler/Constant_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
-  %/features/fc2/weight_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%/features/fc2/weight_quant/export_handler/Constant_output_0, %/features/fc2/weight_quant/export_handler/Constant_1_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
+  %/features/fc2/weight_quant/export_handler/Quant_output_0 = Quant[narrow = 1, rounding_mode = 'ROUND', signed = 0](%/features/fc2/weight_quant/export_handler/Constant_output_0, %/features/fc2/weight_quant/export_handler/Constant_1_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
   %31 = Gemm[alpha = 1, beta = 1, transB = 1](%/features/quant2/act_quant/export_handler/Quant_output_0, %/features/fc2/weight_quant/export_handler/Quant_output_0, %features.fc2.bias)
   return %31
 }""",
-        "NeuralNetRegressor": """graph torch_jit (
-  %inp.1[FLOAT, 1x10]
+        "NeuralNetRegressor": """graph main_graph (
+  %x.197[FLOAT, 1x10]
 ) initializers (
   %features.fc0.bias[FLOAT, 10]
   %features.fc1.bias[FLOAT, 10]
@@ -100,20 +100,20 @@ def check_onnx_file_dump(
   %/features/fc2/weight_quant/export_handler/Constant_output_0[FLOAT, 1x10]
   %/features/fc2/weight_quant/export_handler/Constant_1_output_0[FLOAT, scalar]
 ) {
-  %/features/quant0/act_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%inp.1, %/features/quant0/act_quant/export_handler/Constant_1_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
-  %/features/fc0/weight_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%/features/fc0/weight_quant/export_handler/Constant_output_0, %/features/fc0/weight_quant/export_handler/Constant_1_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
+  %/features/quant0/act_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%x.197, %/features/quant0/act_quant/export_handler/Constant_1_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
+  %/features/fc0/weight_quant/export_handler/Quant_output_0 = Quant[narrow = 1, rounding_mode = 'ROUND', signed = 0](%/features/fc0/weight_quant/export_handler/Constant_output_0, %/features/fc0/weight_quant/export_handler/Constant_1_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
   %/features/fc0/Gemm_output_0 = Gemm[alpha = 1, beta = 1, transB = 1](%/features/quant0/act_quant/export_handler/Quant_output_0, %/features/fc0/weight_quant/export_handler/Quant_output_0, %features.fc0.bias)
   %/features/act0/Relu_output_0 = Relu(%/features/fc0/Gemm_output_0)
   %/features/quant1/act_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%/features/act0/Relu_output_0, %/features/quant1/act_quant/export_handler/Constant_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
-  %/features/fc1/weight_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%/features/fc1/weight_quant/export_handler/Constant_output_0, %/features/fc1/weight_quant/export_handler/Constant_1_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
+  %/features/fc1/weight_quant/export_handler/Quant_output_0 = Quant[narrow = 1, rounding_mode = 'ROUND', signed = 0](%/features/fc1/weight_quant/export_handler/Constant_output_0, %/features/fc1/weight_quant/export_handler/Constant_1_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
   %/features/fc1/Gemm_output_0 = Gemm[alpha = 1, beta = 1, transB = 1](%/features/quant1/act_quant/export_handler/Quant_output_0, %/features/fc1/weight_quant/export_handler/Quant_output_0, %features.fc1.bias)
   %/features/act1/Relu_output_0 = Relu(%/features/fc1/Gemm_output_0)
   %/features/quant2/act_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%/features/act1/Relu_output_0, %/features/quant2/act_quant/export_handler/Constant_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
-  %/features/fc2/weight_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%/features/fc2/weight_quant/export_handler/Constant_output_0, %/features/fc2/weight_quant/export_handler/Constant_1_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
+  %/features/fc2/weight_quant/export_handler/Quant_output_0 = Quant[narrow = 1, rounding_mode = 'ROUND', signed = 0](%/features/fc2/weight_quant/export_handler/Constant_output_0, %/features/fc2/weight_quant/export_handler/Constant_1_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
   %31 = Gemm[alpha = 1, beta = 1, transB = 1](%/features/quant2/act_quant/export_handler/Quant_output_0, %/features/fc2/weight_quant/export_handler/Quant_output_0, %features.fc2.bias)
   return %31
 }""",
-        "LogisticRegression": """graph torch_jit (
+        "LogisticRegression": """graph main_graph (
   %input_0[DOUBLE, symx10]
 ) initializers (
   %_operators.0.coefficients[FLOAT, 10x1]
@@ -122,7 +122,7 @@ def check_onnx_file_dump(
   %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
   return %/_operators.0/Gemm_output_0
 }""",
-        "DecisionTreeRegressor": """graph torch_jit (
+        "DecisionTreeRegressor": """graph main_graph (
   %input_0[DOUBLE, symx10]
 ) {
   %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
@@ -144,7 +144,7 @@ def check_onnx_file_dump(
         )
         + """return %transposed_output
 }""",
-        "RandomForestClassifier": """graph torch_jit (
+        "RandomForestClassifier": """graph main_graph (
   %input_0[DOUBLE, symx10]
 ) {
   %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
@@ -163,7 +163,7 @@ def check_onnx_file_dump(
   %transposed_output = Transpose[perm = [2, 1, 0]](%/_operators.0/Reshape_3_output_0)
   return %transposed_output
 }""",
-        "PoissonRegressor": """graph torch_jit (
+        "PoissonRegressor": """graph main_graph (
   %input_0[DOUBLE, symx10]
 ) initializers (
   %_operators.0.coefficients[FLOAT, 10x1]
@@ -173,7 +173,7 @@ def check_onnx_file_dump(
   return %/_operators.0/Gemm_output_0
 }""",
         "TweedieRegressor": [
-            """graph torch_jit (
+            """graph main_graph (
   %input_0[DOUBLE, symx10]
 ) initializers (
   %_operators.0.coefficients[FLOAT, 10x1]
@@ -182,7 +182,7 @@ def check_onnx_file_dump(
   %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
   return %/_operators.0/Gemm_output_0
 }""",
-            """graph torch_jit (
+            """graph main_graph (
   %input_0[DOUBLE, symx10]
 ) initializers (
   %_operators.0.coefficients[FLOAT, 10x1]
@@ -192,7 +192,7 @@ def check_onnx_file_dump(
   return %variable
 }""",
         ],
-        "Ridge": """graph torch_jit (
+        "Ridge": """graph main_graph (
   %input_0[DOUBLE, symx10]
 ) initializers (
   %_operators.0.coefficients[FLOAT, 10x1]
@@ -201,7 +201,7 @@ def check_onnx_file_dump(
   %variable = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
   return %variable
 }""",
-        "DecisionTreeClassifier": """graph torch_jit (
+        "DecisionTreeClassifier": """graph main_graph (
   %input_0[DOUBLE, symx10]
 ) {
   %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
@@ -223,7 +223,7 @@ def check_onnx_file_dump(
         )
         + """return %transposed_output
 }""",
-        "GammaRegressor": """graph torch_jit (
+        "GammaRegressor": """graph main_graph (
   %input_0[DOUBLE, symx10]
 ) initializers (
   %_operators.0.coefficients[FLOAT, 10x1]
@@ -232,7 +232,7 @@ def check_onnx_file_dump(
   %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
   return %/_operators.0/Gemm_output_0
 }""",
-        "ElasticNet": """graph torch_jit (
+        "ElasticNet": """graph main_graph (
   %input_0[DOUBLE, symx10]
 ) initializers (
   %_operators.0.coefficients[FLOAT, 10x1]
@@ -241,7 +241,7 @@ def check_onnx_file_dump(
   %variable = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
   return %variable
 }""",
-        "LinearSVR": """graph torch_jit (
+        "LinearSVR": """graph main_graph (
   %input_0[DOUBLE, symx10]
 ) initializers (
   %_operators.0.coefficients[FLOAT, 10x1]
@@ -250,7 +250,7 @@ def check_onnx_file_dump(
   %variable = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
   return %variable
 }""",
-        "XGBClassifier": """graph torch_jit (
+        "XGBClassifier": """graph main_graph (
   %input_0[DOUBLE, symx10]
 ) {
   %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
@@ -273,7 +273,7 @@ def check_onnx_file_dump(
             if use_fhe_sum is True
             else "return %/_operators.0/Reshape_4_output_0\n}"
         ),
-        "RandomForestRegressor": """graph torch_jit (
+        "RandomForestRegressor": """graph main_graph (
   %input_0[DOUBLE, symx10]
 ) {
   %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
@@ -299,7 +299,7 @@ def check_onnx_file_dump(
         )
         + """return %transposed_output
 }""",
-        "XGBRegressor": """graph torch_jit (
+        "XGBRegressor": """graph main_graph (
   %input_0[DOUBLE, symx10]
 ) initializers (
   %_operators.0.weight_1[INT64, 140x10]
@@ -336,7 +336,7 @@ def check_onnx_file_dump(
             if use_fhe_sum is True
             else """return %/_operators.0/Reshape_4_output_0\n}"""
         ),
-        "LinearRegression": """graph torch_jit (
+        "LinearRegression": """graph main_graph (
   %input_0[DOUBLE, symx10]
 ) initializers (
   %_operators.0.coefficients[FLOAT, 10x2]
@@ -345,7 +345,7 @@ def check_onnx_file_dump(
   %variable = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
   return %variable
 }""",
-        "SGDRegressor": """graph torch_jit (
+        "SGDRegressor": """graph main_graph (
   %input_0[DOUBLE, symx10]
 ) initializers (
   %_operators.0.coefficients[FLOAT, 10x1]
@@ -354,7 +354,7 @@ def check_onnx_file_dump(
   %variable = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
   return %variable
 }""",
-        "Lasso": """graph torch_jit (
+        "Lasso": """graph main_graph (
   %input_0[DOUBLE, symx10]
 ) initializers (
   %_operators.0.coefficients[FLOAT, 10x1]
@@ -363,7 +363,7 @@ def check_onnx_file_dump(
   %variable = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
   return %variable
 }""",
-        "KNeighborsClassifier": """graph torch_jit (
+        "KNeighborsClassifier": """graph main_graph (
   %input_0[DOUBLE, symx2]
 ) {
   %/_operators.0/Constant_output_0 = Constant[value = <Tensor>]()
@@ -400,7 +400,7 @@ def check_onnx_file_dump(
   %variable = ArgMax[axis = 1, keepdims = 0, select_last_index = 0](%onnx::ArgMax_44)
   return %variable, %onnx::ArgMax_44
 }""",
-        "SGDClassifier": "graph torch_jit (\n  %input_0[DOUBLE, symx10]\n) initializers (\n  %_operators.0.coefficients[FLOAT, 10x1]\n  %_operators.0.intercepts[FLOAT, 1]\n) {\n  %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)\n  return %/_operators.0/Gemm_output_0\n}",
+        "SGDClassifier": "graph main_graph (\n  %input_0[DOUBLE, symx10]\n) initializers (\n  %_operators.0.coefficients[FLOAT, 10x1]\n  %_operators.0.intercepts[FLOAT, 1]\n) {\n  %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)\n  return %/_operators.0/Gemm_output_0\n}",
     }
 
     str_expected = expected_strings.get(model_name, "")

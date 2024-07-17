@@ -221,7 +221,6 @@ Concrete ML also supports some of their QAT equivalents from Brevitas.
 - [`torch.nn.CELU`](https://pytorch.org/docs/stable/generated/torch.nn.CELU.html)
 - [`torch.nn.ELU`](https://pytorch.org/docs/stable/generated/torch.nn.ELU.html)
 - [`torch.nn.GELU`](https://pytorch.org/docs/stable/generated/torch.nn.GELU.html)
-- [`torch.nn.Hardshrink`](https://pytorch.org/docs/stable/generated/torch.nn.Hardshrink.html)
 - [`torch.nn.HardSigmoid`](https://pytorch.org/docs/stable/generated/torch.nn.Hardsigmoid.html)
 - [`torch.nn.Hardswish`](https://pytorch.org/docs/stable/generated/torch.nn.Hardswish)
 - [`torch.nn.HardTanh`](https://pytorch.org/docs/stable/generated/torch.nn.Hardtanh.html)
