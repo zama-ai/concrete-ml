@@ -1,4 +1,5 @@
 # Prediction with FHE
+
 This document explains how to perform encryption, execution, and decryption of Fully Homomorphic Encryption (FHE) using one function call of the Concrete ML API, or multiple function calls separately.
 
 The APIs are different for the following:
@@ -10,7 +11,7 @@ The APIs are different for the following:
 
 ### Using one function
 
-All Concrete ML built-in models have a single `predict` method that performs the encryption, FHE execution, and decryption with only one function call. 
+All Concrete ML built-in models have a single `predict` method that performs the encryption, FHE execution, and decryption with only one function call.
 
 The following example shows how to create a synthetic data-set and how to use it to train a LogisticRegression model from Concrete ML.
 
@@ -49,6 +50,7 @@ y_pred_fhe = model.predict(x_test, fhe="execute")
 Regarding this LogisticRegression model, as with scikit-learn, it is possible to predict the logits as well as the class probabilities by respectively using the `decision_function` or `predict_proba` methods instead.
 
 ### Using separate functions
+
 Alternatively, you can execute key generation, quantization, encryption, FHE execution and decryption separately.
 
 <!--pytest-codeblocks:cont-->

@@ -4,14 +4,14 @@ This guide demonstrates how to convert a PyTorch neural network into a Fully Hom
 
 ## Quantization
 
-In general, quantization can be carried out in two different ways: 
+In general, quantization can be carried out in two different ways:
+
 - During the training phase with [Quantization Aware Training (QAT)](../getting-started/concepts.md#i-model-development)
 - After the training phase with [Post Training Quantization (PTQ)](../getting-started/concepts.md#i-model-development).
 
-For FHE-friendly neural networks, QAT is the best method to achieve optimal accuracy under [FHE constraints](../getting-started/README.md#current-limitations). This technique reduces weights and activations to very low bit-widths (for example, 2-3 bits). When combined with pruning, QAT helps keep low accumulator bit-widths. 
+For FHE-friendly neural networks, QAT is the best method to achieve optimal accuracy under [FHE constraints](../getting-started/README.md#current-limitations). This technique reduces weights and activations to very low bit-widths (for example, 2-3 bits). When combined with pruning, QAT helps keep low accumulator bit-widths.
 
 Concrete ML uses the third-party library [Brevitas](https://github.com/Xilinx/brevitas) to perform QAT for PyTorch neural networks, but options exist for other frameworks such as Keras/Tensorflow. Concrete ML provides several [demos and tutorials](../tutorials/showcase.md) that use Brevitas , including the [CIFAR classification tutorial](../../use_case_examples/cifar/cifar_brevitas_finetuning/CifarQuantizationAwareTraining.ipynb). For a more formal description of the usage of Brevitas to build FHE-compatible neural networks, please see the [Brevitas usage reference](../explanations/inner-workings/external_libraries.md#brevitas).
-
 
 {% hint style="info" %}
 For a formal explanation of the mechanisms that enable FHE-compatible neural networks, please see the the following paper.
@@ -60,7 +60,7 @@ The network was trained using different numbers of neurons in the hidden layers,
 | 3-bit accuracy        | 56.44% | 55.54% | 56.50% |
 | mean accumulator size | 6.6    | 6.9    | 7.4    |
 
-This shows that the fp32 accuracy and accumulator size increases with the number of hidden neurons, while the 3-bits accuracy remains low regardless of the number of neurons. Although all configurations tested were FHE-compatible (accumulator < 16 bits), it is often preferable to have a lower accumulator size to speed up inference time.
+This shows that the fp32 accuracy and accumulator size increases with the number of hidden neurons, while the 3-bits accuracy remains low regardless of the number of neurons. Although all configurations tested were FHE-compatible (accumulator \< 16 bits), it is often preferable to have a lower accumulator size to speed up inference time.
 
 {% hint style="info" %}
 Accumulator size is determined by [Concrete](https://docs.zama.ai/concrete) as the maximum bit-width encountered anywhere in the encrypted circuit.

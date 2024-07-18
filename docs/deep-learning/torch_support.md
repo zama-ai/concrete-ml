@@ -1,15 +1,18 @@
 # Using Torch
+
 This document explains how to implement machine learning models with Torch in Concrete ML, leveraging Fully Homomorphic Encryption (FHE).
 
 ## Introduction
 
 There are two approaches to build [FHE-compatible deep networks](../getting-started/concepts.md#model-accuracy-considerations-under-fhe-constraints):
 
-- [**Quantization Aware Training (QAT)**](../getting-started/concepts.md#i-model-development): This method requires using custom layers to quantize weights and activations to low bit-widths. Concrete ML works with [Brevitas](../explanations/inner-workings/external_libraries.md#brevitas), a library that provides QAT support for PyTorch. 
-    - Use `compile_brevitas_qat_model` to compile models in this mode.
+- [**Quantization Aware Training (QAT)**](../getting-started/concepts.md#i-model-development): This method requires using custom layers to quantize weights and activations to low bit-widths. Concrete ML works with [Brevitas](../explanations/inner-workings/external_libraries.md#brevitas), a library that provides QAT support for PyTorch.
 
-- [**Post Training Quantization (PTQ)**]((../getting-started/concepts.md#i-model-development)): This method allows to compile a vanilla PyTorch model. However, accuracy may decrease significantly when quantizing weights and activations to fewer than 7 bits. On the other hand, depending on the model size, quantizing with 6-8 bits can be incompatible with FHE constraints. Thus you need to determine the trade-off between model accuracy and FHE compatibility.
-    - Use `compile_torch_model` to compile models in this mode.
+  - Use `compile_brevitas_qat_model` to compile models in this mode.
+
+- [**Post Training Quantization (PTQ)**](../getting-started/concepts.md#i-model-development): This method allows to compile a vanilla PyTorch model. However, accuracy may decrease significantly when quantizing weights and activations to fewer than 7 bits. On the other hand, depending on the model size, quantizing with 6-8 bits can be incompatible with FHE constraints. Thus you need to determine the trade-off between model accuracy and FHE compatibility.
+
+  - Use `compile_torch_model` to compile models in this mode.
 
 Both approaches require setting `rounding_threshold_bits` parameter accordingly. You should experiment to find the best values, starting with an initial value of `6`. See [here](../explanations/advanced_features.md#rounded-activations-and-quantizers) for more details.
 
@@ -133,7 +136,7 @@ In this example, the input values `x_test` and the predicted values `y_pred` are
 
 ## Simulated FHE Inference in the clear
 
-You can perform the inference on clear data in order to evaluate the impact of quantization and of FHE computation on the accuracy of their model. See [this section](../deep-learning/fhe_assistant.md#simulation) for more details. 
+You can perform the inference on clear data in order to evaluate the impact of quantization and of FHE computation on the accuracy of their model. See [this section](../deep-learning/fhe_assistant.md#simulation) for more details.
 
 There are two approaches:
 

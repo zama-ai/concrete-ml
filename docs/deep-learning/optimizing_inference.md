@@ -3,8 +3,8 @@
 This document introduces several approaches to reduce the overall latency of a neural network.
 
 ## Introduction
-Neural networks are challenging for encrypted inference. Each neuron in a network has to apply an activation function that requires a [Programmable Bootstrapping(PBS)](/docs/getting-started/concepts.md#cryptography-concepts) operation. The latency of a single PBS depends on the bit-width of its input.
 
+Neural networks are challenging for encrypted inference. Each neuron in a network has to apply an activation function that requires a [Programmable Bootstrapping(PBS)](../getting-started/concepts.md#cryptography-concepts) operation. The latency of a single PBS depends on the bit-width of its input.
 
 ## Circuit bit-width optimization
 

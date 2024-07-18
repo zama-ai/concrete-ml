@@ -9,7 +9,7 @@ You can compile ONNX models by directly importing models that are already quanti
 The following example shows how to compile an ONNX model using PTQ. The model was initially trained using Keras before being exported to ONNX. The training code is not shown here.
 
 {% hint style="warning" %}
-This example uses PTQ, meaning that the quantization is not performed during training. This model does not have the optimal performance in FHE. 
+This example uses PTQ, meaning that the quantization is not performed during training. This model does not have the optimal performance in FHE.
 
 To improve performance in FHE, you should add QAT. Additionally, you can also import QAT ONNX models [as shown below](onnx_support.md#quantization-aware-training).
 {% endhint %}

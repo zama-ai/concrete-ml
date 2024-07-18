@@ -1,7 +1,9 @@
 # Serializing Built-In Models
+
 This document explains how to serialize build-in models in Concrete ML.
 
 ## Introduction
+
 Serialization allows you to dump a fitted and compiled model into a JSON string or file. You can then load the estimator back using the JSON object.
 
 ## Saving Models
