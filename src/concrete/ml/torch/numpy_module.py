@@ -94,15 +94,6 @@ class NumpyModule:
         """
         return self._onnx_preprocessing
 
-    @property
-    def numpy_preprocessing(self):
-        """Get the numpy preprocessing function.
-
-        Returns:
-            Callable: The numpy preprocessing function or None if not set.
-        """
-        return self._numpy_preprocessing
-
     def __call__(self, *args: numpy.ndarray) -> Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]:
         return self.forward(*args)
 

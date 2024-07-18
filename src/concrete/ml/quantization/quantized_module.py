@@ -92,7 +92,6 @@ class QuantizedModule:
     input_quantizers: List[UniformQuantizer]
     output_quantizers: List[UniformQuantizer]
     fhe_circuit: Union[None, Circuit]
-    _preprocessing_module: Optional[NumpyModule] = None
 
     def __init__(
         self,
@@ -146,7 +145,7 @@ class QuantizedModule:
         # Input-output quantizer mapping for composition is not enabled at initialization
         self._composition_mapping: Optional[Dict] = None
 
-        # Initialize _preprocessing_numpy
+        # Initialize _preprocessing_module
         # The onnx graph is used to pre-process the inputs before FHE execution
         self._preprocessing_module = NumpyModule(onnx_preprocessing) if onnx_preprocessing else None
 

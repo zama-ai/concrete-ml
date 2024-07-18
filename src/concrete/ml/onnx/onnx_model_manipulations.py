@@ -291,6 +291,7 @@ def _clean_graph_at_node_name(
     keep_following_outputs_discard_others(onnx_model, [output_to_follow])
 
 
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4532
 # Function to convert the first Gather nodes
 # to matrix multiplications with one-hot encoding as a pre-processing step
 def convert_first_gather_to_matmul(

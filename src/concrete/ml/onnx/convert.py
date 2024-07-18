@@ -10,7 +10,7 @@ import numpy
 import onnx
 import onnxoptimizer
 import torch
-from onnx import checker, helper
+from onnx import helper
 from typing_extensions import TypeAlias
 
 from ..common.debugging import assert_true
