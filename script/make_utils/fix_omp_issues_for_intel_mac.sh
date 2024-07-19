@@ -21,6 +21,8 @@ then
     WHICH_VENV=$(command -v python | sed -e "s@bin/python@@")
     WHICH_PYTHON=$(python -c 'import sys; print(f"python{sys.version_info.major}.{sys.version_info.minor}")')
 
+    # To update the dylib changes (eg with major updates in torch), please uncomment this, and
+    # then recopy to the given sections
     # cd "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"
 
     # LIST_OF_OMP_DYLIBS=`find . -name "*omp*.dylib"`
@@ -28,8 +30,8 @@ then
     # for X in $LIST_OF_OMP_DYLIBS
     # do
     #     if [[ "$X" != *"concrete"* ]]; then
-    #         echo "rm $X"
-    #         echo "ln -s .site-packages/concrete/.dylibs/libomp.dylib $X"
+    #         echo "rm \"\${WHICH_VENV}\"/lib/\"\${WHICH_PYTHON}\"/$X"
+    #         echo "ln -s \"\${WHICH_VENV}\"/lib/\"\${WHICH_PYTHON}\"/site-packages/concrete/.dylibs/libomp.dylib \"\${WHICH_VENV}\"/lib/\"\${WHICH_PYTHON}\"/$X"
     #     fi
     # done
 
@@ -38,19 +40,14 @@ then
     # The error is specific to python version
     if [ "$PYTHON_VERSION" == "3.8" ] || [ "$PYTHON_VERSION" == "3.9" ]
     then
-        # rm "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/torch/lib/libiomp5.dylib
-        # ln -s "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/concrete/.dylibs/libomp.dylib "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/torch/lib/libiomp5.dylib
-        # rm "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/functorch/.dylibs/libiomp5.dylib
-        # ln -s "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/concrete/.dylibs/libomp.dylib "${WHICH_VENV}"lib/"${WHICH_PYTHON}"/site-packages/functorch/.dylibs/libiomp5.dylib
-
-        rm "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/xgboost/.dylibs/libomp.dylib
-        ln -s "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/concrete/.dylibs/libomp.dylib "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/xgboost/.dylibs/libomp.dylib
-        rm "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/torch/.dylibs/libiomp5.dylib
-        ln -s "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/concrete/.dylibs/libomp.dylib "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/torch/.dylibs/libiomp5.dylib
-        rm "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/torch/lib/libiomp5.dylib
-        ln -s "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/concrete/.dylibs/libomp.dylib "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/torch/lib/libiomp5.dylib
-        rm "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/sklearn/.dylibs/libomp.dylib
-        ln -s "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/concrete/.dylibs/libomp.dylib "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/sklearn/.dylibs/libomp.dylib
+        rm "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/./site-packages/xgboost/.dylibs/libomp.dylib
+        ln -s "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/concrete/.dylibs/libomp.dylib "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/./site-packages/xgboost/.dylibs/libomp.dylib
+        rm "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/./site-packages/torch/.dylibs/libiomp5.dylib
+        ln -s "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/concrete/.dylibs/libomp.dylib "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/./site-packages/torch/.dylibs/libiomp5.dylib
+        rm "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/./site-packages/torch/lib/libiomp5.dylib
+        ln -s "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/concrete/.dylibs/libomp.dylib "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/./site-packages/torch/lib/libiomp5.dylib
+        rm "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/./site-packages/sklearn/.dylibs/libomp.dylib
+        ln -s "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/concrete/.dylibs/libomp.dylib "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/./site-packages/sklearn/.dylibs/libomp.dylib
 
     elif [ "$PYTHON_VERSION" == "3.10" ]
     then
