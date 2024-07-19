@@ -55,10 +55,14 @@ then
 
     elif [ "$PYTHON_VERSION" == "3.10" ]
     then
-        rm "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/torch/lib/libiomp5.dylib
-        ln -s "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/concrete/.dylibs/libomp.dylib "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/torch/lib/libiomp5.dylib
-        rm "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/torch/.dylibs/libiomp5.dylib
-        ln -s "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/concrete/.dylibs/libomp.dylib "${WHICH_VENV}"lib/"${WHICH_PYTHON}"/site-packages/torch/.dylibs/libiomp5.dylib
+        rm "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/./site-packages/xgboost/.dylibs/libomp.dylib
+        ln -s "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/concrete/.dylibs/libomp.dylib "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/./site-packages/xgboost/.dylibs/libomp.dylib
+        rm "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/./site-packages/torch/lib/libiomp5.dylib
+        ln -s "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/concrete/.dylibs/libomp.dylib "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/./site-packages/torch/lib/libiomp5.dylib
+        rm "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/./site-packages/sklearn/.dylibs/libomp.dylib
+        ln -s "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/concrete/.dylibs/libomp.dylib "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/./site-packages/sklearn/.dylibs/libomp.dylib
+        rm "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/./site-packages/functorch/.dylibs/libiomp5.dylib
+        ln -s "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/site-packages/concrete/.dylibs/libomp.dylib "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"/./site-packages/functorch/.dylibs/libiomp5.dylib
     else
         echo "Please have a look to libraries libiomp5.dylib related to torch and then"
         echo "apply appropriate fix"
