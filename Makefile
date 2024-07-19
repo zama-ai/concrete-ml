@@ -19,7 +19,7 @@ OPEN_PR="true"
 # Force the installation of a Concrete Python version, which is very useful with nightly versions
 # /!\ WARNING /!\: This version should NEVER be a wildcard as it might create some
 # issues when trying to run it in the future.
-CONCRETE_PYTHON_VERSION="concrete-python==2.7.0"
+CONCRETE_PYTHON_VERSION="concrete-python==2.7.0.dev20240709"
 
 # Force the installation of Concrete Python's latest version, release-candidates included
 # CONCRETE_PYTHON_VERSION="$$(poetry run python \
@@ -58,6 +58,10 @@ setup_env:
 	"$(MAKE)" fix_omp_issues_for_intel_mac
 	poetry run python -c "import skorch" || true # Details above
 	poetry run python -c "from brevitas.core.scaling import AccumulatorAwareParameterPreScaling" || true # Details above
+
+	# For some issues with Mac Intel
+	poetry run pip uninstall brevitas -y
+	poetry run pip install brevitas
 
 .PHONY: sync_env # Synchronise the environment
 sync_env: 
