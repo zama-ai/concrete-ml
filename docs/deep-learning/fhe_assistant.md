@@ -112,7 +112,7 @@ Furthermore, the cost of PBS depends on the bit-width of the compiled circuit. E
 
 To inspect the MLIR code produced by the compiler, use the following command:
 
-<!--pytest-codeblocks:cont-->
+<!--pytest-codeblocks:skip-->
 
 ```python
 print(quantized_numpy_module.fhe_circuit.mlir)
@@ -158,7 +158,7 @@ In the MLIR code, there are several calls to `FHELinalg.apply_mapped_lookup_tabl
 
 To retrieve the bit-width of the circuit, use this command:
 
-<!--pytest-codeblocks:cont-->
+<!--pytest-codeblocks:skip-->
 
 ```python
 print(quantized_numpy_module.fhe_circuit.graph.maximum_integer_bit_width())
