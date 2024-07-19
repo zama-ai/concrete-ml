@@ -28,7 +28,7 @@ then
     then
         cd "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"
 
-        LIST_OF_OMP_DYLIBS=`find . -name "*omp*.dylib"`
+        LIST_OF_OMP_DYLIBS=$(find . -name "*omp*.dylib")
 
         for X in $LIST_OF_OMP_DYLIBS
         do
@@ -38,7 +38,7 @@ then
             fi
         done
 
-        exit -1
+        exit 255
     fi
 
     # The error is specific to python version
