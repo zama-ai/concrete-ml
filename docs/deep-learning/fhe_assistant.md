@@ -108,7 +108,7 @@ z = torch.cat([self.quant_concat(x), self.quant_concat(y)])
 
 In FHE, univariate functions are encoded as Table Lookups, which are then implemented using [Programmable Bootstrapping (PBS)](../getting-started/concepts.md#cryptography-concepts). PBS is a powerful technique but requires significantly more computing resources compared to simpler encrypted operations such as matrix multiplications, convolution, or additions.
 
-Furthermore, the cost of PBS depends on the bit-width of the compiled circuit. Every additional bit in the maximum bit-width significantly increase the complexity of the PBS. Therefore, it's important to determine the bit-width of the circuit and the amount of PBS it performs in order to optimize the performance.
+Furthermore, the cost of PBS depends on the bit-width of the compiled circuit. Every additional bit in the maximum bit-width significantly increase the complexity of the PBS. Therefore, it is important to determine the bit-width of the circuit and the amount of PBS it performs in order to optimize the performance.
 
 To inspect the MLIR code produced by the compiler, use the following command:
 
