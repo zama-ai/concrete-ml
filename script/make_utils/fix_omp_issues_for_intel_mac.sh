@@ -8,6 +8,7 @@ set -e
 UNAME=$(uname)
 MACHINE=$(uname -m)
 PYTHON_VERSION=$(python --version | cut -d' ' -f2 | cut -d'.' -f1,2)
+DO_REGENERATE=0
 
 if [ "$UNAME" == "Darwin" ] && [ "$MACHINE" != "arm64" ]
 then
@@ -23,19 +24,22 @@ then
 
     # To update the dylib changes (eg with major updates in torch), please uncomment this, and
     # then recopy to the given sections
-    # cd "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"
+    if [ $DO_REGENERATE -eq 1 ]
+    then
+        cd "${WHICH_VENV}"/lib/"${WHICH_PYTHON}"
 
-    # LIST_OF_OMP_DYLIBS=`find . -name "*omp*.dylib"`
+        LIST_OF_OMP_DYLIBS=`find . -name "*omp*.dylib"`
 
-    # for X in $LIST_OF_OMP_DYLIBS
-    # do
-    #     if [[ "$X" != *"concrete"* ]]; then
-    #         echo "rm \"\${WHICH_VENV}\"/lib/\"\${WHICH_PYTHON}\"/$X"
-    #         echo "ln -s \"\${WHICH_VENV}\"/lib/\"\${WHICH_PYTHON}\"/site-packages/concrete/.dylibs/libomp.dylib \"\${WHICH_VENV}\"/lib/\"\${WHICH_PYTHON}\"/$X"
-    #     fi
-    # done
+        for X in $LIST_OF_OMP_DYLIBS
+        do
+            if [[ "$X" != *"concrete"* ]]; then
+                echo "rm \"\${WHICH_VENV}\"/lib/\"\${WHICH_PYTHON}\"/$X"
+                echo "ln -s \"\${WHICH_VENV}\"/lib/\"\${WHICH_PYTHON}\"/site-packages/concrete/.dylibs/libomp.dylib \"\${WHICH_VENV}\"/lib/\"\${WHICH_PYTHON}\"/$X"
+            fi
+        done
 
-    # exit -1
+        exit -1
+    fi
 
     # The error is specific to python version
     if [ "$PYTHON_VERSION" == "3.8" ] || [ "$PYTHON_VERSION" == "3.9" ]
