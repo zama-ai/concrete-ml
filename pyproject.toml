@@ -45,7 +45,7 @@ xgboost = "1.6.2"
 skorch = "0.11.0"
 torch = "2.2.2"
 typing-extensions = "^4.5.0"
-brevitas = "0.8.0"
+brevitas = "0.10.2"
 onnx = "1.16.1"
 onnxoptimizer = "0.3.13"
 # onnxruntime versions supported by onnx versions and opsets can be found here : 

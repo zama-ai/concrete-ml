@@ -58,6 +58,10 @@ setup_env:
 	"$(MAKE)" fix_omp_issues_for_intel_mac
 	poetry run python -c "import skorch" || true # Details above
 
+	# For some issues with Mac Intel
+	poetry run pip uninstall brevitas -y
+	poetry run pip install brevitas
+
 .PHONY: sync_env # Synchronise the environment
 sync_env: 
 	if [[ $$(poetry --version) != "Poetry (version $(POETRY_VERSION))" ]];then \

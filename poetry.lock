@@ -465,33 +465,36 @@ files = [
 
 [[package]]
 name = "brevitas"
-version = "0.8.0"
+version = "0.10.2"
 description = "Quantization-aware training in PyTorch"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "brevitas-0.8.0-py3-none-any.whl", hash = "sha256:f8c3a3dd63287dfbb0916f0496e9f4b7db0cbbad7c640d344b19fbfc0d2efb12"},
-    {file = "brevitas-0.8.0.tar.gz", hash = "sha256:b20c11a8f847a9273f8729755ece4308b5365a900516d1ebadfb6fcf8d33d68d"},
+    {file = "brevitas-0.10.2-py3-none-any.whl", hash = "sha256:3488129e40496034b406b90ab2f15484527854ed4cecd79d4c07849e8caff1e0"},
+    {file = "brevitas-0.10.2.tar.gz", hash = "sha256:e49c2f1fdd9e69ecdf82bb0f6d205f6100966a8e99fa1e1b345a51acaeafe9bd"},
 ]
 
 [package.dependencies]
 dependencies = "2.0.1"
 packaging = "*"
 setuptools = "*"
-torch = ">=1.5.1"
+sympy = "*"
+torch = ">=1.9.1"
 typing-extensions = ">=3.7.4"
+unfoldNd = "*"
 
 [package.extras]
+dev = ["pre-commit"]
 docs = ["m2r2", "nbsphinx", "nbsphinx-link", "pydata-sphinx-theme", "sphinx (==5.3.0)", "sphinx-autodoc-typehints", "sphinx-gallery (==0.10.1)", "sphinxcontrib-napoleon", "sphinxemoji"]
 export = ["onnx", "onnxoptimizer"]
-finn-integration = ["bitstring", "onnx", "onnxoptimizer", "onnxruntime", "qonnx", "toposort"]
+finn-integration = ["bitstring", "onnx", "onnxoptimizer", "onnxruntime (>=1.15.0)", "qonnx", "toposort"]
 hadamard = ["scipy"]
 notebook = ["jupyter", "nbmake"]
-ort-integration = ["onnx", "onnxoptimizer", "onnxruntime"]
-stt = ["inflect", "librosa", "numba", "pillow (>=4.3.0)", "requests", "ruamel.yaml", "soundfile", "sox", "torch-stft", "tqdm", "unidecode"]
-test = ["hypothesis", "mock", "pytest", "pytest-cases", "pytest-mock", "scipy", "torchvision"]
+ort-integration = ["onnx", "onnxoptimizer", "onnxruntime (>=1.15.0)", "qonnx"]
+stt = ["inflect (==5.6.2)", "librosa", "numba", "pillow (>=4.3.0)", "requests", "ruamel.yaml", "soundfile", "sox", "torch-stft", "tqdm", "unidecode"]
+test = ["hypothesis", "mock", "psutil", "pytest (==7.4.4)", "pytest-cases", "pytest-mock", "pytest-xdist", "scipy", "torchvision"]
 tts = ["librosa", "numpy", "pillow", "pyyaml", "scipy", "soundfile", "tqdm"]
-vision = ["torchvision"]
+vision = ["torchvision", "tqdm"]
 
 [[package]]
 name = "cachecontrol"
@@ -6577,6 +6580,25 @@ files = [
 ]
 
 [[package]]
+name = "unfoldnd"
+version = "0.2.2"
+description = "N-dimensional unfold (im2col) and fold (col2im) in PyTorch"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "unfoldNd-0.2.2-py3-none-any.whl", hash = "sha256:d57cb69953341a1bb472ea4654c3ef277e4f2ccc28138f72acbb89fa33e2557c"},
+    {file = "unfoldnd-0.2.2.tar.gz", hash = "sha256:e8fdffeb68bc1b393ddc1b1c87056e0e4616db992e95c7dbc3dc90d564599397"},
+]
+
+[package.dependencies]
+numpy = "*"
+torch = "*"
+
+[package.extras]
+lint = ["black", "darglint", "flake8", "flake8-bugbear", "flake8-comprehensions", "flake8-tidy-imports", "isort", "mccabe", "pep8-naming", "pycodestyle", "pydocstyle", "pyflakes"]
+test = ["coveralls", "pytest", "pytest-cov", "pytest-optional-tests"]
+
+[[package]]
 name = "uri-template"
 version = "1.3.0"
 description = "RFC 6570 URI Template Processor"
@@ -6930,4 +6952,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.1,<3.11"
-content-hash = "0a84600cadfb374aaf00d5ce35183653ac17f824c748f51cd178a698f82feeb4"
+content-hash = "ab3132926ed79cabbca1738ca2d911df50535154e3a9d2a3bf6cc061bd4d2966"
