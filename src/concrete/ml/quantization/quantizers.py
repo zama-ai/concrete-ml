@@ -103,7 +103,11 @@ class QuantizationOptions:
     is_precomputed_qat: bool = False
 
     def __init__(
-        self, n_bits: int, is_signed: bool = False, is_symmetric: bool = False, is_qat: bool = False
+        self,
+        n_bits: int,
+        is_signed: bool = False,
+        is_symmetric: bool = False,
+        is_qat: bool = False,
     ):
         self.n_bits = n_bits
         self.is_signed = is_signed
@@ -789,7 +793,7 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
 
         assert_true(
             isinstance(self.scale, (numpy.floating, float))
-            or (isinstance(self.scale, numpy.ndarray) and self.scale.dtype is numpy.float64),
+            or (isinstance(self.scale, numpy.ndarray) and self.scale.dtype == numpy.float64),
             "Scale is a of type "
             + type(self.scale).__name__
             + ((" " + str(self.scale.dtype)) if isinstance(self.scale, numpy.ndarray) else ""),
