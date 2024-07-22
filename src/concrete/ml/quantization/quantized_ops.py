@@ -1609,10 +1609,11 @@ class QuantizedDiv(QuantizedMixingOp):
         # we need to compute the quantizer of the divider since we are doing
         # an encrypted division where both numerator and denominator are encrypted
         if not self.can_fuse() and len(inputs) == 2:
-            min_non_zero_value = inputs[1][numpy.abs(inputs[1]).argmin()]
+            min_non_zero_index = numpy.abs(inputs[1]).argmin(axis=None)
+            min_non_zero_value = inputs[1].flat[min_non_zero_index]
 
             # mypy
-            assert min_non_zero_value is not None and min_non_zero_value > 0
+            assert min_non_zero_value is not None and min_non_zero_value != 0
             self.min_non_zero_value = min_non_zero_value
 
             q_array_divider = QuantizedArray(self.n_bits, 1 / inputs[1])
