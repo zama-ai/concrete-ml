@@ -127,7 +127,7 @@ The workflow contains the following steps:
 
 1. **Storing the public key**: The public evaluation keys sent by clients are stored.
 1. **Model evaluation**: The public evaluation keys are retrieved for the client that is querying the service and used to evaluate the machine learning model stored in `server.zip`.
-1. S**ending back the result**: The server sends the encrypted result of the computation back to the client.
+1. **Sending back the result**: The server sends the encrypted result of the computation back to the client.
 
 ## Example notebook
 
