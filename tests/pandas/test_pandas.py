@@ -60,7 +60,7 @@ def generate_pandas_dataframe(
         pandas.DataFrame: The generated Pandas data-frame.
     """
     if indexes is None:
-        indexes = 5
+        indexes = 3
 
     allowed_dtype = ["int", "float", "str", "mixed"]
     assert dtype in allowed_dtype, f"Parameter 'dtype' must be in {allowed_dtype}. Got {dtype}."

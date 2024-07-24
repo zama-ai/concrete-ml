@@ -15,7 +15,7 @@ from ..common.utils import FheMode
 from ..onnx.ops_impl import numpy_sigmoid
 from ..quantization import QuantizedModule
 from ..torch.compile import _compile_torch_or_onnx_model
-from ._fhe_training_utils import LogisticRegressionTraining, binary_cross_entropy
+from ._fhe_training_utils import LogisticRegressionTraining, binary_cross_entropy, make_training_inputset
 from .base import (
     Data,
     SklearnLinearClassifierMixin,
@@ -299,44 +299,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         # Compile and return the training quantized module
         # 54 = 2 classes * 3 values for x * 2 values for the weights * 2 values for the bias
         # Number of combination of extreme values
-        combinations = list(
-            itertools.product(
-                [1.0, 0.0],  # Labels
-                [x_min, x_max, numpy.zeros(x_min.shape)],  # Data-range
-                [self.parameters_range[0], self.parameters_range[1]],  # Weights
-                [self.parameters_range[0], self.parameters_range[1]],  # Bias
-            )
-        )
-
-        compile_size = len(combinations)
-        n_targets = 1
-
-        # Generate the input values to consider for compilation
-        x_compile_set = numpy.empty((compile_size, self.batch_size, x_min.shape[0]))
-
-        # Generate the target values to consider for compilation
-        # Update this once we support multi-class
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4182
-        y_compile_set = numpy.empty((compile_size, self.batch_size, n_targets))
-
-        # Generate the weight values to consider for compilation
-        weights_compile_set = numpy.empty((compile_size, x_min.shape[0], n_targets))
-
-        # Generate the bias values to consider for compilation
-        bias_compile_set = numpy.empty((compile_size, 1, n_targets))
-
-        compile_set = (x_compile_set, y_compile_set, weights_compile_set, bias_compile_set)
-
-        # Bound values are hard-coded in order to make sure that the circuit never overflows
-        for index, (label, x_value, coef_value, bias_value) in enumerate(combinations):
-            compile_set[0][index] = x_value
-            compile_set[1][index] = label
-            compile_set[2][index] = coef_value
-
-            if not self.fit_intercept:
-                bias_value *= 0.0
-
-            compile_set[3][index] = bias_value
+        compile_set = make_training_inputset(x_min, x_max, self.parameters_range[0], self.parameters_range[1], self.batch_size, self.fit_intercept)
 
         # Instantiate the LogisticRegressor model
         trainer = LogisticRegressionTraining(
