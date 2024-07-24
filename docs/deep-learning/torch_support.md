@@ -17,7 +17,7 @@ There are two approaches to build [FHE-compatible deep networks](../getting-star
 Both approaches require setting `rounding_threshold_bits` parameter accordingly. You should experiment to find the best values, starting with an initial value of `6`. See [here](../explanations/advanced_features.md#rounded-activations-and-quantizers) for more details.
 
 {% hint style="info" %}
-See the [common compilation errors page](./fhe_assistant.md#common-compilation-errors) for explanations and solutions of some common errors raised by the compilation function.
+See the [common compilation errors page](./fhe_assistant.md#common-compilation-errors) for explanations and solutions to some common errors raised by the compilation function.
 {% endhint %}
 
 ## Quantization Aware training (QAT)
