@@ -22,5 +22,5 @@ For example, you can use [Phi 1.5](https://huggingface.co/microsoft/phi-1_5) on 
 <!--pytest-codeblocks:skip-->
 
 ```bash
-python compile_hybrid_llm.py --model-name microsoft/phi-1_5 --module-names layers.1.mixer.Wqkv
+python compile_hybrid_llm.py --model-name microsoft/phi-1_5 --module-names model.layers.0.self_attn.q_proj,model.layers.0.self_attn.k_proj,model.layers.0.self_attn.v_proj
 ```
