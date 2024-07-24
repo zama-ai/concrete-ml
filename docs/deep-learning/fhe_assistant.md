@@ -154,7 +154,7 @@ module {
 --------------------------------------------------------------------------------
 ```
 
-In the MLIR code, there are several calls to `FHELinalg.apply_mapped_lookup_table` and `FHELinalg.apply_lookup_table`. These calls apply PBS to the cells of their input tensors. For example, in the code above, the inputs are: `tensor<1x2x!FHE.eint<8>>` for the first and last call and `tensor<1x50x!FHE.eint<8>>` for the two calls in the middle. Thus, PBS is applied 104 times.
+In the MLIR code, there are several calls to `FHELinalg.apply_mapped_lookup_table` and `FHELinalg.apply_lookup_table`. These calls apply PBS to the cells of their input tensors. For example, in the code above, the inputs are: `tensor<1x5x!FHE.eint<15>>` for both the first and last `apply_mapped_lookup_table` call. Thus, the PBS is applied 10 times, corresponding to the size of every encrypted tensor, which is 1x5 multiplied by 2.
 
 To retrieve the bit-width of the circuit, use this command:
 
