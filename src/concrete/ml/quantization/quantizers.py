@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional, TextIO, Union, get_type_hints
 
 import numpy
 from concrete.fhe.tracing.tracer import Tracer
+from numpy import typing as npt
 
 from ..common.debugging import assert_true
 from ..common.serialization.dumpers import dump, dumps
@@ -385,13 +386,13 @@ class UniformQuantizationParameters:
     The parameters are computed from quantization options and quantization statistics.
     """
 
-    scale: Optional[numpy.float64] = None
+    scale: Optional[npt.NDArray[numpy.float64]] = None
     zero_point: Optional[Union[int, float, numpy.ndarray]] = None
     offset: Optional[int] = None
 
     def __init__(
         self,
-        scale: Optional[numpy.float64] = None,
+        scale: Optional[npt.NDArray[numpy.float64]] = None,
         zero_point: Optional[Union[int, float, numpy.ndarray]] = None,
         offset: Optional[int] = None,
     ):
@@ -512,7 +513,7 @@ class UniformQuantizationParameters:
             if numpy.abs(stats.rmax) < STABILITY_CONST:
                 # If the value is a 0 we cannot do it since the scale would become 0 as well
                 # resulting in division by 0
-                self.scale = numpy.float64(1.0)
+                self.scale = numpy.array(1.0, dtype=float)
                 # Ideally we should get rid of round here but it is risky
                 # regarding the FHE compilation.
                 # Indeed, the zero_point value for the weights has to be an integer
@@ -521,7 +522,7 @@ class UniformQuantizationParameters:
             else:
                 # If the value is not a 0 we can tweak the scale factor so that
                 # the value quantizes to 1
-                self.scale = numpy.float64(stats.rmax)
+                self.scale = numpy.array(stats.rmax, dtype=float)
                 self.zero_point = 0
         else:
             if options.is_symmetric:
@@ -556,13 +557,16 @@ class UniformQuantizationParameters:
                         "This can occur with a badly trained model.",
                     )
                     unique_scales = numpy.unique(numpy.diff(stats.uvalues))
-                    self.scale = numpy.float64(unique_scales[0])
+                    self.scale = numpy.array(unique_scales[0], dtype=float)
 
                 if self.scale is None:
-                    self.scale = numpy.float64(
-                        (stats.rmax - stats.rmin) / (2**options.n_bits - 1)
-                        if stats.rmax != stats.rmin
-                        else 1.0
+                    self.scale = numpy.array(
+                        (
+                            (stats.rmax - stats.rmin) / (2**options.n_bits - 1)
+                            if stats.rmax != stats.rmin
+                            else 1.0
+                        ),
+                        dtype=float,
                     )
 
                 if options.is_qat:
@@ -618,7 +622,7 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
 
         # Force scale to be a float64
         if self.scale is not None:
-            self.scale = numpy.float64(self.scale)
+            self.scale = numpy.array(self.scale, dtype=float)
 
     def __eq__(self, other) -> bool:
 
@@ -908,7 +912,7 @@ class QuantizedArray:
             elif isinstance(values, Tracer):
                 self.values = values
             else:
-                self.values = numpy.array(values)
+                self.values = numpy.array(values, dtype=float)
 
             # If no stats are provided, compute them.
             # Note that this cannot be done during tracing
@@ -944,7 +948,7 @@ class QuantizedArray:
             elif isinstance(values, Tracer):
                 self.qvalues = values
             else:
-                self.qvalues = numpy.array(values)  # pragma: no cover
+                self.qvalues = numpy.array(values, dtype=float)  # pragma: no cover
 
             # Populate self.values
             self.dequant()
@@ -1014,7 +1018,7 @@ class QuantizedArray:
         elif isinstance(values, Tracer):  # pragma: no cover
             self.values = values
         else:  # pragma: no cover
-            self.values = numpy.array(values)
+            self.values = numpy.array(values, dtype=float)
         return self.quant()
 
     def update_quantized_values(
@@ -1033,7 +1037,7 @@ class QuantizedArray:
         elif isinstance(qvalues, Tracer):  # pragma: no cover
             self.qvalues = qvalues
         else:  # pragma: no cover
-            self.qvalues = numpy.array(qvalues)
+            self.qvalues = numpy.array(qvalues, dtype=float)
         return self.dequant()
 
     def quant(self) -> Union[numpy.ndarray, Tracer]:

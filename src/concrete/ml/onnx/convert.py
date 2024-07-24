@@ -86,7 +86,11 @@ def fuse_matmul_bias_to_gemm(onnx_model: onnx.ModelProto):
         # Create a GEMM node which combines the MatMul and Add operations
         gemm_node = helper.make_node(
             "Gemm",  # op_type
-            [matmul_node.input[0], matmul_node.input[1], bias_other_input_node_name],  # inputs
+            [
+                matmul_node.input[0],
+                matmul_node.input[1],
+                bias_other_input_node_name,
+            ],  # inputs
             [add_node.output[0]],  # outputs
             name="Gemm_Node",
             alpha=1.0,
@@ -149,9 +153,14 @@ def get_equivalent_numpy_forward_from_torch(
 
     arguments = list(inspect.signature(torch_module.forward).parameters)
 
+    if isinstance(dummy_input, torch.Tensor):
+        dummy_input = dummy_input.to("cpu")
+    else:
+        dummy_input = tuple(elt.to("cpu") for elt in dummy_input)
+
     # Export to ONNX
     torch.onnx.export(
-        torch_module,
+        torch_module.to("cpu"),
         dummy_input,
         str(output_onnx_file_path),
         opset_version=OPSET_VERSION_FOR_ONNX_EXPORT,

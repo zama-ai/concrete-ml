@@ -23,6 +23,7 @@ from concrete.ml.common.utils import (
 from concrete.ml.pytest.torch_models import (
     NetWithConstantsFoldedBeforeOps,
     QuantCustomModel,
+    QuantLeNet,
     TinyQATCNN,
 )
 from concrete.ml.quantization.base_quantized_op import QuantizedMixingOp
@@ -56,7 +57,6 @@ def forward_test_torch(net, test_loader):
         # Accumulate the ground truth labels
         endidx = idx + target.shape[0]
         all_targets[idx:endidx] = target.numpy()
-
         # Run forward and get the raw predictions first
         raw_pred = net(data).detach().numpy()
 
@@ -97,7 +97,11 @@ def train_brevitas_network_tinymnist(is_cnn, qat_bits, signed, narrow, pot_scali
         x_all = numpy.expand_dims(x_all.reshape((-1, 8, 8)), 1)
 
     x_train, x_test, y_train, y_test = train_test_split(
-        x_all, y_all, test_size=0.25, shuffle=True, random_state=numpy.random.randint(0, 2**15)
+        x_all,
+        y_all,
+        test_size=0.25,
+        shuffle=True,
+        random_state=numpy.random.randint(0, 2**15),
     )
 
     def train_one_epoch(net, optimizer, train_loader):
@@ -584,6 +588,7 @@ def test_brevitas_power_of_two(
 
     # Ensure rounding was compiled in the circuit
     # the number of rounding nodes should be equal
+    assert quantized_module.fhe_circuit is not None
     num_rounding_mlir = quantized_module.fhe_circuit.mlir.count(".round")
 
     assert num_rounding_mlir == 2, "Power-of-to adapter: Rounding nodes not found in MLIR"
@@ -606,3 +611,21 @@ def test_brevitas_power_of_two(
 
     check_array_equal(y_pred_sim_round, y_pred_clear_round)
     check_array_equal(y_pred_clear_round, y_pred_clear_no_round)
+
+
+@pytest.mark.flaky
+def test_brevitas_channel_wise(check_float_array_equal):
+    """Make sure that we can compile brevitas channel-wise quantization"""
+    model = QuantLeNet()
+    model.eval()
+
+    with torch.no_grad():
+        batch_size = 3
+        image_size = 1, 32, 32
+        images = torch.rand((batch_size, *image_size))
+        out = model(images).detach().numpy()
+        quantized_module = compile_brevitas_qat_model(model, images, rounding_threshold_bits=6)
+        out_qm = quantized_module(images.detach().numpy())
+
+        # The following values are quite arbitrary
+        check_float_array_equal(out, out_qm, atol=0.02, rtol=0.5)

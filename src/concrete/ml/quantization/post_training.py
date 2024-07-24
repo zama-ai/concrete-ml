@@ -393,14 +393,14 @@ class ONNXConverter:
             assert isinstance(quant_result, QuantizedArray)
             return (
                 quant_result.dequant(),
-                quant_result.quantizer if isinstance(quant_result, QuantizedArray) else None,
+                (quant_result.quantizer if isinstance(quant_result, QuantizedArray) else None),
             )
 
         # For QAT, the calibration is performed on raw data, performing
         # calibration on quantized that would confound inferred QAT and PTQ.
         return (
             raw_result,
-            quant_result.quantizer if isinstance(quant_result, QuantizedArray) else None,
+            (quant_result.quantizer if isinstance(quant_result, QuantizedArray) else None),
         )
 
     @abstractmethod
@@ -625,7 +625,9 @@ class ONNXConverter:
                     for input_name in variable_input_names
                 )
                 output_calibration_data, layer_quantizer = self._process_layer(
-                    quantized_op_instance, *curr_calibration_data, quantizers=layer_quant
+                    quantized_op_instance,
+                    *curr_calibration_data,
+                    quantizers=layer_quant,
                 )
                 node_results[output_name] = output_calibration_data
                 node_override_quantizer[output_name] = layer_quantizer
@@ -724,7 +726,9 @@ class ONNXConverter:
         return quantized_module
 
     def _process_input_quantizers(
-        self, quantized_module: QuantizedModule, calibration_data: Tuple[numpy.ndarray, ...]
+        self,
+        quantized_module: QuantizedModule,
+        calibration_data: Tuple[numpy.ndarray, ...],
     ):  # pylint: disable=too-many-branches
         """Determine the quantizers for a quantized module.
 

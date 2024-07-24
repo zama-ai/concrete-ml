@@ -6,7 +6,15 @@ from typing import Union
 import brevitas.nn as qnn
 import numpy
 import torch
-from brevitas.quant import Int8ActPerTensorFloat, Int8WeightPerTensorFloat, IntBias
+from brevitas.core.restrict_val import FloatRestrictValue, RestrictValueType
+from brevitas.quant import (
+    Int8AccumulatorAwareWeightQuant,
+    Int8AccumulatorAwareZeroCenterWeightQuant,
+    Int8ActPerTensorFloat,
+    Int8WeightPerTensorFloat,
+    IntBias,
+    Uint8ActPerTensorFloat,
+)
 from torch import nn
 from torch.nn.utils import prune
 
@@ -38,7 +46,7 @@ class MultiOutputModel(nn.Module):
         return x + y + self.value, (x - y) ** 2
 
 
-class SimpleNet(torch.nn.Module):
+class SimpleNet(nn.Module):
     """Fake torch model used to generate some onnx."""
 
     def __init__(self) -> None:
@@ -292,7 +300,7 @@ class CNNGrouped(nn.Module):
         return x
 
 
-class NetWithLoops(torch.nn.Module):
+class NetWithLoops(nn.Module):
     """Torch model, where we reuse some elements in a loop.
 
     Torch model, where we reuse some elements in a loop in the forward and don't expect the
@@ -538,7 +546,7 @@ class StepActivationModule(nn.Module):
         return x
 
 
-class NetWithConcatUnsqueeze(torch.nn.Module):
+class NetWithConcatUnsqueeze(nn.Module):
     """Torch model to test the concat and unsqueeze operators."""
 
     def __init__(self, activation_function, input_output, n_fc_layers):
@@ -1004,6 +1012,7 @@ class SingleMixNet(nn.Module):
                 layer_obj = self.mixing_layer
 
         layer_obj.weight.data = torch.from_numpy(np_weights).float()
+        assert layer_obj.bias is not None
         layer_obj.bias.data = torch.rand(size=(1,))
 
     def forward(self, x):
@@ -1216,12 +1225,12 @@ class PaddingNet(nn.Module):
         # for example a 4d tensor NCHW, padded with [1, 2, 2, 3] is padded
         # along the last 2 dimensions, with 1 cell to the left and 2 to the right (dimension 4: W)
         # and 2 cells at the top and 3 at the bottom (dimension 3: H)
-        x = torch.nn.functional.pad(x, (3, 2))
-        x = torch.nn.functional.pad(x, (1, 2, 3, 4))
+        x = nn.functional.pad(x, (3, 2))
+        x = nn.functional.pad(x, (1, 2, 3, 4))
 
         # Concrete ML only supports padding on the last two dimensions as this is the
         # most common setting
-        x = torch.nn.functional.pad(x, (1, 1, 2, 2, 0, 0, 0, 0))
+        x = nn.functional.pad(x, (1, 1, 2, 2, 0, 0, 0, 0))
         return x
 
 
@@ -1340,7 +1349,12 @@ class ConcatFancyIndexing(nn.Module):
     """Concat with fancy indexing."""
 
     def __init__(
-        self, input_shape, hidden_shape, output_shape, n_bits: int = 4, n_blocks: int = 3
+        self,
+        input_shape,
+        hidden_shape,
+        output_shape,
+        n_bits: int = 4,
+        n_blocks: int = 3,
     ) -> None:
         """Torch Model.
 
@@ -1361,7 +1375,10 @@ class ConcatFancyIndexing(nn.Module):
 
         self.quant_2 = qnn.QuantIdentity(bit_width=n_bits, return_quant_tensor=True)
         self.fc2 = qnn.QuantLinear(
-            hidden_shape * self.n_blocks, hidden_shape, bias=True, weight_bit_width=n_bits
+            hidden_shape * self.n_blocks,
+            hidden_shape,
+            bias=True,
+            weight_bit_width=n_bits,
         )
 
         self.quant_3 = qnn.QuantIdentity(bit_width=n_bits, return_quant_tensor=True)
@@ -1393,7 +1410,7 @@ class ConcatFancyIndexing(nn.Module):
         return x
 
 
-class PartialQATModel(torch.nn.Module):
+class PartialQATModel(nn.Module):
     """A model with a QAT Module."""
 
     def __init__(self, input_shape: int, output_shape: int, n_bits: int):
@@ -1442,7 +1459,7 @@ class EncryptedMatrixMultiplicationModel(nn.Module):
         return output
 
 
-class ManualLogisticRegressionTraining(torch.nn.Module):
+class ManualLogisticRegressionTraining(nn.Module):
     """PyTorch module for performing SGD training."""
 
     def __init__(self, learning_rate=0.1):
@@ -1665,3 +1682,176 @@ class EmbeddingModel(nn.Module):
         x = self.relu(x)
         x = self.linear(x)
         return x
+
+
+# pylint: disable-next=too-many-ancestors
+class CommonIntWeightPerChannelQuant(Int8WeightPerTensorFloat):
+    """CommonIntWeightPerChannelQuant."""
+
+    scaling_per_output_channel = True
+
+
+# pylint: disable-next=too-many-ancestors
+class CommonIntAccumulatorAwareWeightQuant(Int8AccumulatorAwareWeightQuant):
+    """CommonIntAccumulatorAwareWeightQuant."""
+
+    restrict_scaling_impl = FloatRestrictValue  # backwards compatibility
+    bit_width = None
+
+
+# pylint: disable-next=too-many-ancestors
+class CommonIntAccumulatorAwareZeroCenterWeightQuant(Int8AccumulatorAwareZeroCenterWeightQuant):
+    """CommonIntAccumulatorAwareZeroCenterWeightQuant."""
+
+    bit_width = None
+
+
+# pylint: disable-next=too-many-ancestors
+class CommonUintActQuant(Uint8ActPerTensorFloat):
+    """CommonUintActQuant."""
+
+    bit_width = None
+    restrict_scaling_type = RestrictValueType.LOG_FP
+
+
+def weight_init(layer: nn.Module):
+    """Initialize layer weights.
+
+    Arguments:
+        layer (nn.Module): a conv2d layer
+    """
+
+    if isinstance(layer, nn.Conv2d):
+        nn.init.kaiming_normal_(layer.weight, nn.init.calculate_gain("relu"))
+        if layer.bias is not None:
+            layer.bias.data.zero_()
+
+
+# pylint: disable-next=too-many-instance-attributes
+class FloatLeNet(nn.Module):
+    """Floating point LeNet."""
+
+    def __init__(self):
+        super().__init__()
+        self.conv1 = nn.Conv2d(in_channels=1, out_channels=6, kernel_size=5, stride=1, padding=0)
+        self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.relu1 = nn.ReLU(inplace=True)
+
+        self.conv2 = nn.Conv2d(in_channels=6, out_channels=16, kernel_size=5, stride=1, padding=0)
+        self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.relu2 = nn.ReLU(inplace=True)
+
+        self.fc1 = nn.Linear(400, 120, bias=True)
+        self.relu3 = nn.ReLU()
+        self.fc2 = nn.Linear(120, 84, bias=True)
+        self.relu4 = nn.ReLU()
+        self.fc3 = nn.Linear(84, 10, bias=True)
+
+        self.apply(weight_init)
+
+    def forward(self, x: torch.Tensor):
+        """Forward function.
+
+        Arguments:
+            x (torch.Tensor): input image
+
+        Returns:
+            Neural network prediction
+        """
+        x = self.pool1(self.relu1(self.conv1(x)))
+        x = self.pool2(self.relu2(self.conv2(x)))
+        x = torch.flatten(x, 1)
+        x = self.relu3(self.fc1(x))
+        x = self.relu4(self.fc2(x))
+        x = self.fc3(x)
+        return x
+
+
+# pylint: disable-next=too-many-instance-attributes
+class QuantLeNet(FloatLeNet):
+    """Quantized LeNet with per-channel quantization."""
+
+    def __init__(
+        self,
+        weight_bit_width=4,
+        act_bit_width=4,
+        acc_bit_width=32,
+        weight_quant=CommonIntAccumulatorAwareWeightQuant,
+    ):
+        super().__init__()
+
+        self.conv1 = qnn.QuantConv2d(
+            bias=False,
+            in_channels=1,
+            out_channels=6,
+            kernel_size=5,
+            stride=1,
+            padding=0,
+            input_bit_width=act_bit_width,
+            input_quant=CommonUintActQuant,
+            weight_accumulator_bit_width=acc_bit_width,
+            weight_bit_width=weight_bit_width,
+            weight_restrict_scaling_type=RestrictValueType.LOG_FP,
+            weight_quant=weight_quant,
+        )
+        self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.relu1 = qnn.QuantReLU(
+            inplace=True, act_quant=CommonUintActQuant, bit_width=act_bit_width
+        )
+
+        self.conv2 = qnn.QuantConv2d(
+            bias=False,
+            in_channels=6,
+            out_channels=16,
+            kernel_size=5,
+            stride=1,
+            padding=0,
+            input_bit_width=act_bit_width,
+            input_quant=CommonUintActQuant,
+            weight_accumulator_bit_width=acc_bit_width,
+            weight_bit_width=weight_bit_width,
+            weight_restrict_scaling_type=RestrictValueType.LOG_FP,
+            weight_quant=weight_quant,
+        )
+        self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.relu2 = qnn.QuantReLU(
+            inplace=True, act_quant=CommonUintActQuant, bit_width=act_bit_width
+        )
+
+        self.fc1 = qnn.QuantLinear(
+            400,
+            120,
+            bias=True,
+            input_bit_width=act_bit_width,
+            input_quant=CommonUintActQuant,
+            weight_accumulator_bit_width=acc_bit_width,
+            weight_bit_width=weight_bit_width,
+            weight_restrict_scaling_type=RestrictValueType.LOG_FP,
+            weight_quant=weight_quant,
+        )
+        self.relu3 = qnn.QuantReLU(act_quant=CommonUintActQuant, bit_width=act_bit_width)
+        self.fc2 = qnn.QuantLinear(
+            120,
+            84,
+            bias=True,
+            input_bit_width=act_bit_width,
+            input_quant=CommonUintActQuant,
+            weight_accumulator_bit_width=acc_bit_width,
+            weight_bit_width=weight_bit_width,
+            weight_restrict_scaling_type=RestrictValueType.LOG_FP,
+            weight_quant=weight_quant,
+        )
+        self.relu4 = qnn.QuantReLU(act_quant=CommonUintActQuant, bit_width=act_bit_width)
+        self.fc3 = qnn.QuantLinear(
+            84,
+            10,
+            bias=True,
+            input_bit_width=act_bit_width,
+            input_quant=CommonUintActQuant,
+            weight_accumulator_bit_width=acc_bit_width,
+            weight_bit_width=weight_bit_width,
+            weight_restrict_scaling_type=RestrictValueType.LOG_FP,
+            weight_quant=weight_quant,
+        )
+
+        self.apply(weight_init)
