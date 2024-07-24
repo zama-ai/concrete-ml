@@ -76,7 +76,7 @@ quantized_numpy_module = compile_onnx_model(
 
 ## Supported operators
 
-Concrete ML support the following operators for evaluation and conversion to an equivalent FHE circuit. Other operators were not implemented either due to FHE constraints or because they are rarely used in PyTorch activations or scikit-learn models.
+Concrete ML supports the following operators for evaluation and conversion to an equivalent FHE circuit. Other operators were not implemented either due to FHE constraints or because they are rarely used in PyTorch activations or scikit-learn models.
 
 <!--- gen_supported_ops.py: inject supported operations for evaluation [BEGIN] -->
 
