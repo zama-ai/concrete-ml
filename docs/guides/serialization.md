@@ -1,19 +1,17 @@
 # Serializing Built-In Models
 
-This document explains how to serialize build-in models in Concrete ML.
-
-## Introduction
-
-Serialization allows you to dump a fitted and compiled model into a JSON string or file. You can then load the estimator back using the JSON object.
+Concrete ML has support for serializing all available built-in models. Using this feature, one can
+dump a fitted and compiled model into a JSON string or file. The estimator can then be loaded back
+using the JSON object.
 
 ## Saving Models
 
 All built-in models provide the following methods:
 
-- `dumps`: Dumps the model as a string.
-- `dump`: Dumps the model into a file.
+- `dumps`: dumps the model as a string.
+- `dump`: dumps the model into a file.
 
-For example, a logistic regression model can be dumped in a string as follows:
+For example, a logistic regression model can be dumped in a string as below.
 
 ```python
 from sklearn.datasets import make_classification
@@ -40,7 +38,7 @@ dumped_model_str = model.dumps()
 
 ```
 
-Similarly, it can be dumped into a file:
+Similarly, it can be dumped into a file.
 
 <!--pytest-codeblocks:cont-->
 
@@ -56,7 +54,7 @@ with dumped_model_path.open("w") as f:
     model.dump(f)
 ```
 
-Alternatively, Concrete ML provides two equivalent global functions:
+Alternatively, Concrete ML provides two equivalent global functions.
 
 <!--pytest-codeblocks:cont-->
 
@@ -74,23 +72,26 @@ with dumped_model_path.open("w") as f:
 ```
 
 {% hint style="warning" %}
-Some parameters used for instantiating Quantized Neural Network models are not supported for serialization. In particular, you cannot serialize a model that was instantiated using callable objects for the `train_split` and `predict_nonlinearity` parameters or with `callbacks` being enabled.
+Some parameters used for instantiating Quantized Neural Network models are not supported for
+serialization. In particular, one cannot serialize a model that was instantiated using callable
+objects for the `train_split` and `predict_nonlinearity` parameters or with `callbacks` being
+enabled.
 {% endhint %}
 
 ## Loading Models
 
-You can load a built-in model using the following functions:
+Loading a built-in model is possible through the following functions:
 
-- `loads`: Loads the model from a string.
-- `load`: Loads the model from a file.
+- `loads`: loads the model from a string.
+- `load`: loads the model from a file.
 
 {% hint style="warning" %}
-A loaded model must be compiled once again to execute the inference in
-FHE or with simulation because the underlying FHE circuit is currently not serialized.
-This recompilation is not required when FHE mode is disabled.
+A loaded model is required to be compiled once again in order for a user to be able to execute the inference in
+FHE or with simulation. This is because the underlying FHE circuit is currently not serialized.
+There is not required when FHE mode is disabled.
 {% endhint %}
 
-The same logistic regression model can be loaded as follows:
+The above logistic regression model can therefore be loaded as below.
 
 <!--pytest-codeblocks:cont-->
 

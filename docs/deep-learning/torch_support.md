@@ -1,26 +1,19 @@
 # Using Torch
 
-This document explains how to implement machine learning models with Torch in Concrete ML, leveraging Fully Homomorphic Encryption (FHE).
-
-## Introduction
+In addition to the built-in models, Concrete ML supports generic machine learning models implemented with Torch, or [exported as ONNX graphs](onnx_support.md).
 
 There are two approaches to build [FHE-compatible deep networks](../getting-started/concepts.md#model-accuracy-considerations-under-fhe-constraints):
 
-- [**Quantization Aware Training (QAT)**](../getting-started/concepts.md#i-model-development): This method requires using custom layers to quantize weights and activations to low bit-widths. Concrete ML works with [Brevitas](../explanations/inner-workings/external_libraries.md#brevitas), a library that provides QAT support for PyTorch.
+- [Quantization Aware Training (QAT)](../explanations/quantization.md) requires using custom layers, but can quantize weights and activations to low bit-widths. Concrete ML works with [Brevitas](../explanations/inner-workings/external_libraries.md#brevitas), a library providing QAT support for PyTorch. To use this mode, compile models using `compile_brevitas_qat_model`
+- **Post-training Quantization**: This mode allows a vanilla PyTorch model to be compiled. However, when quantizing weights & activations to fewer than 7 bits, the accuracy can decrease strongly. On the other hand, depending on the model size, quantizing with 6-8 bits can be incompatible with FHE constraints. To use this mode, compile models with `compile_torch_model`.
 
-  - Use `compile_brevitas_qat_model` to compile models in this mode.
-
-- [**Post Training Quantization (PTQ)**](../getting-started/concepts.md#i-model-development): This method allows to compile a vanilla PyTorch model. However, accuracy may decrease significantly when quantizing weights and activations to fewer than 7 bits. On the other hand, depending on the model size, quantizing with 6-8 bits can be incompatible with FHE constraints. Thus you need to determine the trade-off between model accuracy and FHE compatibility.
-
-  - Use `compile_torch_model` to compile models in this mode.
-
-Both approaches require setting `rounding_threshold_bits` parameter accordingly. You should experiment to find the best values, starting with an initial value of `6`. See [here](../explanations/advanced_features.md#rounded-activations-and-quantizers) for more details.
+Both approaches require the `rounding_threshold_bits` parameter to be set accordingly. The best values for this parameter need to be determined through experimentation. A good initial value to try is `6`. See [here](../explanations/advanced_features.md#rounded-activations-and-quantizers) for more details.
 
 {% hint style="info" %}
-See the [common compilation errors page](./fhe_assistant.md#common-compilation-errors) for explanations and solutions to some common errors raised by the compilation function.
+**See the [common compilation errors page](./fhe_assistant.md#common-compilation-errors) for an explanation of some error messages that the compilation function may raise.**
 {% endhint %}
 
-## Quantization Aware training (QAT)
+## Quantization-aware training
 
 The following example uses a simple QAT PyTorch model that implements a fully connected neural network with two hidden layers. Due to its small size, making this model respect FHE constraints is relatively easy. To use QAT, Brevitas `QuantIdentity` nodes must be inserted in the PyTorch model, including one that quantizes the input of the `forward` function.
 
@@ -52,7 +45,7 @@ class QATSimpleNet(nn.Module):
 
 ```
 
-Once the model is trained, use [`compile_brevitas_qat_model`](../references/api/concrete.ml.torch.compile.md#function-compile_brevitas_qat_model) from Concrete ML to perform conversion and compilation of the QAT network. Here, 3-bit quantization is used for both the weights and activations. This function automatically identifies the number of quantization bits used in the Brevitas model.
+Once the model is trained, calling the [`compile_brevitas_qat_model`](../references/api/concrete.ml.torch.compile.md#function-compile_brevitas_qat_model) from Concrete ML will automatically perform conversion and compilation of a QAT network. Here, 3-bit quantization is used for both the weights and activations. The `compile_brevitas_qat_model` function automatically identifies the number of quantization bits used in the Brevitas model.
 
 <!--pytest-codeblocks:cont-->
 
@@ -74,9 +67,9 @@ quantized_module = compile_brevitas_qat_model(
 If `QuantIdentity` layers are missing for any input or intermediate value, the compile function will raise an error. See the [common compilation errors page](./fhe_assistant.md#common-compilation-errors) for an explanation.
 {% endhint %}
 
-## Post Training quantization (PTQ)
+## Post-training quantization
 
-The following example demonstrates a simple PyTorch model that implements a fully connected neural network with two hidden layers. The model is compiled with `compile_torch_model` to use FHE.
+The following example uses a simple PyTorch model that implements a fully connected neural network with two hidden layers. The model is compiled to use FHE using `compile_torch_model`.
 
 ```python
 import torch.nn as nn
@@ -114,11 +107,11 @@ quantized_module = compile_torch_model(
 
 ## Configuring quantization parameters
 
-The quantization parameters, along with the number of neurons in each layer, determine the accumulator bit-width of the network. Larger accumulator bit-widths result in higher accuracy but slower FHE inference time.
+With QAT (the PyTorch/Brevitas models created following the example above), you need to configure quantization parameters such as `bit_width` (activation bit-width) and `weight_bit_width`. When using this mode, set `n_bits=None` in the `compile_brevitas_qat_model`.
 
-**QAT**: Configure parameters such as `bit_width` and `weight_bit_width`. Set `n_bits=None` in the `compile_brevitas_qat_model`.
+With PTQ, you need to set the `n_bits` value in the `compile_torch_model` function and must manually determine the trade-off between accuracy, FHE compatibility, and latency.
 
-**PTQ**: Set the `n_bits` value in the `compile_torch_model` function. Manually determine the trade-off between accuracy, FHE compatibility, and latency.
+The quantization parameters, along with the number of neurons on each layer, will determine the accumulator bit-width of the network. Larger accumulator bit-widths result in higher accuracy but slower FHE inference time.
 
 ## Running encrypted inference
 
@@ -132,19 +125,18 @@ x_test = numpy.array([numpy.random.randn(N_FEAT)])
 y_pred = quantized_module.forward(x_test, fhe="execute")
 ```
 
-In this example, the input values `x_test` and the predicted values `y_pred` are floating points. The quantization (respectively de-quantization) step is done in the clear within the `forward` method, before (respectively after) any FHE computations.
+In this example, the input values `x_test` and the predicted values `y_pred` are floating points. The quantization (resp. de-quantization) step is done in the clear within the `forward` method, before (resp. after) any FHE computations.
 
 ## Simulated FHE Inference in the clear
 
-You can perform the inference on clear data in order to evaluate the impact of quantization and of FHE computation on the accuracy of their model. See [this section](../deep-learning/fhe_assistant.md#simulation) for more details.
+You can perform the inference on clear data in order to evaluate the impact of quantization and of FHE computation on the accuracy of their model. See [this section](../deep-learning/fhe_assistant.md#simulation) for more details. Two approaches exist:
 
-There are two approaches:
-
-- `quantized_module.forward(quantized_x, fhe="simulate")`: This method simulates FHE execution taking into account Table Lookup errors. De-quantization must be done in a second step as for actual FHE execution. Simulation takes into account the `p_error`/`global_p_error` parameters
-- `quantized_module.forward(quantized_x, fhe="disable")`: This method computes predictions in the clear on quantized data, and then de-quantize the result. The return value of this function contains the de-quantized (float) output of running the model in the clear. Calling this function on clear data is useful when debugging, but this does not perform actual FHE simulation.
+- `quantized_module.forward(quantized_x, fhe="simulate")`: simulates FHE execution taking into account Table Lookup errors.\
+  De-quantization must be done in a second step as for actual FHE execution. Simulation takes into account the `p_error`/`global_p_error` parameters
+- `quantized_module.forward(quantized_x, fhe="disable")`: computes predictions in the clear on quantized data, and then de-quantize the result. The return value of this function contains the de-quantized (float) output of running the model in the clear. Calling this function on clear data is useful when debugging, but this does not perform actual FHE simulation.
 
 {% hint style="info" %}
-FHE simulation allows to measure the impact of the Table Lookup error on the model accuracy. You can adjust the Table Lookup error using `p_error`/`global_p_error`, as described in the [approximate computation ](../explanations/advanced_features.md#approximate-computations)section.
+FHE simulation allows to measure the impact of the Table Lookup error on the model accuracy. The Table Lookup error can be adjusted using `p_error`/`global_p_error`, as described in the [approximate computation ](../explanations/advanced_features.md#approximate-computations)section.
 {% endhint %}
 
 ## Supported operators and activations

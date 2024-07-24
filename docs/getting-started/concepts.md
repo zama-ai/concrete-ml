@@ -14,8 +14,8 @@ With Concrete ML, you can train a model on clear or encrypted data, then deploy 
 
 1. **Quantization:** Quantization converts inputs, model weights, and all intermediate values of the inference computation to integer equivalents. More information is available [here](../explanations/quantization.md). Concrete ML performs this step in two ways depending on model type:
 
-   - During training (Quantization Aware Training): by adding quantization layers in the neural network model, weights can be forced to have discrete values and activation quantization parameters are optimized through gradient descent. QAT requires re-training a neural network with these quantization layers.
-   - After training (Post Training Quantization): the floating point neural network is kept as-is and a calibration step determines quantization parameters for each layer. No re-training is necessary and thus, no training data or labels are needed to convert a neural network to FHE using PTQ.
+   - During training (Quantization Aware Training)
+   - After training (Post-training Quantization)
 
 1. **Simulation:** Simulation allows you to execute a model that was quantized, to measure its accuracy in FHE, and to determine the modifications required to make it FHE compatible. Simulation is described in more detail [here](../explanations/compilation.md#fhe-simulation).
 

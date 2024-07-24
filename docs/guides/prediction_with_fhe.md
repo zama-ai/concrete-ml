@@ -1,19 +1,14 @@
 # Prediction with FHE
 
-This document explains how to perform encryption, execution, and decryption of Fully Homomorphic Encryption (FHE) using one function call of the Concrete ML API, or multiple function calls separately.
-
-The APIs are different for the following:
+Concrete ML has APIs that make it easy, during model development and testing, to perform encryption, execution in FHE, and decryption in a single step. For more control, these individual steps can be executed separately. The APIs used to accomplish this are different for:
 
 - [Built-in models](#built-in-models)
 - [Custom models](#custom-models)
 
 ## Built-in models
 
-### Using one function
-
-All Concrete ML built-in models have a single `predict` method that performs the encryption, FHE execution, and decryption with only one function call.
-
 The following example shows how to create a synthetic data-set and how to use it to train a LogisticRegression model from Concrete ML.
+Next, we will discuss the dedicated functions for encryption, inference, and decryption.
 
 ```python
 from sklearn.datasets import make_classification
@@ -38,7 +33,7 @@ y_pred_clear = model.predict(x_test)
 fhe_circuit = model.compile(x_train)
 ```
 
-Concrete ML models follow the same API as scikit-learn models, transparently performing the steps related to encryption for convenience.
+All Concrete ML built-in models have a monolithic `predict` method that performs the encryption, FHE execution, and decryption with a single function call. Concrete ML models follow the same API as scikit-learn models, transparently performing the steps related to encryption for convenience.
 
 <!--pytest-codeblocks:cont-->
 
@@ -49,9 +44,7 @@ y_pred_fhe = model.predict(x_test, fhe="execute")
 
 Regarding this LogisticRegression model, as with scikit-learn, it is possible to predict the logits as well as the class probabilities by respectively using the `decision_function` or `predict_proba` methods instead.
 
-### Using separate functions
-
-Alternatively, you can execute key generation, quantization, encryption, FHE execution and decryption separately.
+Alternatively, it is possible to execute all main steps (key generation, quantization, encryption, FHE execution, decryption) separately.
 
 <!--pytest-codeblocks:cont-->
 
@@ -96,7 +89,7 @@ print(f"Similarity: {int((y_pred_fhe_step == y_pred_clear).mean()*100)}%")
 
 ## Custom models
 
-For custom models, the API to execute inference in FHE or simulation is as follows:
+For custom models, the API to execute inference in FHE or simulation is illustrated as:
 
 <!--pytest-codeblocks:cont-->
 
