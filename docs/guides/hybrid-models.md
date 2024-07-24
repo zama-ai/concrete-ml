@@ -103,7 +103,7 @@ For more information about serving FHE models, see the [client/server section](c
 
 ## Client Side
 
-To develop a client application that deploys a model with hybrid deployment, follow a process similar to on-premise deployment. The model is loaded normally with PyTorch, but you need to specify the remote endpoint and the model parts to be executed remotely.
+You can develop a client application that deploys a model with hybrid deployment in a very similar manner to on-premise deployment: Use PyTorch to load the model normally, but specify the remote endpoint and the part of the model to be executed remotely.
 
 <!--pytest-codeblocks:skip-->
 
