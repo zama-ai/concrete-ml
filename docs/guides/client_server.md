@@ -115,7 +115,7 @@ The workflow contains the following steps:
 1. **Data encryption**: The private data is encrypted by the client as described in the `serialized_processing.json` file in `client.zip`.
 1. **Data transmission**: The encrypted data is sent to the server.
 1. **Encrypted inference**: Server-side, the FHE model inference is run on encrypted inputs using the public evaluation keys.
-1. **Data transmission**:The encrypted result is returned by the server to the client.
+1. **Data transmission**: The encrypted result is returned by the server to the client.
 1. **Data decryption**: The client decrypts it using its private key.
 1. **Post-processing**: The client performs any necessary post-processing of the decrypted result as specified in `serialized_processing.json` (part of `client.zip`).
 
