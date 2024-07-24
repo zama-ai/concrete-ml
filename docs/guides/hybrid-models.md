@@ -17,7 +17,7 @@ Hybrid models provide a balance between on-device deployment and cloud-based dep
 - Executing parts of the model on the client side.
 - Securely processing other parts with FHE on the server side.
 
-Concrete ML supports hybrid deployment for various neural network models, including Multilayer Perceptron (MLP), Convolutional Neural Network (CNN), and Large Language Models.
+Concrete ML supports hybrid deployment for various neural network models, including Multilayer Perceptron (MLP), Convolutional Neural Network (CNN), and Large Language Models(LLM).
 
 {% hint style="warning" %}
 To protect model IP, carefully choose the model parts to execute in the cloud. Some black-box model stealing attacks use knowledge distillation or differential methods. Generally, the difficulty of stealing a machine learning model increases with the model's size, number of parameters, and depth.
