@@ -1609,6 +1609,8 @@ class QuantizedDiv(QuantizedMixingOp):
         # we need to compute the quantizer of the divider since we are doing
         # an encrypted division where both numerator and denominator are encrypted
         if not self.can_fuse() and len(inputs) == 2:
+
+            # FIXME https://github.com/zama-ai/concrete-ml-internal/issues/4556
             min_non_zero_index = numpy.abs(inputs[1]).argmin(axis=None)
             min_non_zero_value = inputs[1].flat[min_non_zero_index]
 
@@ -1666,6 +1668,7 @@ class QuantizedDiv(QuantizedMixingOp):
         # Re-quantize the inverse using the same quantization parameters as q_input_1
         # mypy
         assert self.divider_quantizer is not None
+        # FIXME https://github.com/zama-ai/concrete-ml-internal/issues/4556
         q_input_1_inv_rescaled = self.divider_quantizer.quant(input_1_inv)
 
         # The product of quantized encrypted integer values
