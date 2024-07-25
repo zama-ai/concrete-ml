@@ -212,6 +212,9 @@
 # - mypy typing hints
 # - existing and new ops implementation in separate file
 
+import tempfile
+from pathlib import Path
+
 # Original file:
 # https://github.com/google/jax/blob/f6d329b2d9b5f83c6a59e5739aa1ca8d4d1ffa1c/examples/onnx2xla.py
 from typing import Any, Callable, Dict, Optional, Tuple
@@ -219,6 +222,7 @@ from typing import Any, Callable, Dict, Optional, Tuple
 import numpy
 import onnx
 from onnx import numpy_helper
+from onnx.external_data_helper import convert_model_to_external_data
 
 from .ops_impl import (
     numpy_abs,
@@ -566,3 +570,43 @@ def remove_initializer_from_input(model: onnx.ModelProto):  # pragma: no cover
             inputs.remove(name_to_input[initializer.name])
 
     return model
+
+
+def check_onnx_model(onnx_model: onnx.ModelProto) -> None:
+    """Check an ONNX model, handling large models (>2GB) by using external data.
+
+    Args:
+        onnx_model (onnx.ModelProto): The ONNX model to check.
+
+    Raises:
+        onnx.checker.ValidationError: If the model is invalid.
+    """
+    try:
+        # Try to check the model directly
+        onnx.checker.check_model(onnx_model)
+    except ValueError as e:
+        if "Message onnx.ModelProto exceeds maximum protobuf size of 2GB:" in str(e):
+
+            # If the model is too large, use external data approach
+            with tempfile.TemporaryDirectory() as temp_dir:
+                temp_dir_path = Path(temp_dir)
+                model_path = temp_dir_path / "model.onnx"
+                external_data_path = temp_dir_path / "model_data.bin"
+
+                # Save the model with external data
+                convert_model_to_external_data(
+                    onnx_model, all_tensors_to_one_file=True, location=external_data_path.name
+                )
+                onnx.save_model(
+                    onnx_model,
+                    str(model_path),
+                    save_as_external_data=True,
+                    all_tensors_to_one_file=True,
+                    location=external_data_path.name,
+                )
+
+                # Check the model using the file path
+                onnx.checker.check_model(str(model_path))
+        else:
+            # If it's a different error, re-raise it
+            raise

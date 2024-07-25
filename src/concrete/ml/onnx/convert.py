@@ -10,11 +10,12 @@ import numpy
 import onnx
 import onnxoptimizer
 import torch
-from onnx import checker, helper
+from onnx import helper
 
 from ..common.debugging import assert_true
 from .onnx_utils import (
     IMPLEMENTED_ONNX_OPS,
+    check_onnx_model,
     execute_onnx_with_numpy,
     execute_onnx_with_numpy_trees,
     get_op_type,
@@ -204,7 +205,7 @@ def preprocess_onnx_model(onnx_model: onnx.ModelProto, check_model: bool) -> onn
             stacklevel=2,
         )
 
-    checker.check_model(onnx_model)
+    check_onnx_model(onnx_model)
 
     # Optimize ONNX graph
     # List of all currently supported onnx optimizer passes
@@ -217,13 +218,13 @@ def preprocess_onnx_model(onnx_model: onnx.ModelProto, check_model: bool) -> onn
         "eliminate_unused_initializer",
     ]
     equivalent_onnx_model = onnxoptimizer.optimize(onnx_model, onnx_passes)
-    checker.check_model(equivalent_onnx_model)
+    check_onnx_model(equivalent_onnx_model)
 
     # Custom optimization
     # ONNX optimizer does not optimize Mat-Mult + Bias pattern into GEMM if the input isn't a matrix
     # We manually do the optimization for this case
     equivalent_onnx_model = fuse_matmul_bias_to_gemm(equivalent_onnx_model)
-    checker.check_model(equivalent_onnx_model)
+    check_onnx_model(equivalent_onnx_model)
 
     # Check supported operators
     required_onnx_operators = set(get_op_type(node) for node in equivalent_onnx_model.graph.node)
