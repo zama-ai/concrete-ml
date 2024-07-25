@@ -579,7 +579,7 @@ def check_onnx_model(onnx_model: onnx.ModelProto) -> None:
         onnx_model (onnx.ModelProto): The ONNX model to check.
 
     Raises:
-        onnx.checker.ValidationError: If the model is invalid.
+        ValueError: If the model is too large (>2GB) or if there's another ValueError.
     """
     try:
         # Try to check the model directly
@@ -607,6 +607,6 @@ def check_onnx_model(onnx_model: onnx.ModelProto) -> None:
 
                 # Check the model using the file path
                 onnx.checker.check_model(str(model_path))
-        else:
+        else:  # pragma: no cover
             # If it's a different error, re-raise it
             raise
