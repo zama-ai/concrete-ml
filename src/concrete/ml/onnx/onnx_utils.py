@@ -608,5 +608,5 @@ def check_onnx_model(onnx_model: onnx.ModelProto) -> None:
                 # Check the model using the file path
                 onnx.checker.check_model(str(model_path))
         else:  # pragma: no cover
-            # If it's a different error, re-raise it
+            # If it is a different error, re-raise it
             raise
