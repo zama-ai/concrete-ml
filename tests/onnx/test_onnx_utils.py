@@ -37,3 +37,6 @@ def test_check_onnx_model_large():
 
     # Our custom check_onnx_model should work fine
     check_onnx_model(model)
+
+    # Call check_onnx_model a second time to ensure the original model wasn't modified
+    check_onnx_model(model)

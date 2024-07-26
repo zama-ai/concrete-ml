@@ -581,13 +581,19 @@ def check_onnx_model(onnx_model: onnx.ModelProto) -> None:
     Raises:
         ValueError: If the model is too large (>2GB) or if there's another ValueError.
     """
+    # Create a copy of the input model
+    onnx_model_copy = onnx.ModelProto()
+    onnx_model_copy.CopyFrom(onnx_model)
+
     try:
-        # Try to check the model directly
-        onnx.checker.check_model(onnx_model)
+        # Try to check the model copy directly
+        onnx.checker.check_model(onnx_model_copy)
     except ValueError as e:
         error_message = str(e)
-        if ("Message onnx.ModelProto exceeds maximum protobuf size of 2GB:" in error_message or
-            "This protobuf of onnx model is too large (>2GB)" in error_message):
+        if (
+            "Message onnx.ModelProto exceeds maximum protobuf size of 2GB:" in error_message
+            or "This protobuf of onnx model is too large (>2GB)" in error_message
+        ):
 
             # If the model is too large, use external data approach
             with tempfile.TemporaryDirectory() as temp_dir:
@@ -595,12 +601,12 @@ def check_onnx_model(onnx_model: onnx.ModelProto) -> None:
                 model_path = temp_dir_path / "model.onnx"
                 external_data_path = temp_dir_path / "model_data.bin"
 
-                # Save the model with external data
+                # Save the model copy with external data
                 convert_model_to_external_data(
-                    onnx_model, all_tensors_to_one_file=True, location=external_data_path.name
+                    onnx_model_copy, all_tensors_to_one_file=True, location=external_data_path.name
                 )
                 onnx.save_model(
-                    onnx_model,
+                    onnx_model_copy,
                     str(model_path),
                     save_as_external_data=True,
                     all_tensors_to_one_file=True,
