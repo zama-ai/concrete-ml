@@ -1577,24 +1577,276 @@ class QuantizedOr(QuantizedOpUnivariateOfEncrypted, QuantizedOp):
     _impl_for_op_named: str = "Or"
 
 
-class QuantizedDiv(QuantizedOpUnivariateOfEncrypted, QuantizedOp):
-    """Div operator /.
+class QuantizedDiv(QuantizedMixingOp):
+    """Quantized Division operator.
 
-    This operation is not really working as a quantized operation. It just works when things got
-    fused, as in e.g., Act(x) = 1000 / (x + 42))
+    Can divide either two variables (both encrypted) or a variable and a constant
     """
 
     _impl_for_op_named: str = "Div"
 
+    def __init__(
+        self,
+        *args,
+        rounding_threshold_bits: Union[None, int, Dict[str, Union[str, int]]] = None,
+        **kwargs,
+    ) -> None:
+        super().__init__(*args, rounding_threshold_bits=rounding_threshold_bits, **kwargs)
+        self.divider_quantizer: Optional[UniformQuantizer] = None
+        self.min_non_zero_value: Optional[numpy.float64] = None
 
-class QuantizedMul(QuantizedOpUnivariateOfEncrypted, QuantizedOp):
-    """Multiplication operator.
+    def calibrate(self, *inputs: numpy.ndarray) -> numpy.ndarray:
+        """Create corresponding QuantizedArray for the output of the activation function.
 
-    Only multiplies an encrypted tensor with a float constant for now. This operation will
-    be fused to a (potentially larger) TLU.
+        Args:
+            *inputs (numpy.ndarray): Calibration sample inputs.
+
+        Returns:
+            numpy.ndarray: the output values for the provided calibration samples.
+        """
+
+        # If the op can not be fused and that the two inputs are not constants
+        # we need to compute the quantizer of the divider since we are doing
+        # an encrypted division where both numerator and denominator are encrypted
+        if not self.can_fuse() and len(inputs) == 2:
+
+            # FIXME https://github.com/zama-ai/concrete-ml-internal/issues/4556
+            min_non_zero_index = numpy.abs(inputs[1]).argmin(axis=None)
+            min_non_zero_value = inputs[1].flat[min_non_zero_index]
+
+            # mypy
+            assert min_non_zero_value is not None and min_non_zero_value != 0
+            self.min_non_zero_value = min_non_zero_value
+
+            q_array_divider = QuantizedArray(self.n_bits, 1 / inputs[1])
+
+            # Store the quantizer of the divider
+            self.divider_quantizer = q_array_divider.quantizer
+
+        return super().calibrate(*inputs)
+
+    def q_impl(
+        self,
+        *q_inputs: ONNXOpInputOutputType,
+        calibrate_rounding: bool = False,
+        **attrs,
+    ) -> ONNXOpInputOutputType:
+
+        # If the op can be fused we perform the op in the clear
+        if self.can_fuse():
+            return super().q_impl(*q_inputs, **attrs)
+
+        # For mypy
+        assert self.output_quant_params is not None
+        assert self.output_quant_params.scale is not None
+        assert self.output_quant_params.zero_point is not None
+
+        prepared_inputs = self._prepare_inputs_with_constants(
+            *q_inputs, calibrate=False, quantize_actual_values=True
+        )
+
+        q_input_0: QuantizedArray = prepared_inputs[0]
+        q_input_1: QuantizedArray = prepared_inputs[1]
+
+        assert q_input_0.quantizer.scale is not None
+        assert q_input_0.quantizer.zero_point is not None
+
+        assert q_input_1.quantizer.scale is not None
+        assert q_input_1.quantizer.zero_point is not None
+
+        # Dequantize
+        input_1 = q_input_1.dequant()
+
+        # Replace input_1 with min_non_zero_value if input_1 is 0
+        # mypy
+        assert self.min_non_zero_value is not None
+        input_1 = numpy.where(input_1 == 0, self.min_non_zero_value, input_1)
+
+        # Compute the inverse of input_1
+        input_1_inv = 1.0 / input_1
+
+        # Re-quantize the inverse using the same quantization parameters as q_input_1
+        # mypy
+        assert self.divider_quantizer is not None
+        # FIXME https://github.com/zama-ai/concrete-ml-internal/issues/4556
+        q_input_1_inv_rescaled = self.divider_quantizer.quant(input_1_inv)
+
+        # The product of quantized encrypted integer values
+        product_q_values = q_input_0.qvalues * q_input_1_inv_rescaled
+
+        # mypy
+        assert q_input_0.quantizer.zero_point is not None
+        assert q_input_1.quantizer.zero_point is not None
+        assert self.divider_quantizer.zero_point is not None
+
+        # Integer quantized multiplication need adjustment based on the zero points.
+        if q_input_0.quantizer.zero_point:
+            product_q_values -= q_input_0.quantizer.zero_point * (
+                q_input_1_inv_rescaled - self.divider_quantizer.zero_point
+            )
+        if self.divider_quantizer.zero_point:
+            product_q_values -= self.divider_quantizer.zero_point * (
+                q_input_0.qvalues - q_input_0.quantizer.zero_point
+            )
+
+        # mypy
+        assert self.divider_quantizer.scale is not None
+        assert self.divider_quantizer.zero_point is not None
+
+        # Compute the scale and zero point based on the scale and zero point
+        # of the two quantized values multiplied together
+        new_scale = q_input_0.quantizer.scale * self.divider_quantizer.scale
+        new_zero_point = q_input_0.quantizer.zero_point * self.divider_quantizer.zero_point
+
+        if self.produces_graph_output:
+            return self.make_output_quant_parameters(product_q_values, new_scale, new_zero_point)
+
+        with tag(self.op_instance_name + ".rounding"):
+            # Apply Concrete rounding (if relevant)
+            product_q_values = self.cnp_round(product_q_values, calibrate_rounding)
+
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4546
+        # De-quantize the product
+        dequant_product = (product_q_values - new_zero_point) * new_scale
+
+        # Return the raw float values without re-quantizing them to the new scale, as any
+        # following Gemm/Add/Conv will quantize them with _prepare_inputs_with_constants(...)
+        return QuantizedArray(
+            self.n_bits,
+            dequant_product,
+            value_is_float=True,
+            options=self._get_output_quant_opts(),
+            stats=self.output_quant_stats,
+            params=self.output_quant_params,
+        )
+
+    def can_fuse(self) -> bool:
+        """Determine if this op can be fused.
+
+        Div operation can be computed in float and fused if it operates over inputs produced
+        by a single integer tensor.
+
+        Returns:
+            bool: Whether the number of integer input tensors allows computing this op as a TLU
+        """
+
+        return len(self._int_input_names) == 1
+
+
+class QuantizedMul(QuantizedMixingOp):
+    """Quantized Multiplication operator.
+
+    Can multiply either two variables (both encrypted) or a variable and a constant
     """
 
     _impl_for_op_named: str = "Mul"
+
+    def q_impl(
+        self,
+        *q_inputs: ONNXOpInputOutputType,
+        calibrate_rounding: bool = False,
+        **attrs,
+    ) -> ONNXOpInputOutputType:
+
+        # If either input is a RawOpOutput or if the op can be fused,
+        # perform the op in the TLU using FP32
+        if (
+            len(q_inputs) == 1
+            or isinstance(q_inputs[0], RawOpOutput)
+            or isinstance(q_inputs[1], RawOpOutput)
+            or self.can_fuse()
+        ):
+            return super().q_impl(*q_inputs, **attrs)
+
+        # For mypy
+        assert self.output_quant_params is not None
+        assert self.output_quant_params.scale is not None
+        assert self.output_quant_params.zero_point is not None
+
+        prepared_inputs = self._prepare_inputs_with_constants(
+            *q_inputs, calibrate=False, quantize_actual_values=True
+        )
+
+        q_input_0: QuantizedArray = prepared_inputs[0]
+        q_input_1: QuantizedArray = prepared_inputs[1]
+
+        assert q_input_0.quantizer.scale is not None
+        assert q_input_0.quantizer.zero_point is not None
+
+        assert q_input_1.quantizer.scale is not None
+        assert q_input_1.quantizer.zero_point is not None
+
+        # Remove the manual encrypted multiplication when we
+        # can handle input precision with rounding
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4127
+        @univariate
+        def copy_function(x):
+            return x
+
+        input0_q_values = q_input_0.qvalues
+        input1_q_values = q_input_1.qvalues
+
+        with tag(self.op_instance_name + ".enc_mul_rounding_input0"):
+            input0_q_values = self.cnp_round(
+                input0_q_values, calibrate_rounding, rounding_operation_id="input0_q_values_copy"
+            )
+
+        with tag(self.op_instance_name + ".enc_mul_rounding_input1"):
+            input1_q_values = self.cnp_round(
+                input1_q_values, calibrate_rounding, rounding_operation_id="input1_q_values_copy"
+            )
+
+        input0_q_values = copy_function(input0_q_values)
+        input1_q_values = copy_function(input1_q_values)
+
+        # The product of quantized encrypted integer values
+        product_q_values = input0_q_values * input1_q_values
+
+        # Integer quantized multiplication need adjustment based on the zero points.
+        if q_input_0.quantizer.zero_point:
+            product_q_values -= q_input_0.quantizer.zero_point * input1_q_values
+        if q_input_1.quantizer.zero_point:
+            product_q_values -= q_input_1.quantizer.zero_point * input0_q_values
+
+        # Compute the scale and zero point based on the scale and zero point
+        # of the two quantized values multiplied together
+        new_scale = q_input_0.quantizer.scale * q_input_1.quantizer.scale
+        new_zero_point = q_input_0.quantizer.zero_point * q_input_1.quantizer.zero_point
+
+        if self.produces_graph_output:
+            return self.make_output_quant_parameters(product_q_values, new_scale, new_zero_point)
+
+        with tag(self.op_instance_name + ".rounding"):
+            # Apply Concrete rounding (if relevant)
+            product_q_values = self.cnp_round(
+                product_q_values, calibrate_rounding, rounding_operation_id="product_q_values"
+            )
+
+        # De-quantize the product
+        dequant_product = (product_q_values + new_zero_point) * new_scale
+
+        # Return the raw float values without re-quantizing them to the new scale, as any
+        # following Gemm/Add/Conv will quantize them with _prepare_inputs_with_constants(...)
+        return QuantizedArray(
+            self.n_bits,
+            dequant_product,
+            value_is_float=True,
+            options=self._get_output_quant_opts(),
+            stats=self.output_quant_stats,
+            params=self.output_quant_params,
+        )
+
+    def can_fuse(self) -> bool:
+        """Determine if this op can be fused.
+
+        Mul operation can be computed in float and fused if it operates over inputs produced
+        by a single integer tensor.
+
+        Returns:
+            bool: Whether the number of integer input tensors allows computing this op as a TLU
+        """
+
+        return len(self._int_input_names) == 1
 
 
 class QuantizedSub(QuantizedAdd):

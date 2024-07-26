@@ -257,6 +257,9 @@ class QuantizedOp:
             if attribute_name not in metadata:
                 metadata[attribute_name] = attribute_value
 
+        # Sort the metadata to be sure it is always saved in the same order
+        metadata = dict(sorted(metadata.items()))
+
         return metadata
 
     @staticmethod
