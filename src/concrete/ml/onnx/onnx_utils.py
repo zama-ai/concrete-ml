@@ -585,7 +585,9 @@ def check_onnx_model(onnx_model: onnx.ModelProto) -> None:
         # Try to check the model directly
         onnx.checker.check_model(onnx_model)
     except ValueError as e:
-        if "Message onnx.ModelProto exceeds maximum protobuf size of 2GB:" in str(e):
+        error_message = str(e)
+        if ("Message onnx.ModelProto exceeds maximum protobuf size of 2GB:" in error_message or
+            "This protobuf of onnx model is too large (>2GB)" in error_message):
 
             # If the model is too large, use external data approach
             with tempfile.TemporaryDirectory() as temp_dir:
