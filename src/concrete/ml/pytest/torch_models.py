@@ -1640,3 +1640,28 @@ class TorchMultiply(torch.nn.Module):
             torch.Tensor: The result of the multiplication.
         """
         return x * y
+
+
+class EmbeddingModel(nn.Module):
+    """A torch model with an embedding layer."""
+
+    def __init__(self, num_embeddings, embedding_dim, activation_function=nn.ReLU):
+        super().__init__()
+        self.embedding = nn.Embedding(num_embeddings, embedding_dim)
+        self.linear = nn.Linear(embedding_dim, embedding_dim)
+        self.relu = activation_function()
+
+    def forward(self, x):
+        """Forward pass.
+
+        Args:
+            x (torch.Tensor): The input tensor containing indices.
+
+        Returns:
+            torch.Tensor: The output tensor after embedding.
+        """
+        x = self.embedding(x)
+        x = self.linear(x)
+        x = self.relu(x)
+        x = self.linear(x)
+        return x

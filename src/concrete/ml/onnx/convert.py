@@ -11,8 +11,10 @@ import onnx
 import onnxoptimizer
 import torch
 from onnx import helper
+from typing_extensions import TypeAlias
 
 from ..common.debugging import assert_true
+from ..onnx.onnx_model_manipulations import convert_first_gather_to_matmul
 from .onnx_utils import (
     IMPLEMENTED_ONNX_OPS,
     check_onnx_model,
@@ -20,6 +22,11 @@ from .onnx_utils import (
     execute_onnx_with_numpy_trees,
     get_op_type,
 )
+
+NumpyForwardCallable: TypeAlias = Callable[..., Tuple[numpy.ndarray, ...]]
+ONNXAndNumpyForwards: TypeAlias = Tuple[
+    NumpyForwardCallable, Optional[onnx.ModelProto], NumpyForwardCallable, onnx.ModelProto
+]
 
 OPSET_VERSION_FOR_ONNX_EXPORT = 14
 
@@ -120,7 +127,7 @@ def get_equivalent_numpy_forward_from_torch(
     torch_module: torch.nn.Module,
     dummy_input: Union[torch.Tensor, Tuple[torch.Tensor, ...]],
     output_onnx_file: Union[None, Path, str] = None,
-) -> Tuple[Callable[..., Tuple[numpy.ndarray, ...]], onnx.ModelProto]:
+) -> ONNXAndNumpyForwards:
     """Get the numpy equivalent forward of the provided torch Module.
 
     Args:
@@ -132,9 +139,8 @@ def get_equivalent_numpy_forward_from_torch(
             Defaults to None.
 
     Returns:
-        Tuple[Callable[..., Tuple[numpy.ndarray, ...]], onnx.GraphProto]: The function that will
-            execute the equivalent numpy code to the passed torch_module and the generated ONNX
-            model.
+        ONNXAndNumpyForwards: The function that will execute the equivalent numpy code to the
+            passed torch_module and the generated ONNX model.
     """
     output_onnx_file_path = Path(
         tempfile.mkstemp(suffix=".onnx")[1] if output_onnx_file is None else output_onnx_file
@@ -165,20 +171,24 @@ def get_equivalent_numpy_forward_from_torch(
     if use_tempfile:
         output_onnx_file_path.unlink()
 
-    equivalent_numpy_forward, equivalent_onnx_model = get_equivalent_numpy_forward_from_onnx(
-        equivalent_onnx_model
+    numpy_preprocessing, onnx_preprocessing, equivalent_numpy_forward, equivalent_onnx_model = (
+        get_equivalent_numpy_forward_from_onnx(equivalent_onnx_model)
     )
     with output_onnx_file_path.open("wb") as file:
         file.write(equivalent_onnx_model.SerializeToString())
 
     return (
+        numpy_preprocessing,
+        onnx_preprocessing,
         equivalent_numpy_forward,
         equivalent_onnx_model,
     )
 
 
-def preprocess_onnx_model(onnx_model: onnx.ModelProto, check_model: bool) -> onnx.ModelProto:
-    """Get the numpy equivalent forward of the provided ONNX model.
+def preprocess_onnx_model(
+    onnx_model: onnx.ModelProto, check_model: bool
+) -> Tuple[Optional[onnx.ModelProto], onnx.ModelProto]:
+    """Preprocess the ONNX model to be used for numpy execution.
 
     Args:
         onnx_model (onnx.ModelProto): the ONNX model for which to get the equivalent numpy
@@ -191,7 +201,9 @@ def preprocess_onnx_model(onnx_model: onnx.ModelProto, check_model: bool) -> onn
             model to numpy.
 
     Returns:
-        onnx.ModelProto: The preprocessed ONNX model.
+        Tuple[Optional[onnx.ModelProto], onnx.ModelProto]: The preprocessing ONNX model and
+            preprocessed ONNX model. The preprocessing model is None if there is no preprocessing
+            required.
     """
 
     # All onnx models should be checked, "check_model" parameter must be removed
@@ -236,13 +248,21 @@ def preprocess_onnx_model(onnx_model: onnx.ModelProto, check_model: bool) -> onn
             f"Available ONNX operators: {', '.join(sorted(IMPLEMENTED_ONNX_OPS))}"
         )
 
-    return equivalent_onnx_model
+    # Convert the first Gather node to a matrix multiplication with one-hot encoding
+    # In FHE, embedding is either a TLU or a matmul with a one-hot.
+    # The second case allows for leveled operation thus much faster.
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4532
+    onnx_preprocessing, equivalent_onnx_model = convert_first_gather_to_matmul(
+        equivalent_onnx_model
+    )
+
+    return onnx_preprocessing, equivalent_onnx_model
 
 
 def get_equivalent_numpy_forward_from_onnx(
     onnx_model: onnx.ModelProto,
     check_model: bool = True,
-) -> Tuple[Callable[..., Tuple[numpy.ndarray, ...]], onnx.ModelProto]:
+) -> ONNXAndNumpyForwards:
     """Get the numpy equivalent forward of the provided ONNX model.
 
     Args:
@@ -252,23 +272,39 @@ def get_equivalent_numpy_forward_from_onnx(
             Defaults to True.
 
     Returns:
-        Callable[..., Tuple[numpy.ndarray, ...]]: The function that will execute
-            the equivalent numpy function.
+        ONNXAndNumpyForwards: The function that will execute the equivalent numpy function.
     """
 
-    equivalent_onnx_model = preprocess_onnx_model(onnx_model, check_model)
+    onnx_preprocessing, equivalent_onnx_model = preprocess_onnx_model(onnx_model, check_model)
+
+    def create_numpy_forward(model: Optional[onnx.ModelProto]) -> NumpyForwardCallable:
+        """Create numpy forward function.
+
+        Args:
+            model (onnx.ModelProto): The ONNX model to execute.
+
+        Returns:
+            NumpyForwardCallable: The numpy equivalent of the ONNX model.
+        """
+        if model is None:
+            # Return the inputs as is
+            return lambda *args: args
+        return lambda *args: execute_onnx_with_numpy(model.graph, *args)
 
     # Return lambda of numpy equivalent of onnx execution
     return (
-        lambda *args: execute_onnx_with_numpy(equivalent_onnx_model.graph, *args)
-    ), equivalent_onnx_model
+        create_numpy_forward(onnx_preprocessing),
+        onnx_preprocessing,
+        create_numpy_forward(equivalent_onnx_model),
+        equivalent_onnx_model,
+    )
 
 
 def get_equivalent_numpy_forward_from_onnx_tree(
     onnx_model: onnx.ModelProto,
     check_model: bool = True,
     lsbs_to_remove_for_trees: Optional[Tuple[int, int]] = None,
-) -> Tuple[Callable[..., Tuple[numpy.ndarray, ...]], onnx.ModelProto]:
+) -> Tuple[NumpyForwardCallable, onnx.ModelProto]:
     """Get the numpy equivalent forward of the provided ONNX model for tree-based models only.
 
     Args:
@@ -283,11 +319,11 @@ def get_equivalent_numpy_forward_from_onnx_tree(
             comparison operation. Default to None, as it is not applicable to other types of models.
 
     Returns:
-        Tuple[Callable[..., Tuple[numpy.ndarray, ...]], onnx.ModelProto]: The function that will
+        Tuple[NumpyForwardCallable, onnx.ModelProto]: The function that will
             execute the equivalent numpy function.
     """
 
-    equivalent_onnx_model = preprocess_onnx_model(onnx_model, check_model)
+    _, equivalent_onnx_model = preprocess_onnx_model(onnx_model, check_model)
 
     # Return lambda of numpy equivalent of onnx execution
     return (

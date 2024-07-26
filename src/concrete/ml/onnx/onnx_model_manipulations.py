@@ -1,7 +1,7 @@
 """Some code to manipulate models."""
 
 from copy import deepcopy
-from typing import Iterable, List
+from typing import Iterable, List, Optional, Tuple
 
 import onnx
 
@@ -289,3 +289,104 @@ def _clean_graph_at_node_name(
 
     # Keep the output node
     keep_following_outputs_discard_others(onnx_model, [output_to_follow])
+
+
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4532
+# Function to convert the first Gather nodes
+# to matrix multiplications with one-hot encoding as a pre-processing step
+def convert_first_gather_to_matmul(
+    onnx_model: onnx.ModelProto,
+) -> Tuple[Optional[onnx.ModelProto], onnx.ModelProto]:
+    """Convert the first Gather node to a matrix multiplication node.
+
+    In FHE, Gather is a costly operation since it can involve many PBS.
+    When it appears first in the onnx model, we can remove it and replace it by a matrix
+    multiplication node by converting the indices to a one-hot encoding.
+
+    Args:
+        onnx_model (onnx.ModelProto): The onnx model.
+
+    Returns:
+        Tuple[Optional[onnx.ModelProto], onnx.ModelProto]: The pre-processing model and the modified
+            onnx model.
+    """
+    pre_processing_nodes = []
+    modified = False
+    depth_tensors = []
+    gather_depths = {}
+
+    for node in onnx_model.graph.node:
+        if node.op_type == "Gather" and node.input[1] in [
+            input.name for input in onnx_model.graph.input
+        ]:
+            # Extract the inputs and output of the Gather node
+            data_input = node.input[0]
+            indices_input = node.input[1]
+            gather_output = node.output[0]
+
+            # Find the shape of the data_input (embedding matrix)
+            data_shape_initializer = next(
+                (init for init in onnx_model.graph.initializer if init.name == data_input), None
+            )
+            assert data_shape_initializer is not None, f"Shape of {data_input} not found"
+
+            # Extract the depth arg for the OneHot node using the embedding matrix
+            depth = data_shape_initializer.dims[0]
+            depth_name = f"depth_{node.name}"
+            gather_depths[node.name] = depth
+
+            # Create a node for OneHot operation
+            pre_processed_x = f"pre_processed_{indices_input}"
+            pre_processing_nodes.append(
+                onnx.helper.make_node(
+                    "OneHot",
+                    inputs=[indices_input, depth_name, "values"],
+                    outputs=[pre_processed_x],
+                )
+            )
+
+            # Store the depth tensor for this Gather node
+            depth_tensor = onnx.helper.make_tensor(depth_name, onnx.TensorProto.INT64, [1], [depth])
+            depth_tensors.append(depth_tensor)
+
+            # Replace Gather node with MatMul node
+            matmul_node = onnx.helper.make_node(
+                "MatMul", inputs=[indices_input, data_input], outputs=[gather_output]
+            )
+            onnx_model.graph.node.remove(node)
+
+            # Insert the new node at the beginning of the graph
+            onnx_model.graph.node.insert(0, matmul_node)
+            modified = True
+
+    if not modified:
+        return None, onnx_model
+
+    # Create a tensor for the values of the OneHot node
+    values_tensor = onnx.helper.make_tensor("values", onnx.TensorProto.FLOAT, [2], [0.0, 1.0])
+
+    # Create pre-processing graph
+    pre_processing_graph = onnx.helper.make_graph(
+        pre_processing_nodes,
+        "pre_processing_graph",
+        [
+            onnx.helper.make_tensor_value_info(node.input[0], onnx.TensorProto.INT64, [None])
+            for node in pre_processing_nodes
+        ],
+        [
+            onnx.helper.make_tensor_value_info(
+                node.output[0], onnx.TensorProto.FLOAT, [None, depth]
+            )
+            for node, depth in zip(pre_processing_nodes, gather_depths.values())
+        ],
+        depth_tensors + [values_tensor],
+    )
+
+    pre_processing_onnx = onnx.helper.make_model(
+        pre_processing_graph, opset_imports=[onnx.helper.make_opsetid("", 14)]
+    )
+
+    # Check the pre-processing onnx
+    onnx.checker.check_model(pre_processing_onnx)
+
+    return pre_processing_onnx, onnx_model

@@ -28,6 +28,7 @@ from ..common.utils import (
     manage_parameters_for_pbs_errors,
     to_tuple,
 )
+from ..torch.numpy_module import NumpyModule
 from .base_quantized_op import ONNXOpInputOutputType, QuantizedOp
 from .quantized_ops import QuantizedReduceSum
 from .quantizers import QuantizedArray, UniformQuantizer
@@ -81,6 +82,7 @@ def _get_inputset_generator(q_inputs: Union[numpy.ndarray, Tuple[numpy.ndarray, 
     return (numpy.expand_dims(q_input, 0) for q_input in q_inputs[0])
 
 
+# pylint: disable=too-many-instance-attributes
 class QuantizedModule:
     """Inference for a quantized model."""
 
@@ -97,6 +99,7 @@ class QuantizedModule:
         ordered_module_output_names: Optional[Iterable[str]] = None,
         quant_layers_dict: Optional[Dict[str, Tuple[Tuple[str, ...], QuantizedOp]]] = None,
         onnx_model: Optional[onnx.ModelProto] = None,
+        onnx_preprocessing: Optional[onnx.ModelProto] = None,
     ):
 
         all_or_none_params = [
@@ -142,6 +145,14 @@ class QuantizedModule:
         # Input-output quantizer mapping for composition is not enabled at initialization
         self._composition_mapping: Optional[Dict] = None
 
+        # Initialize _preprocessing_module
+        # The onnx graph is used to pre-process the inputs before FHE execution
+        self._preprocessing_module = NumpyModule(onnx_preprocessing) if onnx_preprocessing else None
+
+        # Ensure that there is no preprocessing step
+        if self._preprocessing_module is not None:
+            assert_true(self._preprocessing_module.onnx_preprocessing is None)
+
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4127
     def set_reduce_sum_copy(self):
         """Set reduce sum to copy or not the inputs.
@@ -170,6 +181,9 @@ class QuantizedModule:
         metadata["ordered_module_input_names"] = self.ordered_module_input_names
         metadata["ordered_module_output_names"] = self.ordered_module_output_names
         metadata["quant_layers_dict"] = self.quant_layers_dict
+        metadata["onnx_preprocessing"] = (
+            self._preprocessing_module.onnx_model if self._preprocessing_module else None
+        )
 
         return metadata
 
@@ -195,6 +209,10 @@ class QuantizedModule:
         obj.ordered_module_input_names = metadata["ordered_module_input_names"]
         obj.ordered_module_output_names = metadata["ordered_module_output_names"]
         obj.quant_layers_dict = metadata["quant_layers_dict"]
+        obj._preprocessing_module = (
+            NumpyModule(metadata["onnx_preprocessing"]) if metadata["onnx_preprocessing"] else None
+        )
+
         # pylint: enable=protected-access
 
         return obj
@@ -270,6 +288,21 @@ class QuantizedModule:
             Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]: The post-processed values.
         """
         return values[0] if len(values) == 1 else values
+
+    def pre_processing(self, *values: numpy.ndarray) -> Tuple[numpy.ndarray, ...]:
+        """Apply pre-processing to the input values.
+
+        Args:
+            values (numpy.ndarray): The input values to pre-process.
+
+        Returns:
+            Tuple[numpy.ndarray, ...]: The pre-processed values.
+        """
+
+        if self._preprocessing_module is not None:
+            return to_tuple(self._preprocessing_module(*values))
+
+        return values
 
     def _set_output_quantizers(self) -> List[UniformQuantizer]:
         """Get the output quantizers.
@@ -414,6 +447,9 @@ class QuantizedModule:
             "'simulate' (resp. FheMode.SIMULATE) or 'execute' (resp. FheMode.EXECUTE). Got "
             f"{fhe}",
         )
+
+        # Pre-process input
+        x = self.pre_processing(*x)
 
         # Make sure that the inputs are floating points
         assert_true(
@@ -800,6 +836,9 @@ class QuantizedModule:
         """
         inputs = to_tuple(inputs)
 
+        # Apply pre_processing
+        inputs = self.pre_processing(*inputs)
+
         ref_len = inputs[0].shape[0]
         assert_true(
             all(input.shape[0] == ref_len for input in inputs),
@@ -809,7 +848,7 @@ class QuantizedModule:
         assert not numpy.any(
             numpy.array([numpy.issubdtype(input.dtype, numpy.integer) for input in inputs])
         ), (
-            "Inputs used for compiling a QuantizedModule should only be floating points and not"
+            "Inputs used for compiling a QuantizedModule should only be floating points and not "
             "already-quantized values."
         )
 

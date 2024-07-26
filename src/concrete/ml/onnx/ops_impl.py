@@ -2209,3 +2209,59 @@ def numpy_unfold(
     res = res.reshape((res.shape[0], res.shape[1], -1))
 
     return (res,)
+
+
+@onnx_func_raw_args("depth")
+def numpy_onehot(
+    indices: numpy.ndarray,
+    depth: Union[int, numpy.ndarray],
+    values: numpy.ndarray,
+    *,
+    axis: int = -1,
+) -> Tuple[numpy.ndarray]:
+    """Compute OneHot in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Operators.md#OneHot
+
+    Args:
+        indices (numpy.ndarray): Input tensor containing indices.
+        depth (Union[int, numpy.ndarray]): Scalar or 1D tensor with one element,
+            specifying the number of classes in one-hot tensor.
+        values (numpy.ndarray): Rank 1 tensor containing exactly two elements:
+            [off_value, on_value].
+        axis (int): Axis along which one-hot representation is added.
+            Defaults to -1 (last dimension).
+
+    Returns:
+        Tuple[numpy.ndarray]: One-hot encoded tensor.
+
+    """
+
+    # Ensure indices are integers
+    assert_true(numpy.all(indices % 1 == 0), "Indices must be integers")
+    indices = numpy.asarray(indices).astype(numpy.int64)
+
+    # Ensure depth is an integer
+    assert_true(numpy.all(depth % 1 == 0), "Depth must be an integer")
+    depth = int(numpy.asarray(depth).item())
+
+    # Clip indices to valid range
+    indices = numpy.clip(indices, -depth, depth - 1)
+
+    # Create the output shape
+    output_shape = list(indices.shape)
+    output_shape.insert(axis if axis >= 0 else len(output_shape) + 1 + axis, depth)
+
+    # Create a zero matrix
+    one_hot = numpy.zeros(output_shape, dtype=values.dtype)
+
+    # Create an array of indices for all dimensions
+    idx = list(numpy.indices(indices.shape))
+    idx.insert(axis if axis >= 0 else len(idx) + 1 + axis, indices)
+
+    # Set the on_value at the appropriate indices
+    one_hot[tuple(idx)] = 1
+
+    # Scale the one-hot encoded array using the provided values
+    off_value, on_value = values
+    return ((one_hot * (on_value - off_value) + off_value),)

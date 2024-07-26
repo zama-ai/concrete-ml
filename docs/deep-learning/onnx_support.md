@@ -127,6 +127,7 @@ Concrete ML supports the following operators for evaluation and conversion to an
 - Mul
 - Neg
 - Not
+- OneHot
 - Or
 - PRelu
 - Pad

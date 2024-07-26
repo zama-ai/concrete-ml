@@ -17,6 +17,7 @@ from skorch.dataset import ValidSplit
 
 from concrete import fhe
 
+from ...common.utils import Exactness
 from . import USE_SKOPS
 
 # If USE_SKOPS is False or Skops can't be imported, default to pickle
@@ -213,6 +214,9 @@ class ConcreteEncoder(JSONEncoder):
 
         if isinstance(o, tuple):
             return dump_name_and_value("tuple", list(o))
+
+        if isinstance(o, Exactness):
+            return dump_name_and_value("Exactness", o.value)
 
         # Dump the numpy integer value along its dtype
         if isinstance(o, numpy.integer):
