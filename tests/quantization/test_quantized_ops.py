@@ -318,6 +318,7 @@ ARITH_N_BITS_LIST = [20, 16, 8]
     ],
 )
 @pytest.mark.parametrize("is_signed", IS_SIGNED)
+# pylint: disable-next=too-many-arguments
 def test_all_arith_ops(
     operator: QuantizedOp,
     supports_enc_with_enc: bool,
