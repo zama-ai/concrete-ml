@@ -802,9 +802,10 @@ run_all_use_case_examples:
 check_utils_use_case:
 	./script/make_utils/check_utils_in_use_case.sh
 
+# This command does not use a make script because of obscure import issues with Skops on macOS
 .PHONY: update_encrypted_dataframe # Update encrypted data-frame's development files
 update_encrypted_dataframe:
-	poetry run python ./script/make_utils/update_encrypted_dataframe_files.py
+	poetry run python ./src/concrete/ml/pandas/_development.py
 
 .PHONY: check_symlinks # Check that no utils.py are found in use_case_examples
 check_symlinks:
