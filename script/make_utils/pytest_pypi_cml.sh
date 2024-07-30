@@ -68,20 +68,16 @@ else
     fi
 fi
 
-# If codeblocks are checked, install the pytest codeblock plugin first
 if ${TEST_CODEBLOCKS}; then
-    python -m pip install pytest-codeblocks==0.14.0
-
     ./script/make_utils/pytest_codeblocks.sh
 
 # Else, if flaky should not be considered, run 'pytest_no_flaky'
 elif ${NO_FLAKY}; then
     make pytest_no_flaky
 
-# Else, intall the pytest coverage plugin and run 'pytest_internal_parallel' (instead of `pytest`
-# since we don't want to check for coverage here)
+# Else, run 'pytest_internal_parallel' (instead of `pytest` since we don't want to check for 
+# coverage here)
 else
-    python -m pip install pytest-cov==4.1.0
     make pytest_internal_parallel
 fi
 
