@@ -16,17 +16,6 @@ POETRY_VERSION:=1.7.1
 APIDOCS_OUTPUT?="./docs/references/api"
 OPEN_PR="true"
 
-# Force the installation of a Concrete Python version, which is very useful with nightly versions
-# /!\ WARNING /!\: This version should NEVER be a wildcard as it might create some
-# issues when trying to run it in the future.
-CONCRETE_PYTHON_VERSION="concrete-python==2.7.0.dev20240731"
-
-# Force the installation of Concrete Python's latest version, release-candidates included
-# CONCRETE_PYTHON_VERSION="$$(poetry run python \
-# ./script/make_utils/pyproject_version_parser_helper.py \
-# --pyproject-toml-file pyproject.toml \
-# --get-pip-install-spec-for-dependency concrete-python)"
-
 # At the end of the command, we currently need to force an 'import skorch' in Python in order to 
 # avoid an obscure bug that led to all pytest commands to fail when installing dependencies with 
 # Poetry >= 1.3. It is however not very clear how this import fixes the issue, as the bug was 
@@ -53,8 +42,6 @@ setup_env:
 	fi
 	echo "Finished installing poetry lock."
 
-	echo "Installing $(CONCRETE_PYTHON_VERSION)" && \
-	poetry run python -m pip install -U --pre --extra-index-url https://pypi.zama.ai/cpu "$(CONCRETE_PYTHON_VERSION)"
 	"$(MAKE)" fix_omp_issues_for_intel_mac
 	poetry run python -c "import skorch" || true # Details above
 	poetry run python -c "from brevitas.core.scaling import AccumulatorAwareParameterPreScaling" || true # Details above
@@ -566,17 +553,16 @@ show_commit_rules:
 
 .PHONY: licenses # Generate the list of licenses of dependencies
 licenses:
-	./script/make_utils/licenses.sh --cp_version "$(CONCRETE_PYTHON_VERSION)"
+	./script/make_utils/licenses.sh
 
 .PHONY: force_licenses # Generate the list of licenses of dependencies (force the regeneration)
 force_licenses:
-	./script/make_utils/licenses.sh --cp_version "$(CONCRETE_PYTHON_VERSION)" --force_update
+	./script/make_utils/licenses.sh --force_update
 
 .PHONY: check_licenses # Check if the licenses of dependencies have changed
 check_licenses:
 	@TMP_OUT="$$(mktemp)" && \
-	if ! poetry run env bash ./script/make_utils/licenses.sh --check \
-		--cp_version "$(CONCRETE_PYTHON_VERSION)" > "$${TMP_OUT}"; then \
+	if ! poetry run env bash ./script/make_utils/licenses.sh --check > "$${TMP_OUT}"; then \
 		cat "$${TMP_OUT}"; \
 		rm -f "$${TMP_OUT}"; \
 		echo "Error while checking licenses, see log above."; \
