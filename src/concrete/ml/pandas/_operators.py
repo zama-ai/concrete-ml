@@ -6,6 +6,7 @@ import numpy
 import pandas
 from concrete.fhe import Server
 from pandas.core.reshape.merge import _MergeOperation
+from ._development import API_VERSION_SPECS, CURRENT_API_VERSION
 
 # List of Pandas parameters per operator that are not currently supported
 UNSUPPORTED_PANDAS_PARAMETERS = {
@@ -207,7 +208,8 @@ def encrypted_left_right_join(
                 # In practice, keys only match once throughout this very loop as keys are assumed to
                 # be unique on both data-frames.
                 right_value_to_join = server.run(
-                    *merge_inputs, evaluation_keys=left_encrypted.evaluation_keys
+                    *merge_inputs, evaluation_keys=left_encrypted.evaluation_keys,
+                    function_name=API_VERSION_SPECS[CURRENT_API_VERSION]["join_function"]
                 )
 
             right_row_to_join.append(right_value_to_join)

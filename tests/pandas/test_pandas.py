@@ -16,7 +16,8 @@ import concrete.ml.pandas
 from concrete.ml.pandas import ClientEngine, load_encrypted_dataframe
 from concrete.ml.pandas._development import CLIENT_PATH, get_min_max_allowed, save_client_server
 from concrete.ml.pytest.utils import pandas_dataframe_are_equal
-
+from concrete.ml.sklearn import SGDClassifier
+from io import StringIO
 
 def generate_pandas_dataframe(
     dtype: str = "mixed",
@@ -804,3 +805,62 @@ def check_invalid_schema_values():
         match="String mapping values for column '.*' must be unique.*",
     ):
         client.encrypt_from_pandas(pandas_df, schema=schema_string_non_unique)
+
+
+@pytest.mark.parametrize("as_method", [True, False])
+@pytest.mark.parametrize("how", ["left", "right"])
+@pytest.mark.parametrize("selected_column", ["index", None])
+def test_merge_and_logistic_train(as_method, how, selected_column):
+    """Test that the encrypted merge operator is equivalent to Pandas' merge."""
+    pandas_kwargs = {"how": how, "on": selected_column}
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        keys_path = Path(temp_dir) / "keys"
+
+        client_1 = ClientEngine(keys_path=keys_path)
+        client_2 = ClientEngine(keys_path=keys_path)
+
+    df_right = """index,key,val1,label
+    2,10,0.1,class1
+    5,7,0.8,class0
+    9,1,0.5,class1"""
+
+    df_left = """index,key,val2,
+    2,1,0.005
+    5,7,-1.0
+    9,11,-0.5"""
+    
+    schema1 = {
+        "val2": {"min": -1, "max": 1 }
+    }
+
+    schema2 = {
+        "val1": {"min": -1, "max": 1 }
+    }
+
+    pandas_df_left =  pandas.read_csv(StringIO(df_left))
+    encrypted_df_left = client_1.encrypt_from_pandas(pandas_df_left, schema=schema1)
+
+    pandas_df_right = pandas.read_csv(StringIO(df_right))
+    encrypted_df_right = client_2.encrypt_from_pandas(pandas_df_right, schema=schema2)
+
+    # If we test the '.merge' method
+    if as_method:
+        pandas_joined_df = pandas_df_left.merge(pandas_df_right, **pandas_kwargs)
+        encrypted_df_joined = encrypted_df_left.merge(encrypted_df_right, **pandas_kwargs)
+
+    else:
+        pandas_joined_df = pandas.merge(pandas_df_left, pandas_df_right, **pandas_kwargs)
+        encrypted_df_joined = concrete.ml.pandas.merge(
+            encrypted_df_left, encrypted_df_right, **pandas_kwargs
+        )
+
+
+#    encrypted_df_joined = client_1.encrypt_from_pandas(pandas_joined_df)
+
+    logreg = SGDClassifier(fit_encrypted=True, parameters_range=[-1, 1])
+    
+    df_X = encrypted_df_joined.filter(items=['val1', 'val2'])
+    df_y = encrypted_df_joined['label']
+        
+    logreg.fit(df_X, df_y, fhe="execute")

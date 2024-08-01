@@ -359,3 +359,36 @@ class EncryptedDataFrame:
                 evaluation_keys = evaluation_keys_file.read()
 
         return cls._from_dict_and_eval_keys(encrypted_df_dict, evaluation_keys)
+
+    def filter(self, items=None, like=None, regex=None, axis=None):
+        assert axis == 1 or axis is None
+        assert regex is None
+
+        filt_cols = items if items is not None else list([col for col in self._column_names if like in col])
+        filt_col_indices = list(map(lambda c : self._column_names_to_position[c], filt_cols))
+
+        return EncryptedDataFrame(
+            self._encrypted_values[:, filt_col_indices],
+            self._encrypted_nan,
+            self.evaluation_keys,
+            [self._column_names[idx] for idx in filt_col_indices],
+            {c: self._dtype_mappings[c] for c in filt_cols},
+            api_version=self._api_version
+        )
+
+    def __getitem__(self, key):
+        idx_col = self._column_names_to_position[key]
+
+        return EncryptedDataFrame(
+            self._encrypted_values[:, idx_col],
+            self._encrypted_nan,
+            self.evaluation_keys,
+            [self._column_names[idx_col]],
+            {key: self._dtype_mappings[key]},
+            api_version=self._api_version
+        )
+
+
+    @property
+    def shape(self):
+        return self._encrypted_values.shape

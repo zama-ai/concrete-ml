@@ -1,7 +1,8 @@
 """Utility functions for FHE training."""
 
-from typing import Tuple
 import itertools
+from typing import Tuple
+
 import numpy
 import torch
 from torch.nn.functional import binary_cross_entropy_with_logits
@@ -19,6 +20,7 @@ def binary_cross_entropy(y_true: numpy.ndarray, logits: numpy.ndarray):
     """
     return binary_cross_entropy_with_logits(torch.Tensor(logits), torch.Tensor(y_true)).item()
 
+
 def make_training_inputset(x_min, x_max, param_min, param_max, batch_size, fit_intercept):
     """Get the quantized module for FHE training.
 
@@ -31,7 +33,7 @@ def make_training_inputset(x_min, x_max, param_min, param_max, batch_size, fit_i
     Returns:
         (QuantizedModule): The quantized module containing the FHE circuit for training.
     """
-    
+
     combinations = list(
         itertools.product(
             [1.0, 0.0],  # Labels

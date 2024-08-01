@@ -8,14 +8,18 @@ from typing import Any, Dict, Optional, Tuple, Union
 import numpy
 import sklearn.linear_model
 from concrete.fhe import Configuration
-from concrete.fhe import Value as EncryptedValue
+from concrete.fhe import Value as EncryptedValue, Client as Client
 from sklearn.preprocessing import LabelEncoder
 
 from ..common.utils import FheMode
 from ..onnx.ops_impl import numpy_sigmoid
 from ..quantization import QuantizedModule
 from ..torch.compile import _compile_torch_or_onnx_model
-from ._fhe_training_utils import LogisticRegressionTraining, binary_cross_entropy, make_training_inputset
+from ..common._fhe_training_utils import (
+    LogisticRegressionTraining,
+    binary_cross_entropy,
+    make_training_inputset,
+)
 from .base import (
     Data,
     SklearnLinearClassifierMixin,
@@ -24,7 +28,8 @@ from .base import (
     SklearnSGDRegressorMixin,
     Target,
 )
-
+from ..pandas import EncryptedDataFrame
+from ..pandas._development import N_BITS_PANDAS, CURRENT_API_VERSION, API_VERSION_SPECS
 
 # pylint: disable=invalid-name,too-many-instance-attributes,too-many-lines
 class LinearRegression(SklearnLinearRegressorMixin):
@@ -301,7 +306,14 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         # Compile and return the training quantized module
         # 54 = 2 classes * 3 values for x * 2 values for the weights * 2 values for the bias
         # Number of combination of extreme values
-        compile_set = make_training_inputset(x_min, x_max, self.parameters_range[0], self.parameters_range[1], self.batch_size, self.fit_intercept)
+        compile_set = make_training_inputset(
+            x_min,
+            x_max,
+            self.parameters_range[0],
+            self.parameters_range[1],
+            self.batch_size,
+            self.fit_intercept,
+        )
 
         # Instantiate the LogisticRegressor model
         trainer = LogisticRegressionTraining(
@@ -452,6 +464,35 @@ class SGDClassifier(SklearnSGDClassifierMixin):
                 f"enabled. Got {y.shape}"
             )
 
+        fit_encrypted_dataframe = False
+        if isinstance(X, EncryptedDataFrame) != isinstance(y, EncryptedDataFrame):
+            raise ValueError("When calling .fit on EncryptedDataFrame, both X and"
+                "y must be an EncryptedDataFrame"
+            )
+
+        if isinstance(X, EncryptedDataFrame):
+            if fhe != FheMode.EXECUTE:
+                raise ValueError("When calling .fit on EncryptedDataFrame, "
+                    "only fhe=execute is supported"
+                )
+
+            X_schema = X.get_schema()
+            all_cols_are_float = all([X_schema[col]['dtype'] == "float64" for col in X_schema])
+            if not all_cols_are_float:
+                raise ValueError("When calling .fit on EncryptedDataFrame, "
+                    "the training data, X, can only have floating point columns"
+                )
+
+            y_schema = y.get_schema()
+            y_meta = y_schema[y_schema.columns[0]]
+            labels_are_str = y_meta['dtype'] == "object" and 'str_to_int' in y_meta
+            if not labels_are_str:
+                raise ValueError("When calling .fit on EncryptedDataFrame, "
+                    "the training labels, y, can only be of the string enum type"
+                )
+
+            fit_encrypted_dataframe = True
+
         if classes is not None and self.classes_ is not None:
             if len(numpy.setxor1d(classes, self.classes_)) > 0:
                 raise ValueError(
@@ -476,6 +517,10 @@ class SGDClassifier(SklearnSGDClassifierMixin):
             if is_partial_fit and self.training_quantized_module is None and classes is None:
                 raise ValueError("classes must be passed on the first call to partial_fit.")
 
+            if fit_encrypted_dataframe and classes is None:
+                schema = y.get_schema()
+                classes = list(schema[schema.columns[0]]['str_to_int'].values())
+                
             if classes is None:
                 self.label_encoder = LabelEncoder()
                 self.label_encoder.fit(y)
@@ -497,21 +542,42 @@ class SGDClassifier(SklearnSGDClassifierMixin):
                     f"enabled. Got {len(self.classes_)} labels: {self.classes_}."
                 )
 
-            # Get the inputs' extreme values
-            x_min, x_max = X.min(axis=0), X.max(axis=0)
+            if fit_encrypted_dataframe:
+                X_schema = X.get_schema()
+                scales = [X_schema[c]["scale"] for c in X_schema]
+                zps = [X_schema[c]["zero_point"]  for c in X_schema]
 
-            # Build and compile the training quantized module
-            self.training_quantized_module = self._get_training_quantized_module(
-                x_min=x_min, x_max=x_max, device=device
-            )
+                x_max_all = [((2**N_BITS_PANDAS-1) + zps[i]) / scales[i] for i in range(len(scales))]
+                x_min_all = [(1+zps[i])/scales[i] for i in range(len(scales))]
 
-        y = self.label_encoder.transform(y)
+                if (not all([numpy.isclose(x_max, 1.0) for x_max in x_max_all]) 
+                    or not all([numpy.isclose(x_min, -1.0) for x_min in x_min_all])):
+                    raise ValueError( 
+                    f"When training with SGDClassifier on an EncrypteDataFrame "
+                    f"all features used in training must have values between -1 and 1. "
+                    f"You can enforce this using the schema parameter in encrypt_from_pandas. \n"
+                    f"The EncrypteDataFrame used for training had \n"
+                    f" - x_max: {x_max_all} \n"
+                    f" - x_min: {x_min_all} \n"
+                    )
+            else:
+                # Get the inputs' extreme values
+                x_min, x_max = X.min(axis=0), X.max(axis=0)
 
-        # Mypy
-        assert self.training_quantized_module.fhe_circuit is not None
+                # Build and compile the training quantized module
+                self.training_quantized_module = self._get_training_quantized_module(
+                    x_min=x_min,
+                    x_max=x_max,
+                    device=device
+                )
 
         # Key generation
-        if fhe == "execute":  # pragma: no cover
+        if fhe == "execute" and not fit_encrypted_dataframe:  # pragma: no cover
+
+            y = self.label_encoder.transform(y)
+
+            # Mypy
+            assert self.training_quantized_module.fhe_circuit is not None
 
             # Generate the keys only if necessary. This is already done using the `force=False`
             # parameter, but here we also avoid printing too much verbose if activated
@@ -583,37 +649,91 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         for _ in range(max_iter):
 
             # Sample the batches from X and y in the clear
-            batch_indexes = self.random_number_generator.choice(
-                n_samples, size=self.batch_size, replace=False
-            )
+            
+            if n_samples <= self.batch_size:
+                batch_indexes = self.random_number_generator.permutation(
+                    n_samples, 
+                )
+            else:
+                batch_indexes = self.random_number_generator.choice(
+                    n_samples, size=self.batch_size, replace=False
+                )
 
             # Mypy
             assert isinstance(batch_indexes, numpy.ndarray)
 
-            # Build the batches
-            X_batch = X[batch_indexes].astype(float).reshape((1, self.batch_size, n_features))
-            y_batch = y[batch_indexes].reshape((1, self.batch_size, 1)).astype(float)
 
-            # The underlying quantized module expects (X, y, weight, bias) as inputs. We thus only
-            # quantize the input and target values using the first and second positional parameter
-            q_X_batch, q_y_batch, _, _ = self.training_quantized_module.quantize_input(
-                X_batch, y_batch, None, None
-            )
+            if fit_encrypted_dataframe:
 
-            # If the training is done in FHE, encrypt the input and target values
-            if fhe == "execute":
+                server_side_client = Client(EncryptedDataFrame._SERVER.client_specs)
 
-                # Similarly, the underlying FHE circuit expects (X, y, weight, bias) as inputs, and
-                # so does the encrypt method
-                X_batch_enc, y_batch_enc, _, _ = self.training_quantized_module.fhe_circuit.encrypt(
-                    q_X_batch, q_y_batch, None, None
+                X_batch_enc = EncryptedDataFrame._SERVER.run(
+                    (X.encrypted_values[0, 0],), evaluation_keys=X.evaluation_keys,
+                    function_name=API_VERSION_SPECS[CURRENT_API_VERSION]["create_batch_2d"]
                 )
 
-            else:
-                X_batch_enc, y_batch_enc = q_X_batch, q_y_batch
 
-            X_batches_enc.append(X_batch_enc)
-            y_batches_enc.append(y_batch_enc)
+                for idx_line in batch_indexes:
+                    for idx_col in range(X.shape[1]):
+                        _, _, wrap_idx_line, wrap_idx_col = server_side_client.encrypt(
+                            None, None, idx_line, idx_col, 
+                            function_name=API_VERSION_SPECS[CURRENT_API_VERSION]["batch_2d_function"]
+                        )
+
+                        v = X.encrypted_values[idx_line,idx_col]
+                        X_batch_enc = EncryptedDataFrame._SERVER.run(
+                            (X_batch_enc, v, wrap_idx_line, wrap_idx_col) , 
+                            evaluation_keys=X.evaluation_keys,
+                            function_name=API_VERSION_SPECS[CURRENT_API_VERSION]["batch_2d_function"]
+                        )
+
+                y_batch_enc = EncryptedDataFrame._SERVER.run(
+                    (y.encrypted_values[0]), evaluation_keys=X.evaluation_keys,
+                    function_name=API_VERSION_SPECS[CURRENT_API_VERSION]["create_batch_1d"]
+                )
+
+                for idx_line in batch_indexes:
+                    _, _, wrap_idx_line = server_side_client.encrypt(
+                        None, None, idx_line, 
+                        function_name=API_VERSION_SPECS[CURRENT_API_VERSION]["batch_1d_function"]
+                    )
+
+                    y_batch_enc = EncryptedDataFrame._SERVER.run(
+                        (y_batch_enc, y.encrypted_values[idx_line], wrap_idx_line) , 
+                        evaluation_keys=X.evaluation_keys,
+                        function_name=API_VERSION_SPECS[CURRENT_API_VERSION]["batch_1d_function"]
+                    )
+
+                X_batches_enc.append(X_batch_enc)
+                y_batches_enc.append(y_batch_enc)
+
+            else:
+                # Build the batches
+                X_batch = X[batch_indexes].reshape((1, self.batch_size, n_features))
+                y_batch = y[batch_indexes].reshape((1, self.batch_size, 1)).astype(float)
+
+                X_batch = X_batch.astype(float)
+
+                # The underlying quantized module expects (X, y, weight, bias) as inputs. We thus only
+                # quantize the input and target values using the first and second positional parameter
+                q_X_batch, q_y_batch, _, _ = self.training_quantized_module.quantize_input(
+                    X_batch, y_batch, None, None
+                )
+
+                # If the training is done in FHE, encrypt the input and target values
+                if fhe == "execute":
+
+                    # Similarly, the underlying FHE circuit expects (X, y, weight, bias) as inputs, and
+                    # so does the encrypt method
+                    X_batch_enc, y_batch_enc, _, _ = self.training_quantized_module.fhe_circuit.encrypt(
+                        q_X_batch, q_y_batch, None, None
+                    )
+
+                else:
+                    X_batch_enc, y_batch_enc = q_X_batch, q_y_batch
+
+                X_batches_enc.append(X_batch_enc)
+                y_batches_enc.append(y_batch_enc)
 
         # Similarly, we only quantize the weight and bias values using the third and fourth
         # position parameter
