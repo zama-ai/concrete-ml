@@ -59,12 +59,6 @@ setup_env:
 	poetry run python -c "import skorch" || true # Details above
 	poetry run python -c "from brevitas.core.scaling import AccumulatorAwareParameterPreScaling" || true # Details above
 
-	# For some issues with Mac Intel
-	if [[ $$(uname) == "Darwin" ]] && [[ $$(uname -m) == 'x86_64' ]]; then \
-		poetry run pip uninstall brevitas -y; \
-		poetry run pip install brevitas; \
-	fi
-
 .PHONY: sync_env # Synchronise the environment
 sync_env: 
 	if [[ $$(poetry --version) != "Poetry (version $(POETRY_VERSION))" ]];then \
