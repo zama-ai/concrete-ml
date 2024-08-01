@@ -5,6 +5,7 @@ from inspect import Parameter, _empty, signature
 from typing import Any, Callable, Dict, List, Optional, Set, TextIO, Tuple, Type, Union, cast
 
 import numpy
+import numpy.typing as npt
 
 from concrete import fhe
 
@@ -122,6 +123,7 @@ class QuantizedOp:
         input_quant_opts: Optional[QuantizationOptions] = None,
         **attrs,
     ) -> None:
+
         self.n_bits = n_bits_output
 
         if input_quant_opts is not None:
@@ -916,7 +918,7 @@ class QuantizedMixingOp(QuantizedOp, is_utility=True):
     def make_output_quant_parameters(
         self,
         q_values: Union[numpy.ndarray, Any],
-        scale: numpy.float64,
+        scale: npt.NDArray[numpy.float64],
         zero_point: Union[int, float, numpy.ndarray],
     ) -> QuantizedArray:
         """Build a quantized array from quantized integer results of the op and quantization params.
@@ -1016,6 +1018,9 @@ class QuantizedMixingOp(QuantizedOp, is_utility=True):
             # Rounding to low bit-width with approximate can cause issues with overflow protection
             # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4345
             x = fhe.round_bit_pattern(
-                x, lsbs_to_remove=lsbs_value, exactness=exactness, overflow_protection=False
+                x,
+                lsbs_to_remove=lsbs_value,
+                exactness=exactness,
+                overflow_protection=False,
             )
         return x
