@@ -1,0 +1,7 @@
+# FIXME: Only works with source
+# concrete-ml==1.6.1   
+transformers==4.42.3
+peft==0.11.1
+datasets==2.20.0
+Jinja2==3.1.4
+ipykernel
