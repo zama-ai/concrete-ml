@@ -195,11 +195,11 @@ jobs:
         with:
           token: ${{ secrets.BOT_TOKEN }}
           commit-message: "chore: refresh ${{ github.event.inputs.notebook }} notebook"
-          branch: "refresh-${{ github.event.inputs.notebook }}-notebook-for-${{ github.ref_name }}"
+          branch: "refresh-${{ github.event.inputs.notebook }}-notebook-for-branch-${{ github.ref_name }}"
           base: "${{ github.ref_name }}"
-          title: "Refresh ${{ github.event.inputs.notebook }} notebook for ${{ github.ref_name }}"
+          title: "Refresh ${{ github.event.inputs.notebook }} notebook for branch ${{ github.ref_name }}"
           body: "Automatic PR with notebook refresh of ${{ github.event.inputs.notebook }} \
-            for ${{ github.ref_name }}."
+            for branch ${{ github.ref_name }}."
           add-paths: |
             docs/**/*.ipynb
             use_case_examples/**/*.ipynb
@@ -211,6 +211,9 @@ jobs:
         with:
           commit_message: "chore: refresh ${{ github.event.inputs.notebook }} notebook"
           add_options: '-u'
+          file_pattern: |
+            docs/**/*.ipynb
+            use_case_examples/**/*.ipynb
 
 
   stop-runner-linux:
