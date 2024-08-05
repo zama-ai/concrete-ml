@@ -119,7 +119,7 @@ jobs:
         if: ${{ github.event.inputs.push_changes == 'true' && github.ref_name != 'main' && !(startsWith(github.ref_name , 'release/')) }}
         uses: stefanzweifel/git-auto-commit-action@8621497c8c39c72f3e2a999a26b4ca1b5058a842 #v5.0.1
         with:
-          commit_message: "chore: refresh ${{ github.event.inputs.notebook }} notebook"
+          commit_message: "chore: refresh notebook(s) for use case ${{ github.event.inputs.use_case }}"
           add_options: '-u'
 
   stop-runner-linux:
