@@ -1,4 +1,3 @@
-# FIXME: Only works with source
 concrete-ml==1.6.1
 transformers==4.41.2
 peft==0.11.1
