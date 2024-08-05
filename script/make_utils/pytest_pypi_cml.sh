@@ -54,7 +54,7 @@ if ${USE_PIP_WHEEL}; then
     rm -rf dist
 
     # Build the wheel file
-    poetry build -f wheel
+    poetry build -f wheel --dev
 
     # Install the dependencies as PyPI would do using the wheel file as well as the given
     # Concrete-Python version
