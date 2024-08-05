@@ -19,6 +19,7 @@ on:
           - federated_learning
           - hybrid_model
           - llm
+          - lora_finetune
           - resnet
           - sentiment_analysis_with_transformer
           - titanic
