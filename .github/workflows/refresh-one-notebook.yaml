@@ -21,6 +21,7 @@ on:
         - FullyConnectedNeuralNetwork \n
         - FullyConnectedNeuralNetworkOnMNIST \n
         - GLMComparison \n
+        - gpt2_finetune_hybrid \n
         - HealthCarePrediction \n
         - ImportingFromScikitLearn \n
         - KaggleTitanic \n
@@ -67,6 +68,7 @@ env:
   FullyConnectedNeuralNetwork: "docs/advanced_examples/FullyConnectedNeuralNetwork.ipynb" 
   FullyConnectedNeuralNetworkOnMNIST: "docs/advanced_examples/FullyConnectedNeuralNetworkOnMNIST.ipynb" 
   GLMComparison: "docs/advanced_examples/GLMComparison.ipynb" 
+  gpt2_finetune_hybrid: "use_case_examples/lora_finetune/gpt2_finetune_hybrid.ipynb" 
   HealthCarePrediction: "use_case_examples/disease_prediction/HealthCarePrediction.ipynb" 
   ImportingFromScikitLearn: "docs/advanced_examples/ImportingFromScikitLearn.ipynb" 
   KaggleTitanic: "use_case_examples/titanic/KaggleTitanic.ipynb" 
