@@ -2,6 +2,10 @@
 
 This document provides guides on how to install Concrete ML using PyPi or Docker.
 
+{% hint style="success" %} **Zama 5-Question Developer Survey**
+
+We want to hear from you! Take 1 minute to share your thoughts and helping us enhance our documentation and libraries. 👉 Click [here](https://www.zama.ai/developer-surve) to participate. {% endhint %}
+
 ## Prerequisite
 
 Before you start, determine your environment:

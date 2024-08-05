@@ -2,6 +2,10 @@
 
 This document explains how to implement machine learning models with Torch in Concrete ML, leveraging Fully Homomorphic Encryption (FHE).
 
+{% hint style="success" %} **Zama 5-Question Developer Survey**
+
+We want to hear from you! Take 1 minute to share your thoughts and helping us enhance our documentation and libraries. 👉 Click [here](https://www.zama.ai/developer-surve) to participate. {% endhint %}
+
 ## Introduction
 
 There are two approaches to build [FHE-compatible deep networks](../getting-started/concepts.md#model-accuracy-considerations-under-fhe-constraints):

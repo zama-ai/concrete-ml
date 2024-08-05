@@ -17,6 +17,11 @@ layout:
 
 # Welcome
 
+>[!Note]
+>**Zama 5-Question Developer Survey**
+>
+>We want to hear from you! Take 1 minute to share your thoughts and helping us enhance our documentation and libraries. 👉 Click [here](https://www.zama.ai/developer-survey) to participate. 
+
 ## Get started
 
 Learn the basics of Concrete ML, set it up, and make it run with ease.

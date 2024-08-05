@@ -2,6 +2,11 @@
 
 This page explains Concrete ML linear models for both classification and regression. These models are based on [scikit-learn](https://scikit-learn.org/stable/) linear models.
 
+{% hint style="success" %} **Zama 5-Question Developer Survey**
+
+We want to hear from you! Take 1 minute to share your thoughts and helping us enhance our documentation and libraries. 👉 Click [here](https://www.zama.ai/developer-surve) to participate. {% endhint %}
+
+
 ## Supported models for encrypted inference
 
 The following models are supported for training on clear data and predicting on encrypted data. Their API is similar the one of [scikit-learn](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.linear_model). These models are also compatible with some of scikit-learn's main workflows, such as `Pipeline()` and `GridSearch()`.
