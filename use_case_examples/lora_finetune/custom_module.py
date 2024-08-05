@@ -12,7 +12,8 @@ class ForwardModule(nn.Module):
         output = input @ self.weight
         if self.bias is not None:
             return output + self.bias
-            
+
+
 class BackwardModule(nn.Module):
     def __init__(self, weight):
         super(BackwardModule, self).__init__()
@@ -33,9 +34,10 @@ class ForwardBackwardModule(torch.autograd.Function):
     def backward(ctx, grad_output):
         backward_module = ctx.backward_module
         grad_input = backward_module.forward(grad_output)
-        
+
         # grad_weight and grad_bias are not needed when computing the backward for lora
-        return grad_input, None, None 
+        return grad_input, None, None
+
 
 class CustomConv1D(nn.Module):
     def __init__(self, weight, bias=None):
