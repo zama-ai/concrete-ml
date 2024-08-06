@@ -2,11 +2,6 @@
 
 This page explains Concrete ML linear models for both classification and regression. These models are based on [scikit-learn](https://scikit-learn.org/stable/) linear models.
 
-{% hint style="success" %}
-**Zama 5-Question Developer Survey**
-
-We want to hear from you! Take 1 minute to share your thoughts and helping us enhance our documentation and libraries. **👉** [**Click here**](https://www.zama.ai/developer-survey) to participate.
-{% endhint %}
 
 ## Supported models for encrypted inference
 
@@ -129,3 +124,8 @@ y_pred_fhe = cml_model.predict(X_test, fhe="execute")
 
 
 ```
+{% hint style="success" %}
+**Zama 5-Question Developer Survey**
+
+We want to hear from you! Take 1 minute to share your thoughts and helping us enhance our documentation and libraries. **👉** [**Click here**](https://www.zama.ai/developer-survey) to participate.
+{% endhint %}

@@ -2,11 +2,7 @@
 
 This document explains how to implement machine learning models with Torch in Concrete ML, leveraging Fully Homomorphic Encryption (FHE).
 
-{% hint style="success" %}
-**Zama 5-Question Developer Survey**
 
-We want to hear from you! Take 1 minute to share your thoughts and helping us enhance our documentation and libraries. **👉** [**Click here**](https://www.zama.ai/developer-survey) to participate.
-{% endhint %}
 
 ## Introduction
 
@@ -153,6 +149,7 @@ There are two approaches:
 FHE simulation allows to measure the impact of the Table Lookup error on the model accuracy. You can adjust the Table Lookup error using `p_error`/`global_p_error`, as described in the [approximate computation ](../explanations/advanced_features.md#approximate-computations)section.
 {% endhint %}
 
+
 ## Supported operators and activations
 
 Concrete ML supports a variety of PyTorch operators that can be used to build fully connected or convolutional neural networks, with normalization and activation layers. Moreover, many element-wise operators are supported.
@@ -256,4 +253,10 @@ Concrete ML also supports some of their QAT equivalents from Brevitas.
 
 {% hint style="info" %}
 The equivalent versions from `torch.functional` are also supported.
+{% endhint %}
+
+{% hint style="success" %}
+**Zama 5-Question Developer Survey**
+
+We want to hear from you! Take 1 minute to share your thoughts and helping us enhance our documentation and libraries. **👉** [**Click here**](https://www.zama.ai/developer-survey) to participate.
 {% endhint %}

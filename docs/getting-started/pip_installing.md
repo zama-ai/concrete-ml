@@ -2,11 +2,7 @@
 
 This document provides guides on how to install Concrete ML using PyPi or Docker.
 
-{% hint style="success" %}
-**Zama 5-Question Developer Survey**
 
-We want to hear from you! Take 1 minute to share your thoughts and helping us enhance our documentation and libraries. **👉** [**Click here**](https://www.zama.ai/developer-survey) to participate.
-{% endhint %}
 
 ## Prerequisite
 
@@ -84,3 +80,8 @@ Alternatively, you can launch a shell in Docker, with or without volumes:
 ```shell
 docker run --rm -it zamafhe/concrete-ml /bin/bash
 ```
+{% hint style="success" %}
+**Zama 5-Question Developer Survey**
+
+We want to hear from you! Take 1 minute to share your thoughts and helping us enhance our documentation and libraries. **👉** [**Click here**](https://www.zama.ai/developer-survey) to participate.
+{% endhint %}
