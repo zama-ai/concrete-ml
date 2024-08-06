@@ -35,6 +35,9 @@ class LoraTraining(torch.nn.Module):
         loss = loss / self.gradient_accumulation_steps
 
         # Update gradients
+        # We need to set requires grad to the loss manually because the inference model's last
+        # step is the "lm_head" layer, which is detached from the graph by the hybrid model
+        loss.requires_grad_(True)
         loss.backward()
 
         grad_norm = None
