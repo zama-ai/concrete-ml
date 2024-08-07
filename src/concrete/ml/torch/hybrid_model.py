@@ -456,6 +456,7 @@ class HybridFHEModel:
         n_bits: Union[int, Dict[str, int]] = MAX_BITWIDTH_BACKWARD_COMPATIBLE,
         rounding_threshold_bits: Optional[int] = None,
         p_error: Optional[float] = None,
+        device: Optional[str] = "cpu",
         configuration: Optional[Configuration] = None,
     ):
         """Compiles the specific layers to FHE.

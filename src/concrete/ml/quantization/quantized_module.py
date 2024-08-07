@@ -803,6 +803,7 @@ class QuantizedModule:
         global_p_error: Optional[float] = None,
         verbose: bool = False,
         inputs_encryption_status: Optional[Sequence[str]] = None,
+        device: Optional[str] = "cpu",                
     ) -> Circuit:
         """Compile the module's forward function.
 
