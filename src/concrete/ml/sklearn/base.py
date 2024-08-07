@@ -511,6 +511,7 @@ class BaseEstimator:
         p_error: Optional[float] = None,
         global_p_error: Optional[float] = None,
         verbose: bool = False,
+        device: Optional[str] = "cpu",        
     ) -> Circuit:
         """Compile the model.
 
@@ -1168,6 +1169,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         p_error: Optional[float] = None,
         global_p_error: Optional[float] = None,
         verbose: bool = False,
+        device: Optional[str] = "cpu",        
     ) -> Circuit:
         # Reset for double compile
         self._is_compiled = False

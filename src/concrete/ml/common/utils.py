@@ -34,6 +34,8 @@ SUPPORTED_INT_TYPES = {
 
 SUPPORTED_TYPES = {**SUPPORTED_FLOAT_TYPES, **SUPPORTED_INT_TYPES}
 
+SUPPORTED_DEVICES = ['cuda', 'cpu']
+
 MAX_BITWIDTH_BACKWARD_COMPATIBLE = 8
 
 # Indicate if the old virtual library method should be used instead of the compiler simulation
@@ -682,3 +684,24 @@ def process_rounding_threshold_bits(rounding_threshold_bits):
         rounding_threshold_bits = {"n_bits": n_bits_rounding, "method": method}
 
     return rounding_threshold_bits
+
+def check_device(device: str, check_for_compilation: bool) -> str:    
+    device_id = None
+    str_devices = '[' + ','.join(map(lambda s : "'" + s + "'", SUPPORTED_DEVICES)) + ']'
+    if not check_for_compilation:
+        has_device_id = ":" in device
+        if has_device_id:
+            try:
+                device_id = int(device[device.rindex(":"):])
+            except:
+                raise ValueError(f"Can not parse device ID from device string {device}, "
+                                "valid formats are cuda:0, cuda:1, etc.")
+    
+    if device_id is not None:
+        raise ValueError(f"Selecting specific CUDA devices is not supported for now. "
+                         f"Please use a device from {str_devices} ")
+
+    if device not in SUPPORTED_DEVICES:
+        raise ValueError(f"Model compilation targets given through the `device` "
+                            f"argument can be one of {str_devices}")
+

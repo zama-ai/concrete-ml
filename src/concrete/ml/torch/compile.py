@@ -282,6 +282,7 @@ def compile_torch_model(
     verbose: bool = False,
     inputs_encryption_status: Optional[Sequence[str]] = None,
     reduce_sum_copy: bool = False,
+    device: Optional[str] = "cpu",    
 ) -> QuantizedModule:
     """Compile a torch module into an FHE equivalent.
 
@@ -366,6 +367,7 @@ def compile_onnx_model(
     verbose: bool = False,
     inputs_encryption_status: Optional[Sequence[str]] = None,
     reduce_sum_copy: bool = False,
+    device: Optional[str] = "cpu",    
 ) -> QuantizedModule:
     """Compile a torch module into an FHE equivalent.
 
@@ -446,6 +448,7 @@ def compile_brevitas_qat_model(
     verbose: bool = False,
     inputs_encryption_status: Optional[Sequence[str]] = None,
     reduce_sum_copy: bool = False,
+    device: Optional[str] = "cpu",
 ) -> QuantizedModule:
     """Compile a Brevitas Quantization Aware Training model.
 
