@@ -18,6 +18,7 @@ from concrete.fhe.compilation.configuration import Configuration
 from ..common.debugging import assert_false, assert_true
 from ..common.utils import (
     MAX_BITWIDTH_BACKWARD_COMPATIBLE,
+    check_compilation_device_is_valid_and_is_cuda,
     check_there_is_no_p_error_options_in_configuration,
     get_onnx_opset_version,
     manage_parameters_for_pbs_errors,
@@ -157,6 +158,7 @@ def _compile_torch_or_onnx_model(
     inputs_encryption_status: Optional[Sequence[str]] = None,
     reduce_sum_copy: bool = False,
     composition_mapping: Optional[Dict] = None,
+    device: Optional[str] = "cpu",
 ) -> QuantizedModule:
     """Compile a torch module or ONNX into an FHE equivalent.
 
@@ -262,6 +264,7 @@ def _compile_torch_or_onnx_model(
         global_p_error=global_p_error,
         verbose=verbose,
         inputs_encryption_status=inputs_encryption_status,
+        device=device,
     )
 
     return quantized_module
@@ -282,7 +285,7 @@ def compile_torch_model(
     verbose: bool = False,
     inputs_encryption_status: Optional[Sequence[str]] = None,
     reduce_sum_copy: bool = False,
-    device: Optional[str] = "cpu",    
+    device: Optional[str] = "cpu",
 ) -> QuantizedModule:
     """Compile a torch module into an FHE equivalent.
 
@@ -349,6 +352,7 @@ def compile_torch_model(
         verbose=verbose,
         inputs_encryption_status=inputs_encryption_status,
         reduce_sum_copy=reduce_sum_copy,
+        device=device,
     )
 
 
@@ -367,7 +371,7 @@ def compile_onnx_model(
     verbose: bool = False,
     inputs_encryption_status: Optional[Sequence[str]] = None,
     reduce_sum_copy: bool = False,
-    device: Optional[str] = "cpu",    
+    device: Optional[str] = "cpu",
 ) -> QuantizedModule:
     """Compile a torch module into an FHE equivalent.
 
@@ -430,6 +434,7 @@ def compile_onnx_model(
         verbose=verbose,
         inputs_encryption_status=inputs_encryption_status,
         reduce_sum_copy=reduce_sum_copy,
+        device=device,
     )
 
 
@@ -582,6 +587,7 @@ def compile_brevitas_qat_model(
         verbose=verbose,
         inputs_encryption_status=inputs_encryption_status,
         reduce_sum_copy=reduce_sum_copy,
+        device=device,
     )
 
     # Remove the tempfile if we used one

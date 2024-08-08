@@ -492,6 +492,7 @@ class HybridFHEModel:
                     rounding_threshold_bits=rounding_threshold_bits,
                     configuration=configuration,
                     p_error=p_error,
+                    device=device,
                 )
             else:
                 self.private_q_modules[name] = compile_torch_model(
@@ -501,6 +502,7 @@ class HybridFHEModel:
                     rounding_threshold_bits=rounding_threshold_bits,
                     configuration=configuration,
                     p_error=p_error,
+                    device=device,
                 )
 
             self.remote_modules[name].private_q_module = self.private_q_modules[name]
