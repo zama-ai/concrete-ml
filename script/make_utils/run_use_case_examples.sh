@@ -41,7 +41,7 @@ install_requirements() {
     local example_dir=$1
     if [ -f "${example_dir}/requirements.txt" ]; then
         pushd "$example_dir"
-        if pip install -r requirements.txt; then
+        if pip install -r requirements.txt --extra-index-url https://pypi.zama.ai/cpu; then
             echo "Requirements installed successfully."
         else
             echo "Failed to install requirements."
