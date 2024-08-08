@@ -54,12 +54,15 @@ if ${USE_PIP_WHEEL}; then
     rm -rf dist
 
     # Build the wheel file
-    poetry build -f wheel --dev
+    poetry build -f wheel
 
     # Install the dependencies as PyPI would do using the wheel file as well as the given
     # Concrete-Python version
     PYPI_WHEEL=$(find dist -type f -name "*.whl")
     python -m pip install --extra-index-url https://pypi.zama.ai/cpu "${PYPI_WHEEL}"
+
+    # Install dev dependencies for testing
+    poetry install --only dev
 else
     if [ -z "${VERSION}" ]; then
         python -m pip install concrete-ml[dev]

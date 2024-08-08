@@ -71,7 +71,7 @@ do
         rm -rf dist
 
         # Build the wheel file
-        poetry build -f wheel --dev
+        poetry build -f wheel
 
         # Install the dependencies as PyPI would do using the wheel file
         PYPI_WHEEL=$(find dist -type f -name "*.whl")
