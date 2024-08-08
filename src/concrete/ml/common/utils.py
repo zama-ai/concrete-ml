@@ -10,6 +10,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 import numpy
 import onnx
 import torch
+from concrete.compiler import check_gpu_available, check_gpu_enabled
 from concrete.fhe import Exactness
 from concrete.fhe.dtypes import Integer
 from sklearn.base import is_classifier, is_regressor
@@ -34,7 +35,7 @@ SUPPORTED_INT_TYPES = {
 
 SUPPORTED_TYPES = {**SUPPORTED_FLOAT_TYPES, **SUPPORTED_INT_TYPES}
 
-SUPPORTED_DEVICES = ['cuda', 'cpu']
+SUPPORTED_DEVICES = ["cuda", "cpu"]
 
 MAX_BITWIDTH_BACKWARD_COMPATIBLE = 8
 
@@ -685,23 +686,108 @@ def process_rounding_threshold_bits(rounding_threshold_bits):
 
     return rounding_threshold_bits
 
-def check_device(device: str, check_for_compilation: bool) -> str:    
+
+def check_device_is_valid(device: str, parse_device_ids: bool) -> str:
     device_id = None
-    str_devices = '[' + ','.join(map(lambda s : "'" + s + "'", SUPPORTED_DEVICES)) + ']'
-    if not check_for_compilation:
+    str_devices = "[" + ",".join(map(lambda s: "'" + s + "'", SUPPORTED_DEVICES)) + "]"
+    if parse_device_ids:
         has_device_id = ":" in device
         if has_device_id:
             try:
-                device_id = int(device[device.rindex(":"):])
+                ridx = device.rindex(":")
+                device_id = int(device[ridx+1:])
+                device = device[0:ridx]
             except:
-                raise ValueError(f"Can not parse device ID from device string {device}, "
-                                "valid formats are cuda:0, cuda:1, etc.")
-    
+                raise ValueError(
+                    f"Can not parse device ID from device string {device}, "
+                    "valid formats are cuda:0, cuda:1, etc."
+                )
+
     if device_id is not None:
-        raise ValueError(f"Selecting specific CUDA devices is not supported for now. "
-                         f"Please use a device from {str_devices} ")
+        raise ValueError(
+            f"Selecting specific CUDA devices is not supported for now. "
+            f"Please use a device from {str_devices} "
+        )
 
     if device not in SUPPORTED_DEVICES:
-        raise ValueError(f"Model compilation targets given through the `device` "
-                            f"argument can be one of {str_devices}")
+        raise ValueError(
+            f"Model compilation targets given through the `device` "
+            f"argument can be one of {str_devices}"
+        )
+    
+    return device
 
+
+def check_compilation_device_is_valid_and_is_cuda(
+    device: str
+) -> bool:
+    """Checks whether the device string for compilation or FHE execution is CUDA or CPU.
+
+    Args:
+        device (str): the device string. Valid values are 'cpu', 'cuda'
+        is_compilation_stage (bool): whether the check applies to the compilation stage.
+            Set to False when checking the device string at FHE execution stage.
+        fhe (Union[FheMode, str]): the FHE execution mode (disable/simulate/execute)
+
+    Returns:
+        bool: whether GPU should be enabled for compilation or FHE execution
+
+    Raises:
+        ValueError: if the device string is incorrect or if CUDA is not supported
+            for the requested stage
+    """
+
+    # Only parse device ids for FHE execution
+    device = check_device_is_valid(device, False)
+
+    # All other devices are considered cpu for now
+    is_cuda = device == "cuda"
+
+
+    if is_cuda:
+        if not check_gpu_enabled():
+            raise ValueError(
+                "CUDA FHE execution was requested but the Concrete runtime "
+                "that is installed on this system does not support CUDA. Please"
+                "install a GPU-enabled Concrete-Python package."
+            )
+
+
+        return True
+
+    return False
+
+
+def check_execution_device_is_valid_and_is_cuda(
+    is_compiled_for_cuda: bool,
+    fhe: Union[FheMode, str],    
+    device: Optional[str] = "cpu",  
+) -> bool:
+
+    # Only parse device ids for FHE execution
+    device = check_device_is_valid(device, True)
+
+    # All other devices are considered cpu for now
+    is_cuda_requested = device == "cuda"    
+
+    if is_cuda_requested:
+        assert_true(fhe is not None, 
+            "The fhe execution mode was not set when checking a device type " "for FHE execution"
+        )
+
+        if not fhe == FheMode.EXECUTE:
+            raise ValueError(
+                "CUDA execution can only be enabled for circuit execution on"
+                "encrypted data with fhe='execute'"
+            )
+        
+        if not check_gpu_available():
+            raise ValueError(
+                "CUDA FHE execution was requested but no compatible CUDA "
+                "enabled device could be found"
+            )
+    else:
+        if is_compiled_for_cuda:
+            raise ValueError("You are setting fhe=execute for a model you "
+                             "")
+    
