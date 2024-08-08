@@ -1,10 +1,8 @@
 # Use the latest public version of Concrete ML once the embedding layer feature 
 # is released
-# concrete-ml==1.6.1
+# concrete-ml==1.7.0
 -e ../../.
 transformers==4.41.2
 peft==0.11.1
-datasets==2.20.0
 Jinja2==3.1.4
 matplotlib==3.7.5
-jupyter
