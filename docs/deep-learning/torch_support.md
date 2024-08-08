@@ -2,8 +2,6 @@
 
 This document explains how to implement machine learning models with Torch in Concrete ML, leveraging Fully Homomorphic Encryption (FHE).
 
-
-
 ## Introduction
 
 There are two approaches to build [FHE-compatible deep networks](../getting-started/concepts.md#model-accuracy-considerations-under-fhe-constraints):
@@ -148,7 +146,6 @@ There are two approaches:
 {% hint style="info" %}
 FHE simulation allows to measure the impact of the Table Lookup error on the model accuracy. You can adjust the Table Lookup error using `p_error`/`global_p_error`, as described in the [approximate computation ](../explanations/advanced_features.md#approximate-computations)section.
 {% endhint %}
-
 
 ## Supported operators and activations
 
