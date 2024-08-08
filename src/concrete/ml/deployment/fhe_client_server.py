@@ -64,6 +64,7 @@ def check_concrete_versions(zip_path: Path):
     """
 
     with zipfile.ZipFile(zip_path) as zip_file:
+        is_mlir = "circuit.mlir" in zip_file.namelist()
         with zip_file.open("versions.json", mode="r") as file:
             versions = json.load(file)
 
@@ -91,14 +92,15 @@ def check_concrete_versions(zip_path: Path):
             + "\n".join(f"{error[0]}: {error[1]} != {error[2]}" for error in errors)
         )
 
-    # Raise an error if the Python version do not match the one currently installed
-    if not versions["python"].startswith(
-        f"{sys.version_info.major}.{sys.version_info.minor}"
-    ):  # pragma: no cover
-        raise ValueError(
-            "Not the same Python version between the compiler and the server."
-            f"{versions['python']} != {sys.version_info.major}.{sys.version_info.minor}"
-        )
+    if not is_mlir:
+        # Raise an error if the Python version do not match the one currently installed
+        if not versions["python"].startswith(
+            f"{sys.version_info.major}.{sys.version_info.minor}"
+        ):  # pragma: no cover
+            raise ValueError(
+                "Not the same Python version between the compiler and the server."
+                f"{versions['python']} != {sys.version_info.major}.{sys.version_info.minor}"
+            )
 
 
 class FHEModelServer:
