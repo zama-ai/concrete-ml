@@ -78,6 +78,7 @@ Alternatively, you can launch a shell in Docker, with or without volumes:
 ```shell
 docker run --rm -it zamafhe/concrete-ml /bin/bash
 ```
+
 {% hint style="success" %}
 **Zama 5-Question Developer Survey**
 
