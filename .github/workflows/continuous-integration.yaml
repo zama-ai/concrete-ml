@@ -21,13 +21,13 @@ on:
           - pr
 
       linux_python_versions:
-        description: "Space separated list of python versions (3.8, 3.9, 3.10 are supported) to launch on linux"
+        description: "Space separated list of python versions (3.8, 3.9, 3.10, 3.11 are supported) to launch on linux"
         required: false
         type: string
         default: "3.8"
 
       macos_python_versions:
-        description: "Space separated list of python versions (3.8, 3.9, 3.10 are supported) to launch on macos (intel)"
+        description: "Space separated list of python versions (3.8, 3.9, 3.10, 3.11 are supported) to launch on macos (intel)"
         required: false
         type: string
         default: "3.8"
@@ -109,6 +109,7 @@ jobs:
       needs-38-linux-runner: ${{ steps.set-matrix.outputs.needs-38-linux-runner }}
       needs-39-linux-runner: ${{ steps.set-matrix.outputs.needs-39-linux-runner }}
       needs-310-linux-runner: ${{ steps.set-matrix.outputs.needs-310-linux-runner }}
+      needs-311-linux-runner: ${{ steps.set-matrix.outputs.needs-311-linux-runner }}
       instance-type: ${{ steps.set-matrix.outputs.instance-type }}
       linux-python-versions: ${{ steps.set-matrix.outputs.linux-python-versions }}
       macos-python-versions: ${{ steps.set-matrix.outputs.macos-python-versions }}
@@ -157,10 +158,10 @@ jobs:
             LINUX_PYTHON_VERSIONS="3.8"
             MACOS_PYTHON_VERSIONS=""
           elif [[ "${BUILD_TYPE}" == "weekly" ]]; then
-            LINUX_PYTHON_VERSIONS="3.8 3.9 3.10"
+            LINUX_PYTHON_VERSIONS="3.8 3.9 3.10 3.11"
             MACOS_PYTHON_VERSIONS="3.9"
           elif [[ "${BUILD_TYPE}" == "release" ]] || [[ "${BUILD_TYPE}" == "published_release" ]]; then
-            LINUX_PYTHON_VERSIONS="3.8 3.9 3.10"
+            LINUX_PYTHON_VERSIONS="3.8 3.9 3.10 3.11"
             MACOS_PYTHON_VERSIONS=""
           elif [[ "${BUILD_TYPE}" == "push_to_main" ]]; then
             LINUX_PYTHON_VERSIONS="3.8"
@@ -208,6 +209,8 @@ jobs:
             jq -rc '. | map(select(.os_kind=="linux" and .python_version=="3.9")) | length > 0')
           NEEDS_LINUX_310_RUNNER=$(echo "${LINUX_MATRIX}" | \
             jq -rc '. | map(select(.os_kind=="linux" and .python_version=="3.10")) | length > 0')
+          NEEDS_LINUX_311_RUNNER=$(echo "${LINUX_MATRIX}" | \
+            jq -rc '. | map(select(.os_kind=="linux" and .python_version=="3.11")) | length > 0')
 
           echo "Needs Linux 3.8 runner:"
           echo "${NEEDS_LINUX_38_RUNNER}"
@@ -218,9 +221,13 @@ jobs:
           echo "Needs Linux 3.10 runner:"
           echo "${NEEDS_LINUX_310_RUNNER}"
 
+          echo "Needs Linux 3.11 runner:"
+          echo "${NEEDS_LINUX_311_RUNNER}"
+
           echo "needs-38-linux-runner=${NEEDS_LINUX_38_RUNNER}" >> $GITHUB_OUTPUT
           echo "needs-39-linux-runner=${NEEDS_LINUX_39_RUNNER}" >> $GITHUB_OUTPUT
           echo "needs-310-linux-runner=${NEEDS_LINUX_310_RUNNER}" >> $GITHUB_OUTPUT
+          echo "needs-311-linux-runner=${NEEDS_LINUX_311_RUNNER}" >> $GITHUB_OUTPUT
           echo "instance-type=${INSTANCE_TYPE}" >> $GITHUB_OUTPUT
 
   start-runner-linux:
@@ -235,6 +242,8 @@ jobs:
       ec2-instance-id-39: ${{ steps.start-ec2-runner-39.outputs.ec2-instance-id || '' }}
       label-310: ${{ steps.start-ec2-runner-310.outputs.label }}
       ec2-instance-id-310: ${{ steps.start-ec2-runner-310.outputs.ec2-instance-id || '' }}
+      label-311: ${{ steps.start-ec2-runner-311.outputs.label }}
+      ec2-instance-id-311: ${{ steps.start-ec2-runner-311.outputs.ec2-instance-id || '' }}
       matrix: ${{ steps.update-linux-matrix.outputs.linux-matrix }}
     steps:
       - name: Checkout Code
@@ -319,6 +328,30 @@ jobs:
               {"Key": "Team", "Value": "CML"}
             ]
 
+      - name: Start EC2 runner python 3.11
+        id: start-ec2-runner-311
+        if: ${{ !cancelled() && fromJSON(needs.matrix-preparation.outputs.needs-311-linux-runner) }}
+        uses: machulav/ec2-github-runner@fcfb31a5760dad1314a64a0e172b78ec6fc8a17e
+        with:
+          mode: start
+          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
+          ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
+          ec2-instance-type: ${{ needs.matrix-preparation.outputs.instance-type }}
+          subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
+          security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
+          aws-resource-tags: >
+            [
+              {"Key": "Name", "Value": "cml-ci-ec2-github-runner-py311"},
+              {"Key": "GitHubRepository", "Value": "${{ github.repository }}"},
+              {"Key": "Python version", "Value": "3.11"},
+              {"Key": "Actor", "Value": "${{ github.actor }}"},
+              {"Key": "Action", "Value": "${{ github.action }}"},
+              {"Key": "GitHash", "Value": "${{ github.sha }}"},
+              {"Key": "RefName", "Value": "${{ github.ref_name }}"},
+              {"Key": "RunId", "Value": "${{ github.run_id }}"},
+              {"Key": "Team", "Value": "CML"}
+            ]
+
 
       - name: Update Linux runs_on Matrix
         id: update-linux-matrix
@@ -331,6 +364,8 @@ jobs:
           '(. | map(select(.os_kind=="linux" and .python_version=="3.9") |= . + {"runs_on": "${{ steps.start-ec2-runner-39.outputs.label }}"}) )')
           MATRIX=$(echo "${MATRIX}" | jq -rc \
           '(. | map(select(.os_kind=="linux" and .python_version=="3.10") |= . + {"runs_on": "${{ steps.start-ec2-runner-310.outputs.label }}"}) )')
+          MATRIX=$(echo "${MATRIX}" | jq -rc \
+          '(. | map(select(.os_kind=="linux" and .python_version=="3.11") |= . + {"runs_on": "${{ steps.start-ec2-runner-311.outputs.label }}"}) )')
 
           echo "Updated matrix:"
           echo "${MATRIX}"
@@ -1000,6 +1035,15 @@ jobs:
           github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
           label: ${{ needs.start-runner-linux.outputs.label-310 }}
           ec2-instance-id: ${{ needs.start-runner-linux.outputs.ec2-instance-id-310 }}
+          mode: stop
+
+      - name: Stop EC2 runner python 3.11
+        uses: machulav/ec2-github-runner@fcfb31a5760dad1314a64a0e172b78ec6fc8a17e
+        if: ${{ always() && needs.start-runner-linux.outputs.ec2-instance-id-311 }}
+        with:
+          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
+          label: ${{ needs.start-runner-linux.outputs.label-311 }}
+          ec2-instance-id: ${{ needs.start-runner-linux.outputs.ec2-instance-id-311 }}
           mode: stop
 
   build-macos-intel:
