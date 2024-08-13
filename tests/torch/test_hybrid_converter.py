@@ -214,6 +214,7 @@ def test_hybrid_brevitas_qat_model():
         # Check that files are there
         assert (temp_dir_path / "model.pth").exists()
 
+
 # Dependency 'huggingface-hub' raises a 'FutureWarning' from version 0.23.0 when calling the
 # 'from_pretrained' method
 @pytest.mark.filterwarnings("ignore::FutureWarning")
