@@ -52,6 +52,9 @@ python -m pip install --upgrade pip
 if ${USE_PIP_WHEEL}; then
     # Delete the directory where the pypi wheel file will be created (if it already exists)
     rm -rf dist
+    
+    # Install dev dependencies for testing
+    poetry install --only dev
 
     # Build the wheel file
     poetry build -f wheel
@@ -61,8 +64,6 @@ if ${USE_PIP_WHEEL}; then
     PYPI_WHEEL=$(find dist -type f -name "*.whl")
     python -m pip install --extra-index-url https://pypi.zama.ai/cpu "${PYPI_WHEEL}"
 
-    # Install dev dependencies for testing
-    poetry install --only dev
 else
     if [ -z "${VERSION}" ]; then
         python -m pip install concrete-ml[dev]
