@@ -205,6 +205,14 @@ def test_hybrid_brevitas_qat_model():
     hybrid_model = HybridFHEModel(model, module_names="sub_module")
     hybrid_model.compile_model(x=inputs)
 
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_dir_path = Path(temp_dir)
+
+        # Get the temp directory path
+        hybrid_model.save_and_clear_private_info(temp_dir_path)
+
+        # Check that files are there
+        assert (temp_dir_path / "model.pth").exists()
 
 # Dependency 'huggingface-hub' raises a 'FutureWarning' from version 0.23.0 when calling the
 # 'from_pretrained' method
