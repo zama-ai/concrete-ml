@@ -18,6 +18,7 @@ from .quantizers import (
     QuantizationOptions,
     QuantizedArray,
     UniformQuantizationParameters,
+    UniformQuantizer,
 )
 
 # pylint: disable=too-many-lines
@@ -559,7 +560,10 @@ class QuantizedOp:
         # but when parsing the ONNX graph, some options can be overwritten. Thus
         # when evaluating QAT layers we ignore one of these options to allow the
         # override.
-        if quant_opts.is_equal(input_.quantizer.quant_options, ignore_sign_qat=True):
+        if (
+            quant_opts.is_equal(input_.quantizer.quant_options, ignore_sign_qat=True)
+            or input_.quantizer.quant_options.is_precomputed_qat
+        ):
             # Pass-through the input quantizer when the input is already quantized in
             # the manner that this op requires: this makes the op use the qvalues directly,
             # in q_impl and will avoid a TLU to re-quantize.
@@ -661,7 +665,9 @@ class QuantizedOp:
             elif calibrate or is_clear_value:
                 # This is used during calibration with numpy.ndarrays
                 # or then the input is raw (not quantized)
-                prepared_inputs[curr_input_fill_idx] = input_
+                prepared_inputs[curr_input_fill_idx] = (
+                    input_.values if isinstance(input_, QuantizedArray) else input_
+                )
             elif quantize_actual_values:
                 # This is used by mixing (conv/gemm) or value re-arranging ops (reshape)
                 input_ = cast(QuantizedArray, input_)
@@ -674,9 +680,6 @@ class QuantizedOp:
                     new_input.quantizer.is_qat
                     and not input_.quantizer.is_precomputed_qat
                     and self.error_tracker is not None
-                    and not new_input.quantizer.check_is_uniform_quantized(
-                        new_input.quantizer.quant_options
-                    )
                 ):
                     self.error_tracker.append(input_idx)
 
@@ -700,7 +703,7 @@ class QuantizedOp:
 
         return prepared_inputs
 
-    def calibrate(self, *inputs: numpy.ndarray) -> numpy.ndarray:
+    def calibrate(self, *inputs: Union[QuantizedArray, numpy.ndarray]) -> numpy.ndarray:
         """Create corresponding QuantizedArray for the output of the activation function.
 
         Args:
@@ -712,6 +715,8 @@ class QuantizedOp:
 
         # Here we need the actual values of the constants, we need to pass through
         # the numpy.ndarrays in the computation graph
+        # Mixing ops may be calibrated using QuantizedArray inputs, in order
+        # to pre-compute anlytical output quantization
         prepared_inputs = self._prepare_inputs_with_constants(
             *inputs, calibrate=True, quantize_actual_values=False
         )
@@ -720,12 +725,48 @@ class QuantizedOp:
         if isinstance(raw_result, RawOpOutput):
             return raw_result
 
-        quantized_samples = QuantizedArray(self.n_bits, raw_result)
+        # If the caller passes only QuantizedArray it means
+        # that they are asking to quantized using analytical
+        # formulas
+        requested_analytical_quant = all(
+            isinstance(qv, QuantizedArray) for qv in inputs
+        ) and isinstance(self, QuantizedMixingOp)
+        if requested_analytical_quant:
+            assert_true(
+                self.supported_by_linear_backend(),
+                "Calibration using QuantizedArray is only possible"
+                " for operations that can calibrate analytically",
+            )
+            q_prepared_inputs = self._prepare_inputs_with_constants(
+                *inputs, calibrate=False, quantize_actual_values=True
+            )
+            quantizer = self.calibrate_analytical_output(*q_prepared_inputs)
+            self.output_quant_params = quantizer.quant_params
+            self.output_quant_stats = quantizer.quant_stats
+        else:
+            # These output quantization parameters are only used
+            # for operations that produce graph output operation
+            # and are a non-linear
+            quantized_samples = QuantizedArray(self.n_bits, raw_result)
 
-        self.output_quant_params = quantized_samples.quantizer.quant_params
-        self.output_quant_stats = quantized_samples.quantizer.quant_stats
+            self.output_quant_params = quantized_samples.quantizer.quant_params
+            self.output_quant_stats = quantized_samples.quantizer.quant_stats
 
-        return quantized_samples.values
+        return raw_result
+
+    def calibrate_analytical_output(self, *inputs: QuantizedArray) -> UniformQuantizer:
+        """Calibrate output quantization based on analytical formulas.
+
+        Args:
+            *inputs (QuantizedArray): quantized operation inputs. Quantized weights
+                are storea in the op instance
+
+        Raises:
+            AssertionError: if the operation does not support analytical calibration
+        """
+        raise AssertionError(
+            f"calibrate_analytical_output: not implemented for {self._impl_for_op_named} op"
+        )
 
     def prepare_output(self, qoutput_activation: numpy.ndarray) -> QuantizedArray:
         """Quantize the output of the activation function.
@@ -816,6 +857,15 @@ class QuantizedOp:
         if self.can_fuse():
             output_quant_opts.is_qat = False
         return output_quant_opts
+
+    @classmethod
+    def supported_by_linear_backend(cls) -> bool:
+        """Indicate if this op can be executed on the GLWE linear backend.
+
+        Returns:
+            bool: True if the op can be executed with GLWE.
+        """
+        return False
 
 
 class QuantizedOpUnivariateOfEncrypted(QuantizedOp, is_utility=True):
@@ -931,11 +981,6 @@ class QuantizedMixingOp(QuantizedOp, is_utility=True):
         Returns:
             QuantizedArray: the quantized array that will be passed to the QuantizedModule output.
         """
-
-        out_opts = self._get_output_quant_opts()
-        out_opts.is_signed = False
-        out_opts.is_symmetric = False
-
         # Since we don't know the real bit-width of these quantized values,
         # return a quantizer that has zero offset
         out_params = UniformQuantizationParameters(

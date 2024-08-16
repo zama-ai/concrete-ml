@@ -58,6 +58,7 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedMax,
     QuantizedMaxPool,
     QuantizedMin,
+    QuantizedMixingOp,
     QuantizedMul,
     QuantizedNeg,
     QuantizedNot,
@@ -120,6 +121,21 @@ def quantized_op_results_are_equal(
         value_1, value_2 = quantized_op_1(q_input), quantized_op_2(q_input)
 
     return values_are_equal(value_1, value_2)
+
+
+def quantized_op_implements_analytical_calibration(op_instance):
+    """Check that the op instance overloads the analytical calibration function."""
+    # Can only be called on mixing ops
+    assert isinstance(op_instance, QuantizedMixingOp)
+
+    # Can only be called on ops that do not overload the calibrate_analytical_output function
+    assert (
+        type(op_instance.calibrate_analytical_output)  # pylint: disable=unidiomatic-typecheck
+        != QuantizedMixingOp.calibrate_analytical_output
+    )
+
+    with pytest.raises(AssertionError, match=".*calibrate_analytical_output.*"):
+        op_instance.calibrate_analytical_output()
 
 
 @pytest.mark.parametrize(
@@ -434,6 +450,9 @@ def test_all_arith_ops(
     check_serialization(
         q_op, operator, equal_method=partial(quantized_op_results_are_equal, q_input=q_inputs_1)
     )
+
+    if isinstance(q_op, QuantizedMixingOp):
+        quantized_op_implements_analytical_calibration(q_op)
 
 
 @pytest.mark.parametrize("n_bits", N_BITS_LIST)
