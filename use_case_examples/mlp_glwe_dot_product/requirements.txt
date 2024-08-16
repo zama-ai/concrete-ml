@@ -1,0 +1,4 @@
+-e ../../.
+matplotlib==3.7.5
+jupyter
+# deai wheel 

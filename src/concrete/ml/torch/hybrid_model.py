@@ -15,16 +15,18 @@ from typing import Dict, List, Optional, Tuple, Union
 import numpy
 import requests
 import torch
+import concrete_ml_extensions as deai
 from brevitas.quant_tensor import QuantTensor
 from concrete.fhe import Configuration
 from torch import nn
 
-from ..common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE
+from ..common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE, to_tuple
 from ..deployment.fhe_client_server import FHEModelClient, FHEModelDev, FHEModelServer
 from .compile import (
     QuantizedModule,
     compile_brevitas_qat_model,
     compile_torch_model,
+    build_quantized_module,
     has_any_qnn_layers,
 )
 
@@ -38,6 +40,7 @@ class HybridFHEMode(enum.Enum):
     CALIBRATE = "calibrate"  # Use calibration (to run before FHE compilation)
     EXECUTE = "execute"  # Use FHE execution
     TORCH = "torch"  # Use torch layers
+    DEAI = "deai"
 
 
 def tuple_to_underscore_str(tup: Tuple) -> str:
@@ -109,6 +112,49 @@ def convert_conv1d_to_linear(layer_or_module):
     return layer_or_module
 
 
+def enc_matmul(q_x, q_weight, compression_key, private_key, serialize=True):    
+    q_x_u = q_x.astype(numpy.uint32)
+    q_weight_u = q_weight.astype(numpy.uint32)
+    
+    q_y = numpy.zeros((q_x.shape[0], q_weight.shape[1]), dtype=q_x.dtype)
+    
+    for i, q_x_i in enumerate(q_x_u):
+        for j in range(q_weight_u.shape[1]):
+
+            q_weight_j = numpy.ascontiguousarray(q_weight_u[:, j])
+            
+            if q_x_i.shape != q_weight_j.shape:
+                print()
+            
+            if serialize:
+                serialized_compression_key = compression_key.serialize()
+                compression_key = deai.CompressionKey.deserialize(serialized_compression_key)
+        
+            ciphertext = deai.encrypt(private_key, q_x_i)
+            
+            if serialize:
+                serialized_ciphertext = ciphertext.serialize()
+                ciphertext = deai.CipherText.deserialize(serialized_ciphertext)
+            
+            encrypted_result = deai.dot_product(ciphertext, q_weight_j, compression_key)
+            
+            if serialize:
+                serialized_encrypted_result = encrypted_result.serialize()
+                encrypted_result = deai.CompressedResultCipherText.deserialize(
+                serialized_encrypted_result
+            )
+                
+            decrypted_result_u = deai.decrypt(encrypted_result, private_key)
+            
+            decrypted_result_u_clear = numpy.dot(q_x_i, q_weight_j)
+            
+            if decrypted_result_u != decrypted_result_u_clear:
+                print("Wrong dot product")
+
+            q_y[i][j] = decrypted_result_u
+    
+    return q_y
+
 # pylint: disable-next=too-many-instance-attributes
 class RemoteModule(nn.Module):
     """A wrapper class for the modules to be evaluated remotely with FHE."""
@@ -120,6 +166,10 @@ class RemoteModule(nn.Module):
         module_name: Optional[str] = None,
         model_name: Optional[str] = None,
         verbose: int = 0,
+        private_key = None,
+        compression_key = None,
+        use_linear_layers = False,
+        serialize_deai = True,
     ):
         super().__init__()
         self.private_module: Optional[nn.Module] = module
@@ -134,6 +184,11 @@ class RemoteModule(nn.Module):
         self.module_name: Optional[str] = module_name
         self.model_name: Optional[str] = model_name
         self.verbose = verbose
+
+        self.private_key = private_key
+        self.compression_key = compression_key
+        self.use_linear_layers = use_linear_layers
+        self.serialize_deai = serialize_deai
 
     def init_fhe_client(
         self, path_to_client: Optional[Path] = None, path_to_keys: Optional[Path] = None
@@ -246,6 +301,7 @@ class RemoteModule(nn.Module):
             HybridFHEMode.CALIBRATE,
             HybridFHEMode.REMOTE,
             HybridFHEMode.TORCH,
+            HybridFHEMode.DEAI,
             None,
         }:
             # Using quantized module
@@ -268,6 +324,37 @@ class RemoteModule(nn.Module):
             # Using torch layers
             assert self.private_module is not None
             y = self.private_module(x)
+        elif self.fhe_local_mode == HybridFHEMode.DEAI:
+            assert self.private_q_module is not None
+            assert self.compression_key is not None
+            assert self.private_key is not None
+            
+            weight_bias = list(list(self.private_q_module.quant_layers_dict.values())[0][1].constant_inputs.values())
+            q_weight = weight_bias[0].qvalues
+            # bias = weight_bias[1].qvalues
+            
+            # weight = self.private_module.weight.detach().numpy()
+            
+            if self.use_linear_layers:
+                q_weight = q_weight.T
+            
+            q_x = self.private_q_module.quantize_input(x.detach().numpy())
+            
+            q_results = []
+            for q_x_i in q_x:
+                if len(q_x_i.shape) == 1:
+                    q_x_i = numpy.expand_dims(q_x_i, 0)
+
+                q_result = enc_matmul(q_x_i, q_weight, self.compression_key, self.private_key, serialize=self.serialize_deai)
+
+                q_results.append(q_result[0])
+            
+            q_results = numpy.array(q_results)
+
+            y = torch.Tensor(
+                self.private_q_module.dequantize_output(*to_tuple(q_results))
+            )
+            
         else:  # pragma:no cover
             # Shouldn't happen
             raise ValueError(f"{self.fhe_local_mode} is not recognized")
@@ -360,6 +447,7 @@ class HybridFHEModel:
         server_remote_address: Optional[str] = None,
         model_name: str = "model",
         verbose: int = 0,
+        serialize_deai: bool = True,
     ):
         if not isinstance(model, torch.nn.Module):
             raise TypeError("The model must be a PyTorch or Brevitas model.")
@@ -375,10 +463,13 @@ class HybridFHEModel:
         self.configuration: Optional[Configuration] = None
         self.model_name = model_name
         self.verbose = verbose
+        self.serialize_deai = serialize_deai
         self._replace_modules()
 
     def _replace_modules(self):
         """Replace the private modules in the model with remote layers."""
+        
+        private_key, compression_key = deai.create_private_key()
 
         for module_name in self.module_names:
 
@@ -387,6 +478,9 @@ class HybridFHEModel:
             self.private_modules[module_name] = convert_conv1d_to_linear(
                 self.private_modules[module_name]
             )
+            
+            
+            use_linear_layers = isinstance(self.private_modules[module_name], nn.Linear)
 
             remote_module = RemoteModule(
                 module=self.private_modules[module_name],
@@ -394,6 +488,10 @@ class HybridFHEModel:
                 module_name=module_name,
                 model_name=self.model_name,
                 verbose=self.verbose,
+                private_key=private_key,
+                compression_key=compression_key,
+                use_linear_layers=use_linear_layers,
+                serialize_deai=self.serialize_deai,
             )
 
             self.remote_modules[module_name] = remote_module
@@ -475,6 +573,7 @@ class HybridFHEModel:
         p_error: Optional[float] = None,
         device: str = "cpu",
         configuration: Optional[Configuration] = None,
+        only_build=False,
     ):
         """Compiles the specific layers to FHE.
 
@@ -513,15 +612,22 @@ class HybridFHEModel:
                     device=device,
                 )
             else:
-                self.private_q_modules[name] = compile_torch_model(
-                    self.private_modules[name],
-                    calibration_data_tensor,
-                    n_bits=n_bits,
-                    rounding_threshold_bits=rounding_threshold_bits,
-                    configuration=configuration,
-                    p_error=p_error,
-                    device=device,
-                )
+                if only_build:
+                    self.private_q_modules[name] = build_quantized_module(
+                        self.private_modules[name],
+                        calibration_data_tensor,
+                        n_bits=n_bits,
+                        rounding_threshold_bits=rounding_threshold_bits,
+                    )
+                else:
+                    self.private_q_modules[name] = compile_torch_model(
+                        self.private_modules[name],
+                        calibration_data_tensor,
+                        n_bits=n_bits,
+                        rounding_threshold_bits=rounding_threshold_bits,
+                        configuration=configuration,
+                        p_error=p_error,
+                    )
 
             self.remote_modules[name].private_q_module = self.private_q_modules[name]
 
@@ -571,7 +677,8 @@ class HybridFHEModel:
         torch.save(self.model.state_dict(), complete_model_path.resolve())
 
         def clear_private_info(module):
-            for attr in ["private_module", "calibration_data", "private_q_module"]:
+            # Remove private information
+            for attr in ["private_module", "calibration_data", "private_q_module", "private_key", "compression_key"]:
                 if hasattr(module, attr):
                     setattr(module, attr, None)
 
@@ -583,10 +690,7 @@ class HybridFHEModel:
 
         # Save the model with a specific filename
         model_path = path / "model.pth"
-
-        # Save the model state dict due to a Brevitas issue
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4572
-        torch.save(self.model.state_dict(), model_path.resolve())
+        torch.save(self.model, model_path.resolve())
 
         # Save the FHE circuit in the same directory
         self._save_fhe_circuit(path, via_mlir=via_mlir)

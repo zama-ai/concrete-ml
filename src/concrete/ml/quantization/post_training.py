@@ -904,8 +904,10 @@ class PostTrainingAffineQuantization(ONNXConverter):
         return QuantizedArray(
             n_bits,
             values,
-            is_signed=is_signed,
-            is_symmetric=is_symmetric,
+            # is_signed=is_signed,
+            # is_symmetric=is_symmetric,
+            is_signed=False,
+            is_symmetric=False,
         )
 
     def _get_input_quant_opts(
@@ -937,7 +939,7 @@ class PostTrainingAffineQuantization(ONNXConverter):
 
         opts = QuantizationOptions(
             n_bits,
-            is_signed=is_signed,
+            is_signed=False,
         )
         return opts
 
