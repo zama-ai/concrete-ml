@@ -675,6 +675,9 @@ def test_compile_brevitas_qat(
     )
 
 
+# Update this test to align with Concrete's simulation fix.
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4578
+@pytest.mark.xfail
 @pytest.mark.parametrize(
     "model_class, expected_onnx_str",
     [

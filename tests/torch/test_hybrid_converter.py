@@ -62,7 +62,7 @@ def run_hybrid_llm_test(
         try:
             hybrid_model.compile_model(
                 inputs,
-                p_error=0.1,
+                p_error=10e-40,  # compare precisely simulate and disable
                 n_bits=9,
                 rounding_threshold_bits=8,
                 configuration=configuration,
