@@ -555,7 +555,7 @@ class HybridFHEModel:
         model_path = path / "model.pth"
 
         # Save the model state dict due to a Brevitas issue
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4571
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4572
         torch.save(self.model.state_dict(), model_path.resolve())
 
         # Save the FHE circuit in the same directory
