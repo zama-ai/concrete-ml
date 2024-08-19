@@ -53,11 +53,12 @@ class FCSmall(nn.Module):
     def forward(self, x):
         return self.seq(x)
 
-model = FCSmall(10)
+dim = 10
+model = FCSmall(dim)
 model_name = "FCSmall"
 submodule_name = "seq.0"
 
-inputs = torch.Tensor(np.random.uniform(size=(10, 10)))
+inputs = torch.Tensor(np.random.uniform(size=(10, dim)))
 # Prints ['', 'seq', 'seq.0', 'seq.1', 'seq.2']
 print([k for (k, _) in model.named_modules()])
 
@@ -67,7 +68,6 @@ hybrid_model.compile_model(
     inputs,
     n_bits=8,
 )
-
 
 models_dir = Path(os.path.abspath('')) / "compiled_models"
 models_dir.mkdir(exist_ok=True)
@@ -110,7 +110,7 @@ You can develop a client application that deploys a model with hybrid deployment
 ```python
 # Modify model to use remote FHE server instead of local weights
 hybrid_model = HybridFHEModel(
-    model,
+    model,  # PyTorch or Brevitas model
     submodule_name,
     server_remote_address="http://0.0.0.0:8000",
     model_name=f"{model_name}",
@@ -122,7 +122,7 @@ Next, obtain the parameters necessary to encrypt and quantize data, as detailed 
 
 <!--pytest-codeblocks:skip-->
 
-```
+```python
 path_to_clients = Path(__file__).parent / "clients"
 hybrid_model.init_client(path_to_clients=path_to_clients)
 ```
@@ -131,7 +131,7 @@ When the client application is ready to make inference requests to the server, s
 
 <!--pytest-codeblocks:skip-->
 
-```
+```python
 for module in hybrid_model.remote_modules.values():
     module.fhe_local_mode = HybridFHEMode.REMOTE    
 ```
@@ -141,7 +141,7 @@ For inference with the `HybridFHEModel` instance, `hybrid_model`, call the regul
 <!--pytest-codeblocks:skip-->
 
 ```python
-hybrid_model.forward(torch.randn((dim, )))
+hybrid_model(torch.randn((dim, )))
 ```
 
 When calling `forward`, the `HybridFHEModel` handles all the necessary intermediate steps for each model part deployed remotely, including:
