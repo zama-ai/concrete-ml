@@ -144,7 +144,7 @@ For inference with the `HybridFHEModel` instance, `hybrid_model`, call the regul
 hybrid_model(torch.randn((dim, )))
 ```
 
-When calling `forward`, the `HybridFHEModel` handles all the necessary intermediate steps for each model part deployed remotely, including:
+When calling `HybridFHEModel`, it handles all the necessary intermediate steps for each model part deployed remotely, including:
 
 - Quantizing the data.
 - Encrypting the data.
