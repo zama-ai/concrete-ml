@@ -144,6 +144,10 @@ For inference with the `HybridFHEModel` instance, `hybrid_model`, call the regul
 hybrid_model(torch.randn((dim, )))
 ```
 
+<!-- Add a forward method to hybridfhemodel?-->
+
+<!-- FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4579-->
+
 When calling `HybridFHEModel`, it handles all the necessary intermediate steps for each model part deployed remotely, including:
 
 - Quantizing the data.
