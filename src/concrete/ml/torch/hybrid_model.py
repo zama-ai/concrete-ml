@@ -362,7 +362,7 @@ class HybridFHEModel:
         verbose: int = 0,
     ):
         if not isinstance(model, torch.nn.Module):
-            raise TypeError("The model must be a PyTorch model.")
+            raise TypeError("The model must be a PyTorch or Brevitas model.")
 
         self.model = model
         self.module_names = [module_names] if isinstance(module_names, str) else module_names
@@ -552,7 +552,6 @@ class HybridFHEModel:
         path.mkdir(parents=True, exist_ok=True)
         for name in self.module_names:
             module = self._get_module_by_name(self.model, name)
-
             # Remove private information
             for attr in ["private_module", "calibration_data", "private_q_module"]:
                 if hasattr(module, attr):

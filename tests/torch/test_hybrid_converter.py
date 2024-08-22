@@ -124,9 +124,11 @@ def run_hybrid_llm_test(
 
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_dir_path = Path(temp_dir)
+
         # Get the temp directory path
         hybrid_model.save_and_clear_private_info(temp_dir_path)
         hybrid_model.set_fhe_mode("remote")
+
         # At this point, the hybrid model does not have
         # the parameters necessaryto run the module_names
         module_names = module_names if isinstance(module_names, list) else [module_names]
@@ -236,5 +238,5 @@ def test_invalid_model():
     invalid_model = "This_is_not_a_model"
 
     # Attempt to create a HybridFHEModel with an invalid model type and expect a TypeError
-    with pytest.raises(TypeError, match="The model must be a PyTorch model."):
+    with pytest.raises(TypeError, match="The model must be a PyTorch or Brevitas model."):
         HybridFHEModel(invalid_model, module_names="sub_module")
