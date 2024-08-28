@@ -296,7 +296,7 @@ ARITH_N_BITS_LIST = [20, 16, 8]
         (QuantizedMul, True, 20),
         (QuantizedPow, False, 8),
         (QuantizedOr, False, 8),
-        (QuantizedDiv, True, 20),
+        (QuantizedDiv, True, 21),
         (QuantizedMin, False, 8),
         (QuantizedMax, False, 8),
     ],
