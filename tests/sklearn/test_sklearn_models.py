@@ -1765,6 +1765,7 @@ def test_predict_correctness(
     n_bits,
     load_data,
     default_configuration,
+    get_device_for_compilation,
     check_is_good_execution_for_cml_vs_circuit,
     is_weekly_option,
     verbose=True,
@@ -1786,7 +1787,11 @@ def test_predict_correctness(
     if verbose:
         print("Compile the model")
 
-    model.compile(x, default_configuration)
+    model.compile(
+        x,
+        default_configuration,
+        device=get_device_for_compilation("simulate" if simulate else "execute"),
+    )
 
     if verbose:
         print(f"Check prediction correctness for {fhe_samples} samples.")

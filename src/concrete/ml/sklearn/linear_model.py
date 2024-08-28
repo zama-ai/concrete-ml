@@ -11,7 +11,7 @@ from concrete.fhe import Configuration
 from concrete.fhe import Value as EncryptedValue
 from sklearn.preprocessing import LabelEncoder
 
-from ..common.utils import FheMode
+from ..common.utils import FheMode, check_compilation_device_is_valid_and_is_cuda
 from ..onnx.ops_impl import numpy_sigmoid
 from ..quantization import QuantizedModule
 from ..torch.compile import _compile_torch_or_onnx_model
@@ -280,6 +280,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         self,
         x_min: numpy.ndarray,
         x_max: numpy.ndarray,
+        device: str,
     ) -> QuantizedModule:
         """Get the quantized module for FHE training.
 
@@ -359,7 +360,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
 
         # Compile the model using the compile set
         if self.verbose:
-            print("Compiling training circuit ...")
+            print(f"Compiling training circuit on device '{device}'...")
 
         start = time.time()
         training_quantized_module = _compile_torch_or_onnx_model(
@@ -371,6 +372,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
             configuration=configuration,
             reduce_sum_copy=True,
             composition_mapping=composition_mapping,
+            device=device,
         )
         end = time.time()
 
@@ -434,6 +436,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         intercept_init: Optional[numpy.ndarray] = None,
         is_partial_fit: bool = False,
         classes: Optional[numpy.ndarray] = None,
+        device: Optional[str] = "cpu",
     ):
         """Fit SGDClassifier in FHE.
 
@@ -534,8 +537,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
 
             # Build and compile the training quantized module
             self.training_quantized_module = self._get_training_quantized_module(
-                x_min=x_min,
-                x_max=x_max,
+                x_min=x_min, x_max=x_max, device=device
             )
 
         y = self.label_encoder.transform(y)
@@ -778,6 +780,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         coef_init: Optional[numpy.ndarray] = None,
         intercept_init: Optional[numpy.ndarray] = None,
         sample_weight: Optional[numpy.ndarray] = None,
+        device: Optional[str] = "cpu",
     ):
         """Fit SGDClassifier.
 
@@ -841,6 +844,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
                 fhe=fhe,
                 coef_init=coef_init,
                 intercept_init=intercept_init,
+                device=device,
             )
 
         if fhe is not None:

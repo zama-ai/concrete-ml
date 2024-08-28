@@ -60,6 +60,12 @@ def pytest_addoption(parser):
     )
 
     parser.addoption(
+        "--use_gpu",
+        action="store_true",
+        help="Force GPU compilation and execution in tests.",
+    )
+
+    parser.addoption(
         "--no-flaky", action="store_true", default=False, help="Don't run known flaky tests."
     )
 
@@ -273,6 +279,25 @@ def is_weekly_option(request):
     """Say if we are in --weekly configuration."""
     is_weekly = request.config.getoption("--weekly")
     return is_weekly
+
+
+@pytest.fixture
+def device_for_tests(request):
+    """Say if we are in --weekly configuration."""
+    use_gpu = request.config.getoption("--use_gpu")
+    return "cuda" if use_gpu else "cpu"
+
+
+@pytest.fixture
+def get_device_for_compilation(device_for_tests):
+    """."""
+
+    def get_device_for_compilation_impl(fhe_mode):
+        if fhe_mode == "execute":
+            return device_for_tests
+        return "cpu"
+
+    return get_device_for_compilation_impl
 
 
 # Method is not ideal as some MLIR can contain TLUs but not the associated graph

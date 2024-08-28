@@ -695,7 +695,7 @@ def check_device_is_valid(device: str, parse_device_ids: bool) -> str:
         if has_device_id:
             try:
                 ridx = device.rindex(":")
-                device_id = int(device[ridx+1:])
+                device_id = int(device[ridx + 1 :])
                 device = device[0:ridx]
             except:
                 raise ValueError(
@@ -714,13 +714,11 @@ def check_device_is_valid(device: str, parse_device_ids: bool) -> str:
             f"Model compilation targets given through the `device` "
             f"argument can be one of {str_devices}"
         )
-    
+
     return device
 
 
-def check_compilation_device_is_valid_and_is_cuda(
-    device: str
-) -> bool:
+def check_compilation_device_is_valid_and_is_cuda(device: str) -> bool:
     """Checks whether the device string for compilation or FHE execution is CUDA or CPU.
 
     Args:
@@ -743,7 +741,6 @@ def check_compilation_device_is_valid_and_is_cuda(
     # All other devices are considered cpu for now
     is_cuda = device == "cuda"
 
-
     if is_cuda:
         if not check_gpu_enabled():
             raise ValueError(
@@ -752,7 +749,6 @@ def check_compilation_device_is_valid_and_is_cuda(
                 "install a GPU-enabled Concrete-Python package."
             )
 
-
         return True
 
     return False
@@ -760,34 +756,12 @@ def check_compilation_device_is_valid_and_is_cuda(
 
 def check_execution_device_is_valid_and_is_cuda(
     is_compiled_for_cuda: bool,
-    fhe: Union[FheMode, str],    
-    device: Optional[str] = "cpu",  
+    fhe: Union[FheMode, str],
 ) -> bool:
 
-    # Only parse device ids for FHE execution
-    device = check_device_is_valid(device, True)
-
-    # All other devices are considered cpu for now
-    is_cuda_requested = device == "cuda"    
-
-    if is_cuda_requested:
-        assert_true(fhe is not None, 
-            "The fhe execution mode was not set when checking a device type " "for FHE execution"
-        )
-
-        if not fhe == FheMode.EXECUTE:
-            raise ValueError(
-                "CUDA execution can only be enabled for circuit execution on"
-                "encrypted data with fhe='execute'"
-            )
-        
+    if fhe == FheMode.EXECUTE and is_compiled_for_cuda:
         if not check_gpu_available():
             raise ValueError(
                 "CUDA FHE execution was requested but no compatible CUDA "
                 "enabled device could be found"
             )
-    else:
-        if is_compiled_for_cuda:
-            raise ValueError("You are setting fhe=execute for a model you "
-                             "")
-    

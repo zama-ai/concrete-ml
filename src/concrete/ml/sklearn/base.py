@@ -612,7 +612,7 @@ class BaseEstimator:
             numpy.ndarray: The quantized predicted values.
         """
 
-    def predict(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE, device: Optional[str] = "cpu") -> numpy.ndarray:
+    def predict(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
         """Predict values for X, in FHE or in the clear.
 
         Args:
@@ -638,7 +638,7 @@ class BaseEstimator:
         # Check that the model is properly fitted
         self.check_model_is_fitted()
 
-        check_execution_device_is_valid_and_is_cuda(self._compiled_for_cuda, fhe=fhe, device=device)
+        check_execution_device_is_valid_and_is_cuda(self._compiled_for_cuda, fhe=fhe)
 
         # Ensure inputs are 2D
         if isinstance(X, (numpy.ndarray, torch.Tensor)) and X.ndim == 1:
