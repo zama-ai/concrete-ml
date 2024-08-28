@@ -192,7 +192,8 @@ class RemoteModule(nn.Module):
                 file.write(client_response.content)
             # Create the client
             client = FHEModelClient(
-                path_dir=str(path_to_client.resolve()), key_dir=str(self.path_to_keys.resolve())
+                path_dir=str(path_to_client.resolve()),
+                key_dir=str(self.path_to_keys.resolve()),
             )
             # The client first need to create the private and evaluation keys.
             serialized_evaluation_keys = client.get_serialized_evaluation_keys()
@@ -218,7 +219,7 @@ class RemoteModule(nn.Module):
             # towards client lazy loading with caching as done on the server.
             self.clients[shape] = (uid, client)
 
-    def forward(self, x: torch.Tensor) -> Union[torch.Tensor, QuantTensor]:
+    def forward(self, *x: torch.Tensor) -> Union[torch.Tensor, QuantTensor]:
         """Forward pass of the remote module.
 
         To change the behavior of this forward function one must change the fhe_local_mode
@@ -242,6 +243,10 @@ class RemoteModule(nn.Module):
         # - simulate: compiled simulation
         # - calibrate: calibration
 
+        devices = [elt.device for elt in x]
+        device = devices[0]
+        assert all(elt.device == device for elt in x)
+
         if self.fhe_local_mode not in {
             HybridFHEMode.CALIBRATE,
             HybridFHEMode.REMOTE,
@@ -250,24 +255,32 @@ class RemoteModule(nn.Module):
         }:
             # Using quantized module
             assert self.private_q_module is not None
-            y = torch.Tensor(
-                self.private_q_module.forward(x.detach().numpy(), fhe=self.fhe_local_mode.value)
+            out = self.private_q_module.forward(
+                *(elt.to("cpu").detach().numpy() for elt in x),
+                fhe=self.fhe_local_mode.value,
+            )
+
+            # TODO: support multi-output
+            y = torch.tensor(
+                out,
+                device=device,
+                dtype=torch.float64 if device == "cpu" else torch.float32,
             )
 
         elif self.fhe_local_mode == HybridFHEMode.CALIBRATE:
             # Calling torch + gathering calibration data
             assert self.private_module is not None
-            self.calibration_data.append(x.detach())
-            y = self.private_module(x)
+            self.calibration_data.append(tuple(elt.to("cpu").detach() for elt in x))
+            y = self.private_module(*x).to(device)
             assert isinstance(y, (QuantTensor, torch.Tensor))
 
         elif self.fhe_local_mode == HybridFHEMode.REMOTE:  # pragma:no cover
             # Remote call
-            y = self.remote_call(x)
+            y = self.remote_call(*x).to(device)
         elif self.fhe_local_mode == HybridFHEMode.TORCH:
             # Using torch layers
             assert self.private_module is not None
-            y = self.private_module(x)
+            y = self.private_module(*x).to(device)
         else:  # pragma:no cover
             # Shouldn't happen
             raise ValueError(f"{self.fhe_local_mode} is not recognized")
@@ -371,6 +384,11 @@ class HybridFHEModel:
         self.verbose = verbose
         self._replace_modules()
 
+    def __getattr__(self, name: str):
+        if name in self.__dict__:
+            return self.__dict__[name]
+        return getattr(self.model, name)
+
     def _replace_modules(self):
         """Replace the private modules in the model with remote layers."""
 
@@ -399,7 +417,7 @@ class HybridFHEModel:
             )
             setattr(parent_module, last, remote_module)
 
-    def __call__(self, x: torch.Tensor, fhe: str = "disable") -> torch.Tensor:
+    def __call__(self, *x: torch.Tensor, fhe: str = "disable") -> torch.Tensor:
         """Call method to run the model locally with a fhe mode.
 
         Args:
@@ -410,8 +428,8 @@ class HybridFHEModel:
             (torch.Tensor): The output tensor.
         """
         self.set_fhe_mode(fhe)
-        x = self.model(x)
-        return x
+        y = self.model(*x)
+        return y
 
     @staticmethod
     def _get_module_by_name(model: nn.Module, name: str) -> Union[RemoteModule, nn.Module]:
@@ -434,7 +452,9 @@ class HybridFHEModel:
         raise ValueError(f"No module found for name {name} in {list(model.named_modules())}")
 
     def init_client(
-        self, path_to_clients: Optional[Path] = None, path_to_keys: Optional[Path] = None
+        self,
+        path_to_clients: Optional[Path] = None,
+        path_to_keys: Optional[Path] = None,
     ):  # pragma:no cover
         """Initialize client for all remote modules.
 
@@ -452,7 +472,7 @@ class HybridFHEModel:
 
     def compile_model(
         self,
-        x: torch.Tensor,
+        *x: torch.Tensor,
         n_bits: Union[int, Dict[str, int]] = MAX_BITWIDTH_BACKWARD_COMPATIBLE,
         rounding_threshold_bits: Optional[int] = None,
         p_error: Optional[float] = None,
@@ -473,7 +493,16 @@ class HybridFHEModel:
         """
         # We do a forward pass where we accumulate inputs to use for compilation
         self.set_fhe_mode(HybridFHEMode.CALIBRATE)
-        self.model(x)
+
+        if self.verbose >= 2:
+            print("Doing first forward pass")
+
+        # Would there be a way to finish the execution after the last remote module
+        with torch.no_grad():
+            self.model(*x)
+
+        if self.verbose >= 2:
+            print("First forward pass done")
 
         self.configuration = configuration
 
@@ -481,7 +510,15 @@ class HybridFHEModel:
             remote_module = self._get_module_by_name(self.model, name)
             assert isinstance(remote_module, RemoteModule)
 
-            calibration_data_tensor = torch.cat(remote_module.calibration_data, dim=0)
+            assert remote_module.calibration_data
+            num_arg = len(remote_module.calibration_data[0])
+            assert all(num_arg == len(elt) for elt in remote_module.calibration_data)
+            calibration_data_tensor: Tuple[torch.Tensor, ...] = tuple(
+                torch.cat([elt[arg_index] for elt in remote_module.calibration_data], dim=0)
+                for arg_index in range(num_arg)
+            )
+            if self.verbose >= 2:
+                print(f"Compiling {name}")
 
             if has_any_qnn_layers(self.private_modules[name]):
                 self.private_q_modules[name] = compile_brevitas_qat_model(
@@ -503,6 +540,9 @@ class HybridFHEModel:
                 )
 
             self.remote_modules[name].private_q_module = self.private_q_modules[name]
+
+            if self.verbose >= 2:
+                print(f"Done compiling {name}")
 
     def _save_fhe_circuit(self, path: Path, via_mlir=False):
         """Private method that saves the FHE circuits.
