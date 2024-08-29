@@ -805,7 +805,7 @@ class QuantizedModule:
         global_p_error: Optional[float] = None,
         verbose: bool = False,
         inputs_encryption_status: Optional[Sequence[str]] = None,
-        device: Optional[str] = "cpu",
+        device: str = "cpu",
     ) -> Circuit:
         """Compile the module's forward function.
 
@@ -829,6 +829,7 @@ class QuantizedModule:
                 during compilation. Default to False.
             inputs_encryption_status (Optional[Sequence[str]]): encryption status ('clear',
                 'encrypted') for each input.
+            device: FHE compilation device, can be either 'cpu' or 'cuda'.
 
         Returns:
             Circuit: The compiled Circuit.

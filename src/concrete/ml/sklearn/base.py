@@ -515,7 +515,7 @@ class BaseEstimator:
         p_error: Optional[float] = None,
         global_p_error: Optional[float] = None,
         verbose: bool = False,
-        device: Optional[str] = "cpu",
+        device: str = "cpu",
     ) -> Circuit:
         """Compile the model.
 
@@ -538,6 +538,7 @@ class BaseEstimator:
                 currently set to 0. Default to None, which sets this error to a default value.
             verbose (bool): Indicate if compilation information should be printed
                 during compilation. Default to False.
+            device: FHE compilation device, can be either 'cpu' or 'cuda'.
 
         Returns:
             Circuit: The compiled Circuit.
@@ -1179,7 +1180,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         p_error: Optional[float] = None,
         global_p_error: Optional[float] = None,
         verbose: bool = False,
-        device: Optional[str] = "cpu",
+        device: str = "cpu",
     ) -> Circuit:
         # Reset for double compile
         self._is_compiled = False

@@ -270,6 +270,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
                     n_bits=n_bits,
                     configuration=default_configuration,
                     verbose=verbose,
+                    device="cpu",
                 )
 
             else:
@@ -280,6 +281,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
                     configuration=default_configuration,
                     n_bits=n_bits,
                     verbose=verbose,
+                    device="cpu",
                 )
 
         accuracy_test_rounding(

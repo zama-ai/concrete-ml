@@ -687,27 +687,20 @@ def process_rounding_threshold_bits(rounding_threshold_bits):
     return rounding_threshold_bits
 
 
-def check_device_is_valid(device: str, parse_device_ids: bool) -> str:
-    device_id = None
-    str_devices = "[" + ",".join(map(lambda s: "'" + s + "'", SUPPORTED_DEVICES)) + "]"
-    if parse_device_ids:
-        has_device_id = ":" in device
-        if has_device_id:
-            try:
-                ridx = device.rindex(":")
-                device_id = int(device[ridx + 1 :])
-                device = device[0:ridx]
-            except:
-                raise ValueError(
-                    f"Can not parse device ID from device string {device}, "
-                    "valid formats are cuda:0, cuda:1, etc."
-                )
+def check_device_is_valid(device: str) -> str:
+    """Check whether the device string is valid or raise an exception.
 
-    if device_id is not None:
-        raise ValueError(
-            f"Selecting specific CUDA devices is not supported for now. "
-            f"Please use a device from {str_devices} "
-        )
+    Args:
+        device (str): the device string. Valid values are 'cpu', 'cuda'
+
+    Returns:
+        str: the valid device string
+
+    Raises:
+        ValueError: if the device string is incorrect
+    """
+
+    str_devices = "[" + ",".join(map(lambda s: "'" + s + "'", SUPPORTED_DEVICES)) + "]"
 
     if device not in SUPPORTED_DEVICES:
         raise ValueError(
@@ -719,24 +712,20 @@ def check_device_is_valid(device: str, parse_device_ids: bool) -> str:
 
 
 def check_compilation_device_is_valid_and_is_cuda(device: str) -> bool:
-    """Checks whether the device string for compilation or FHE execution is CUDA or CPU.
+    """Check whether the device string for compilation or FHE execution is CUDA or CPU.
 
     Args:
         device (str): the device string. Valid values are 'cpu', 'cuda'
-        is_compilation_stage (bool): whether the check applies to the compilation stage.
-            Set to False when checking the device string at FHE execution stage.
-        fhe (Union[FheMode, str]): the FHE execution mode (disable/simulate/execute)
 
     Returns:
-        bool: whether GPU should be enabled for compilation or FHE execution
+        bool: whether GPU should be enabled for compilation
 
     Raises:
         ValueError: if the device string is incorrect or if CUDA is not supported
-            for the requested stage
     """
 
     # Only parse device ids for FHE execution
-    device = check_device_is_valid(device, False)
+    device = check_device_is_valid(device)
 
     # All other devices are considered cpu for now
     is_cuda = device == "cuda"
@@ -757,7 +746,16 @@ def check_compilation_device_is_valid_and_is_cuda(device: str) -> bool:
 def check_execution_device_is_valid_and_is_cuda(
     is_compiled_for_cuda: bool,
     fhe: Union[FheMode, str],
-) -> bool:
+) -> None:
+    """Check whether the circuit can be executed on the required device.
+
+    Args:
+        is_compiled_for_cuda (bool): whether the circuit is compiled for CUDA
+        fhe (Union[FheMode, str]): the execution mode of the circuit
+
+    Raises:
+        ValueError: if the requested device is not available
+    """
 
     if fhe == FheMode.EXECUTE and is_compiled_for_cuda:
         if not check_gpu_available():

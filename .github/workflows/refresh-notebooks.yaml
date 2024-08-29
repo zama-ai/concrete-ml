@@ -34,7 +34,7 @@ jobs:
           mode: start
           github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
           ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
-          ec2-instance-type: "m6i.metal"
+          ec2-instance-type: "p3.2xlarge"
           subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
           security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
 
@@ -87,7 +87,7 @@ jobs:
 
       - name: Refresh Notebooks
         run: |
-          make jupyter_execute
+          make jupyter_execute_gpu
 
       - name: Prepare PR Body
         run: |

@@ -282,17 +282,12 @@ def is_weekly_option(request):
 
 
 @pytest.fixture
-def device_for_tests(request):
-    """Say if we are in --weekly configuration."""
-    use_gpu = request.config.getoption("--use_gpu")
-    return "cuda" if use_gpu else "cpu"
-
-
-@pytest.fixture
-def get_device_for_compilation(device_for_tests):
-    """."""
+def get_device_for_compilation(request):
+    """Get the hardware device to compile circuits in tests."""
 
     def get_device_for_compilation_impl(fhe_mode):
+        use_gpu = request.config.getoption("--use_gpu")
+        device_for_tests = "cuda" if use_gpu else "cpu"
         if fhe_mode == "execute":
             return device_for_tests
         return "cpu"

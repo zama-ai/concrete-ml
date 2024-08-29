@@ -463,6 +463,11 @@ jupyter_execute:
 	poetry run env ./script/make_utils/jupyter.sh --run_all_notebooks
 	"$(MAKE)" finalize_nb
 
+.PHONY: jupyter_execute_gpu # Execute all GPU jupyter notebooks sequentially and sanitize
+jupyter_execute_gpu:
+	poetry run env ./script/make_utils/jupyter.sh --run_all_notebooks_gpu
+	"$(MAKE)" finalize_nb
+
 .PHONY: jupyter_execute_one # Execute one jupyter notebook and sanitize
 jupyter_execute_one:
 	poetry run env ./script/make_utils/jupyter.sh --run_notebook "$${NOTEBOOK}"

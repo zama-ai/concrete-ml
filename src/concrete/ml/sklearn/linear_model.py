@@ -11,7 +11,7 @@ from concrete.fhe import Configuration
 from concrete.fhe import Value as EncryptedValue
 from sklearn.preprocessing import LabelEncoder
 
-from ..common.utils import FheMode, check_compilation_device_is_valid_and_is_cuda
+from ..common.utils import FheMode
 from ..onnx.ops_impl import numpy_sigmoid
 from ..quantization import QuantizedModule
 from ..torch.compile import _compile_torch_or_onnx_model
@@ -289,6 +289,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         Args:
             x_min (numpy.ndarray): The minimum value to consider for each feature over the samples.
             x_max (numpy.ndarray): The maximum value to consider for each feature over the samples.
+            device (str): FHE compilation device, can be either 'cpu' or 'cuda'.
 
         Returns:
             (QuantizedModule): The quantized module containing the FHE circuit for training.
@@ -436,7 +437,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         intercept_init: Optional[numpy.ndarray] = None,
         is_partial_fit: bool = False,
         classes: Optional[numpy.ndarray] = None,
-        device: Optional[str] = "cpu",
+        device: str = "cpu",
     ):
         """Fit SGDClassifier in FHE.
 
@@ -466,6 +467,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
             is_partial_fit (bool): Indicates if this fit represents a partial fit. A partial fit is
                 similar to a fit but with only a single iteration.
             classes (Optional[numpy.ndarray]): should be specified in the first call to partial fit.
+            device: FHE compilation device, can be either 'cpu' or 'cuda'.
 
         Returns:
             The fitted estimator.
@@ -780,7 +782,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         coef_init: Optional[numpy.ndarray] = None,
         intercept_init: Optional[numpy.ndarray] = None,
         sample_weight: Optional[numpy.ndarray] = None,
-        device: Optional[str] = "cpu",
+        device: str = "cpu",
     ):
         """Fit SGDClassifier.
 
@@ -806,6 +808,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
                 optimization. Default to None.
             sample_weight (Optional[numpy.ndarray]): Weights applied to individual samples (1. for
                 unweighted). It is currently not supported for FHE training. Default to None.
+            device: FHE compilation device, can be either 'cpu' or 'cuda'.
 
         Returns:
             The fitted estimator.
