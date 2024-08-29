@@ -8,6 +8,7 @@
 from typing import Any, Dict, Optional, Sequence, Set, Union
 
 import numpy
+import numpy.typing as npt
 from concrete.fhe import conv as fhe_conv
 from concrete.fhe import maxpool as fhe_maxpool
 from concrete.fhe import tag, univariate, zeros
@@ -162,7 +163,7 @@ class QuantizedGemm(QuantizedMixingOp):
             f"Got alpha == {alpha} and beta == {beta}.",
         )
 
-    # pylint: disable-next=too-many-statements,too-many-locals
+    # pylint: disable-next=too-many-statements,too-many-locals,too-many-branches
     def q_impl(
         self,
         *q_inputs: ONNXOpInputOutputType,
@@ -420,7 +421,16 @@ class QuantizedGemm(QuantizedMixingOp):
         # Note that here we do not rescale to the output_scale and we do not add a zero-point
         # Any following Gemm/MatMul/Conv layers will do the rescaling (during re-quantization)
         # by calling _prepare_inputs_with_constants(...quantize_real_values=True)
-        m_matmul = q_input1.quantizer.scale * q_input2.quantizer.scale
+        m_matmul: npt.NDArray[numpy.float64]
+
+        # Handle channel-wise quantization
+        if q_input2.quantizer.scale.shape == tuple():
+            m_matmul = q_input1.quantizer.scale * q_input2.quantizer.scale
+        else:
+            assert q_input2.quantizer.scale.shape == (q_input2.qvalues.shape[0], 1)
+            weight_quant_scale = numpy.transpose(q_input2.quantizer.scale, axes=(1, 0))
+            assert isinstance(weight_quant_scale, numpy.ndarray)
+            m_matmul = q_input1.quantizer.scale * weight_quant_scale
 
         # If this operation's result are network outputs, return
         # directly the integer values and a appropriate quantization parameters that
@@ -566,7 +576,7 @@ class QuantizedAdd(QuantizedMixingOp):
         # If this operator is the last one in the graph,
         # we rescale using the smallest scale to keep all information
         if self.produces_graph_output:
-            common_scale = min(q_input_0.quantizer.scale, q_input_1.quantizer.scale)
+            common_scale = numpy.minimum(q_input_0.quantizer.scale, q_input_1.quantizer.scale)
         # Otherwise we use the output op quantization scale
         else:
             common_scale = self.output_quant_params.scale
@@ -953,7 +963,21 @@ class QuantizedConv(QuantizedMixingOp):
         # This is going to be compiled with a PBS (along with the following activation function)
         # Note that we don't re-quantize the output of the conv, this will be done by
         # any Gemm/Add/Conv layers that follow
-        m_matmul = q_input.quantizer.scale * q_weights.quantizer.scale
+        m_matmul: npt.NDArray[numpy.float64]
+        if q_weights.quantizer.scale.shape == tuple():
+            m_matmul = q_input.quantizer.scale * q_weights.quantizer.scale
+        else:
+            expected_scale_shape = (
+                q_weights.qvalues.shape[0],
+                *(1 for _ in q_weights.qvalues.shape[1:]),
+            )
+            assert q_weights.quantizer.scale.shape == expected_scale_shape
+            weight_quant_scale = numpy.transpose(
+                q_weights.quantizer.scale,
+                axes=(1, 0, *(index for index in range(2, len(expected_scale_shape)))),
+            )
+            assert isinstance(weight_quant_scale, numpy.ndarray)
+            m_matmul = q_input.quantizer.scale * weight_quant_scale
 
         bias_shape = (1, -1, 1) if is_conv1d else (1, -1, 1, 1)
 
@@ -1046,7 +1070,10 @@ class QuantizedAvgPool(QuantizedMixingOp):
         self.auto_pad = attrs.get("auto_pad", "NOTSET")
         self.kernel_shape = attrs.get("kernel_shape", None)
 
-        assert_true(self.kernel_shape is not None, "Setting parameter 'kernel_shape' is required.")
+        assert_true(
+            self.kernel_shape is not None,
+            "Setting parameter 'kernel_shape' is required.",
+        )
 
         self.count_include_pad = attrs.get("count_include_pad", 1)
         self.pads = attrs.get("pads", tuple([0] * 2 * (len(self.kernel_shape) - 2)))
@@ -1365,7 +1392,10 @@ class QuantizedPad(QuantizedOp):
         assert_true(pads.size == 4, "Not currently supporting padding of 3D tensors")
 
         pad_value = 0 if prepared_inputs[2] is None else prepared_inputs[2]
-        assert_true(pad_value == 0, "Concrete ML only supports padding with constant zero values")
+        assert_true(
+            pad_value == 0,
+            "Concrete ML only supports padding with constant zero values",
+        )
 
         assert q_input.quantizer.zero_point is not None
         q_input_pad = numpy_onnx_pad(q_input.qvalues, pads, q_input.quantizer.zero_point, True)
@@ -2289,7 +2319,7 @@ class QuantizedBrevitasQuant(QuantizedOp):
         n_bits = int(self.constant_inputs[3])
 
         self.output_quant_params = UniformQuantizationParameters(
-            scale=numpy.float64(self.constant_inputs[1]),
+            scale=numpy.array(self.constant_inputs[1], dtype=float),
             zero_point=int(self.constant_inputs[2]),
             offset=2 ** (n_bits - 1) if self.is_signed else 0,
         )
@@ -2913,7 +2943,11 @@ class QuantizedUnfold(QuantizedMixingOp):
 
         # Compute padding with floor and apply it to the input, pad with the input zero-point
         pool_pads = compute_onnx_pool_padding(
-            q_input.qvalues.shape, self.kernel_shape, self.pads, self.strides, ceil_mode=0
+            q_input.qvalues.shape,
+            self.kernel_shape,
+            self.pads,
+            self.strides,
+            ceil_mode=0,
         )
 
         # Can only pad with scalar zero-points, but zero-points can be float in special cases
@@ -2929,7 +2963,14 @@ class QuantizedUnfold(QuantizedMixingOp):
 
         with tag(self.op_instance_name + ".unfold"):
             sum_result = fhe_conv(
-                q_input_pad, kernels, None, fake_pads, self.strides, None, None, n_in_channels
+                q_input_pad,
+                kernels,
+                None,
+                fake_pads,
+                self.strides,
+                None,
+                None,
+                n_in_channels,
             )
 
         if self.debug_value_tracker is not None:

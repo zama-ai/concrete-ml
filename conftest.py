@@ -60,7 +60,10 @@ def pytest_addoption(parser):
     )
 
     parser.addoption(
-        "--no-flaky", action="store_true", default=False, help="Don't run known flaky tests."
+        "--no-flaky",
+        action="store_true",
+        default=False,
+        help="Don't run known flaky tests.",
     )
 
 
