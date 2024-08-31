@@ -734,7 +734,7 @@ def check_compilation_device_is_valid_and_is_cuda(device: str) -> bool:
         and not device == "cuda"
     ):
         print(f"Compilation device override, was '{device}' -> change to 'cuda'")
-        device == "cuda"
+        device = "cuda"
 
     # All other devices are considered cpu for now
     is_cuda = device == "cuda"

@@ -4,7 +4,7 @@ import numpy
 import pandas
 import pytest
 import torch
-from concrete.compiler import check_gpu_available, check_gpu_enabled
+from concrete.compiler import check_gpu_enabled
 from torch.utils.data import DataLoader, TensorDataset
 
 from concrete.ml.common.debugging.custom_assert import assert_true
