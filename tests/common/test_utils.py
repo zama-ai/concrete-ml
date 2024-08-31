@@ -4,10 +4,15 @@ import numpy
 import pandas
 import pytest
 import torch
+from concrete.compiler import check_gpu_available, check_gpu_enabled
 from torch.utils.data import DataLoader, TensorDataset
 
 from concrete.ml.common.debugging.custom_assert import assert_true
-from concrete.ml.common.utils import compute_bits_precision
+from concrete.ml.common.utils import (
+    check_compilation_device_is_valid_and_is_cuda,
+    check_execution_device_is_valid_and_is_cuda,
+    compute_bits_precision,
+)
 from concrete.ml.pytest.torch_models import QuantCustomModel
 from concrete.ml.pytest.utils import data_calibration_processing
 
@@ -78,3 +83,27 @@ def test_data_processing_invalid_input(input_type, load_data):
 
         with pytest.raises(TypeError, match="Only numpy arrays, torch tensors and .*"):
             _ = data_calibration_processing(data=x, targets=y, n_sample=1)
+
+
+def test_cuda_compilation_warnings(get_device_for_compilation):
+    """Test that cuda compilation options are correctly handled."""
+
+    # If testing on a CUDA enabled machine, there will be no warnings
+    # there's nothing to test
+    if get_device_for_compilation("execute") == "cuda":
+        if not check_gpu_enabled():
+            raise AssertionError(
+                "Trying to run CUDA test on a non-CUDA machine. "
+                "Check pytest command line arguments"
+            )
+
+    # On a non-CUDA enabled machine
+    with pytest.raises(ValueError, match="Model compilation targets given through.*"):
+        check_compilation_device_is_valid_and_is_cuda("invalid-device")
+
+    # On a non-CUDA enabled machine
+    with pytest.raises(ValueError, match=".*does not support CUDA.*"):
+        check_compilation_device_is_valid_and_is_cuda("cuda")
+
+    with pytest.raises(ValueError, match=".*no compatible CUDA.*"):
+        check_execution_device_is_valid_and_is_cuda(True, "execute")

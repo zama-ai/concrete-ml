@@ -727,6 +727,15 @@ def check_compilation_device_is_valid_and_is_cuda(device: str) -> bool:
     # Only parse device ids for FHE execution
     device = check_device_is_valid(device)
 
+    # Allow forcing device to GPU for tests
+    if (
+        os.environ.get("CML_USE_GPU", False) == "1"
+        and check_gpu_available()
+        and not device == "cuda"
+    ):
+        print(f"Compilation device override, was '{device}' -> change to 'cuda'")
+        device == "cuda"
+
     # All other devices are considered cpu for now
     is_cuda = device == "cuda"
 
