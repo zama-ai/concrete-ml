@@ -732,7 +732,7 @@ def check_compilation_device_is_valid_and_is_cuda(device: str) -> bool:
         os.environ.get("CML_USE_GPU", False) == "1"
         and check_gpu_available()
         and not device == "cuda"
-    ):
+    ):  # pragma: no cover
         print(f"Compilation device override, was '{device}' -> change to 'cuda'")
         device = "cuda"
 
@@ -747,7 +747,7 @@ def check_compilation_device_is_valid_and_is_cuda(device: str) -> bool:
                 "install a GPU-enabled Concrete-Python package."
             )
 
-        return True
+        return True  # pragma: no cover
 
     return False
 
