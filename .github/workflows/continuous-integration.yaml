@@ -1131,6 +1131,216 @@ jobs:
         run: |
           make pytest_macOS_for_GitHub
 
+  start-runner-gpu-linux:
+      needs: [matrix-preparation]
+      name: Start GPU EC2 runner (Linux)
+      runs-on: ubuntu-22.04
+      timeout-minutes: 15
+      outputs:
+        label-gpu-310: ${{ steps.start-gpu-ec2-runner-310.outputs.label }}
+        ec2-gpu-instance-id-310: ${{ steps.start-gpu-ec2-runner-310.outputs.ec2-instance-id || '' }}
+        matrix: ${{ steps.update-linux-matrix.outputs.linux-matrix }}
+      steps:
+        - name: Checkout Code
+          uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+
+        - name: Configure AWS credentials
+          uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
+          with:
+            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-region: ${{ secrets.AWS_REGION }}
+
+        - name: Start GPU EC2 runner python 3.10
+          id: start-gpu-ec2-runner-310
+          if: ${{ !cancelled() }}
+          uses: machulav/ec2-github-runner@fcfb31a5760dad1314a64a0e172b78ec6fc8a17e
+          with:
+            mode: start
+            github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
+            ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
+            ec2-instance-type: "p3.2xlarge"
+            subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
+            security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
+            aws-resource-tags: >
+              [
+                {"Key": "Name", "Value": "cml-ci-ec2-github-gpu-runner-py310"},
+                {"Key": "GitHubRepository", "Value": "${{ github.repository }}"},
+                {"Key": "Python version", "Value": "3.8"},
+                {"Key": "Actor", "Value": "${{ github.actor }}"},
+                {"Key": "Action", "Value": "${{ github.action }}"},
+                {"Key": "GitHash", "Value": "${{ github.sha }}"},
+                {"Key": "RefName", "Value": "${{ github.ref_name }}"},
+                {"Key": "RunId", "Value": "${{ github.run_id }}"},
+                {"Key": "Team", "Value": "CML"}
+              ]
+
+  build-gpu-linux:
+    name: Python ${{ matrix.python_version }} (Linux)
+    needs: [start-runner-gpu-linux]
+    runs-on: ${{ matrix.runs_on }}
+    # Run in a clean container
+    container:
+      image: ubuntu:22.04
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(format('{{"include":{0}}}', needs.start-runner-linux.outputs.matrix)) }}
+    env:
+      IS_REF_BUILD: ${{ matrix.python_version == '3.8' }}
+      PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
+      PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    outputs:
+      hashes: ${{ steps.hash.outputs.hashes }}
+
+    steps:
+      - name: Add masks
+        run: |
+          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
+          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
+
+      # Replace default archive.ubuntu.com from docker image with fr mirror
+      # original archive showed performance issues and is farther away
+      - name: Docker container related setup and git installation
+        run: |
+          TZ=Europe/Paris
+          echo "TZ=${TZ}" >> "$GITHUB_ENV"
+          ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
+          sed -i 's|^deb http://archive|deb http://fr.archive|g' /etc/apt/sources.list
+          apt update && apt install git git-lfs -y
+
+      # By default, `git clone` downloads all LFS files, which we want to avoid in CIs other than
+      # weekly ones (which also test notebooks)
+      - name: Disable LFS download by default
+        if: ${{ !fromJSON(env.IS_WEEKLY) }}
+        run: |
+          git lfs install --skip-smudge
+
+      # Checkout the code
+      # 'fetch-depth' is set to 0 in order to fetch all tags (used for generating the changelog)
+      - name: Checkout Code
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+        with:
+          fetch-depth: 0
+
+      # Pull necessary LFS files (and thus avoid downloading files stored for benchmarks, use cases, ...)
+      - name: Pull LFS files
+        run: |
+          git lfs pull --include "tests/data/**, src/concrete/ml/pandas/_client_server_files/**" --exclude  ""
+
+      - name: Set up Python ${{ matrix.python_version }}
+        uses: actions/setup-python@39cd14951b08e74b54015e9e001cdefcf80e669f
+        id: setup-python
+        with:
+          python-version: ${{ matrix.python_version }}
+
+      - name: Check python3 version
+        env:
+          SYSTEM_VERSION_COMPAT: 0
+        run: |
+          which python3
+          which pip3
+
+      - name: Install dependencies
+        id: install-deps
+        run: |
+          ./script/make_utils/setup_os_deps.sh
+          mkdir -p ~/.aws
+          echo "[default]\nregion=eu-west-3\noutput=json\n" >> ~/.aws/config
+          # Needed to include Python.h
+          export C_INCLUDE_PATH="${C_INCLUDE_PATH}:/__w/_tool/Python/$(python -c 'import platform; print(platform.python_version())')/x64/include"
+
+          echo
+          echo "Using these tools:"
+          which python3
+          which pip3
+          echo
+
+          make setup_env
+
+      - name: PyTest Source Code (regular, weekly)
+        id: pytest
+        if: |
+          (
+            (
+              steps.changed-files-in-pr.outcome == 'success'
+              && (
+                steps.changed-files-in-pr.outputs.src_any_changed == 'true'
+                || steps.changed-files-in-pr.outputs.tests_utils_any_changed == 'true'
+                || steps.changed-files-in-pr.outputs.dependencies_any_changed == 'true'
+                || steps.changed-files-in-pr.outputs.conftest_any_changed == 'true'
+                || steps.changed-files-in-pr.outputs.makefile_any_changed == 'true'
+              )
+            )
+            || fromJSON(env.IS_WORKFLOW_DISPATCH)
+            || fromJSON(env.IS_WEEKLY)
+          )
+          && steps.conformance.outcome == 'success'
+          && !cancelled()
+
+        shell: bash +e {0}
+        run: |
+          if [[ "${{ env.IS_WEEKLY }}" == "true" ]]; then
+            PYTEST_OPTIONS="--weekly"
+          else
+            PYTEST_OPTIONS=""
+          fi
+
+          make pytest_and_report PYTEST_OPTIONS=${PYTEST_OPTIONS}
+
+          # If regular tests failed, check for flaky tests
+          if [ $? -ne 0 ]; then
+
+            # Convert pytest report to formatted report with only information about failed tests
+          	poetry run python ./script/actions_utils/pytest_failed_test_report.py \
+            --pytest-input-report "pytest_report.json" \
+            --failed-tests-report "failed_tests_report.json" \
+            --failed-tests-comment "failed_tests_comment_${{ matrix.python_version }}.txt" \
+            --failed-tests-list "failed_tests_slack_list_${{ matrix.python_version }}.txt"
+
+            # Check if all failed tests are known flaky tests
+            FAILED_TESTS_ARE_FLAKY=$(jq .all_failed_tests_are_flaky "failed_tests_report.json")
+
+            echo "FAILED_TESTS_ARE_FLAKY=${FAILED_TESTS_ARE_FLAKY}" >> "$GITHUB_ENV"
+
+            # If all failed tests are known flaky tests, try to rerun them
+            if [[ "${FAILED_TESTS_ARE_FLAKY}" == "true" ]]; then
+              make pytest_run_last_failed
+
+            # Else, return exit status 1 in order to make this step fail
+            else
+              exit 1
+            fi
+          fi
+
+
+  stop-runner-gpu-linux:
+    name: Stop GPU EC2 runner (Linux)
+    needs: [build-gpu-linux, start-runner-gpu-linux]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 2
+    if: ${{ always() && (needs.start-runner-gpu-linux.result != 'skipped') }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Stop GPU EC2 runner python 3.10
+        uses: machulav/ec2-github-runner@fcfb31a5760dad1314a64a0e172b78ec6fc8a17e
+        if: ${{ always() && needs.start-runner-gpu-linux.outputs.ec2-gpu-instance-id-310 }}
+        with:
+          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
+          label: ${{ needs.start-runner-gpu-linux.outputs.label-gpu-310 }}
+          ec2-instance-id: ${{ needs.start-runner-gpu-linux.outputs.ec2-gpu-instance-id-310 }}
+          mode: stop
+
   decide-slack-report:
     name: Decide Slack report
     runs-on: ubuntu-20.04
@@ -1277,6 +1487,33 @@ jobs:
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: 'failure'
           SLACK_TITLE: 'Stopping EC2 instances (linux) failed ❌'
+          SLACK_MESSAGE: '<!channel> EC2 instances must be terminated manually as soon as possible'
+          SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
+
+  stop-gpu-ec2-failure-slack-alert:
+    name: Stop GPU EC2 failure Slack alert
+    runs-on: ubuntu-22.04
+    if: |
+      always() 
+      && needs.matrix-preparation.result != 'skipped' 
+      && needs.stop-runner-gpu-linux.result == 'failure'
+    timeout-minutes: 2
+    needs:
+      [
+        matrix-preparation,
+        stop-runner-gpu-linux,
+      ]
+
+    steps:
+      - name: Send stop GPU EC2 failure Slack alert
+        uses: rtCamp/action-slack-notify@4e5fb42d249be6a45a298f3c9543b111b02f7907
+        env:
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+          SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
+          SLACK_COLOR: 'failure'
+          SLACK_TITLE: 'Stopping **GPU** EC2 instances (linux) failed ❌'
           SLACK_MESSAGE: '<!channel> EC2 instances must be terminated manually as soon as possible'
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
