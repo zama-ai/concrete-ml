@@ -25,6 +25,11 @@ do
             WHAT_TO_DO="run_all_notebooks"
             ;;
 
+        "--run_all_notebooks_gpu" )
+            export CML_USE_GPU=1
+            WHAT_TO_DO="run_all_notebooks_gpu"
+            ;;
+
         "--run_all_notebooks_parallel" )
             WHAT_TO_DO="run_all_notebooks_parallel"
             ;;
@@ -54,7 +59,7 @@ then
     else
         poetry run jupyter notebook --allow-root
     fi
-elif [ "$WHAT_TO_DO" == "run_all_notebooks" ]
+elif [ "$WHAT_TO_DO" == "run_all_notebooks" ] || [ "$WHAT_TO_DO" == "run_all_notebooks_gpu" ]
 then
     echo "Refreshing notebooks"
 
@@ -64,7 +69,12 @@ then
     echo "" > "${FAILED_NOTEBOOKS}"
 
     # shellcheck disable=SC2207
-    LIST_OF_NOTEBOOKS=($(find ./docs -type f -name "*.ipynb" | grep -v ".nbconvert" | grep -v "_build" | grep -v "ipynb_checkpoints"))
+    if [ "$WHAT_TO_DO" == "run_all_notebooks_gpu" ]
+    then
+        LIST_OF_NOTEBOOKS=($(grep -Rnwl './docs/advanced_examples/' --include \*.ipynb -e 'device =' | grep -v ".nbconvert" | grep -v "_build" | grep -v "ipynb_checkpoints"))
+    else
+        LIST_OF_NOTEBOOKS=($(find ./docs -type f -name "*.ipynb" | grep -v ".nbconvert" | grep -v "_build" | grep -v "ipynb_checkpoints"))
+    fi
 
     # Remove notebooks with long execution times
     for NOTEBOOK_TO_REMOVE in "${NOTEBOOKS_TO_SKIP[@]}"

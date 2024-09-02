@@ -280,6 +280,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         self,
         x_min: numpy.ndarray,
         x_max: numpy.ndarray,
+        device: str,
     ) -> QuantizedModule:
         """Get the quantized module for FHE training.
 
@@ -288,6 +289,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         Args:
             x_min (numpy.ndarray): The minimum value to consider for each feature over the samples.
             x_max (numpy.ndarray): The maximum value to consider for each feature over the samples.
+            device (str): FHE compilation device, can be either 'cpu' or 'cuda'.
 
         Returns:
             (QuantizedModule): The quantized module containing the FHE circuit for training.
@@ -359,7 +361,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
 
         # Compile the model using the compile set
         if self.verbose:
-            print("Compiling training circuit ...")
+            print(f"Compiling training circuit on device '{device}'...")
 
         start = time.time()
         training_quantized_module = _compile_torch_or_onnx_model(
@@ -371,6 +373,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
             configuration=configuration,
             reduce_sum_copy=True,
             composition_mapping=composition_mapping,
+            device=device,
         )
         end = time.time()
 
@@ -434,6 +437,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         intercept_init: Optional[numpy.ndarray] = None,
         is_partial_fit: bool = False,
         classes: Optional[numpy.ndarray] = None,
+        device: str = "cpu",
     ):
         """Fit SGDClassifier in FHE.
 
@@ -463,6 +467,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
             is_partial_fit (bool): Indicates if this fit represents a partial fit. A partial fit is
                 similar to a fit but with only a single iteration.
             classes (Optional[numpy.ndarray]): should be specified in the first call to partial fit.
+            device: FHE compilation device, can be either 'cpu' or 'cuda'.
 
         Returns:
             The fitted estimator.
@@ -534,8 +539,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
 
             # Build and compile the training quantized module
             self.training_quantized_module = self._get_training_quantized_module(
-                x_min=x_min,
-                x_max=x_max,
+                x_min=x_min, x_max=x_max, device=device
             )
 
         y = self.label_encoder.transform(y)
@@ -778,6 +782,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         coef_init: Optional[numpy.ndarray] = None,
         intercept_init: Optional[numpy.ndarray] = None,
         sample_weight: Optional[numpy.ndarray] = None,
+        device: str = "cpu",
     ):
         """Fit SGDClassifier.
 
@@ -803,6 +808,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
                 optimization. Default to None.
             sample_weight (Optional[numpy.ndarray]): Weights applied to individual samples (1. for
                 unweighted). It is currently not supported for FHE training. Default to None.
+            device: FHE compilation device, can be either 'cpu' or 'cuda'.
 
         Returns:
             The fitted estimator.
@@ -841,6 +847,7 @@ class SGDClassifier(SklearnSGDClassifierMixin):
                 fhe=fhe,
                 coef_init=coef_init,
                 intercept_init=intercept_init,
+                device=device,
             )
 
         if fhe is not None:

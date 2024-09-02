@@ -467,6 +467,7 @@ class HybridFHEModel:
         n_bits: Union[int, Dict[str, int]] = MAX_BITWIDTH_BACKWARD_COMPATIBLE,
         rounding_threshold_bits: Optional[int] = None,
         p_error: Optional[float] = None,
+        device: str = "cpu",
         configuration: Optional[Configuration] = None,
     ):
         """Compiles the specific layers to FHE.
@@ -479,6 +480,7 @@ class HybridFHEModel:
             rounding_threshold_bits (int): The number of bits to use for rounding threshold during
                 FHE model compilation. Default is 8.
             p_error (float): Error allowed for each table look-up in the circuit.
+            device: FHE compilation device, can be either 'cpu' or 'cuda'.
             configuration (Configuration): A concrete Configuration object specifying the FHE
                 encryption parameters. If not specified, a default configuration is used.
         """
@@ -502,6 +504,7 @@ class HybridFHEModel:
                     rounding_threshold_bits=rounding_threshold_bits,
                     configuration=configuration,
                     p_error=p_error,
+                    device=device,
                 )
             else:
                 self.private_q_modules[name] = compile_torch_model(
@@ -511,6 +514,7 @@ class HybridFHEModel:
                     rounding_threshold_bits=rounding_threshold_bits,
                     configuration=configuration,
                     p_error=p_error,
+                    device=device,
                 )
 
             self.remote_modules[name].private_q_module = self.private_q_modules[name]

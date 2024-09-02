@@ -32,6 +32,7 @@
 - [Production deployment](guides/client_server.md)
 - [Hybrid models](guides/hybrid-models.md)
 - [Serialization](guides/serialization.md)
+- [GPU acceleration](guides/using_gpu.md)
 
 ## Tutorials
 

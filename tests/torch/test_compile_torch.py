@@ -78,7 +78,9 @@ def create_test_inputset(inputset, n_percent_inputset_examples_test):
     return x_test
 
 
-def get_and_compile_quantized_module(model, inputset, import_qat, n_bits, configuration, verbose):
+def get_and_compile_quantized_module(
+    model, inputset, import_qat, n_bits, configuration, verbose, device
+):
     """Get and compile the quantized module built from the given model."""
     quantized_numpy_module = build_quantized_module(
         model,
@@ -95,6 +97,7 @@ def get_and_compile_quantized_module(model, inputset, import_qat, n_bits, config
         p_error=p_error,
         global_p_error=global_p_error,
         verbose=verbose,
+        device=device,
     )
 
     return quantized_numpy_module
@@ -116,6 +119,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
     get_and_compile=False,
     input_shape=None,
     is_brevitas_qat=False,
+    device="cpu",
 ) -> QuantizedModule:
     """Test the different model architecture from torch numpy."""
 
@@ -172,6 +176,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
                     n_bits=n_bits,
                     configuration=default_configuration,
                     verbose=verbose,
+                    device=device,
                 )
 
             else:
@@ -182,6 +187,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
                     configuration=default_configuration,
                     n_bits=n_bits,
                     verbose=verbose,
+                    device=device,
                 )
         else:
             if is_brevitas_qat:
@@ -193,6 +199,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
                     n_bits=n_bits,
                     configuration=default_configuration,
                     verbose=verbose,
+                    device=device,
                 )
 
             elif get_and_compile:
@@ -203,6 +210,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
                     n_bits=n_bits,
                     configuration=default_configuration,
                     verbose=verbose,
+                    device=device,
                 )
 
             else:
@@ -213,6 +221,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
                     configuration=default_configuration,
                     n_bits=n_bits,
                     verbose=verbose,
+                    device=device,
                 )
 
         n_examples_test = 1
@@ -261,6 +270,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
                     n_bits=n_bits,
                     configuration=default_configuration,
                     verbose=verbose,
+                    device="cpu",
                 )
 
             else:
@@ -271,6 +281,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
                     configuration=default_configuration,
                     n_bits=n_bits,
                     verbose=verbose,
+                    device="cpu",
                 )
 
         accuracy_test_rounding(
@@ -436,6 +447,7 @@ def test_compile_torch_or_onnx_networks(
     get_and_compile,
     check_is_good_execution_for_cml_vs_circuit,
     is_weekly_option,
+    get_device_for_compilation,
 ):
     """Test the different model architecture from torch numpy."""
 
@@ -458,6 +470,7 @@ def test_compile_torch_or_onnx_networks(
         check_is_good_execution_for_cml_vs_circuit=check_is_good_execution_for_cml_vs_circuit,
         verbose=False,
         get_and_compile=get_and_compile,
+        device=get_device_for_compilation("simulate" if simulate else "execute"),
     )
 
 

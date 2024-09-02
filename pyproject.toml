@@ -149,6 +149,7 @@ filterwarnings = [
     "ignore:Maximum number of iteration reached before convergence.*:sklearn.exceptions.ConvergenceWarning",
     "ignore:jax.xla_computation is deprecated. Please use the AOT APIs.",
     "ignore:Named tensors and all their associated APIs*",
+    "ignore:You are using `torch.load`*"
 ]
 
 [tool.semantic_release]

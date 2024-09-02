@@ -23,6 +23,7 @@ from ..common.utils import (
     all_values_are_floats,
     all_values_are_integers,
     all_values_are_of_dtype,
+    check_compilation_device_is_valid_and_is_cuda,
     check_there_is_no_p_error_options_in_configuration,
     generate_proxy_function,
     manage_parameters_for_pbs_errors,
@@ -133,6 +134,7 @@ class QuantizedModule:
         self.output_quantizers: List[UniformQuantizer] = []
         self.fhe_circuit: Optional[Circuit] = None
         self._is_compiled = False
+        self._compiled_for_cuda = False
         self._onnx_model = onnx_model
         self._post_processing_params: Dict[str, Any] = {}
 
@@ -803,6 +805,7 @@ class QuantizedModule:
         global_p_error: Optional[float] = None,
         verbose: bool = False,
         inputs_encryption_status: Optional[Sequence[str]] = None,
+        device: str = "cpu",
     ) -> Circuit:
         """Compile the module's forward function.
 
@@ -826,6 +829,7 @@ class QuantizedModule:
                 during compilation. Default to False.
             inputs_encryption_status (Optional[Sequence[str]]): encryption status ('clear',
                 'encrypted') for each input.
+            device: FHE compilation device, can be either 'cpu' or 'cuda'.
 
         Returns:
             Circuit: The compiled Circuit.
@@ -913,6 +917,8 @@ class QuantizedModule:
         # Find the right way to set parameters for compiler, depending on the way we want to default
         p_error, global_p_error = manage_parameters_for_pbs_errors(p_error, global_p_error)
 
+        use_gpu = check_compilation_device_is_valid_and_is_cuda(device)
+
         # Enable input ciphertext compression
         enable_input_compression = os.environ.get("USE_INPUT_COMPRESSION", "1") == "1"
         enable_key_compression = os.environ.get("USE_KEY_COMPRESSION", "1") == "1"
@@ -926,11 +932,13 @@ class QuantizedModule:
             global_p_error=global_p_error,
             verbose=verbose,
             single_precision=False,
+            use_gpu=use_gpu,
             compress_input_ciphertexts=enable_input_compression,
             compress_evaluation_keys=enable_key_compression,
         )
 
         self._is_compiled = True
+        self._compiled_for_cuda = use_gpu
 
         return self.fhe_circuit
 

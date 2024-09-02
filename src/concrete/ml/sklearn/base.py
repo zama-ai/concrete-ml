@@ -41,6 +41,8 @@ from ..common.serialization.dumpers import dump, dumps
 from ..common.utils import (
     USE_OLD_VL,
     FheMode,
+    check_compilation_device_is_valid_and_is_cuda,
+    check_execution_device_is_valid_and_is_cuda,
     check_there_is_no_p_error_options_in_configuration,
     generate_proxy_function,
     manage_parameters_for_pbs_errors,
@@ -163,6 +165,8 @@ class BaseEstimator:
 
         #: Indicate if the model is compiled.
         self._is_compiled: bool = False
+
+        self._compiled_for_cuda: bool = False
 
         self.fhe_circuit_: Optional[Circuit] = None
         self.onnx_model_: Optional[onnx.ModelProto] = None
@@ -511,6 +515,7 @@ class BaseEstimator:
         p_error: Optional[float] = None,
         global_p_error: Optional[float] = None,
         verbose: bool = False,
+        device: str = "cpu",
     ) -> Circuit:
         """Compile the model.
 
@@ -533,6 +538,7 @@ class BaseEstimator:
                 currently set to 0. Default to None, which sets this error to a default value.
             verbose (bool): Indicate if compilation information should be printed
                 during compilation. Default to False.
+            device: FHE compilation device, can be either 'cpu' or 'cuda'.
 
         Returns:
             Circuit: The compiled Circuit.
@@ -551,6 +557,8 @@ class BaseEstimator:
 
         # Find the right way to set parameters for compiler, depending on the way we want to default
         p_error, global_p_error = manage_parameters_for_pbs_errors(p_error, global_p_error)
+
+        use_gpu = check_compilation_device_is_valid_and_is_cuda(device)
 
         # Quantize the inputs
         q_X = self.quantize_input(X)
@@ -581,11 +589,13 @@ class BaseEstimator:
             global_p_error=global_p_error,
             verbose=verbose,
             single_precision=False,
+            use_gpu=use_gpu,
             compress_input_ciphertexts=enable_input_compression,
             compress_evaluation_keys=enable_key_compression,
         )
 
         self._is_compiled = True
+        self._compiled_for_cuda = use_gpu
 
         # For mypy
         assert isinstance(self.fhe_circuit, Circuit)
@@ -628,6 +638,8 @@ class BaseEstimator:
 
         # Check that the model is properly fitted
         self.check_model_is_fitted()
+
+        check_execution_device_is_valid_and_is_cuda(self._compiled_for_cuda, fhe=fhe)
 
         # Ensure inputs are 2D
         if isinstance(X, (numpy.ndarray, torch.Tensor)) and X.ndim == 1:
@@ -1168,6 +1180,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         p_error: Optional[float] = None,
         global_p_error: Optional[float] = None,
         verbose: bool = False,
+        device: str = "cpu",
     ) -> Circuit:
         # Reset for double compile
         self._is_compiled = False
@@ -1190,6 +1203,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
             p_error=p_error,
             global_p_error=global_p_error,
             verbose=verbose,
+            device=device,
         )
 
         # Make sure that no avoidable TLUs are found in the built-in model
