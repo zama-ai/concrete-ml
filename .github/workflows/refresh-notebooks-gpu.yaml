@@ -34,7 +34,7 @@ jobs:
           mode: start
           github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
           ec2-image-id: "ami-09a7e75a11a48df22"
-          ec2-instance-type: "p3.2xlarge"
+          ec2-instance-type: "p3.8xlarge"
           subnet-id: subnet-8123c9e7
           security-group-id: sg-017afab1f328af917
 
