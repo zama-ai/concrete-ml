@@ -96,7 +96,7 @@ jobs:
       # Upload the updated license files as artifacts, if they exist
       # It is possible that no files have been generated if licenses have already been done for some
       # configuration(s)
-      - uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
+      - uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
         with:
           if-no-files-found: ignore
           name: licenses_${{ matrix.config.os_name }}
