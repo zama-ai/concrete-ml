@@ -25,7 +25,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: "us-east-1"
+          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Start EC2 runner python 38
         id: start-ec2-runner-38
@@ -34,7 +34,7 @@ jobs:
           mode: start
           github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
           ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
-          ec2-instance-type: "p3.2xlarge"
+          ec2-instance-type: "g4dn.8xlarge"
           subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
           security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
 
