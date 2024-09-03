@@ -25,7 +25,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: "eu-west-2"
+          aws-region: "us-east-1"
 
       - name: Start EC2 runner python 38
         id: start-ec2-runner-38
@@ -33,10 +33,10 @@ jobs:
         with:
           mode: start
           github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          ec2-image-id: "ami-052dab78afb5683ad"
+          ec2-image-id: "ami-09a7e75a11a48df22"
           ec2-instance-type: "p3.2xlarge"
-          subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
-          security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
+          subnet-id: subnet-8123c9e7
+          security-group-id: sg-017afab1f328af917
 
   refresh-notebooks:
     needs: [start-runner-linux]
