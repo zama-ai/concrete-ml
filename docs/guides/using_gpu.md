@@ -25,7 +25,7 @@ On consumer grade GPUs such as GTX40xx or GTX30xx, there may be
 little speedup or even a slowdown compared to executing
 on a desktop CPU.
 
-## Preqrequisites
+## Prerequisites
 
 To use the CUDA enabled backend you need to install the GPU-enabled Concrete compiler:
 
