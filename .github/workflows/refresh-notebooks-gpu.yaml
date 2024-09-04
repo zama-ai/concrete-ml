@@ -14,8 +14,7 @@ jobs:
     name: Start EC2 runner
     runs-on: ubuntu-20.04
     outputs:
-      label-38: ${{ steps.start-ec2-runner-38.outputs.label }}
-      ec2-instance-id-38: ${{ steps.start-ec2-runner-38.outputs.ec2-instance-id || '' }}
+      label-38: ${{ steps.start-gpu-machine.outputs.label }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
@@ -27,16 +26,16 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: "us-east-1"
 
-      - name: Start EC2 runner python 38
-        id: start-ec2-runner-38
-        uses: machulav/ec2-github-runner@fcfb31a5760dad1314a64a0e172b78ec6fc8a17e
+      - name: Start instance
+        id: start-gpu-machine
+        uses: zama-ai/slab-github-runner@447a2d0fd2d1a9d647aa0d0723a6e9255372f261
         with:
           mode: start
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          ec2-image-id: "ami-09a7e75a11a48df22"
-          ec2-instance-type: "p3.8xlarge"
-          subnet-id: subnet-8123c9e7
-          security-group-id: sg-017afab1f328af917
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          backend: hyperstack
+          profile: single-h100
 
   refresh-notebooks:
     needs: [start-runner-linux]
@@ -116,21 +115,15 @@ jobs:
     runs-on: ubuntu-20.04
     if: ${{ always() && (needs.start-runner-linux.result != 'skipped') }}
     steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
+      - name: Stop instance
+        id: stop-instance
+        uses: zama-ai/slab-github-runner@447a2d0fd2d1a9d647aa0d0723a6e9255372f261
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Stop EC2 runner python 38
-        uses: machulav/ec2-github-runner@fcfb31a5760dad1314a64a0e172b78ec6fc8a17e
-        if: ${{ always() && needs.start-runner-linux.outputs.ec2-instance-id-38 }}
-        with:
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          label: ${{ needs.start-runner-linux.outputs.label-38 }}
-          ec2-instance-id: ${{ needs.start-runner-linux.outputs.ec2-instance-id-38 }}
           mode: stop
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          label: ${{ needs.start-runner-linux.outputs.label-38 }}
 
   send-report:
     if: ${{ always() }}
