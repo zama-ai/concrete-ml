@@ -81,6 +81,20 @@ jobs:
           echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL }}"
           echo "::add-mask::${{ secrets.INTERNAL_REPO_URL }}"
 
+      # Replace default archive.ubuntu.com from docker image with fr mirror
+      # original archive showed performance issues and is farther away
+      - name: Docker container related setup and git installation
+        run: |
+          apt update
+          apt install --no-install-recommends -y gnome-keyring
+          apt install -y graphviz* graphviz-dev libgraphviz-dev pkg-config python3-dev
+          apt-mark hold docker.io                  
+          TZ=Europe/Paris
+          echo "TZ=${TZ}" >> "$GITHUB_ENV"
+          ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
+          sed -i 's|^deb http://archive|deb http://fr.archive|g' /etc/apt/sources.list
+          apt install git git-lfs -y
+
       - name: Checkout code
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
         with:
@@ -95,10 +109,6 @@ jobs:
       - name: Install dependencies
         id: install-deps
         run: |
-          apt update
-          apt install --no-install-recommends -y gnome-keyring
-          apt install -y graphviz* graphviz-dev libgraphviz-dev pkg-config python3-dev
-          apt-mark hold docker.io
           ./script/make_utils/setup_os_deps.sh
           make setup_env
 
