@@ -83,12 +83,9 @@ jobs:
 
       # Replace default archive.ubuntu.com from docker image with fr mirror
       # original archive showed performance issues and is farther away
-      - name: Docker container related setup and git installation
+      - name: Git installation
         run: |
           apt update
-          apt install --no-install-recommends -y gnome-keyring
-          apt install -y graphviz* graphviz-dev libgraphviz-dev pkg-config python3-dev
-          apt-mark hold docker.io                  
           TZ=Europe/Paris
           echo "TZ=${TZ}" >> "$GITHUB_ENV"
           ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
