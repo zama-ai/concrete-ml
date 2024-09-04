@@ -73,7 +73,9 @@ jobs:
           ./script/make_utils/setup_os_deps.sh
           make setup_env
           source .venv/bin/activate
-          pip install --extra-index-url https://pypi.zama.ai/gpu $(pip freeze | grep concrete-python)
+          CP_VERSION=$(pip freeze | grep concrete-python)
+          pip uninstall concrete-python
+          pip install --extra-index-url https://pypi.zama.ai/gpu ${CP_VERSION}
 
       - name: Refresh Notebooks
         run: |
