@@ -41,6 +41,9 @@ jobs:
     needs: [start-runner-linux]
 
     runs-on: ${{ needs.start-runner-linux.outputs.label-38 }}
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Add masks
         run: |
