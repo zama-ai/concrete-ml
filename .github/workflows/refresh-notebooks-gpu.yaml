@@ -74,7 +74,7 @@ jobs:
           make setup_env
           source .venv/bin/activate
           CP_VERSION=$(pip freeze | grep concrete-python)
-          pip uninstall concrete-python
+          pip uninstall -y concrete-python
           pip install --extra-index-url https://pypi.zama.ai/gpu ${CP_VERSION}
 
       - name: Refresh Notebooks
