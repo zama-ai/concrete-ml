@@ -83,6 +83,7 @@ jobs:
 
       - name: Refresh Notebooks
         run: |
+          export CML_USE_GPU=1
           make jupyter_execute_gpu
 
       - name: Prepare PR Body
