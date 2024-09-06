@@ -728,11 +728,14 @@ def check_compilation_device_is_valid_and_is_cuda(device: str) -> bool:
     device = check_device_is_valid(device)
 
     # Allow forcing device to GPU for tests
-    if (
-        os.environ.get("CML_USE_GPU", False) == "1"
-        and check_gpu_available()
-        and not device == "cuda"
-    ):  # pragma: no cover
+    if os.environ.get("CML_USE_GPU", False) == "1" and not device == "cuda":  # pragma: no cover
+        if not check_gpu_enabled():
+            raise ValueError(
+                "CUDA FHE execution was requested with CML_USE_GPU but the Concrete runtime "
+                "that is installed on this system does not support CUDA. Please"
+                "install a GPU-enabled Concrete-Python package."
+            )
+
         print(f"Compilation device override, was '{device}' -> change to 'cuda'")
         device = "cuda"
 

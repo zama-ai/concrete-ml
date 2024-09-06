@@ -12,10 +12,9 @@ env:
 jobs:
   start-runner-linux:
     name: Start EC2 runner
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     outputs:
-      label-38: ${{ steps.start-ec2-runner-38.outputs.label }}
-      ec2-instance-id-38: ${{ steps.start-ec2-runner-38.outputs.ec2-instance-id || '' }}
+      label-38: ${{ steps.start-gpu-machine.outputs.label }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
@@ -25,50 +24,43 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: "us-east-1"
 
-      - name: Start EC2 runner python 38
-        id: start-ec2-runner-38
-        uses: machulav/ec2-github-runner@fcfb31a5760dad1314a64a0e172b78ec6fc8a17e
+      - name: Start instance
+        id: start-gpu-machine
+        uses: zama-ai/slab-github-runner@447a2d0fd2d1a9d647aa0d0723a6e9255372f261
         with:
           mode: start
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
-          ec2-instance-type: "p3.2xlarge"
-          subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
-          security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          backend: hyperstack
+          profile: single-h100
 
   refresh-notebooks:
     needs: [start-runner-linux]
 
     runs-on: ${{ needs.start-runner-linux.outputs.label-38 }}
-    # Run in a clean container
-    container:
-      image: ubuntu:20.04
     defaults:
       run:
         shell: bash
-    env:
-      PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
-      PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
-      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
-      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
-
     steps:
       - name: Add masks
         run: |
           echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
           echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
 
-      # Replace default archive.ubuntu.com from docker image with fr mirror
-      # original archive showed performance issues and is farther away
-      - name: Docker container related setup and git installation
+      - name: Git installation
         run: |
           TZ=Europe/Paris
           echo "TZ=${TZ}" >> "$GITHUB_ENV"
           ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
           sed -i 's|^deb http://archive|deb http://fr.archive|g' /etc/apt/sources.list
           apt update && apt install git git-lfs -y
+
+      - name: Set up home
+        run: |
+          echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
 
       - name: Checkout Code
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
@@ -84,9 +76,14 @@ jobs:
         run: |
           ./script/make_utils/setup_os_deps.sh
           make setup_env
+          source .venv/bin/activate
+          CP_VERSION=$(pip freeze | grep concrete-python)
+          pip uninstall -y concrete-python
+          pip install --extra-index-url https://pypi.zama.ai/gpu ${CP_VERSION}
 
       - name: Refresh Notebooks
         run: |
+          export CML_USE_GPU=1
           make jupyter_execute_gpu
 
       - name: Prepare PR Body
@@ -113,24 +110,18 @@ jobs:
   stop-runner-linux:
     name: Stop EC2 runner
     needs: [refresh-notebooks, start-runner-linux]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     if: ${{ always() && (needs.start-runner-linux.result != 'skipped') }}
     steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
+      - name: Stop instance
+        id: stop-instance
+        uses: zama-ai/slab-github-runner@447a2d0fd2d1a9d647aa0d0723a6e9255372f261
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Stop EC2 runner python 38
-        uses: machulav/ec2-github-runner@fcfb31a5760dad1314a64a0e172b78ec6fc8a17e
-        if: ${{ always() && needs.start-runner-linux.outputs.ec2-instance-id-38 }}
-        with:
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          label: ${{ needs.start-runner-linux.outputs.label-38 }}
-          ec2-instance-id: ${{ needs.start-runner-linux.outputs.ec2-instance-id-38 }}
           mode: stop
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          label: ${{ needs.start-runner-linux.outputs.label-38 }}
 
   send-report:
     if: ${{ always() }}
@@ -142,7 +133,7 @@ jobs:
       ]
 
     name: Send Slack notification
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
 
