@@ -63,11 +63,13 @@ class SimpleNet(torch.nn.Module):
 class FCSmall(nn.Module):
     """Torch model for the tests."""
 
-    def __init__(self, input_output, activation_function):
+    def __init__(self, input_output, activation_function, hidden=None):
         super().__init__()
-        self.fc1 = nn.Linear(in_features=input_output, out_features=input_output)
+
+        hidden_size = input_output if hidden is None else hidden
+        self.fc1 = nn.Linear(in_features=input_output, out_features=hidden_size)
         self.act_f = activation_function()
-        self.fc2 = nn.Linear(in_features=input_output, out_features=input_output)
+        self.fc2 = nn.Linear(in_features=hidden_size, out_features=input_output)
 
     def forward(self, x):
         """Forward pass.

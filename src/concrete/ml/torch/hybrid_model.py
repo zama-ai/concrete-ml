@@ -6,6 +6,7 @@ import io
 import sys
 import time
 import uuid
+import json
 from abc import abstractmethod
 from collections import defaultdict
 from functools import lru_cache
@@ -112,7 +113,7 @@ def convert_conv1d_to_linear(layer_or_module):
     return layer_or_module
 
 
-def enc_matmul(q_x, q_weight, compression_key, private_key, serialize=True):    
+def enc_matmul(q_x, q_weight, crypto_params, compression_key, private_key, serialize=True):    
     q_x_u = q_x.astype(numpy.uint32)
     q_weight_u = q_weight.astype(numpy.uint32)
     
@@ -130,7 +131,7 @@ def enc_matmul(q_x, q_weight, compression_key, private_key, serialize=True):
                 serialized_compression_key = compression_key.serialize()
                 compression_key = deai.CompressionKey.deserialize(serialized_compression_key)
         
-            ciphertext = deai.encrypt(private_key, q_x_i)
+            ciphertext = deai.encrypt(private_key, crypto_params, q_x_i)
             
             if serialize:
                 serialized_ciphertext = ciphertext.serialize()
@@ -166,6 +167,7 @@ class RemoteModule(nn.Module):
         module_name: Optional[str] = None,
         model_name: Optional[str] = None,
         verbose: int = 0,
+        glwe_crypto_params = None,
         private_key = None,
         compression_key = None,
         use_linear_layers = False,
@@ -186,6 +188,7 @@ class RemoteModule(nn.Module):
         self.verbose = verbose
 
         self.private_key = private_key
+        self.glwe_crypto_params = glwe_crypto_params
         self.compression_key = compression_key
         self.use_linear_layers = use_linear_layers
         self.serialize_deai = serialize_deai
@@ -333,21 +336,23 @@ class RemoteModule(nn.Module):
             q_weight = weight_bias[0].qvalues
             # bias = weight_bias[1].qvalues
             
-            # weight = self.private_module.weight.detach().numpy()
-            
             if self.use_linear_layers:
                 q_weight = q_weight.T
-            
+                        
             q_x = self.private_q_module.quantize_input(x.detach().numpy())
-            
+
+            num_valid_glwe_values_in_last_ciphertext = q_x.shape[1] % self.glwe_crypto_params.packing_ks_polynomial_size
+
             q_results = []
             for q_x_i in q_x:
                 if len(q_x_i.shape) == 1:
                     q_x_i = numpy.expand_dims(q_x_i, 0)
 
-                q_result = enc_matmul(q_x_i, q_weight, self.compression_key, self.private_key, serialize=self.serialize_deai)
+                ciphertext = deai.encrypt_matrix(self.private_key, self.glwe_crypto_params, q_x_i.astype(numpy.uint64))            
+                encrypted_result = deai.matrix_multiplication(encrypted_matrix=ciphertext, data=q_weight.astype(numpy.uint64), compression_key=self.compression_key)                            
+                q_result = deai.decrypt_matrix(encrypted_result, self.private_key, self.glwe_crypto_params, num_valid_glwe_values_in_last_ciphertext)
 
-                q_results.append(q_result[0])
+                q_results.append(q_result)
             
             q_results = numpy.array(q_results)
 
@@ -464,12 +469,28 @@ class HybridFHEModel:
         self.model_name = model_name
         self.verbose = verbose
         self.serialize_deai = serialize_deai
+
+        self.crypto_params_glwe = deai.MatmulCryptoParameters.deserialize(json.dumps({
+            "bits_reserved_for_computation": 26,
+            "glwe_encryption_noise_distribution_stdev": 5.293956729894075e-23,
+            "encryption_glwe_dimension": 1,
+            "polynomial_size": 2048,
+            "ciphertext_modulus_bit_count": 64,
+            "input_storage_ciphertext_modulus": 39,
+            "packing_ks_level": 2, 
+            "packing_ks_base_log": 14,
+            "packing_ks_polynomial_size": 2048,              
+            "packing_ks_glwe_dimension": 1,       
+            "output_storage_ciphertext_modulus": 26,
+            "pks_noise_distrubution_stdev": 8.095547030480235e-30
+        }))
+
         self._replace_modules()
 
     def _replace_modules(self):
         """Replace the private modules in the model with remote layers."""
         
-        private_key, compression_key = deai.create_private_key()
+        private_key, compression_key = deai.create_private_key(self.crypto_params_glwe)
 
         for module_name in self.module_names:
 
@@ -488,6 +509,7 @@ class HybridFHEModel:
                 module_name=module_name,
                 model_name=self.model_name,
                 verbose=self.verbose,
+                glwe_crypto_params=self.crypto_params_glwe,
                 private_key=private_key,
                 compression_key=compression_key,
                 use_linear_layers=use_linear_layers,
