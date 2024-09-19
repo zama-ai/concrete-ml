@@ -3,31 +3,31 @@
 import ast
 import enum
 import io
+import json
 import sys
 import time
 import uuid
-import json
 from abc import abstractmethod
 from collections import defaultdict
 from functools import lru_cache
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
+import concrete_ml_extensions as fhext
 import numpy
 import requests
 import torch
-import concrete_ml_extensions as deai
 from brevitas.quant_tensor import QuantTensor
 from concrete.fhe import Configuration
 from torch import nn
 
-from ..common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE, to_tuple
+from ..common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE, assert_true, to_tuple
 from ..deployment.fhe_client_server import FHEModelClient, FHEModelDev, FHEModelServer
 from .compile import (
     QuantizedModule,
+    build_quantized_module,
     compile_brevitas_qat_model,
     compile_torch_model,
-    build_quantized_module,
     has_any_qnn_layers,
 )
 
@@ -41,7 +41,6 @@ class HybridFHEMode(enum.Enum):
     CALIBRATE = "calibrate"  # Use calibration (to run before FHE compilation)
     EXECUTE = "execute"  # Use FHE execution
     TORCH = "torch"  # Use torch layers
-    DEAI = "deai"
 
 
 def tuple_to_underscore_str(tup: Tuple) -> str:
@@ -113,48 +112,69 @@ def convert_conv1d_to_linear(layer_or_module):
     return layer_or_module
 
 
-def enc_matmul(q_x, q_weight, crypto_params, compression_key, private_key, serialize=True):    
-    q_x_u = q_x.astype(numpy.uint32)
-    q_weight_u = q_weight.astype(numpy.uint32)
-    
-    q_y = numpy.zeros((q_x.shape[0], q_weight.shape[1]), dtype=q_x.dtype)
-    
-    for i, q_x_i in enumerate(q_x_u):
-        for j in range(q_weight_u.shape[1]):
+class OptimizedLinearLayerExecutor:
+    def __init__(
+        self,
+        glwe_crypto_params: Dict[str, Union[int, float]] = None,
+        private_key=None,
+        compression_key=None,
+    ):
+        self.compression_key = compression_key
+        self.private_key = private_key
+        self.glwe_crypto_params = fhext.MatmulCryptoParameters.deserialize(
+            json.dumps(glwe_crypto_params)
+        )
+        self.poly_size = glwe_crypto_params["packing_ks_polynomial_size"]
+        self.calibrated_max_bits = glwe_crypto_params["bits_reserved_for_computation"]
 
-            q_weight_j = numpy.ascontiguousarray(q_weight_u[:, j])
-            
-            if q_x_i.shape != q_weight_j.shape:
-                print()
-            
-            if serialize:
-                serialized_compression_key = compression_key.serialize()
-                compression_key = deai.CompressionKey.deserialize(serialized_compression_key)
+    def forward(self, x: numpy.ndarray, q_module: QuantizedModule):
+        # Extract all the layers in this quantized module
+        # and check that there is only one, as only a single linear layer QM
+        # can be optimized
+        layers_in_module = list(q_module.quant_layers_dict.values())
+        assert len(layers_in_module) == 1
+
+        # Extract the weights and bias in this single linear layer
+        weight_bias = list(layers_in_module[0][1].constant_inputs.values())
+
+        # Make sure the weights used symmetric quantization
+        assert weight_bias[0].quantizer.quant_params.zero_point == 0
         
-            ciphertext = deai.encrypt(private_key, crypto_params, q_x_i)
-            
-            if serialize:
-                serialized_ciphertext = ciphertext.serialize()
-                ciphertext = deai.CipherText.deserialize(serialized_ciphertext)
-            
-            encrypted_result = deai.dot_product(ciphertext, q_weight_j, compression_key)
-            
-            if serialize:
-                serialized_encrypted_result = encrypted_result.serialize()
-                encrypted_result = deai.CompressedResultCipherText.deserialize(
-                serialized_encrypted_result
-            )
-                
-            decrypted_result_u = deai.decrypt(encrypted_result, private_key)
-            
-            decrypted_result_u_clear = numpy.dot(q_x_i, q_weight_j)
-            
-            if decrypted_result_u != decrypted_result_u_clear:
-                print("Wrong dot product")
+        # Retrieve quantized weights
+        q_weight = weight_bias[0].qvalues
 
-            q_y[i][j] = decrypted_result_u
-    
-    return q_y
+        q_x = q_module.quantize_input(x)
+
+        q_weight = q_weight.T
+
+        num_valid_glwe_values_in_last_ciphertext = (
+            q_weight.shape[1] % self.poly_size or self.poly_size
+        )
+
+        ciphertext = fhext.encrypt_matrix(
+            self.private_key, self.glwe_crypto_params, q_x.astype(numpy.uint64)
+        )
+        encrypted_result = fhext.matrix_multiplication(
+            encrypted_matrix=ciphertext,
+            data=q_weight.astype(numpy.uint64),
+            compression_key=self.compression_key,
+        )
+        q_result = fhext.decrypt_matrix(
+            encrypted_result,
+            self.private_key,
+            self.glwe_crypto_params,
+            num_valid_glwe_values_in_last_ciphertext,
+        )
+        q_result = q_result.astype(numpy.int64)
+
+        y = q_module.dequantize_output(*to_tuple(q_result))
+
+        if len(weight_bias) > 1:
+            bias = weight_bias[1].values
+            y += bias
+
+        return y
+
 
 # pylint: disable-next=too-many-instance-attributes
 class RemoteModule(nn.Module):
@@ -167,11 +187,7 @@ class RemoteModule(nn.Module):
         module_name: Optional[str] = None,
         model_name: Optional[str] = None,
         verbose: int = 0,
-        glwe_crypto_params = None,
-        private_key = None,
-        compression_key = None,
-        use_linear_layers = False,
-        serialize_deai = True,
+        optimized_linear_layer_executor: OptimizedLinearLayerExecutor = None,
     ):
         super().__init__()
         self.private_module: Optional[nn.Module] = module
@@ -186,12 +202,7 @@ class RemoteModule(nn.Module):
         self.module_name: Optional[str] = module_name
         self.model_name: Optional[str] = model_name
         self.verbose = verbose
-
-        self.private_key = private_key
-        self.glwe_crypto_params = glwe_crypto_params
-        self.compression_key = compression_key
-        self.use_linear_layers = use_linear_layers
-        self.serialize_deai = serialize_deai
+        self.optimized_linear_layer_executor = optimized_linear_layer_executor
 
     def init_fhe_client(
         self, path_to_client: Optional[Path] = None, path_to_keys: Optional[Path] = None
@@ -304,15 +315,21 @@ class RemoteModule(nn.Module):
             HybridFHEMode.CALIBRATE,
             HybridFHEMode.REMOTE,
             HybridFHEMode.TORCH,
-            HybridFHEMode.DEAI,
             None,
         }:
-            # Using quantized module
             assert self.private_q_module is not None
-            y = torch.Tensor(
-                self.private_q_module.forward(x.detach().numpy(), fhe=self.fhe_local_mode.value)
-            )
-
+            if self.optimized_linear_layer_executor:
+                # Delegate to the optimized GLWE executor
+                y = torch.Tensor(
+                    self.optimized_linear_layer_executor.forward(
+                        x.detach().numpy(), self.private_q_module
+                    )
+                )
+            else:
+                # Delegate to the quantized module for all fhe modes
+                y = torch.Tensor(
+                    self.private_q_module.forward(x.detach().numpy(), fhe=self.fhe_local_mode.value)
+                )
         elif self.fhe_local_mode == HybridFHEMode.CALIBRATE:
             # Calling torch + gathering calibration data
             assert self.private_module is not None
@@ -322,44 +339,15 @@ class RemoteModule(nn.Module):
 
         elif self.fhe_local_mode == HybridFHEMode.REMOTE:  # pragma:no cover
             # Remote call
+            assert self.optimized_linear_layer_executor is None, (
+                "Remote optimized linear layers " "are not yet implemented"
+            )
             y = self.remote_call(x)
+
         elif self.fhe_local_mode == HybridFHEMode.TORCH:
             # Using torch layers
             assert self.private_module is not None
             y = self.private_module(x)
-        elif self.fhe_local_mode == HybridFHEMode.DEAI:
-            assert self.private_q_module is not None
-            assert self.compression_key is not None
-            assert self.private_key is not None
-            
-            weight_bias = list(list(self.private_q_module.quant_layers_dict.values())[0][1].constant_inputs.values())
-            q_weight = weight_bias[0].qvalues
-            # bias = weight_bias[1].qvalues
-            
-            if self.use_linear_layers:
-                q_weight = q_weight.T
-                        
-            q_x = self.private_q_module.quantize_input(x.detach().numpy())
-
-            num_valid_glwe_values_in_last_ciphertext = q_x.shape[1] % self.glwe_crypto_params.packing_ks_polynomial_size
-
-            q_results = []
-            for q_x_i in q_x:
-                if len(q_x_i.shape) == 1:
-                    q_x_i = numpy.expand_dims(q_x_i, 0)
-
-                ciphertext = deai.encrypt_matrix(self.private_key, self.glwe_crypto_params, q_x_i.astype(numpy.uint64))            
-                encrypted_result = deai.matrix_multiplication(encrypted_matrix=ciphertext, data=q_weight.astype(numpy.uint64), compression_key=self.compression_key)                            
-                q_result = deai.decrypt_matrix(encrypted_result, self.private_key, self.glwe_crypto_params, num_valid_glwe_values_in_last_ciphertext)
-
-                q_results.append(q_result)
-            
-            q_results = numpy.array(q_results)
-
-            y = torch.Tensor(
-                self.private_q_module.dequantize_output(*to_tuple(q_results))
-            )
-            
         else:  # pragma:no cover
             # Shouldn't happen
             raise ValueError(f"{self.fhe_local_mode} is not recognized")
@@ -470,38 +458,60 @@ class HybridFHEModel:
         self.verbose = verbose
         self.serialize_deai = serialize_deai
 
-        self.crypto_params_glwe = deai.MatmulCryptoParameters.deserialize(json.dumps({
-            "bits_reserved_for_computation": 26,
+        self.default_crypto_params_glwe = {
+            "bits_reserved_for_computation": 27,
             "glwe_encryption_noise_distribution_stdev": 5.293956729894075e-23,
             "encryption_glwe_dimension": 1,
             "polynomial_size": 2048,
             "ciphertext_modulus_bit_count": 64,
             "input_storage_ciphertext_modulus": 39,
-            "packing_ks_level": 2, 
+            "packing_ks_level": 2,
             "packing_ks_base_log": 14,
-            "packing_ks_polynomial_size": 2048,              
-            "packing_ks_glwe_dimension": 1,       
+            "packing_ks_polynomial_size": 2048,
+            "packing_ks_glwe_dimension": 1,
             "output_storage_ciphertext_modulus": 26,
-            "pks_noise_distrubution_stdev": 8.095547030480235e-30
-        }))
+            "pks_noise_distrubution_stdev": 8.095547030480235e-30,
+        }
 
         self._replace_modules()
 
     def _replace_modules(self):
         """Replace the private modules in the model with remote layers."""
-        
-        private_key, compression_key = deai.create_private_key(self.crypto_params_glwe)
 
+        self._all_layers_are_pure_linear = True
         for module_name in self.module_names:
-
             # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3858
             # Conv1d introduce reshaping operations which adds more TLU
             self.private_modules[module_name] = convert_conv1d_to_linear(
                 self.private_modules[module_name]
             )
-            
-            
-            use_linear_layers = isinstance(self.private_modules[module_name], nn.Linear)
+
+            # Determine if this remote module is a pure linear one
+            # that is supported for compressed encrypted matmul
+            # Conv1D will have been converted to Linear by the line above
+            is_pure_linear_layer = isinstance(self.private_modules[module_name], nn.Linear)
+            if not is_pure_linear_layer:
+                self._all_layers_are_pure_linear = False
+
+        # If all layers are pure linear, enable the GLWE optimization for all layers
+        # and generate an encryption and compression key for all layers
+        # as they share crypto-parameters
+        private_key, compression_key = None, None
+        if self._all_layers_are_pure_linear:
+            fhext_glwe_crypto_params = fhext.MatmulCryptoParameters.deserialize(
+                json.dumps(self.default_crypto_params_glwe)
+            )
+            private_key, compression_key = fhext.create_private_key(fhext_glwe_crypto_params)
+
+        for module_name in self.module_names:
+            # Create the optimized glwe linear layer executor if needed
+            optimized_linear_executor = None
+            if self._all_layers_are_pure_linear:
+                optimized_linear_executor = OptimizedLinearLayerExecutor(
+                    glwe_crypto_params=self.default_crypto_params_glwe,
+                    private_key=private_key,
+                    compression_key=compression_key,
+                )
 
             remote_module = RemoteModule(
                 module=self.private_modules[module_name],
@@ -509,11 +519,7 @@ class HybridFHEModel:
                 module_name=module_name,
                 model_name=self.model_name,
                 verbose=self.verbose,
-                glwe_crypto_params=self.crypto_params_glwe,
-                private_key=private_key,
-                compression_key=compression_key,
-                use_linear_layers=use_linear_layers,
-                serialize_deai=self.serialize_deai,
+                optimized_linear_layer_executor=optimized_linear_executor,
             )
 
             self.remote_modules[module_name] = remote_module
@@ -536,6 +542,7 @@ class HybridFHEModel:
             torch.Tensor: The output tensor.
         """
         self.set_fhe_mode(fhe)
+
         return self.model(x)
 
     def __call__(self, x: torch.Tensor, fhe: str = "disable") -> torch.Tensor:
@@ -595,7 +602,6 @@ class HybridFHEModel:
         p_error: Optional[float] = None,
         device: str = "cpu",
         configuration: Optional[Configuration] = None,
-        only_build=False,
     ):
         """Compiles the specific layers to FHE.
 
@@ -634,7 +640,7 @@ class HybridFHEModel:
                     device=device,
                 )
             else:
-                if only_build:
+                if self._all_layers_are_pure_linear:
                     self.private_q_modules[name] = build_quantized_module(
                         self.private_modules[name],
                         calibration_data_tensor,
@@ -700,7 +706,13 @@ class HybridFHEModel:
 
         def clear_private_info(module):
             # Remove private information
-            for attr in ["private_module", "calibration_data", "private_q_module", "private_key", "compression_key"]:
+            for attr in [
+                "private_module",
+                "calibration_data",
+                "private_q_module",
+                "private_key",
+                "compression_key",
+            ]:
                 if hasattr(module, attr):
                     setattr(module, attr, None)
 

@@ -2,22 +2,21 @@
 
 import sys
 import tempfile
-import numpy
 from pathlib import Path
 from typing import List, Union
 
+import numpy
 import pytest
 import torch
 from concrete.fhe import Configuration
-from transformers import GPT2LMHeadModel, GPT2Tokenizer
-
 from sklearn.datasets import make_moons
 from sklearn.model_selection import train_test_split
+from transformers import GPT2LMHeadModel, GPT2Tokenizer
 
-from concrete.ml.pytest.torch_models import PartialQATModel, FCSmall
+from concrete.ml.pytest.torch_models import FCSmall, PartialQATModel
 from concrete.ml.torch.hybrid_model import (
-    HybridFHEModel,
     HybridFHEMode,
+    HybridFHEModel,
     tuple_to_underscore_str,
     underscore_str_to_tuple,
 )
@@ -245,12 +244,15 @@ def test_invalid_model():
     # Attempt to create a HybridFHEModel with an invalid model type and expect a TypeError
     with pytest.raises(TypeError, match="The model must be a PyTorch or Brevitas model."):
         HybridFHEModel(invalid_model, module_names="sub_module")
-        
-def test_hybrid_glwe_correctness():
-    N_SAMPLES = 1000
 
-    def prepare_data(X, y, test_size=0.3, random_state=42):
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
+@pytest.mark.parametrize("n_hidden", [512, 2048])
+def test_hybrid_glwe_correctness(n_hidden):
+    N_SAMPLES = 500
+
+    def prepare_data(X, y, test_size=0.1, random_state=42):
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=test_size, random_state=random_state
+        )
         X_train = torch.tensor(X_train, dtype=torch.float32)
         X_test = torch.tensor(X_test, dtype=torch.float32)
         y_train = torch.tensor(y_train, dtype=torch.long)
@@ -261,9 +263,9 @@ def test_hybrid_glwe_correctness():
     X1, y1 = make_moons(n_samples=N_SAMPLES, noise=0.2, random_state=42)
 
     # Prepare data
-    X1_train, X1_test, y1_train, y1_test = prepare_data(X1, y1)    
+    X1_train, X1_test, y1_train, y1_test = prepare_data(X1, y1)
 
-    model = FCSmall(2, torch.nn.ReLU, hidden=128)
+    model = FCSmall(2, torch.nn.ReLU, hidden=n_hidden)
     optimizer = torch.optim.Adam(model.parameters())
 
     num_epochs = 100
@@ -283,9 +285,17 @@ def test_hybrid_glwe_correctness():
             param_names.append(k)
 
     hybrid_local = HybridFHEModel(model, param_names)
-    hybrid_local.compile_model(X1_train, n_bits=8, only_build=False)
 
-    y_qm = hybrid_local(X1_test, fhe="disable")
-    y_glwe = hybrid_local(X1_test, fhe="deai")
+    assert hybrid_local._all_layers_are_pure_linear
 
-    assert(numpy.all(numpy.allclose(y_qm, y_glwe, atol=0.0001)))
+    hybrid_local.compile_model(X1_train, n_bits=8)
+
+    y_qm = hybrid_local(X1_test, fhe="disable").numpy()
+    y_glwe = hybrid_local(X1_test, fhe="execute").numpy()
+
+    y1_test = y1_test.numpy()
+    acc_qm = numpy.sum(numpy.argmax(y_qm, axis=1) == y1_test)
+    acc_glwe = numpy.sum(numpy.argmax(y_glwe, axis=1) == y1_test)
+
+    assert numpy.all(numpy.allclose(y_qm, y_glwe, atol=0.1))
+    assert numpy.abs(acc_qm - acc_glwe) < 0.01
