@@ -10,7 +10,7 @@ concrete-python, 2.8.0rc3.dev20240820, BSD-3-Clause
 dependencies, 2.0.1, BSD License
 dill, 0.3.8, BSD License
 filelock, 3.15.3, The Unlicense (Unlicense)
-flatbuffers, 24.3.25, Apache Software License
+flatbuffers, 2.0.7, Apache Software License
 fsspec, 2024.6.0, BSD License
 huggingface-hub, 0.23.4, Apache Software License
 humanfriendly, 10.0, MIT License
@@ -29,7 +29,7 @@ onnxoptimizer, 0.3.13, Apache License v2.0
 onnxruntime, 1.18.0, MIT License
 packaging, 24.1, Apache Software License; BSD License
 pandas, 2.0.3, BSD License
-protobuf, 3.20.3, BSD-3-Clause
+protobuf, 4.25.5, 3-Clause BSD License
 psutil, 5.9.8, BSD License
 python-dateutil, 2.9.0.post0, Apache Software License; BSD License
 pytz, 2024.1, MIT License
