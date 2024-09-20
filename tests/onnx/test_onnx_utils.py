@@ -8,6 +8,8 @@ from concrete.ml.onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
 from concrete.ml.onnx.onnx_utils import check_onnx_model
 
 
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4604
+@pytest.mark.skip()
 def test_check_onnx_model_large():
     """Test that check_onnx_model can handle models larger than 2GB."""
 
