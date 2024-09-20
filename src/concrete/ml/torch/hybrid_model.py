@@ -139,7 +139,7 @@ class OptimizedLinearLayerExecutor:
 
         # Make sure the weights used symmetric quantization
         assert weight_bias[0].quantizer.quant_params.zero_point == 0
-        
+
         # Retrieve quantized weights
         q_weight = weight_bias[0].qvalues
 
@@ -440,7 +440,6 @@ class HybridFHEModel:
         server_remote_address: Optional[str] = None,
         model_name: str = "model",
         verbose: int = 0,
-        serialize_deai: bool = True,
     ):
         if not isinstance(model, torch.nn.Module):
             raise TypeError("The model must be a PyTorch or Brevitas model.")
@@ -456,7 +455,6 @@ class HybridFHEModel:
         self.configuration: Optional[Configuration] = None
         self.model_name = model_name
         self.verbose = verbose
-        self.serialize_deai = serialize_deai
 
         self.default_crypto_params_glwe = {
             "bits_reserved_for_computation": 27,
