@@ -9,7 +9,6 @@ Fine-tuning large language models typically requires access to sensitive data, w
 ## Key Features
 
 - **LoRA Fine-Tuning**: Fine-tune GPT-2 by adapting low-rank weights.
-- **Fully Homomorphic Encryption**: Perform training and inference on encrypted data.
 - **Hybrid Model**: Combine traditional and encrypted computations for optimal performance.
 - **Low Memory Requirements**: Minimal client-side memory needed for LoRA weights.
 
