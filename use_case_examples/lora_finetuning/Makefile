@@ -7,4 +7,4 @@ TIME_NB="${USE_CASE_DIR}/time_notebook_execution.sh"
 run_example: one
 
 one:
-	@$(TIME_NB) gpt2_finetune_hybrid.ipynb
+	@$(TIME_NB) GPT2FineTuneHybrid.ipynb

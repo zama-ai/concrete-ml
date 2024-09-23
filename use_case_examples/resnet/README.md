@@ -104,14 +104,14 @@ GPU machine: 8xH100 GPU machine
 
 Summary of the accuracy evaluation on ImageNet (100 images):
 
-| w&a bits | p_error | Accuracy | Top-5 Accuracy | Runtime*        | Device |
-| -------- | ------- | -------- | -------------- | --------------- | ------ |
-| fp32     | -       | 67%      | 87%            | -               | -      |
-| 6/6      | 0.05    | 55%      | 78%            | 56 min          | GPU    |
-| 6/6      | 0.05    | 55%      | 78%            | 1 h 31 min      | CPU    |
-| 7/7      | 0.05    | **66%**  | **87%**        | **2 h 12 min**  | CPU    |
+| w&a bits | p_error | Accuracy | Top-5 Accuracy | Runtime\*      | Device |
+| -------- | ------- | -------- | -------------- | -------------- | ------ |
+| fp32     | -       | 67%      | 87%            | -              | -      |
+| 6/6      | 0.05    | 55%      | 78%            | 56 min         | GPU    |
+| 6/6      | 0.05    | 55%      | 78%            | 1 h 31 min     | CPU    |
+| 7/7      | 0.05    | **66%**  | **87%**        | **2 h 12 min** | CPU    |
 
-*Runtime reported to run the inference on a single image
+\*Runtime reported to run the inference on a single image
 
 6/6 `n_bits` configuration: {"model_inputs": 8, "op_inputs": 6, "op_weights": 6, "model_outputs": 9}
 
