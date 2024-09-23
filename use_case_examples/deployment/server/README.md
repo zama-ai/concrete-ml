@@ -10,8 +10,8 @@ We show-case how to do this on 3 examples:
 You can run these example locally using Docker, or on AWS if you have your credentials set up.
 
 For all of them the workflow is the same:
-0\. Optional: Train the model
 
+1. Optional: Train the model
 1. Compile the model to an FHE circuit
 1. Deploy to AWS, Docker or localhost
 1. Run the inference using the client (locally or in Docker)
