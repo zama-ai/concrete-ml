@@ -4,7 +4,6 @@ import sys
 import warnings
 from collections import OrderedDict
 from pathlib import Path
-from time import time
 from typing import Callable, Dict, Optional, Tuple
 
 import matplotlib.pyplot as plt
@@ -14,7 +13,6 @@ import torch.nn as nn
 from brevitas import config
 from concrete.fhe.compilation import Configuration
 from models import Fp32VGG11
-from sklearn.metrics import top_k_accuracy_score
 from torch.utils.data.dataloader import DataLoader
 from torchvision import datasets, transforms
 from torchvision.utils import make_grid
@@ -441,12 +439,13 @@ def torch_inference(
     return np.mean(np.vstack(correct), dtype="float64")
 
 
-def fhe_compatibility(model: Callable, data: DataLoader) -> Callable:
+def fhe_compatibility(model: Callable, data: DataLoader, device: str) -> Callable:
     """Test if the model is FHE-compatible.
 
     Args:
         model (Callable): The Brevitas model.
         data (DataLoader): The data loader.
+        device (str): Specifies the device to run on, either 'cpu' or 'gpu'.
 
     Returns:
         Callable: Quantized model.
@@ -458,6 +457,7 @@ def fhe_compatibility(model: Callable, data: DataLoader) -> Callable:
         torch_inputset=data,
         show_mlir=False,
         output_onnx_file="test.onnx",
+        configuration=Configuration(use_gpu=(device == "cuda")),
     )
 
     return qmodel
