@@ -445,7 +445,7 @@ def fhe_compatibility(model: Callable, data: DataLoader, device: str) -> Callabl
     Args:
         model (Callable): The Brevitas model.
         data (DataLoader): The data loader.
-        device (str): Specifies the device to run on, either 'cpu' or 'gpu'.
+        device (str): Specifies the device to run during the compilation, either 'cpu' or 'gpu'.
 
     Returns:
         Callable: Quantized model.
@@ -457,7 +457,7 @@ def fhe_compatibility(model: Callable, data: DataLoader, device: str) -> Callabl
         torch_inputset=data,
         show_mlir=False,
         output_onnx_file="test.onnx",
-        configuration=Configuration(use_gpu=(device == "cuda")),
+        device=device,
     )
 
     return qmodel
