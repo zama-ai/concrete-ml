@@ -128,9 +128,9 @@ def run_hybrid_llm_test(
         # Get the temp directory path
         hybrid_model.save_and_clear_private_info(temp_dir_path)
         hybrid_model.set_fhe_mode("remote")
+
         # At this point, the hybrid model does not have
         # the parameters necessaryto run the module_names
-
         module_names = module_names if isinstance(module_names, list) else [module_names]
 
         # Check that files are there
@@ -229,3 +229,14 @@ def test_gpt2_hybrid_mlp_module_not_found():
     fake_module_name = "does_not_exist"
     with pytest.raises(ValueError, match=f"No module found for name {fake_module_name}"):
         HybridFHEModel(model, module_names=fake_module_name)
+
+
+def test_invalid_model():
+    """Test that a TypeError is raised when the model is not a torch.nn.Module."""
+
+    # Create an invalid model (not a torch.nn.Module)
+    invalid_model = "This_is_not_a_model"
+
+    # Attempt to create a HybridFHEModel with an invalid model type and expect a TypeError
+    with pytest.raises(TypeError, match="The model must be a PyTorch or Brevitas model."):
+        HybridFHEModel(invalid_model, module_names="sub_module")

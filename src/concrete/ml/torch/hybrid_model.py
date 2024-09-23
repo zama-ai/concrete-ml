@@ -343,21 +343,27 @@ class HybridFHEModel:
     This will modify the model in place.
 
     Args:
-        model (nn.Module): The model to modify (in-place modification)
+        model (nn.Module): The model to modify (in-place modification).
         module_names (Union[str, List[str]]): The module name(s) to replace with FHE server.
-        server_remote_address): The remote address of the FHE server
-        model_name (str): Model name identifier
-        verbose (int): If logs should be printed when interacting with FHE server
+        server_remote_address (str): The remote address of the FHE server.
+        model_name (str): Model name identifier.
+        verbose (int): If logs should be printed when interacting with FHE server.
+
+    Raises:
+        TypeError: If the provided model is not an instance of torch.nn.Module.
     """
 
     def __init__(
         self,
         model: nn.Module,
         module_names: Union[str, List[str]],
-        server_remote_address=None,
+        server_remote_address: Optional[str] = None,
         model_name: str = "model",
         verbose: int = 0,
     ):
+        if not isinstance(model, torch.nn.Module):
+            raise TypeError("The model must be a PyTorch or Brevitas model.")
+
         self.model = model
         self.module_names = [module_names] if isinstance(module_names, str) else module_names
         self.server_remote_address = server_remote_address
