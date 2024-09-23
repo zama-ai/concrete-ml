@@ -53,7 +53,7 @@ After fine-tuning, the model's weights are distributed between the client and se
 - Total weights removed from the server: 68.24%
 - LoRA weights kept on the client: 147,456 (approximately 0.12% of the original model's weights)
 
-Note that the embedding are not considered for now but contain a significant amount of weights (around 30%) for GPT2. They will be considered in a future version of Concrete-ML.
+Note that the embedding are not considered for now but contain a significant amount of weights (around 30%) for GPT2. They will be considered in a future version of Concrete ML.
 
 ## Conclusion
 
