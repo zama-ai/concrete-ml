@@ -19,6 +19,8 @@ Fine-tuning large language models typically requires access to sensitive data, w
 
 Install the required packages:
 
+<!--pytest-codeblocks:skip-->
+
 ```sh
 pip install -r requirements.txt
 ```
