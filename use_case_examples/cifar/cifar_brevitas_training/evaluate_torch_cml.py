@@ -123,6 +123,7 @@ def main(args):
                 if rounding_threshold_bits is not None
                 else None
             ),
+            device=COMPILATION_DEVICE,
         )
 
         # Print max bit-width in the circuit
