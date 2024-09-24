@@ -1,6 +1,7 @@
 """This module contains classes for LoRA (Low-Rank Adaptation) training and custom layers."""
 
 import torch
+from transformers import Conv1D as TransformerConv1D
 
 # pylint: disable=abstract-method
 # pylint: disable=arguments-differ
@@ -9,65 +10,94 @@ import torch
 class LoraTraining(torch.nn.Module):
     """LoraTraining module for fine-tuning with LoRA."""
 
-    SUPPORTED_MODELS = ["gpt2"]
-
-    def __init__(self, inference_model, gradient_accumulation_steps) -> None:
+    def __init__(self, inference_model) -> None:
         super().__init__()
 
         self.inference_model = inference_model
 
-        # Validate the base model type
-        self._validate_model_type()
+        self.replace_layers_with_custom(self.inference_model)
 
         self.optimizer = None
         self.lr_scheduler = None
-
-        self.gradient_accumulation_steps = gradient_accumulation_steps
+        self.loss_fn = None
+        self.gradient_accumulation_steps = 1
         self.max_grad_norm = None
 
         self.calibrate = False
         self.run_optimizer = False
 
-    def _validate_model_type(self):
-        """Validate the model type.
-
-        Raises:
-            ValueError: If the model type is not supported.
+    def replace_layers_with_custom(model:torch.nn.Module, skip_first: bool = True):
         """
-        try:
-            # Access the base model from PeftModelForCausalLM
-            base_model = self.inference_model.base_model.model
+        Replace torch.nn.Linear and TransformerConv1D layers in the model with CustomLinear layers,
+        optionally skipping the first eligible layer encountered.
 
-            # Retrieve the model type from the configuration
-            model_type = getattr(base_model.config, "model_type", None)
+        Args:
+            model (torch.nn.Module): The model whose layers are to be replaced.
+            skip_first (bool): Whether to skip replacing the first eligible layer.
+        """
+        skipped = False  # Flag to track if the first layer has been skipped
 
-            if model_type not in self.SUPPORTED_MODELS:
-                raise ValueError(
-                    f"Unsupported model type: '{model_type}'. "
-                    f"Supported models are: {self.SUPPORTED_MODELS}"
-                )
+        def _replace(module: torch.nn.Module):
+            nonlocal skipped
+            for name, child in list(module.named_children()):
+                # Skip modules containing "lora" in their name
+                if "lora" in name:
+                    continue
 
-        except AttributeError as e:
-            raise ValueError(
-                "Unable to determine the base model type. "
-                "Ensure that the inference_model has a "
-                "'base_model.model.config.model_type' attribute."
-            ) from e
+                if isinstance(child, (torch.nn.Linear, TransformerConv1D)):
+                    if skip_first and not skipped:
+                        skipped = True
+                        continue  # Skip the first eligible layer
 
-    def update_training_parameters(self, optimizer, lr_scheduler, training_args):
+                    # Determine if weights need to be transposed
+                    weight_transposed = isinstance(child, TransformerConv1D)
+
+                    # Create the CustomLinear layer
+                    custom_layer = CustomLinear(
+                        weight=child.weight,
+                        bias=child.bias,
+                        weight_transposed=weight_transposed
+                    )
+
+                    # Replace the original layer with the custom layer
+                    setattr(module, name, custom_layer)
+                else:
+                    # Recursively apply to child modules
+                    _replace(child)
+
+        _replace(model)
+
+    def update_training_parameters(
+        self, optimizer=None, lr_scheduler=None, loss_fn=None, training_args=None
+    ):
         """Update training parameters for the LoRA module.
 
         Args:
-            optimizer: The optimizer to use for training.
-            lr_scheduler: The learning rate scheduler to use for training.
-            training_args: The training arguments containing gradient
-                accumulation steps and max grad norm.
+            optimizer (optional): The optimizer to use for training.
+            lr_scheduler (optional): The learning rate scheduler to use for training.
+            loss_fn (callable, optional): Loss function to compute the loss.
+            training_args (dict or namespace, optional): Training arguments containing
+                'gradient_accumulation_steps' and 'max_grad_norm'.
         """
-        assert self.gradient_accumulation_steps == training_args.gradient_accumulation_steps
-
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
-        self.max_grad_norm = training_args.max_grad_norm
+        self.loss_fn = loss_fn
+
+        if training_args is not None:
+            # Check if training_args is a dict or an object with attributes
+            if isinstance(training_args, dict):
+                self.gradient_accumulation_steps = training_args.get(
+                    "gradient_accumulation_steps", 1
+                )
+                self.max_grad_norm = training_args.get("max_grad_norm", None)
+            else:
+                self.gradient_accumulation_steps = getattr(
+                    training_args, "gradient_accumulation_steps", 1
+                )
+                self.max_grad_norm = getattr(training_args, "max_grad_norm", None)
+        else:
+            self.gradient_accumulation_steps = 1
+            self.max_grad_norm = None
 
     def forward(self, inputs):
         """Forward pass of the LoRA training module.
@@ -77,44 +107,47 @@ class LoraTraining(torch.nn.Module):
 
         Returns:
             A tuple containing the loss and gradient norm.
-
-        Raises:
-            ValueError: If the model does not return a loss.
         """
         # Remove this once hybrid model supports multiple inputs
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4568
         x, y = inputs
 
-        # Correctly pass labels as a keyword argument
-        outputs = self.inference_model(x, labels=y)
+        # Forward pass
+        if self.loss_fn is None:
 
-        # Use getattr to safely access the loss attribute
-        loss = getattr(outputs, "loss", None)
-        if loss is None:
-            raise ValueError(
-                "The model did not return a loss. Ensure that 'labels' are correctly provided."
-            )
+            # Assume model computes loss internally
+            outputs = self.inference_model(x, labels=y)
+
+            # Use getattr to safely access the loss attribute
+            loss = getattr(outputs, "loss", None)
+            if loss is None:
+                raise ValueError(
+                    "The model did not return a loss. Ensure that 'labels' are correctly provided."
+                )
+        else:
+            outputs = self.inference_model(x)
+            loss = self.loss_fn(outputs, y)
 
         loss = loss / self.gradient_accumulation_steps
 
         # Update gradients
         # We need to set requires grad to the loss manually because the inference model's last
-        # step is the "lm_head" layer, which is detached from the graph by the hybrid model
+        # step is the "lm_head" layer, which might be detached from the graph by the hybrid model
         loss.requires_grad_(True)
         loss.backward()
 
         grad_norm = None
         if not self.calibrate and self.run_optimizer:
-            assert self.optimizer is not None
-            assert self.lr_scheduler is not None
-            assert self.max_grad_norm is not None
+            if self.max_grad_norm is not None:
+                grad_norm = torch.nn.utils.clip_grad_norm_(
+                    self.inference_model.parameters(), max_norm=self.max_grad_norm, norm_type=2
+                )
 
-            grad_norm = torch.nn.utils.clip_grad_norm_(
-                self.inference_model.parameters(), max_norm=self.max_grad_norm, norm_type=2
-            )
+            if self.optimizer is not None:
+                self.optimizer.step()
 
-            self.optimizer.step()
-            self.lr_scheduler.step()
+            if self.lr_scheduler is not None:
+                self.lr_scheduler.step()
 
             self.inference_model.zero_grad()
 
@@ -141,38 +174,45 @@ class LoraTraining(torch.nn.Module):
         self.run_optimizer = enable
 
 
-class ForwardModule(torch.nn.Module):
-    """Forward module for custom convolution."""
+class ForwardModuleLinear(torch.nn.Module):
+    """Forward module for linear layers."""
 
-    def __init__(self, weight, bias=None):
+    def __init__(self, weight, bias=None, weight_transposed=False):
         super().__init__()
-        self.weight = weight  # Assume weight is passed as a pre-initialized tensor
+        self.weight = weight
         self.bias = bias
+        self.weight_transposed = weight_transposed  # If True, weight is (in_features, out_features)
 
     def forward(self, input_tensor):
-        """Forward pass of the forward module.
+        """Forward pass for linear layers.
 
         Args:
             input_tensor: The input tensor.
 
         Returns:
-            The output tensor after applying the forward pass.
+            The output tensor after applying the linear transformation.
         """
-        output = input_tensor @ self.weight
+        if self.weight_transposed:
+            # Weight is (in_features, out_features)
+            output = input_tensor @ self.weight
+        else:
+            # Weight is (out_features, in_features)
+            output = input_tensor @ self.weight.t()
         if self.bias is not None:
-            output = output + self.bias
+            output += self.bias
         return output
 
 
-class BackwardModule(torch.nn.Module):
-    """Backward module for custom convolution."""
+class BackwardModuleLinear(torch.nn.Module):
+    """Backward module for linear layers."""
 
-    def __init__(self, weight):
+    def __init__(self, weight, weight_transposed=False):
         super().__init__()
-        self.weight = weight  # This is the same weight used in ForwardModule
+        self.weight = weight
+        self.weight_transposed = weight_transposed
 
     def forward(self, grad_output):
-        """Forward pass of the backward module.
+        """Backward pass for linear layers.
 
         Args:
             grad_output: The gradient output tensor.
@@ -180,7 +220,33 @@ class BackwardModule(torch.nn.Module):
         Returns:
             The gradient input tensor after applying the backward pass.
         """
-        return grad_output @ self.weight.t()
+        if self.weight_transposed:
+            grad_input = grad_output @ self.weight.t()
+        else:
+            grad_input = grad_output @ self.weight
+        return grad_input
+
+
+class CustomLinear(torch.nn.Module):
+    """Custom linear module."""
+
+    def __init__(self, weight, bias=None, weight_transposed=False):
+        super().__init__()
+        self.forward_module = ForwardModuleLinear(weight, bias, weight_transposed)
+        self.backward_module = BackwardModuleLinear(weight, weight_transposed)
+
+    def forward(self, input_tensor):
+        """Forward pass of the custom linear module.
+
+        Args:
+            input_tensor: The input tensor.
+
+        Returns:
+            The output tensor after applying the custom linear module.
+        """
+        return ForwardBackwardModule.apply(
+            input_tensor, self.forward_module, self.backward_module
+        )
 
 
 class ForwardBackwardModule(torch.autograd.Function):
@@ -217,45 +283,46 @@ class ForwardBackwardModule(torch.autograd.Function):
         backward_module = ctx.backward_module
         grad_input = backward_module.forward(grad_output)
 
-        # grad_weight and grad_bias are not needed when computing the backward for lora
+        # grad_weight and grad_bias are not needed when computing the backward for LoRA
         return grad_input, None, None
 
 
-class CustomConv1D(torch.nn.Module):
-    """Custom 1D convolution module."""
+def get_remote_names(model, include_embedding_layers=False):
+    """Get names of modules to be executed remotely.
 
-    def __init__(self, weight, bias=None):
-        super().__init__()
-        self.forward_module = ForwardModule(weight, bias=bias)
-        self.backward_module = BackwardModule(weight)
+    Args:
+        model (torch.nn.Module): The model to inspect.
+        include_embedding_layers (bool): Whether to include embedding layers.
 
-    def forward(self, input_tensor):
-        """Forward pass of the custom 1D convolution.
+    Returns:
+        List[str]: List of module names to be executed remotely.
+    """
+    remote_names = []
+    for name, module in model.named_modules():
 
-        Args:
-            input_tensor: The input tensor.
+        # Skip if the name contains 'lora' since they will be done on client side
+        if "lora" in name:
+            continue
 
-        Returns:
-            The output tensor after applying the custom 1D convolution.
-        """
-        return ForwardBackwardModule.apply(input_tensor, self.forward_module, self.backward_module)
+        # Check for Linear or Conv1d modules
+        if isinstance(module, (torch.nn.Linear, TransformerConv1D)):
+            # Skip lm_head if include_embedding_layers is False
+            if "lm_head" in name and not include_embedding_layers:
+                continue
+            remote_names.append(name)
 
+        # Check for CustomLinear modules
+        if isinstance(module, (CustomLinear)):
+            # Skip lm_head if include_embedding_layers is False
+            if "lm_head" in name and not include_embedding_layers:
+                continue
+            remote_names.append(name + ".forward_module")
+            remote_names.append(name + ".backward_module")
 
-class CustomLinear(torch.nn.Module):
-    """Custom linear module."""
+        # Include Embedding layers and lm_head if requested
+        elif include_embedding_layers and (
+            isinstance(module, torch.nn.Embedding) or "lm_head" in name
+        ):
+            remote_names.append(name)
 
-    def __init__(self, weight, bias=None):
-        super().__init__()
-        self.forward_module = ForwardModule(weight, bias=bias)
-        self.backward_module = BackwardModule(weight)
-
-    def forward(self, input_tensor):
-        """Forward pass of the custom linear module.
-
-        Args:
-            input_tensor: The input tensor.
-
-        Returns:
-            The output tensor after applying the custom linear module.
-        """
-        return ForwardBackwardModule.apply(input_tensor, self.forward_module, self.backward_module)
+    return remote_names
