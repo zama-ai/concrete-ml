@@ -1,9 +1,9 @@
 # GPU acceleration
+
 This document provides a complete instruction on using GPU acceleration with Concrete ML.
 
-Concrete ML can compile both built-in and custom models using a CUDA-accelerated backend. Once
-a model is compiled for CUDA, executing it on a non-CUDA enabled machine will raise
-an error.
+Concrete ML can compile both built-in and custom models using a CUDA-accelerated backend. However, once
+a model is compiled for CUDA, executing it on a non-CUDA-enabled machine will raise an error.
 
 ## Support
 
@@ -13,8 +13,8 @@ an error.
 |             |                 |               |            |           |
 
 {% hint style="warning" %}
-When compiling a model for GPU, the model will be assigned gpu-specific crypto-system parameters. GPU-compatible
-parameters are more constrained than CPU ones. As a result, the Concrete compiler might have more difficulty finding GPU-compatible crypto-parmaters for some models, resulting in the  `NoParametersFound` error.
+When compiling a model for GPU, it will be assigned GPU-specific crypto-system parameters. These parameters are more constrained compared to CPU-specific ones.
+As a result, the Concrete compiler may have difficulty finding suitable GPU-compatible crypto-parmaters for some models, leading to a `NoParametersFound` error.
 {% endhint %}
 
 ## Performance
@@ -22,7 +22,7 @@ parameters are more constrained than CPU ones. As a result, the Concrete compile
 On high-end GPUs like V100, A100, or H100, the performance gains range from 1x to 10x compared to a desktop CPU. When compared to a high-end 64 or 96-core server CPU, the speed-up is typically around 1x to 3x.
 
 On consumer grade GPUs such as GTX40xx or GTX30xx, there may be
-little speedup or even a slowdown compared to executing
+little speedup or even a slowdown compared to execution
 on a desktop CPU.
 
 ## Prerequisites
