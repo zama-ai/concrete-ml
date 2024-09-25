@@ -1,19 +1,24 @@
+# pylint: disable=redefined-outer-name
+
 """Tests for the LoraTraining class and related modules in lora.py."""
 
 from collections import namedtuple
+from types import SimpleNamespace
 
 import pytest
 import torch
+from torch import nn
 from torch.optim import SGD
 from torch.optim.lr_scheduler import StepLR
+from transformers import Conv1D as TransformerConv1D
 
 from concrete.ml.torch.lora import (
-    BackwardModule,
-    CustomConv1D,
+    BackwardModuleLinear,
     CustomLinear,
     ForwardBackwardModule,
-    ForwardModule,
+    ForwardModuleLinear,
     LoraTraining,
+    get_remote_names,
 )
 
 
@@ -45,49 +50,128 @@ class DummyModel(torch.nn.Module):
 
 
 class DummyInferenceModel(torch.nn.Module):
-    """A dummy inference model."""
+    """A dummy inference model with various layers."""
 
-    def __init__(self, model_type):
+    def __init__(self):
         super().__init__()
-        self.base_model = DummyBaseModel(model_type)
-        self.linear = torch.nn.Linear(2, 2)
+        self.base_model = DummyBaseModel("gpt2")
+        self.linear1 = torch.nn.Linear(2, 2)
+        self.conv1d = TransformerConv1D(2, 2)
+        self.linear2 = torch.nn.Linear(2, 2)
+        self.lora_layer = torch.nn.Linear(2, 2)  # Layer with 'lora' in name
+        self.lora_layer_name = "lora_layer"
 
     def forward(self, x, labels=None):
-        """A simple forward method that returns a loss."""
-        logits = self.linear(x)
-        loss = ((logits - labels) ** 2).mean() if labels is not None else logits.mean()
-        Output = namedtuple("Output", ["loss"])
-        return Output(loss=loss)
+        """A simple forward method that returns logits or loss."""
+        x = self.linear1(x)
+        x = self.conv1d(x)
+        x = self.linear2(x)
+        x = self.lora_layer(x)
+        logits = x
+        if labels is not None:
+            loss = ((logits - labels) ** 2).mean()
+            Output = namedtuple("Output", ["loss"])
+            return Output(loss=loss)
+        return logits
 
 
-def test_lora_training_init_supported_model():
-    """Test that LoraTraining initializes correctly with a supported model type."""
-    inference_model = DummyInferenceModel("gpt2")
-    lora_training = LoraTraining(inference_model, gradient_accumulation_steps=2)
-    assert lora_training.inference_model is inference_model
-    assert lora_training.gradient_accumulation_steps == 2
+@pytest.fixture
+def base_inference_model():
+    """Fixture for creating a DummyInferenceModel instance."""
+    return DummyInferenceModel()
 
 
-def test_lora_training_init_unsupported_model():
-    """Test that LoraTraining raises ValueError with an unsupported model type."""
-    inference_model = DummyInferenceModel("bert")
-    with pytest.raises(ValueError) as exc_info:
-        LoraTraining(inference_model, gradient_accumulation_steps=2)
-    assert "Unsupported model type" in str(exc_info.value)
+@pytest.fixture
+def base_lora_training(base_inference_model):
+    """Fixture for creating a LoraTraining instance."""
+    return LoraTraining(base_inference_model)
 
 
-def test_lora_training_forward():
-    """Test the forward method of LoraTraining."""
-    inference_model = DummyInferenceModel("gpt2")
-    lora_training = LoraTraining(inference_model, gradient_accumulation_steps=2)
+@pytest.mark.parametrize("skip_first", [True, False])
+def test_lora_training_replace_layers(base_lora_training, skip_first):
+    """Test that LoraTraining replaces layers correctly."""
+    original_linear1 = base_lora_training.inference_model.linear1
+    original_lora_layer = base_lora_training.inference_model.lora_layer
 
-    x = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
-    y = torch.tensor([[0.5, 1.5], [2.5, 3.5]])
+    # Replace layers with custom layers
+    base_lora_training.replace_layers_with_custom(
+        base_lora_training.inference_model, skip_first=skip_first
+    )
 
-    loss, grad_norm = lora_training((x, y))
-    expected_loss = ((inference_model.linear(x) - y) ** 2).mean().item() / 2
-    assert loss.item() == expected_loss
-    assert grad_norm is None  # Since run_optimizer is False by default
+    inference_model = base_lora_training.inference_model
+
+    if skip_first:
+        # First eligible layer should be skipped
+        assert inference_model.linear1 is original_linear1
+    else:
+        assert isinstance(inference_model.linear1, CustomLinear)
+
+    # Check that other eligible layers are replaced
+    assert isinstance(inference_model.conv1d, CustomLinear)
+    assert isinstance(inference_model.linear2, CustomLinear)
+
+    # 'lora' layers should not be replaced
+    assert inference_model.lora_layer is original_lora_layer
+
+
+@pytest.mark.parametrize(
+    "training_args",
+    [
+        {"gradient_accumulation_steps": 2, "max_grad_norm": 1.0},  # dict
+        SimpleNamespace(gradient_accumulation_steps=2, max_grad_norm=1.0),  # namespace
+        None,  # None
+    ],
+)
+def test_update_training_parameters(base_lora_training, training_args):
+    """Test update_training_parameters with different types of training_args."""
+    inference_model = base_lora_training.inference_model
+    optimizer = SGD(inference_model.parameters(), lr=0.01)
+    lr_scheduler = StepLR(optimizer, step_size=1)
+    loss_fn = nn.MSELoss()
+
+    base_lora_training.update_training_parameters(optimizer, lr_scheduler, loss_fn, training_args)
+
+    assert base_lora_training.optimizer is optimizer
+    assert base_lora_training.lr_scheduler is lr_scheduler
+    assert base_lora_training.loss_fn is loss_fn
+
+    if training_args is None:
+        assert base_lora_training.gradient_accumulation_steps == 1  # Default
+        assert base_lora_training.max_grad_norm is None  # Default
+    else:
+        assert base_lora_training.gradient_accumulation_steps == 2
+        assert base_lora_training.max_grad_norm == 1.0
+
+
+def test_lora_training_forward_loss_fn_none(base_lora_training):
+    """Test the forward method when loss_fn is None."""
+    x = torch.tensor([[1.0, 2.0]])
+    y = torch.tensor([[0.5, 1.5]])
+
+    loss, _ = base_lora_training((x, y))
+
+    expected_loss = (
+        base_lora_training.inference_model(x, labels=y).loss
+        / base_lora_training.gradient_accumulation_steps
+    ).item()
+
+    assert abs(loss.item() - expected_loss) < 1e-6
+
+
+def test_lora_training_forward_with_loss_fn(base_lora_training):
+    """Test the forward method when loss_fn is provided."""
+    loss_fn = nn.MSELoss()
+    base_lora_training.update_training_parameters(loss_fn=loss_fn)
+
+    x = torch.tensor([[1.0, 2.0]])
+    y = torch.tensor([[0.5, 1.5]])
+
+    outputs = base_lora_training.inference_model(x)
+    expected_loss = loss_fn(outputs, y) / base_lora_training.gradient_accumulation_steps
+
+    loss, _ = base_lora_training((x, y))
+
+    assert abs(loss.item() - expected_loss.item()) < 1e-6
 
 
 def test_lora_training_forward_no_loss():
@@ -97,11 +181,12 @@ def test_lora_training_forward_no_loss():
         """An inference model that does not return a loss."""
 
         def forward(self, x, labels=None):
+            """Forward method that does not return loss."""
             Output = namedtuple("Output", ["something_else"])
             return Output(something_else=torch.tensor(1.0))
 
-    inference_model = NoLossInferenceModel("gpt2")
-    lora_training = LoraTraining(inference_model, gradient_accumulation_steps=2)
+    no_loss_inference_model = NoLossInferenceModel()
+    lora_training = LoraTraining(no_loss_inference_model)
 
     x = torch.tensor([[1.0, 2.0]])
     y = torch.tensor([[0.5, 1.5]])
@@ -111,203 +196,202 @@ def test_lora_training_forward_no_loss():
     assert "The model did not return a loss" in str(exc_info.value)
 
 
-def test_lora_training_toggle_calibrate():
-    """Test the toggle_calibrate method of LoraTraining."""
-    inference_model = DummyInferenceModel("gpt2")
-    lora_training = LoraTraining(inference_model, gradient_accumulation_steps=2)
-
-    assert not lora_training.calibrate
-    lora_training.toggle_calibrate(True)
-    assert lora_training.calibrate
-    lora_training.toggle_calibrate(False)
-    assert not lora_training.calibrate
+@pytest.mark.parametrize("enable", [True, False])
+def test_lora_training_toggle_calibrate(base_lora_training, enable):
+    """Test the toggle_calibrate method."""
+    base_lora_training.toggle_calibrate(enable)
+    assert base_lora_training.calibrate == enable
 
 
-def test_lora_training_toggle_run_optimizer():
-    """Test the toggle_run_optimizer method of LoraTraining."""
-    inference_model = DummyInferenceModel("gpt2")
-    lora_training = LoraTraining(inference_model, gradient_accumulation_steps=2)
-
-    assert not lora_training.run_optimizer
-    lora_training.toggle_run_optimizer(True)
-    assert lora_training.run_optimizer
-    lora_training.toggle_run_optimizer(False)
-    assert not lora_training.run_optimizer
+@pytest.mark.parametrize("enable", [True, False])
+def test_lora_training_toggle_run_optimizer(base_lora_training, enable):
+    """Test the toggle_run_optimizer method."""
+    base_lora_training.toggle_run_optimizer(enable)
+    assert base_lora_training.run_optimizer == enable
 
 
-def test_lora_training_update_training_parameters():
-    """Test the update_training_parameters method of LoraTraining."""
-    inference_model = DummyInferenceModel("gpt2")
-    lora_training = LoraTraining(inference_model, gradient_accumulation_steps=2)
-
+def test_lora_training_forward_with_optimizer(base_lora_training):
+    """Test the forward method when run_optimizer is True."""
+    inference_model = base_lora_training.inference_model
     optimizer = SGD(inference_model.parameters(), lr=0.01)
     lr_scheduler = StepLR(optimizer, step_size=1)
-    TrainingArgs = namedtuple("TrainingArgs", ["gradient_accumulation_steps", "max_grad_norm"])
-    training_args = TrainingArgs(2, 1.0)
-
-    lora_training.update_training_parameters(optimizer, lr_scheduler, training_args)
-
-    assert lora_training.optimizer is optimizer
-    assert lora_training.lr_scheduler is lr_scheduler
-    assert lora_training.max_grad_norm == training_args.max_grad_norm
-
-
-def test_lora_training_forward_with_optimizer():
-    """Test the forward method with optimizer enabled."""
-
-    inference_model = DummyInferenceModel("gpt2")
-    lora_training = LoraTraining(inference_model, gradient_accumulation_steps=2)
-
-    optimizer = SGD(inference_model.parameters(), lr=0.01)
-    lr_scheduler = StepLR(optimizer, step_size=1)
-    TrainingArgs = namedtuple("TrainingArgs", ["gradient_accumulation_steps", "max_grad_norm"])
-    training_args = TrainingArgs(2, 1.0)
-
-    lora_training.update_training_parameters(optimizer, lr_scheduler, training_args)
-    lora_training.toggle_run_optimizer(True)
+    loss_fn = nn.MSELoss()
+    base_lora_training.update_training_parameters(
+        optimizer,
+        lr_scheduler,
+        loss_fn,
+        SimpleNamespace(gradient_accumulation_steps=1, max_grad_norm=1.0),
+    )
+    base_lora_training.replace_layers_with_custom(
+        base_lora_training.inference_model, skip_first=False
+    )
+    base_lora_training.toggle_run_optimizer(True)
 
     x = torch.tensor([[1.0, 2.0]])
     y = torch.tensor([[0.5, 1.5]])
 
-    # Compute expected_loss before the forward pass
-    with torch.no_grad():
-        expected_loss = ((inference_model.linear(x) - y) ** 2).mean().item() / 2
+    # Save initial parameters
+    initial_params = {name: param.clone() for name, param in inference_model.named_parameters()}
 
-    # Save the initial parameters
-    initial_params = [param.clone() for param in inference_model.parameters()]
+    # Perform forward pass
+    _, _ = base_lora_training((x, y))
 
-    # Perform the forward pass
-    loss, grad_norm = lora_training((x, y))
+    # Ensure that only parameters with "lora" in their name have been updated
+    for name, param in inference_model.named_parameters():
+        if "lora" in name:
+            assert not torch.equal(
+                initial_params[name], param
+            ), f"Lora parameter {name} was not updated"
+        else:
+            assert torch.equal(
+                initial_params[name], param
+            ), f"Non-lora parameter {name} was unexpectedly updated"
 
-    # Assert that the loss is close to the expected loss
-    assert abs(loss.item() - expected_loss) < 1e-6
-    assert grad_norm is not None
 
-    # Check that parameters have been updated by the optimizer
-    for initial_param, param in zip(initial_params, inference_model.parameters()):
-        assert not torch.equal(initial_param, param)
+def test_lora_training_forward_calibrate(base_lora_training):
+    """Test the forward method when calibration is enabled."""
+    inference_model = base_lora_training.inference_model
+    base_lora_training.toggle_calibrate(True)
+
+    x = torch.tensor([[1.0, 2.0]])
+    y = torch.tensor([[0.5, 1.5]])
+
+    _, _ = base_lora_training((x, y))
+
+    # Ensure that gradients are zeroed
+    for param in inference_model.parameters():
+        if param.grad is not None:
+            assert torch.all(param.grad == 0)
 
 
-def test_forward_module():
-    """Test the ForwardModule."""
+@pytest.mark.parametrize("weight_transposed", [False, True])
+def test_forward_module_linear(weight_transposed):
+    """Test ForwardModuleLinear."""
     weight = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
     bias = torch.tensor([0.5, -0.5])
-    module = ForwardModule(weight, bias)
+    module = ForwardModuleLinear(weight, bias, weight_transposed=weight_transposed)
 
     input_tensor = torch.tensor([[1.0, 0.0], [0.0, 1.0]])
     output = module(input_tensor)
 
-    expected_output = input_tensor @ weight + bias
-    assert output is not None and torch.allclose(output, expected_output)
+    if weight_transposed:
+        expected_output = input_tensor @ weight + bias
+    else:
+        expected_output = input_tensor @ weight.t() + bias
+
+    assert torch.allclose(output, expected_output)
 
 
-def test_backward_module():
-    """Test the BackwardModule."""
+@pytest.mark.parametrize("weight_transposed", [False, True])
+def test_backward_module_linear(weight_transposed):
+    """Test BackwardModuleLinear."""
     weight = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
-    module = BackwardModule(weight)
+    module = BackwardModuleLinear(weight, weight_transposed=weight_transposed)
 
     grad_output = torch.tensor([[1.0, 0.0], [0.0, 1.0]])
     grad_input = module(grad_output)
 
-    expected_grad_input = grad_output @ weight.t()
-    assert grad_input is not None and torch.allclose(grad_input, expected_grad_input)
+    if weight_transposed:
+        expected_grad_input = grad_output @ weight.t()
+    else:
+        expected_grad_input = grad_output @ weight
+
+    assert torch.allclose(grad_input, expected_grad_input)
 
 
-def test_custom_conv1d():
-    """Test the CustomConv1D module."""
-    weight = torch.tensor([[1.0, 2.0], [3.0, 4.0]], requires_grad=True)
-    bias = torch.tensor([0.5, -0.5], requires_grad=True)
-    module = CustomConv1D(weight, bias)
-
-    input_tensor = torch.tensor([[1.0, 0.0]], requires_grad=True)
-    output = module(input_tensor)
-
-    expected_output = input_tensor @ weight + bias
-    assert output is not None and torch.allclose(output, expected_output)
-
-    # Test backward pass
-    output.sum().backward()
-    expected_grad_input = torch.ones_like(output) @ weight.t()
-    assert input_tensor.grad is not None and torch.allclose(input_tensor.grad, expected_grad_input)
-
-
-def test_custom_linear():
+@pytest.mark.parametrize("weight_transposed", [False, True])
+def test_custom_linear(weight_transposed):
     """Test the CustomLinear module."""
     weight = torch.tensor([[1.0, 2.0], [3.0, 4.0]], requires_grad=True)
     bias = torch.tensor([0.5, -0.5], requires_grad=True)
-    module = CustomLinear(weight, bias)
+    module = CustomLinear(weight, bias, weight_transposed=weight_transposed)
 
     input_tensor = torch.tensor([[1.0, 0.0]], requires_grad=True)
     output = module(input_tensor)
 
-    expected_output = input_tensor @ weight + bias
-    assert output is not None and torch.allclose(output, expected_output)
+    if weight_transposed:
+        expected_output = input_tensor @ weight + bias
+    else:
+        expected_output = input_tensor @ weight.t() + bias
 
-    # Test backward pass
+    assert torch.allclose(output, expected_output)
+
+    # Test backward
     output.sum().backward()
-    expected_grad_input = torch.ones_like(output) @ weight.t()
+    if weight_transposed:
+        expected_grad_input = torch.ones_like(output) @ weight.t()
+    else:
+        expected_grad_input = torch.ones_like(output) @ weight
+
     assert input_tensor.grad is not None and torch.allclose(input_tensor.grad, expected_grad_input)
 
 
-def test_forward_backward_module():
+@pytest.mark.parametrize("weight_transposed", [False, True])
+def test_forward_backward_module(weight_transposed):
     """Test the ForwardBackwardModule."""
-    weight = torch.tensor([[1.0, 2.0], [3.0, 4.0]], requires_grad=True)
+    weight = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
     bias = torch.tensor([0.5, -0.5])
-    forward_module = ForwardModule(weight, bias)
-    backward_module = BackwardModule(weight)
+    forward_module = ForwardModuleLinear(weight, bias, weight_transposed=weight_transposed)
+    backward_module = BackwardModuleLinear(weight, weight_transposed=weight_transposed)
 
     input_tensor = torch.tensor([[1.0, 0.0]], requires_grad=True)
     output = ForwardBackwardModule.apply(input_tensor, forward_module, backward_module)
 
-    expected_output = input_tensor @ weight + bias
-    assert output is not None and torch.allclose(output, expected_output)
+    if weight_transposed:
+        expected_output = input_tensor @ weight + bias
+        expected_grad_input = torch.ones_like(output) @ weight.t()
+    else:
+        expected_output = input_tensor @ weight.t() + bias
+        expected_grad_input = torch.ones_like(output) @ weight
 
-    # Test backward pass
+    assert torch.allclose(output, expected_output)
+
+    # Test backward
     output.sum().backward()
-    expected_grad_input = torch.ones_like(output) @ weight.t()
+
     assert input_tensor.grad is not None and torch.allclose(input_tensor.grad, expected_grad_input)
 
 
-def test_lora_training_invalid_inference_model():
-    """Test that LoraTraining raises ValueError when inference_model lacks required attributes."""
+def test_get_remote_names():
+    """Test get_remote_names function."""
 
-    # Create an inference model that lacks base_model
-    class InvalidInferenceModel(torch.nn.Module):
-        """An invalid inference model without base_model attribute."""
+    class TestModel(torch.nn.Module):
+        """Test model for get_remote_names test."""
 
-        @staticmethod
-        def forward(x):
-            """Dummy forward method."""
-            return x
+        def __init__(self):
+            super().__init__()
+            self.linear = torch.nn.Linear(10, 10)
+            self.conv1d = TransformerConv1D(10, 10)
+            self.embedding = torch.nn.Embedding(10, 10)
+            self.lm_head = torch.nn.Linear(10, 10)
+            self.lora_layer = torch.nn.Linear(10, 10)
+            self.lora_layer_name = "lora_layer"
 
-    inference_model = InvalidInferenceModel()
-    with pytest.raises(ValueError) as exc_info:
-        LoraTraining(inference_model, gradient_accumulation_steps=2)
-    assert "Unable to determine the base model type." in str(exc_info.value)
+        def forward(self, x):
+            """Forward method."""
+            return self.lm_head(self.linear(x))
 
+    model = TestModel()
 
-def test_lora_training_forward_calibrate():
-    """Test the forward method when calibration is enabled."""
-    inference_model = DummyInferenceModel("gpt2")
-    lora_training = LoraTraining(inference_model, gradient_accumulation_steps=2)
+    lora_training = LoraTraining(model)
+    remote_names = get_remote_names(lora_training)
+    expected_names = [
+        "inference_model.linear",
+        "inference_model.conv1d.forward_module",
+        "inference_model.conv1d.backward_module",
+    ]
 
-    # Enable calibration
-    lora_training.toggle_calibrate(True)
+    assert set(remote_names) == set(expected_names)
 
-    x = torch.tensor([[1.0, 2.0]])
-    y = torch.tensor([[0.5, 1.5]])
-
-    # Perform the forward pass
-    loss, grad_norm = lora_training((x, y))
-
-    # Since calibrate is True, grad_norm should be None
-    assert grad_norm is None
-
-    # Ensure that loss is computed correctly
-    expected_loss = ((inference_model.linear(x) - y) ** 2).mean().item() / 2
-    assert abs(loss.item() - expected_loss) < 1e-6
-
-    # Ensure that gradients have been cleared (zeroed)
-    for param in inference_model.parameters():
-        if param.grad is not None:
-            assert torch.all(param.grad == 0)
+    # Test with include_embedding_layers=True
+    remote_names_with_embeddings = get_remote_names(lora_training, include_embedding_layers=True)
+    expected_names_with_embeddings = [
+        "inference_model.linear",
+        "inference_model.conv1d.forward_module",
+        "inference_model.conv1d.backward_module",
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4609
+        "inference_model.embedding",
+        "inference_model.lm_head.forward_module",
+        "inference_model.lm_head.backward_module",
+    ]
+    assert set(remote_names_with_embeddings) == set(expected_names_with_embeddings)

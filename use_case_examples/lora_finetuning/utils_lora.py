@@ -3,6 +3,7 @@
 from torch.nn import Embedding
 from transformers import Conv1D
 
+
 def generate_text(prompt, model, tokenizer, max_new_tokens=30):
     # Encode the input prompt
     inputs = tokenizer.encode_plus(prompt, return_tensors="pt")

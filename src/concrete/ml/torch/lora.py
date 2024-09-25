@@ -1,5 +1,7 @@
 """This module contains classes for LoRA (Low-Rank Adaptation) training and custom layers."""
 
+from typing import List
+
 import torch
 from transformers import Conv1D as TransformerConv1D
 
@@ -26,16 +28,19 @@ class LoraTraining(torch.nn.Module):
         self.calibrate = False
         self.run_optimizer = False
 
-    def replace_layers_with_custom(model:torch.nn.Module, skip_first: bool = True):
-        """
-        Replace torch.nn.Linear and TransformerConv1D layers in the model with CustomLinear layers,
-        optionally skipping the first eligible layer encountered.
+    @staticmethod
+    def replace_layers_with_custom(model: torch.nn.Module, skip_first: bool = True):
+        """Replace linear layers with custom ones.
+
+        This method replaces eligible linear layers in the model with custom layers
+        that are compatible with the LoRA training procedure.
 
         Args:
-            model (torch.nn.Module): The model whose layers are to be replaced.
-            skip_first (bool): Whether to skip replacing the first eligible layer.
+            model (torch.nn.Module): The model to replace layers in.
+            skip_first (bool): Whether to skip the first eligible layer.
         """
-        skipped = False  # Flag to track if the first layer has been skipped
+        # Flag to track if the first layer has been skipped
+        skipped = False
 
         def _replace(module: torch.nn.Module):
             nonlocal skipped
@@ -47,16 +52,16 @@ class LoraTraining(torch.nn.Module):
                 if isinstance(child, (torch.nn.Linear, TransformerConv1D)):
                     if skip_first and not skipped:
                         skipped = True
-                        continue  # Skip the first eligible layer
+
+                        # Skip the first eligible layer
+                        continue
 
                     # Determine if weights need to be transposed
                     weight_transposed = isinstance(child, TransformerConv1D)
 
                     # Create the CustomLinear layer
                     custom_layer = CustomLinear(
-                        weight=child.weight,
-                        bias=child.bias,
-                        weight_transposed=weight_transposed
+                        weight=child.weight, bias=child.bias, weight_transposed=weight_transposed
                     )
 
                     # Replace the original layer with the custom layer
@@ -107,6 +112,9 @@ class LoraTraining(torch.nn.Module):
 
         Returns:
             A tuple containing the loss and gradient norm.
+
+        Raises:
+            ValueError: If the model does not return a loss when `self.loss_fn` is None.
         """
         # Remove this once hybrid model supports multiple inputs
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4568
@@ -244,9 +252,7 @@ class CustomLinear(torch.nn.Module):
         Returns:
             The output tensor after applying the custom linear module.
         """
-        return ForwardBackwardModule.apply(
-            input_tensor, self.forward_module, self.backward_module
-        )
+        return ForwardBackwardModule.apply(input_tensor, self.forward_module, self.backward_module)
 
 
 class ForwardBackwardModule(torch.autograd.Function):
@@ -287,7 +293,7 @@ class ForwardBackwardModule(torch.autograd.Function):
         return grad_input, None, None
 
 
-def get_remote_names(model, include_embedding_layers=False):
+def get_remote_names(model: torch.nn.Module, include_embedding_layers: bool = False) -> List[str]:
     """Get names of modules to be executed remotely.
 
     Args:
@@ -299,30 +305,22 @@ def get_remote_names(model, include_embedding_layers=False):
     """
     remote_names = []
     for name, module in model.named_modules():
-
         # Skip if the name contains 'lora' since they will be done on client side
         if "lora" in name:
             continue
 
-        # Check for Linear or Conv1d modules
+        # Skip 'lm_head' if embedding layers are not included
+        is_lm_head = "lm_head" in name
+        if is_lm_head and not include_embedding_layers:
+            continue
+
+        # Handle different module types
         if isinstance(module, (torch.nn.Linear, TransformerConv1D)):
-            # Skip lm_head if include_embedding_layers is False
-            if "lm_head" in name and not include_embedding_layers:
-                continue
             remote_names.append(name)
-
-        # Check for CustomLinear modules
-        if isinstance(module, (CustomLinear)):
-            # Skip lm_head if include_embedding_layers is False
-            if "lm_head" in name and not include_embedding_layers:
-                continue
-            remote_names.append(name + ".forward_module")
-            remote_names.append(name + ".backward_module")
-
-        # Include Embedding layers and lm_head if requested
-        elif include_embedding_layers and (
-            isinstance(module, torch.nn.Embedding) or "lm_head" in name
-        ):
+        elif isinstance(module, CustomLinear):
+            remote_names.append(f"{name}.forward_module")
+            remote_names.append(f"{name}.backward_module")
+        elif include_embedding_layers and (isinstance(module, torch.nn.Embedding) or is_lm_head):
             remote_names.append(name)
 
     return remote_names

@@ -30,6 +30,7 @@ on:
         - LinearSVR \n
         - LogisticRegression \n
         - LogisticRegressionTraining \n
+        - LoraMLP \n
         - PerrorImpactOnFMNIST \n
         - PoissonRegression \n
         - QGPT2Evaluate \n
@@ -77,6 +78,7 @@ env:
   LinearSVR: "docs/advanced_examples/LinearSVR.ipynb" 
   LogisticRegression: "docs/advanced_examples/LogisticRegression.ipynb" 
   LogisticRegressionTraining: "docs/advanced_examples/LogisticRegressionTraining.ipynb" 
+  LoraMLP: "docs/advanced_examples/LoraMLP.ipynb" 
   PerrorImpactOnFMNIST: "use_case_examples/cifar/cifar_brevitas_finetuning/PerrorImpactOnFMNIST.ipynb" 
   PoissonRegression: "docs/advanced_examples/PoissonRegression.ipynb" 
   QGPT2Evaluate: "use_case_examples/llm/QGPT2Evaluate.ipynb" 
