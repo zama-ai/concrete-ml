@@ -276,7 +276,7 @@ def main():
         "--export_statistics", action="store_true", help="Export the circuit statistics."
     )
     parser.add_argument(
-        "--use_gpu", type=bool, action="store_true", help="Use the available GPU at FHE runtime."
+        "--use_gpu", action="store_true", help="Use the available GPU at FHE runtime."
     )
     parser.add_argument(
         "--run_experiment",
