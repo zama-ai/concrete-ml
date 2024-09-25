@@ -6,6 +6,7 @@ from importlib.metadata import version
 from pathlib import Path
 
 import torch
+from concrete.compiler import check_gpu_available
 from concrete.fhe import Exactness
 from concrete.fhe.compilation.configuration import Configuration
 from models import cnv_2w2a
@@ -22,6 +23,8 @@ KEYGEN_CACHE_DIR = CURRENT_DIR.joinpath(".keycache")
 # observe a decrease in torch's top1 accuracy when using MPS devices
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3953
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+COMPILATION_DEVICE = "cuda" if check_gpu_available() else "cpu"
+
 NUM_SAMPLES = int(os.environ.get("NUM_SAMPLES", 1))
 P_ERROR = float(os.environ.get("P_ERROR", 0.01))
 
@@ -93,6 +96,7 @@ quantized_numpy_module, compilation_execution_time = measure_execution_time(
     configuration=configuration,
     rounding_threshold_bits={"method": Exactness.APPROXIMATE, "n_bits": 6},
     p_error=P_ERROR,
+    device=COMPILATION_DEVICE,
 )
 assert isinstance(quantized_numpy_module, QuantizedModule)
 

@@ -3,6 +3,7 @@ import json
 import time
 from pathlib import Path
 
+import concrete.compiler
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -53,7 +54,12 @@ def evaluate_model(model, processor):
 
 
 def compile_model(
-    model, images, n_bits, rounding_threshold_bits=None, fhe_mode="disable", use_gpu=False
+    model,
+    images,
+    n_bits,
+    rounding_threshold_bits=None,
+    fhe_mode="disable",
+    compilation_device="cpu",
 ):
     """
     Compile the model using either build_quantized_module or compile_torch_model.
@@ -70,7 +76,7 @@ def compile_model(
                     }
         rounding_threshold_bits: The rounding threshold bits.
         fhe_mode: The FHE mode ('disable' or 'simulate').
-        use_gpu: Whether to use GPU for compilation.
+        compilation_device: Whether to use GPU or CPU for compilation.
 
     Returns:
         The compiled quantized module.
@@ -85,7 +91,7 @@ def compile_model(
     }
 
     if fhe_mode != "disable":
-        config = Configuration(enable_tlu_fusing=True, print_tlu_fusing=False, use_gpu=use_gpu)
+        config = Configuration(enable_tlu_fusing=True, print_tlu_fusing=False)
         compile_config.update(
             {
                 "p_error": 0.05,
@@ -97,7 +103,7 @@ def compile_model(
         compile_func = build_quantized_module
 
     print(f"Compiling the model with {compile_func.__name__}...")
-    return compile_func(model, torch_inputset=images, **compile_config)
+    return compile_func(model, torch_inputset=images, **compile_config, device=compilation_device)
 
 
 def export_statistics(q_module):
@@ -291,6 +297,11 @@ def main():
     )
     args = parser.parse_args()
 
+    if args.use_gpu and not concrete.compiler.check_gpu_available():
+        print("Follow the GPU setup guide to install the GPU-enabled Concrete ML compiler.")
+        print("GPU Enabled:", concrete.compiler.check_gpu_enabled())
+        print("GPU Available:", concrete.compiler.check_gpu_available())
+
     resnet18 = load_model()
     processor = ImageNetProcessor(
         NUM_TEST_SAMPLES, CALIBRATION_SAMPLES, cache_dir=args.dataset_cache_dir
@@ -309,7 +320,9 @@ def main():
             n_bits={"model_inputs": 8, "op_inputs": 7, "op_weights": 7, "model_outputs": 9},
             rounding_threshold_bits=7,
             fhe_mode="simulate",
-            use_gpu=args.use_gpu,
+            compilation_device=(
+                "cuda" if args.use_gpu and concrete.compiler.check_gpu_available() else "cpu"
+            ),
         )
 
         if args.export_statistics:
