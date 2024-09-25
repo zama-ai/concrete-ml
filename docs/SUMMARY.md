@@ -25,6 +25,7 @@
 - [Step-by-step guide](deep-learning/fhe_friendly_models.md)
 - [Debugging models](deep-learning/fhe_assistant.md)
 - [Optimizing inference](deep-learning/optimizing_inference.md)
+- [Encrypted fine-tuning](deep-learning/lora_training.md)
 
 ## Guides
 
