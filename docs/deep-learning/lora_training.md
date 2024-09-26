@@ -28,7 +28,8 @@ significant added computation time for the model training client machine. More t
 The main benefit of hybrid-model LORA training is outsourcing the computation of the
 linear layers. In LLMs these layers have considerable size and performing inference
 and gradient computations for them requires significant hardware. Using Concrete ML,
-these computations can be securely outsourced, eliminating the memory bottleneck that previously constrained such operations.
+these computations can be securely outsourced, eliminating the memory bottleneck that
+previously constrained such operations.
 
 ## Usage
 
@@ -44,15 +45,49 @@ Please refer to the
 [`LoraConfig`](https://huggingface.co/docs/peft/package_reference/lora#peft.LoraConfig)
 documentation for a reference on the various config options.
 
-<!--pytest-codeblocks:skip-->
-
 ```python
-# Apply LoRA to the model
-peft_model = get_peft_model(model, peft_config)
+import torch
+from torch import nn, optim
+from peft import LoraConfig, get_peft_model
+from concrete.ml.torch.lora import LoraTraining, get_remote_names
+from concrete.ml.torch.hybrid_model import HybridFHEModel
+from sklearn.datasets import make_circles
+from torch.utils.data import DataLoader, TensorDataset
+
+class SimpleMLP(nn.Module):
+    """Simple MLP model without LoRA layers."""
+
+    def __init__(self, input_size=2, hidden_size=128, num_classes=2):
+        super().__init__()
+        self.fc1 = nn.Linear(input_size, hidden_size)
+        self.relu = nn.ReLU()
+        self.fc2 = nn.Linear(hidden_size, num_classes)
+
+    def forward(self, x):
+        """Forward pass of the MLP."""
+        out = self.fc1(x)
+        out = self.relu(out)
+        out = self.fc2(out)
+        return out
 
 lora_config = LoraConfig(
     r=1, lora_alpha=1, lora_dropout=0.01, target_modules=["fc1", "fc2"], bias="none"
 )
+
+model = SimpleMLP()
+# The initial training loop of the model should be
+# added at this point on an initial data-set
+
+# A second data-set, task2 is generated
+X_task2, y_task2 = make_circles(n_samples=32, noise=0.2, factor=0.5)
+train_loader_task2 = DataLoader(
+    TensorDataset(torch.Tensor(X_task2), torch.LongTensor(y_task2)),
+    batch_size=32,
+    shuffle=True
+)
+
+# Apply LoRA to the model
+peft_model = get_peft_model(model, lora_config)
 ```
 
 ### 2. Convert the LORA model to use custom Concrete ML layers
@@ -62,21 +97,29 @@ FHE compatible layers. In this step the number of gradient accumulation steps
 can also be set. For LORA it is common to accumulate gradients over
 several gradient descent steps before updating weights.
 
-<!--pytest-codeblocks:skip-->
+<!--pytest-codeblocks:cont-->
 
 ```python
-gradient_accum_steps = 2
-lora_training = LoraTraining(peft_model, gradient_accum_steps)
-````
+lora_training = LoraTraining(peft_model)
+
+
+# Update training parameters, including loss function
+lora_training.update_training_parameters(
+    optimizer=optim.Adam(filter(lambda p: p.requires_grad, peft_model.parameters()), lr=0.01),
+    loss_fn=nn.CrossEntropyLoss(),
+    training_args={"gradient_accumulation_steps": 1},
+)
+
+```
 
 ### 3. Compile a hybrid FHE model for the LORA adapted PyTorch model
 
-Next, a hybrid FHE model must be compiled in order to convert 
+Next, a hybrid FHE model must be compiled in order to convert
 the selected outsourced layers to use FHE. Other layers
 will be executed on the client side. The back-and-forth communication
 of encrypted activations and gradients may require significant bandwidth.
 
-<!--pytest-codeblocks:skip-->
+<!--pytest-codeblocks:cont-->
 
 ```python
 # Find layers that can be outsourced
@@ -85,13 +128,17 @@ remote_names = get_remote_names(lora_training)
 # Build the hybrid FHE model
 hybrid_model = HybridFHEModel(lora_training, module_names=remote_names)
 
-# Assuming an input-set is available
+# Build a representative data-set for compilation
+inputset = (
+    torch.Tensor(X_task2[:16]),
+    torch.LongTensor(y_task2[:16]),
+)
 
 # Calibrate and compile the model
 hybrid_model.model.toggle_calibrate(enable=True)
 hybrid_model.compile_model(inputset, n_bits=8)
 hybrid_model.model.toggle_calibrate(enable=False)
-````
+```
 
 ### 4. Train the model on private data
 
@@ -99,7 +146,7 @@ Finally, the hybrid model can be trained, much in the same way
 a PyTorch model is trained. The client is responsible for generating and iterating
 on training data batches.
 
-<!--pytest-codeblocks:skip-->
+<!--pytest-codeblocks:cont-->
 
 ```python
 # Assume train_loader is a torch.DataLoader
@@ -107,11 +154,8 @@ on training data batches.
 hybrid_model.model.inference_model.train()
 hybrid_model.model.toggle_run_optimizer(enable=True)
 
-for x_batch, y_batch in train_loader:
-    x_batch = x_batch.to(device)
-    y_batch = y_batch.to(device)
-
-    loss, _ = hybrid_model((x_batch, y_batch), fhe=fhe)
+for x_batch, y_batch in train_loader_task2:
+    loss, _ = hybrid_model((x_batch, y_batch), fhe="execute")
 ```
 
 ## Additional options
