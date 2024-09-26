@@ -93,9 +93,13 @@ peft_model = get_peft_model(model, lora_config)
 ### 2. Convert the LORA model to use custom Concrete ML layers
 
 Concrete ML requires a conversion step for the `peft` model, adding
-FHE compatible layers. In this step the number of gradient accumulation steps
-can also be set. For LORA it is common to accumulate gradients over
-several gradient descent steps before updating weights.
+FHE compatible layers. In this step the several fine-tuning
+parameters can be configured:
+
+- the number of gradient accumulation steps: for LORA it is common to accumulate gradients over
+  several gradient descent steps before updating weights.
+- the optimizer parameters
+- the loss function
 
 <!--pytest-codeblocks:cont-->
 
