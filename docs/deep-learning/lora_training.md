@@ -3,7 +3,7 @@
 This section explains how to fine-tune neural-network models and large
 language-models on private data. Small models can be be fine-tuned
 using a single-client/single-server setup. For optimal
-latency when fine-tuning larger models (e.g. GPT2 and bigger)
+latency when fine-tuning larger models (e.g., GPT2 and bigger)
 you should consider distributed computation, with multiple worker nodes performing the
 training on encrypted data.
 
@@ -85,8 +85,7 @@ remote_names = get_remote_names(lora_training)
 # Build the hybrid FHE model
 hybrid_model = HybridFHEModel(lora_training, module_names=remote_names)
 
-# generate an inputset
-# inputset = ...
+# Assuming an input-set is available
 
 # Calibrate and compile the model
 hybrid_model.model.toggle_calibrate(enable=True)
