@@ -19,10 +19,16 @@ on:
           - federated_learning
           - hybrid_model
           - llm
+          - lora_finetuning
           - resnet
           - sentiment_analysis_with_transformer
           - titanic
           # --- refresh_use_cases_list.py: refresh list of use cases currently available [END] ---
+      push_changes:
+        description: 'Push refreshed notebook(s)'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.ref }}
@@ -101,6 +107,37 @@ jobs:
         run: |
           USE_CASE=${{ github.event.inputs.use_case }}
           make run_one_use_case_example USE_CASE=$USE_CASE
+
+      # Pull the latest changes if there are some
+      - name: Pull latest changes
+        if: ${{ github.event.inputs.push_changes == 'true' }}
+        run: |
+          git pull -X theirs
+
+      # If the target branch is main or a release branch, a Pull Request is opened for everyone to 
+      # review.
+      - name: Open PR
+        if: ${{ github.event.inputs.push_changes == 'true' && (github.ref_name == 'main' || startsWith(github.ref_name , 'release/')) }} 
+        uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c
+        with:
+          token: ${{ secrets.BOT_TOKEN }}
+          commit-message: "chore: refresh notebook(s) for use case ${{ github.event.inputs.use_case }}"
+          branch: "refresh-notebook(s)-for-use-case-${{ github.event.inputs.use_case }}-for-branch-${{ github.ref_name }}"
+          base: "${{ github.ref_name }}"
+          title: "Refresh notebook(s) for use case ${{ github.event.inputs.use_case }} for branch ${{ github.ref_name }}"
+          body: "Automatic PR with notebook(s) refresh of use case ${{ github.event.inputs.use_case }} \
+            for branch ${{ github.ref_name }}."
+          add-paths: |
+            use_case_examples/**/*.ipynb
+
+      # If the target branch is another branch, the current branch is automatically merged into it
+      - name: Push changes into the current branch
+        if: ${{ github.event.inputs.push_changes == 'true' && github.ref_name != 'main' && !(startsWith(github.ref_name , 'release/')) }}
+        uses: stefanzweifel/git-auto-commit-action@8621497c8c39c72f3e2a999a26b4ca1b5058a842 #v5.0.1
+        with:
+          commit_message: "chore: refresh notebook(s) for use case ${{ github.event.inputs.use_case }}"
+          add_options: '-u'
+          file_pattern: 'use_case_examples/**/*.ipynb'
 
   stop-runner-linux:
     name: Stop EC2 runner

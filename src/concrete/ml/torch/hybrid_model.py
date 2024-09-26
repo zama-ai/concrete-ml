@@ -565,12 +565,21 @@ class HybridFHEModel:
         """
         path = Path(path)
         path.mkdir(parents=True, exist_ok=True)
-        for name in self.module_names:
-            module = self._get_module_by_name(self.model, name)
-            # Remove private information
+
+        # Save the complete model (including private info) for the developer
+        complete_model_path = path / "complete_model.pth"
+        torch.save(self.model.state_dict(), complete_model_path.resolve())
+
+        def clear_private_info(module):
             for attr in ["private_module", "calibration_data", "private_q_module"]:
                 if hasattr(module, attr):
                     setattr(module, attr, None)
+
+            for child in module.children():
+                clear_private_info(child)
+
+        # Clear private info for the entire model
+        clear_private_info(self.model)
 
         # Save the model with a specific filename
         model_path = path / "model.pth"

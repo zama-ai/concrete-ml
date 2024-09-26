@@ -124,6 +124,7 @@ torchvision = [
     {version = "0.17.2", markers = "platform_system=='Darwin' and platform_machine!='arm64'" },
     {version = "0.18.1", markers = "platform_system!='Darwin' or platform_machine=='arm64'" }
 ]
+peft = "^0.12.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
