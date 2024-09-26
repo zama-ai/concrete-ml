@@ -6,7 +6,7 @@
 import io
 from collections import OrderedDict
 from functools import partial
-from typing import Callable, Optional, Tuple, Union
+from typing import Any, Callable, Optional, Tuple, Union
 
 import numpy
 import onnx
@@ -100,14 +100,14 @@ OP_DEBUG_NAME = "Test_"
 def quantized_op_results_are_equal(
     quantized_op_1: QuantizedOp,
     quantized_op_2: QuantizedOp,
-    q_input: Optional[numpy.ndarray] = None,
+    q_input: Optional[Tuple[Any, Any]] = None,
 ):
     """Check if two quantized operator instances are equal.
 
     Args:
         quantized_op_1 (QuantizedOp): The first quantized operator object to consider.
         quantized_op_2 (QuantizedOp): The second quantized operator object to consider.
-        x (numpy.ndarray): The input to use for running the call.
+        q_input (Optional[Tuple[Any, Any]]): The input to use for running the call.
 
     Returns:
         bool: If both instances are equal.
