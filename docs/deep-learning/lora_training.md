@@ -64,10 +64,9 @@ several gradient descent steps before updating weights.
 
 <!--pytest-codeblocks:skip-->
 
-`python`
+```python
 gradient_accum_steps = 2
 lora_training = LoraTraining(peft_model, gradient_accum_steps)
-
 ````
 
 ### 3. Compile a hybrid FHE model for the LORA adapted PyTorch model
@@ -78,7 +77,8 @@ will be executed on the client side. The back-and-forth communication
 of encrypted activations and gradients may require significant bandwidth.
 
 <!--pytest-codeblocks:skip-->
-```python```
+
+```python
 # Find layers that can be outsourced
 remote_names = get_remote_names(lora_training)
 
