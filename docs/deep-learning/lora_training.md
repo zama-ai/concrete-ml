@@ -28,7 +28,7 @@ significant added computation time for the model training client machine. More t
 The main benefit of hybrid-model LORA training is outsourcing the computation of the
 linear layers. In LLMs these layers have considerable size and performing inference
 and gradient computations for them requires significant hardware. Using Concrete ML,
-these computations can be securely outsourced.
+these computations can be securely outsourced, eliminating the memory bottleneck that previously constrained such operations.
 
 ## Usage
 
