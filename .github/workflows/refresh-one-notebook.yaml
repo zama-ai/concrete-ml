@@ -21,6 +21,7 @@ on:
         - FullyConnectedNeuralNetwork \n
         - FullyConnectedNeuralNetworkOnMNIST \n
         - GLMComparison \n
+        - GPT2FineTuneHybrid \n
         - HealthCarePrediction \n
         - ImportingFromScikitLearn \n
         - KaggleTitanic \n
@@ -29,6 +30,7 @@ on:
         - LinearSVR \n
         - LogisticRegression \n
         - LogisticRegressionTraining \n
+        - LoraMLP \n
         - PerrorImpactOnFMNIST \n
         - PoissonRegression \n
         - QGPT2Evaluate \n
@@ -67,6 +69,7 @@ env:
   FullyConnectedNeuralNetwork: "docs/advanced_examples/FullyConnectedNeuralNetwork.ipynb" 
   FullyConnectedNeuralNetworkOnMNIST: "docs/advanced_examples/FullyConnectedNeuralNetworkOnMNIST.ipynb" 
   GLMComparison: "docs/advanced_examples/GLMComparison.ipynb" 
+  GPT2FineTuneHybrid: "use_case_examples/lora_finetuning/GPT2FineTuneHybrid.ipynb" 
   HealthCarePrediction: "use_case_examples/disease_prediction/HealthCarePrediction.ipynb" 
   ImportingFromScikitLearn: "docs/advanced_examples/ImportingFromScikitLearn.ipynb" 
   KaggleTitanic: "use_case_examples/titanic/KaggleTitanic.ipynb" 
@@ -75,6 +78,7 @@ env:
   LinearSVR: "docs/advanced_examples/LinearSVR.ipynb" 
   LogisticRegression: "docs/advanced_examples/LogisticRegression.ipynb" 
   LogisticRegressionTraining: "docs/advanced_examples/LogisticRegressionTraining.ipynb" 
+  LoraMLP: "docs/advanced_examples/LoraMLP.ipynb" 
   PerrorImpactOnFMNIST: "use_case_examples/cifar/cifar_brevitas_finetuning/PerrorImpactOnFMNIST.ipynb" 
   PoissonRegression: "docs/advanced_examples/PoissonRegression.ipynb" 
   QGPT2Evaluate: "use_case_examples/llm/QGPT2Evaluate.ipynb" 
@@ -195,11 +199,11 @@ jobs:
         with:
           token: ${{ secrets.BOT_TOKEN }}
           commit-message: "chore: refresh ${{ github.event.inputs.notebook }} notebook"
-          branch: "refresh-${{ github.event.inputs.notebook }}-notebook-for-${{ github.ref_name }}"
+          branch: "refresh-${{ github.event.inputs.notebook }}-notebook-for-branch-${{ github.ref_name }}"
           base: "${{ github.ref_name }}"
-          title: "Refresh ${{ github.event.inputs.notebook }} notebook for ${{ github.ref_name }}"
+          title: "Refresh ${{ github.event.inputs.notebook }} notebook for branch ${{ github.ref_name }}"
           body: "Automatic PR with notebook refresh of ${{ github.event.inputs.notebook }} \
-            for ${{ github.ref_name }}."
+            for branch ${{ github.ref_name }}."
           add-paths: |
             docs/**/*.ipynb
             use_case_examples/**/*.ipynb
@@ -211,6 +215,9 @@ jobs:
         with:
           commit_message: "chore: refresh ${{ github.event.inputs.notebook }} notebook"
           add_options: '-u'
+          file_pattern: |
+            docs/**/*.ipynb
+            use_case_examples/**/*.ipynb
 
 
   stop-runner-linux:
