@@ -2,8 +2,10 @@
 
 """Tests for the LoraTraining class and related modules in lora.py."""
 
+import sys
 from collections import namedtuple
 from types import SimpleNamespace
+from unittest import mock
 
 import pytest
 import torch
@@ -395,3 +397,67 @@ def test_get_remote_names():
         "inference_model.lm_head.backward_module",
     ]
     assert set(remote_names_with_embeddings) == set(expected_names_with_embeddings)
+
+
+def test_lora_without_transformers():
+    """
+    Test the lora.py module when the transformers library is not installed.
+    """
+
+    # Save the original transformers module if it's already imported
+    transformers_original = sys.modules.get("transformers", None)
+
+    # Mock the transformers import to simulate it being unavailable
+    with mock.patch.dict("sys.modules", {"transformers": None}):
+        # Reload the lora module to apply the mocked transformers import
+        if "concrete.ml.torch.lora" in sys.modules:
+            del sys.modules["concrete.ml.torch.lora"]
+        import concrete.ml.torch.lora as lora  # pylint: disable=R0402,C0415
+
+        # Ensure that TransformerConv1D is None
+        assert lora.TransformerConv1D is None
+
+        # Create a simple model without any Conv1D layers
+        model = torch.nn.Sequential(
+            torch.nn.Linear(10, 20),
+            torch.nn.ReLU(),
+            torch.nn.Linear(20, 5),
+        )
+
+        # Initialize LoraTraining with the model
+        lora_training = lora.LoraTraining(model)
+
+        # Check that layers have been replaced with CustomLinear
+        replaced_layers = []
+        for name, module in lora_training.inference_model.named_modules():
+            if isinstance(module, lora.CustomLinear):
+                replaced_layers.append(name)
+
+        # Assert that CustomLinear layers have been added
+        assert len(replaced_layers) > 0, "No layers were replaced with CustomLinear."
+
+        # Prepare input data
+        x = torch.randn(3, 10)  # Batch size 3, input size 10
+        y = torch.randint(0, 5, (3,))  # Batch size 3, number of classes 5
+
+        # Define a simple loss function
+        loss_fn = torch.nn.CrossEntropyLoss()
+
+        # Update training parameters
+        lora_training.update_training_parameters(loss_fn=loss_fn)
+
+        # Perform a forward pass
+        loss, grad_norm = lora_training((x, y))
+
+        # Check that loss is computed and gradients are updated
+        assert loss.requires_grad, "Loss does not require gradients."
+        assert loss.item() > 0, "Loss should be greater than zero."
+
+        # Since optimizer is not set, grad_norm should be None
+        assert grad_norm is None, "Gradient norm should be None when optimizer is not set."
+
+    # Restore the original transformers module after the test
+    if transformers_original is not None:
+        sys.modules["transformers"] = transformers_original
+    elif "transformers" in sys.modules:
+        del sys.modules["transformers"]

@@ -3,7 +3,17 @@
 from typing import List
 
 import torch
-from transformers import Conv1D as TransformerConv1D
+
+try:
+    from transformers import Conv1D as TransformerConv1D
+except ImportError:
+    TransformerConv1D = None
+
+# Create a tuple of linear layer classes to check against
+LINEAR_LAYERS: tuple = (torch.nn.Linear,)
+if TransformerConv1D is not None:
+    LINEAR_LAYERS = LINEAR_LAYERS + (TransformerConv1D,)
+
 
 # pylint: disable=abstract-method
 # pylint: disable=arguments-differ
@@ -62,7 +72,7 @@ class LoraTraining(torch.nn.Module):
                 if "lora" in name:
                     continue
 
-                if isinstance(child, (torch.nn.Linear, TransformerConv1D)):
+                if isinstance(child, LINEAR_LAYERS):
                     if skip_first and not skipped:
                         skipped = True
 
@@ -70,7 +80,9 @@ class LoraTraining(torch.nn.Module):
                         continue
 
                     # Determine if weights need to be transposed
-                    weight_transposed = isinstance(child, TransformerConv1D)
+                    weight_transposed = TransformerConv1D is not None and isinstance(
+                        child, TransformerConv1D
+                    )
 
                     # Create the CustomLinear layer
                     custom_layer = CustomLinear(
@@ -328,7 +340,7 @@ def get_remote_names(model: torch.nn.Module, include_embedding_layers: bool = Fa
             continue
 
         # Handle different module types
-        if isinstance(module, (torch.nn.Linear, TransformerConv1D)):
+        if isinstance(module, LINEAR_LAYERS):
             remote_names.append(name)
         elif isinstance(module, CustomLinear):
             remote_names.append(f"{name}.forward_module")
