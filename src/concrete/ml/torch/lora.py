@@ -10,7 +10,20 @@ from transformers import Conv1D as TransformerConv1D
 
 
 class LoraTraining(torch.nn.Module):
-    """LoraTraining module for fine-tuning with LoRA."""
+    """LoraTraining module for fine-tuning with LoRA in a hybrid model setting.
+
+    This class is designed to enable Low-Rank Adaptation (LoRA) fine-tuning
+    in a hybrid model context. It allows selective execution of forward and
+    backward passes in FHE.
+
+    The class replaces standard linear layers with custom layers that are
+    compatible with LoRA and FHE operations. It provides mechanisms to
+    toggle between calibration and optimization modes.
+
+    Args:
+        inference_model (torch.nn.Module): The base model to be fine-tuned.
+
+    """
 
     def __init__(self, inference_model) -> None:
         super().__init__()
