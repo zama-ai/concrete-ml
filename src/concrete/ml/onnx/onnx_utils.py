@@ -591,7 +591,8 @@ def check_onnx_model(onnx_model: onnx.ModelProto) -> None:
     try:
         # Try to check the model copy directly
         onnx.checker.check_model(onnx_model_copy)
-    except ValueError as e:
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4604
+    except ValueError as e:  # pragma: no cover
         error_message = str(e)
         if (
             "Message onnx.ModelProto exceeds maximum protobuf size of 2GB:" in error_message
