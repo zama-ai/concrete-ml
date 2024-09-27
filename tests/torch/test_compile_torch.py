@@ -79,7 +79,7 @@ def create_test_inputset(inputset, n_percent_inputset_examples_test):
 
 
 def get_and_compile_quantized_module(
-    model, inputset, import_qat, n_bits, configuration, verbose, device
+    model, inputset, import_qat, n_bits, n_rounding_bits, configuration, verbose, device
 ):
     """Get and compile the quantized module built from the given model."""
     quantized_numpy_module = build_quantized_module(
@@ -87,6 +87,7 @@ def get_and_compile_quantized_module(
         inputset,
         import_qat=import_qat,
         n_bits=n_bits,
+        rounding_threshold_bits=n_rounding_bits,
     )
 
     p_error, global_p_error = manage_parameters_for_pbs_errors(None, None)
@@ -150,10 +151,12 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
     if not simulate:
 
         n_bits = (
-            {"model_inputs": 2, "model_outputs": 2, "op_inputs": 2, "op_weights": 2}
+            {"model_inputs": 3, "model_outputs": 3, "op_inputs": 3, "op_weights": 3}
             if qat_bits == 0
             else qat_bits
         )
+
+        n_rounding_bits = 6
 
         if is_onnx:
             output_onnx_file_path = Path(tempfile.mkstemp(suffix=".onnx")[1])
@@ -174,6 +177,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
                     inputset=inputset,
                     import_qat=qat_bits != 0,
                     n_bits=n_bits,
+                    n_rounding_bits=n_rounding_bits,
                     configuration=default_configuration,
                     verbose=verbose,
                     device=device,
@@ -186,6 +190,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
                     import_qat=qat_bits != 0,
                     configuration=default_configuration,
                     n_bits=n_bits,
+                    rounding_threshold_bits=n_rounding_bits,
                     verbose=verbose,
                     device=device,
                 )
@@ -197,6 +202,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
                     torch_model=torch_model,
                     torch_inputset=inputset,
                     n_bits=n_bits,
+                    rounding_threshold_bits=n_rounding_bits,
                     configuration=default_configuration,
                     verbose=verbose,
                     device=device,
@@ -208,6 +214,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
                     inputset=inputset,
                     import_qat=qat_bits != 0,
                     n_bits=n_bits,
+                    n_rounding_bits=n_rounding_bits,
                     configuration=default_configuration,
                     verbose=verbose,
                     device=device,
@@ -220,6 +227,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
                     import_qat=qat_bits != 0,
                     configuration=default_configuration,
                     n_bits=n_bits,
+                    rounding_threshold_bits=n_rounding_bits,
                     verbose=verbose,
                     device=device,
                 )
