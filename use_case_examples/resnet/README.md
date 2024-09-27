@@ -102,16 +102,18 @@ Image 1:
 CPU machine: 196 cores CPU machine (hp7c from AWS)
 GPU machine: 8xH100 GPU machine
 
-Summary of the accuracy evaluation on ImageNet (100 images):
+Summary of the ImageNet results:
+- Accuracy is evaluated on 100 images
+- Runtime reported for **one** image
 
-| w&a bits | p_error | Accuracy | Top-5 Accuracy | Runtime\*      | Device |
+
+| w&a bits | p_error | Accuracy | Top-5 Accuracy | Runtime        | Device |
 | -------- | ------- | -------- | -------------- | -------------- | ------ |
 | fp32     | -       | 67%      | 87%            | -              | -      |
 | 6/6      | 0.05    | 55%      | 78%            | 56 min         | GPU    |
 | 6/6      | 0.05    | 55%      | 78%            | 1 h 31 min     | CPU    |
 | 7/7      | 0.05    | **66%**  | **87%**        | **2 h 12 min** | CPU    |
 
-\*Runtime reported to run the inference on a single image
 
 6/6 `n_bits` configuration: {"model_inputs": 8, "op_inputs": 6, "op_weights": 6, "model_outputs": 9}
 
