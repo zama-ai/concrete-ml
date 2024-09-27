@@ -97,11 +97,13 @@ def main(path_to_model: Path, image_name: str):
     if args.only_build:
         return
 
+    PORT_TO_CHOOSE=8888
+
     # Run newly created Docker server
     try:
         with open("./url.txt", mode="w", encoding="utf-8") as file:
-            file.write("http://localhost:5000")
-        subprocess.check_output(f"docker run -p 5000:5000 {image_name}", shell=True)
+            file.write(f"http://localhost:{PORT_TO_CHOOSE}")
+        subprocess.check_output(f"docker run -p {PORT_TO_CHOOSE}:5000 {image_name}", shell=True)
     except KeyboardInterrupt:
         message = "Terminate container? (y/n) "
         shutdown_instance = input(message).lower()
