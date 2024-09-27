@@ -797,23 +797,23 @@ test = ["pytest"]
 
 [[package]]
 name = "concrete-python"
-version = "2.8.0rc3.dev20240820"
+version = "2.8.1"
 description = "A state-of-the-art homomorphic encryption framework"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "concrete_python-2.8.0rc3.dev20240820-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:eb0819adf98a985e189e88aeb653318ce0d2d7b9a89da98478819b5481a9689a"},
-    {file = "concrete_python-2.8.0rc3.dev20240820-cp310-cp310-macosx_11_0_x86_64.whl", hash = "sha256:b50d513b9daf474bc7ed93ab5d23e3846ff94c53090cfecdb75bb9309e963f32"},
-    {file = "concrete_python-2.8.0rc3.dev20240820-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:da0deb0c83338a70f102f3136989a80694eea5b0913452fc33a1b6fc0a91f380"},
-    {file = "concrete_python-2.8.0rc3.dev20240820-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:b14510814e0576e2ec7b7cc4cfaea2308946c59697ce5239141619a0528ac572"},
-    {file = "concrete_python-2.8.0rc3.dev20240820-cp311-cp311-macosx_11_0_x86_64.whl", hash = "sha256:d00ebec3f157c6f23edc5dc91e6dc59036c026e7b7d942b8eb321ca42f738c8d"},
-    {file = "concrete_python-2.8.0rc3.dev20240820-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:70a37bb1e1b02c3da20b8bd95fd0b584d8fce5acceef84925ac0ccc3b9a3f5d6"},
-    {file = "concrete_python-2.8.0rc3.dev20240820-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:27eaf7562ed690b820ff50c22c980eba6bc239ba6277c2784bfff4fa3846b6ca"},
-    {file = "concrete_python-2.8.0rc3.dev20240820-cp38-cp38-macosx_11_0_x86_64.whl", hash = "sha256:2a4a26ddd76bbeaeed93af3fe096ac3e90168a7d6544c033dc53fec8f9521900"},
-    {file = "concrete_python-2.8.0rc3.dev20240820-cp38-cp38-manylinux_2_28_x86_64.whl", hash = "sha256:746da66e0110b28e656ce957fd61ca94fa52c79b97ebf91848d13e9effe002d2"},
-    {file = "concrete_python-2.8.0rc3.dev20240820-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:b9eb3b5473b5217c6e99fc0f7eddbb886b423e35071676c4490080b601edda15"},
-    {file = "concrete_python-2.8.0rc3.dev20240820-cp39-cp39-macosx_11_0_x86_64.whl", hash = "sha256:3a5dc5d059e7b6e3e86004a4000cbb6721fef90c9c553fc283ed8c9d55675ac2"},
-    {file = "concrete_python-2.8.0rc3.dev20240820-cp39-cp39-manylinux_2_28_x86_64.whl", hash = "sha256:c1d619db33a1b96dcb5c3d436be55b9c98cad925d800c2f2f1eb89e802e53cea"},
+    {file = "concrete_python-2.8.1-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:1615fe4991883e378408f1a88a5df448217cbc035a72bdd141e1d01be09a3772"},
+    {file = "concrete_python-2.8.1-cp310-cp310-macosx_11_0_x86_64.whl", hash = "sha256:9bba6bf4faddc260c40364cc48da98b8785625b61dbb0153dfd729a25c9ca407"},
+    {file = "concrete_python-2.8.1-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:a93024b3199e30161465733dc7cb91202a6dd1fe8646ae87a9c7279e2f2fc2c1"},
+    {file = "concrete_python-2.8.1-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:e32cc6dac2ff4568c02e06a4bc40879c394e1eb5778786b79547a258c31c391c"},
+    {file = "concrete_python-2.8.1-cp311-cp311-macosx_11_0_x86_64.whl", hash = "sha256:dfa5349e526611835453da0f1683538c2a07880ca0442856d514a585808a6c09"},
+    {file = "concrete_python-2.8.1-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:c9ded07e6966d469add51624cd6803b640098dd9d35918b40067c8e56e15e689"},
+    {file = "concrete_python-2.8.1-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:9ecc6361d404422381c0d7bcffa51aa53ed03e19f4fb5d7f99f12899b895849a"},
+    {file = "concrete_python-2.8.1-cp38-cp38-macosx_11_0_x86_64.whl", hash = "sha256:782acf5a420704323456554e48bf64b6d942c866a50adced3238db6591bdacae"},
+    {file = "concrete_python-2.8.1-cp38-cp38-manylinux_2_28_x86_64.whl", hash = "sha256:3b40f737236eb7758d3522f75324b7185a075960f51544435d94e2a2c3e309f7"},
+    {file = "concrete_python-2.8.1-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:577c06f485eb1ff115ea7196b85ac7f468fdc28ea4d6edf2caa4775e22df9839"},
+    {file = "concrete_python-2.8.1-cp39-cp39-macosx_11_0_x86_64.whl", hash = "sha256:d6c5cc28c3c35e09b5123075e23a659891c913c8ef9ec8679b88a3c3b1ec1afd"},
+    {file = "concrete_python-2.8.1-cp39-cp39-manylinux_2_28_x86_64.whl", hash = "sha256:9a097af5736a9c97cc63e81febfcaa2be035a5ea76a16d7c383b531a23229fe3"},
 ]
 
 [package.dependencies]
@@ -823,10 +823,10 @@ networkx = ">=2.6"
 numpy = ">=1.23,<2.0"
 scipy = ">=1.10"
 torch = ">=1.13"
-z3-solver = ">=4.12"
+z3-solver = "4.13.0"
 
 [package.extras]
-dev = ["auditwheel (==5.3.0)", "black (==24.4.0)", "delocate (==0.10.4)", "isort (==5.12.0)", "matplotlib (>=3.7)", "mypy (==1.10.0)", "pillow (>=10.2)", "py-progress-tracker (==0.7.0)", "pybind11 (==2.10.4)", "pydocstyle (==6.3.0)", "pygraphviz (>=1.11)", "pylint (==2.17.1)", "pytest (==7.2.2)", "pytest-cov (==4.0.0)", "pytest-randomly (==3.15.0)", "pytest-xdist (==3.2.1)", "ruff (==0.0.259)", "wheel (==0.40.0)"]
+dev = ["auditwheel (==5.3.0)", "black (==24.4.0)", "delocate (==0.10.4)", "isort (==5.12.0)", "linkchecker (>=10.3.0)", "linkcheckmd (>=1.4.0)", "matplotlib (>=3.7)", "mistletoe (>=0.9.0)", "mypy (==1.10.0)", "notebook (>=7.2.2)", "pillow (>=10.2)", "py-progress-tracker (==0.7.0)", "pybind11 (==2.10.4)", "pydocstyle (==6.3.0)", "pygame (>=2.6.0)", "pygraphviz (>=1.11)", "pylint (==2.17.1)", "pytest (==7.2.2)", "pytest-cov (==4.0.0)", "pytest-randomly (==3.15.0)", "pytest-xdist (==3.2.1)", "ruff (==0.6.3)", "wheel (==0.40.0)"]
 full = ["matplotlib (>=3.7)", "pillow (>=10.2)", "pygraphviz (>=1.11)"]
 
 [package.source]
@@ -7119,4 +7119,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.1,<3.12"
-content-hash = "cc719ba69679a3c476c57e0df57ed81c3a20ada7855c3ca905a5b7cec9817ff6"
+content-hash = "0d6f32a7369551ec1b282d4b319ba2039c0ee05517d644cc8166aa0bf48ac21d"
