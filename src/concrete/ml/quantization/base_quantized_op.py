@@ -788,7 +788,7 @@ class QuantizedOp:
 
         return outputs[0]
 
-    def can_fuse(self) -> bool:  # pylint: disable=no-self-use
+    def can_fuse(self) -> bool:
         """Determine if the operator impedes graph fusion.
 
         This function shall be overloaded by inheriting classes to test self._int_input_names, to

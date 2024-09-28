@@ -896,7 +896,7 @@ def test_quantized_avg_pool(params, n_bits, is_signed, check_r2_score, check_flo
 
     # Compute the torch average pool
     bceil_mode = bool(ceil_mode)
-    torch_res = torch.nn.functional.avg_pool2d(tx_pad, kernel_shape, strides, 0, bceil_mode).numpy()
+    torch_res = torch.nn.functional.avg_pool2d(tx_pad, kernel_shape, strides, 0, bceil_mode).numpy() # pylint: disable=not-callable
     check_float_array_equal(torch_res, expected_result)
 
     # Compute the quantized result

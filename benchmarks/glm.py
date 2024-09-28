@@ -216,8 +216,8 @@ def get_config(args: argparse.Namespace) -> Dict[str, Any]:
         n_bits_list = args.n_bits
     else:  # Default
         try:  # For backward compatibility
-            # pylint: disable-next=unused-import,import-outside-toplevel
             # flake8: noqa: F401,C0415
+            # pylint: disable-next=unused-import,import-outside-toplevel
             from concrete.ml.quantization.base_quantized_op import DEFAULT_MODEL_BITS
 
             n_bits_list = [

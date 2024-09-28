@@ -25,7 +25,7 @@ def merge(
     left_encrypted: EncryptedDataFrame,
     right_encrypted: EncryptedDataFrame,
     how: str = "left",
-    on: Optional[str] = None,
+    on: Optional[str] = None, # pylint: disable=invalid-name
     left_on: Optional[Union[Hashable, Sequence[Hashable]]] = None,
     right_on: Optional[Union[Hashable, Sequence[Hashable]]] = None,
     left_index: bool = False,
