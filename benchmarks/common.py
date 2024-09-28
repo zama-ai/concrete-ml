@@ -316,7 +316,7 @@ def should_test_config_in_fhe(
     if local_args.execute_in_fhe != "auto":
         return local_args.execute_in_fhe
 
-    model_name = model.__name__ # pylint: disable=redefined-outer-name
+    model_name = model.__name__  # pylint: disable=redefined-outer-name
     assert config is not None
 
     # System override to disable FHE benchmarks (useful for debugging)
@@ -702,7 +702,7 @@ def benchmark_name_generator(
     """Turns a combination of data-set + model + hyper-parameters and returns a string"""
     assert isinstance(model, type), f"Wrong type: {type(model)} - {model}"
 
-    model_name = model.__name__ # pylint: disable=redefined-outer-name
+    model_name = model.__name__  # pylint: disable=redefined-outer-name
 
     assert (
         model_name in MODEL_NAMES
@@ -774,7 +774,7 @@ def benchmark_name_to_config(
 ) -> Tuple[str, str, Dict[str, Any]]:
     """Convert a benchmark name to each part"""
     splitted = benchmark_name.split(joiner)
-    model_name = splitted[0] # pylint: disable=redefined-outer-name
+    model_name = splitted[0]  # pylint: disable=redefined-outer-name
     dataset_name = splitted[-1]
     config_str = splitted[1:-1]
     config_dict = {}
