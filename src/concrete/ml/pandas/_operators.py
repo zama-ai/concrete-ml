@@ -100,7 +100,7 @@ def encrypted_left_right_join(
     right_encrypted,
     server: Server,
     how: str,
-    on: Optional[str],
+    on: Optional[str],  # pylint: disable=invalid-name
 ) -> numpy.ndarray:
     """Compute a left/right join in FHE between two encrypted data-frames using Pandas parameters.
 
@@ -245,7 +245,7 @@ def encrypted_merge(
     right_encrypted,
     server: Server,
     how: str = "left",
-    on: Optional[str] = None,
+    on: Optional[str] = None,  # pylint: disable=invalid-name
     left_on: Optional[Union[Hashable, Sequence[Hashable]]] = None,
     right_on: Optional[Union[Hashable, Sequence[Hashable]]] = None,
     left_index: bool = False,

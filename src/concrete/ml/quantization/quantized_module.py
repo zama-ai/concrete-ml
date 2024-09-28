@@ -274,7 +274,6 @@ class QuantizedModule:
         """
         self._post_processing_params = post_processing_params
 
-    # pylint: disable-next=no-self-use
     def post_processing(
         self, *values: numpy.ndarray
     ) -> Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]:

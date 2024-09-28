@@ -357,8 +357,8 @@ class BaseEstimator:
         # Here, the `get_params` method is the `BaseEstimator.get_params` method from scikit-learn,
         # which will become available once a subclass inherits from it. We therefore disable both
         # pylint and mypy as this behavior is expected
-        # pylint: disable-next=no-member
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3373
+        # pylint: disable-next=no-member
         params = super().get_params(deep=deep)  # type: ignore[misc]
 
         # Remove the n_bits parameters as this attribute is added by Concrete ML
@@ -702,7 +702,6 @@ class BaseEstimator:
         assert isinstance(y_pred, numpy.ndarray)
         return y_pred
 
-    # pylint: disable-next=no-self-use
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
         """Apply post-processing to the de-quantized predictions.
 

@@ -6,7 +6,7 @@
 import io
 from collections import OrderedDict
 from functools import partial
-from typing import Callable, Optional, Tuple, Union
+from typing import Any, Callable, Optional, Tuple, Union
 
 import numpy
 import onnx
@@ -100,7 +100,7 @@ OP_DEBUG_NAME = "Test_"
 def quantized_op_results_are_equal(
     quantized_op_1: QuantizedOp,
     quantized_op_2: QuantizedOp,
-    q_input: Optional[numpy.ndarray] = None,
+    q_input: Union[Optional[numpy.ndarray], Tuple[Any, Any]] = None,
 ):
     """Check if two quantized operator instances are equal.
 
@@ -896,7 +896,9 @@ def test_quantized_avg_pool(params, n_bits, is_signed, check_r2_score, check_flo
 
     # Compute the torch average pool
     bceil_mode = bool(ceil_mode)
-    torch_res = torch.nn.functional.avg_pool2d(tx_pad, kernel_shape, strides, 0, bceil_mode).numpy()
+    torch_res = torch.nn.functional.avg_pool2d(
+        tx_pad, kernel_shape, strides, 0, bceil_mode
+    ).numpy()  # pylint: disable=not-callable
     check_float_array_equal(torch_res, expected_result)
 
     # Compute the quantized result

@@ -438,7 +438,7 @@ def test_success_save_option(model_name, quant_type, metric, directory, log_file
         verbose=True,
     )
 
-    path = Path(os.path.join(directory, log_file))
+    path = Path(os.path.join(directory, log_file))  # pylint: disable=no-member
 
     # When instantiating the class, if the file exists, it is deleted, to avoid overwriting it
     assert not path.exists()

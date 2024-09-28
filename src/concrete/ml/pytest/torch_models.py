@@ -1572,7 +1572,7 @@ class IdentityExpandModel(nn.Module):
     This model is mostly useful for testing the composition feature.
     """
 
-    def forward(self, x):  # pylint: disable-next=no-self-use
+    def forward(self, x):
         """Forward pass.
 
         Args:
@@ -1590,7 +1590,7 @@ class IdentityExpandMultiOutputModel(nn.Module):
     This model is mostly useful for testing the composition feature.
     """
 
-    def forward(self, x):  # pylint: disable-next=no-self-use
+    def forward(self, x):
         """Forward pass.
 
         Args:
