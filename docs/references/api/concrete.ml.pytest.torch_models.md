@@ -1623,3 +1623,117 @@ Forward pass.
 **Returns:**
 
 - <b>`Tuple[torch.Tensor. torch.Tensor]`</b>:  Outputs of the network.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1605"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>class</kbd> `TorchDivide`
+
+Torch model that performs a encrypted division between two inputs.
+
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1608"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `__init__`
+
+```python
+__init__(input_output, activation_function)
+```
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1611"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `forward`
+
+```python
+forward(x, y)
+```
+
+Forward pass.
+
+**Args:**
+
+- <b>`x`</b> (torch.Tensor):  The first input tensor.
+- <b>`y`</b> (torch.Tensor):  The second input tensor.
+
+**Returns:**
+
+- <b>`torch.Tensor`</b>:  The result of the division.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1625"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>class</kbd> `TorchMultiply`
+
+Torch model that performs a encrypted multiplication between two inputs.
+
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1628"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `__init__`
+
+```python
+__init__(input_output, activation_function)
+```
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1631"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `forward`
+
+```python
+forward(x, y)
+```
+
+Forward pass.
+
+**Args:**
+
+- <b>`x`</b> (torch.Tensor):  The first input tensor.
+- <b>`y`</b> (torch.Tensor):  The second input tensor.
+
+**Returns:**
+
+- <b>`torch.Tensor`</b>:  The result of the multiplication.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1645"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>class</kbd> `EmbeddingModel`
+
+A torch model with an embedding layer.
+
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1648"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `__init__`
+
+```python
+__init__(
+    num_embeddings,
+    embedding_dim,
+    activation_function=<class 'torch.nn.modules.activation.ReLU'>
+)
+```
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1654"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `forward`
+
+```python
+forward(x)
+```
+
+Forward pass.
+
+**Args:**
+
+- <b>`x`</b> (torch.Tensor):  The input tensor containing indices.
+
+**Returns:**
+
+- <b>`torch.Tensor`</b>:  The output tensor after embedding.

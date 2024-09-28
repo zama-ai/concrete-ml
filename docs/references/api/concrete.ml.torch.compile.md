@@ -91,7 +91,7 @@ Take a model in torch or ONNX, turn it to numpy, quantize its inputs / weights /
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/compile.py#L263"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/compile.py#L274"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_torch_model`
 
@@ -109,7 +109,8 @@ compile_torch_model(
     global_p_error: Optional[float] = None,
     verbose: bool = False,
     inputs_encryption_status: Optional[Sequence[str]] = None,
-    reduce_sum_copy: bool = False
+    reduce_sum_copy: bool = False,
+    device: str = 'cpu'
 ) → QuantizedModule
 ```
 
@@ -134,6 +135,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 - <b>`verbose`</b> (bool):  whether to show compilation information
 - <b>`inputs_encryption_status`</b> (Optional\[Sequence\[str\]\]):  encryption status ('clear', 'encrypted')  for each input. By default all arguments will be encrypted.
 - <b>`reduce_sum_copy`</b> (bool):  if the inputs of QuantizedReduceSum should be copied to avoid  bit-width propagation
+- <b>`device`</b>:  FHE compilation device, can be either 'cpu' or 'cuda'.
 
 **Returns:**
 
@@ -141,7 +143,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/compile.py#L347"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/compile.py#L361"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_onnx_model`
 
@@ -159,7 +161,8 @@ compile_onnx_model(
     global_p_error: Optional[float] = None,
     verbose: bool = False,
     inputs_encryption_status: Optional[Sequence[str]] = None,
-    reduce_sum_copy: bool = False
+    reduce_sum_copy: bool = False,
+    device: str = 'cpu'
 ) → QuantizedModule
 ```
 
@@ -184,6 +187,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 - <b>`verbose`</b> (bool):  whether to show compilation information
 - <b>`inputs_encryption_status`</b> (Optional\[Sequence\[str\]\]):  encryption status ('clear', 'encrypted')  for each input. By default all arguments will be encrypted.
 - <b>`reduce_sum_copy`</b> (bool):  if the inputs of QuantizedReduceSum should be copied to avoid  bit-width propagation
+- <b>`device`</b>:  FHE compilation device, can be either 'cpu' or 'cuda'.
 
 **Returns:**
 
@@ -191,7 +195,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/compile.py#L427"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/compile.py#L444"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_brevitas_qat_model`
 
@@ -209,7 +213,8 @@ compile_brevitas_qat_model(
     output_onnx_file: Union[NoneType, Path, str] = None,
     verbose: bool = False,
     inputs_encryption_status: Optional[Sequence[str]] = None,
-    reduce_sum_copy: bool = False
+    reduce_sum_copy: bool = False,
+    device: str = 'cpu'
 ) → QuantizedModule
 ```
 
@@ -232,6 +237,7 @@ The torch_model parameter is a subclass of torch.nn.Module that uses quantized o
 - <b>`verbose`</b> (bool):  whether to show compilation information
 - <b>`inputs_encryption_status`</b> (Optional\[Sequence\[str\]\]):  encryption status ('clear', 'encrypted')  for each input. By default all arguments will be encrypted.
 - <b>`reduce_sum_copy`</b> (bool):  if the inputs of QuantizedReduceSum should be copied to avoid  bit-width propagation
+- <b>`device`</b>:  FHE compilation device, can be either 'cpu' or 'cuda'.
 
 **Returns:**
 
