@@ -50,7 +50,19 @@ Get the ONNX model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/numpy_module.py#L79"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> onnx_preprocessing
+
+Get the ONNX preprocessing.
+
+.. # noqa: DAR201
+
+**Returns:**
+
+- <b>`_onnx_preprocessing`</b> (onnx.ModelProto):  the ONNX preprocessing
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/torch/numpy_module.py#L116"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -67,3 +79,23 @@ Apply a forward pass on args with the equivalent numpy function only.
 **Returns:**
 
 - <b>`Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]`</b>:  result of the forward on the given  inputs
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/torch/numpy_module.py#L100"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `pre_processing`
+
+```python
+pre_processing(*args: ndarray) → Tuple[ndarray, ]
+```
+
+Apply a preprocessing pass on args with the equivalent numpy function only.
+
+**Args:**
+
+- <b>`*args`</b>:  the inputs of the preprocessing function
+
+**Returns:**
+
+- <b>`Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]`</b>:  result of the preprocessing on the  given inputs or the original inputs if no preprocessing function is defined

@@ -13,7 +13,7 @@ Custom encoder for serialization.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/serialization/encoder.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/serialization/encoder.py#L34"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `dump_name_and_value`
 
@@ -35,7 +35,7 @@ Dump the value into a custom dict format.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/serialization/encoder.py#L58"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/serialization/encoder.py#L59"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `ConcreteEncoder`
 
@@ -49,7 +49,7 @@ The ConcreteEncoder is only meant to encode Concrete-ML's built-in models and th
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/serialization/encoder.py#L177"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/serialization/encoder.py#L178"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `default`
 
@@ -73,7 +73,7 @@ Define a custom default method that enables dumping any supported serialized val
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/serialization/encoder.py#L76"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/serialization/encoder.py#L77"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `isinstance`
 
@@ -96,7 +96,7 @@ Natively, among other types, the JSONENcoder handles integers, floating points a
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/serialization/encoder.py#L111"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/serialization/encoder.py#L112"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `iterencode`
 

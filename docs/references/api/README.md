@@ -52,6 +52,7 @@
 - [`concrete.ml.torch`](./concrete.ml.torch.md#module-concretemltorch): Modules for torch to numpy conversion.
 - [`concrete.ml.torch.compile`](./concrete.ml.torch.compile.md#module-concretemltorchcompile): torch compilation function.
 - [`concrete.ml.torch.hybrid_model`](./concrete.ml.torch.hybrid_model.md#module-concretemltorchhybrid_model): Implement the conversion of a torch model to a hybrid fhe/torch inference.
+- [`concrete.ml.torch.lora`](./concrete.ml.torch.lora.md#module-concretemltorchlora): This module contains classes for LoRA (Low-Rank Adaptation) training and custom layers.
 - [`concrete.ml.torch.numpy_module`](./concrete.ml.torch.numpy_module.md#module-concretemltorchnumpy_module): A torch to numpy module.
 - [`concrete.ml.version`](./concrete.ml.version.md#module-concretemlversion): File to manage the version of the package.
 
@@ -79,6 +80,7 @@
 - [`torch_models.ConcatFancyIndexing`](./concrete.ml.pytest.torch_models.md#class-concatfancyindexing): Concat with fancy indexing.
 - [`torch_models.Conv1dModel`](./concrete.ml.pytest.torch_models.md#class-conv1dmodel): Small model that uses a 1D convolution operator.
 - [`torch_models.DoubleQuantQATMixNet`](./concrete.ml.pytest.torch_models.md#class-doublequantqatmixnet): Torch model that with two different quantizers on the input.
+- [`torch_models.EmbeddingModel`](./concrete.ml.pytest.torch_models.md#class-embeddingmodel): A torch model with an embedding layer.
 - [`torch_models.EncryptedMatrixMultiplicationModel`](./concrete.ml.pytest.torch_models.md#class-encryptedmatrixmultiplicationmodel): PyTorch module for performing matrix multiplication between two encrypted values.
 - [`torch_models.ExpandModel`](./concrete.ml.pytest.torch_models.md#class-expandmodel): Minimalist network that expands the input tensor to a larger size.
 - [`torch_models.FC`](./concrete.ml.pytest.torch_models.md#class-fc): Torch model for the tests.
@@ -108,6 +110,8 @@
 - [`torch_models.TinyCNN`](./concrete.ml.pytest.torch_models.md#class-tinycnn): A very small CNN.
 - [`torch_models.TinyQATCNN`](./concrete.ml.pytest.torch_models.md#class-tinyqatcnn): A very small QAT CNN to classify the sklearn digits data-set.
 - [`torch_models.TorchCustomModel`](./concrete.ml.pytest.torch_models.md#class-torchcustommodel): A small network with Brevitas, trained on make_classification.
+- [`torch_models.TorchDivide`](./concrete.ml.pytest.torch_models.md#class-torchdivide): Torch model that performs a encrypted division between two inputs.
+- [`torch_models.TorchMultiply`](./concrete.ml.pytest.torch_models.md#class-torchmultiply): Torch model that performs a encrypted multiplication between two inputs.
 - [`torch_models.TorchSum`](./concrete.ml.pytest.torch_models.md#class-torchsum): Torch model to test the ReduceSum ONNX operator in a leveled circuit.
 - [`torch_models.UnivariateModule`](./concrete.ml.pytest.torch_models.md#class-univariatemodule): Torch model that calls univariate and shape functions of torch.
 - [`base_quantized_op.QuantizedMixingOp`](./concrete.ml.quantization.base_quantized_op.md#class-quantizedmixingop): An operator that mixes (adds or multiplies) together encrypted inputs.
@@ -132,7 +136,7 @@
 - [`quantized_ops.QuantizedClip`](./concrete.ml.quantization.quantized_ops.md#class-quantizedclip): Quantized clip op.
 - [`quantized_ops.QuantizedConcat`](./concrete.ml.quantization.quantized_ops.md#class-quantizedconcat): Concatenate operator.
 - [`quantized_ops.QuantizedConv`](./concrete.ml.quantization.quantized_ops.md#class-quantizedconv): Quantized Conv op.
-- [`quantized_ops.QuantizedDiv`](./concrete.ml.quantization.quantized_ops.md#class-quantizeddiv): Div operator /.
+- [`quantized_ops.QuantizedDiv`](./concrete.ml.quantization.quantized_ops.md#class-quantizeddiv): Quantized Division operator.
 - [`quantized_ops.QuantizedElu`](./concrete.ml.quantization.quantized_ops.md#class-quantizedelu): Quantized Elu op.
 - [`quantized_ops.QuantizedEqual`](./concrete.ml.quantization.quantized_ops.md#class-quantizedequal): Comparison operator ==.
 - [`quantized_ops.QuantizedErf`](./concrete.ml.quantization.quantized_ops.md#class-quantizederf): Quantized erf op.
@@ -154,7 +158,7 @@
 - [`quantized_ops.QuantizedMax`](./concrete.ml.quantization.quantized_ops.md#class-quantizedmax): Quantized Max op.
 - [`quantized_ops.QuantizedMaxPool`](./concrete.ml.quantization.quantized_ops.md#class-quantizedmaxpool): Quantized Max Pooling op.
 - [`quantized_ops.QuantizedMin`](./concrete.ml.quantization.quantized_ops.md#class-quantizedmin): Quantized Min op.
-- [`quantized_ops.QuantizedMul`](./concrete.ml.quantization.quantized_ops.md#class-quantizedmul): Multiplication operator.
+- [`quantized_ops.QuantizedMul`](./concrete.ml.quantization.quantized_ops.md#class-quantizedmul): Quantized Multiplication operator.
 - [`quantized_ops.QuantizedNeg`](./concrete.ml.quantization.quantized_ops.md#class-quantizedneg): Quantized Neg op.
 - [`quantized_ops.QuantizedNot`](./concrete.ml.quantization.quantized_ops.md#class-quantizednot): Quantized Not op.
 - [`quantized_ops.QuantizedOr`](./concrete.ml.quantization.quantized_ops.md#class-quantizedor): Or operator ||.
@@ -222,6 +226,11 @@
 - [`hybrid_model.HybridFHEModelServer`](./concrete.ml.torch.hybrid_model.md#class-hybridfhemodelserver): Hybrid FHE Model Server.
 - [`hybrid_model.LoggerStub`](./concrete.ml.torch.hybrid_model.md#class-loggerstub): Placeholder type for a typical logger like the one from loguru.
 - [`hybrid_model.RemoteModule`](./concrete.ml.torch.hybrid_model.md#class-remotemodule): A wrapper class for the modules to be evaluated remotely with FHE.
+- [`lora.BackwardModuleLinear`](./concrete.ml.torch.lora.md#class-backwardmodulelinear): Backward module for linear layers.
+- [`lora.CustomLinear`](./concrete.ml.torch.lora.md#class-customlinear): Custom linear module.
+- [`lora.ForwardBackwardModule`](./concrete.ml.torch.lora.md#class-forwardbackwardmodule): Custom autograd function for forward and backward passes.
+- [`lora.ForwardModuleLinear`](./concrete.ml.torch.lora.md#class-forwardmodulelinear): Forward module for linear layers.
+- [`lora.LoraTraining`](./concrete.ml.torch.lora.md#class-loratraining): LoraTraining module for fine-tuning with LoRA in a hybrid model setting.
 - [`numpy_module.NumpyModule`](./concrete.ml.torch.numpy_module.md#class-numpymodule): General interface to transform a torch.nn.Module to numpy module.
 
 ## Functions
@@ -242,7 +251,10 @@
 - [`utils.all_values_are_integers`](./concrete.ml.common.utils.md#function-all_values_are_integers): Indicate if all unpacked values are of a supported integer dtype.
 - [`utils.all_values_are_of_dtype`](./concrete.ml.common.utils.md#function-all_values_are_of_dtype): Indicate if all unpacked values are of the specified dtype(s).
 - [`utils.array_allclose_and_same_shape`](./concrete.ml.common.utils.md#function-array_allclose_and_same_shape): Check if two numpy arrays are equal within a tolerances and have the same shape.
+- [`utils.check_compilation_device_is_valid_and_is_cuda`](./concrete.ml.common.utils.md#function-check_compilation_device_is_valid_and_is_cuda): Check whether the device string for compilation or FHE execution is CUDA or CPU.
+- [`utils.check_device_is_valid`](./concrete.ml.common.utils.md#function-check_device_is_valid): Check whether the device string is valid or raise an exception.
 - [`utils.check_dtype_and_cast`](./concrete.ml.common.utils.md#function-check_dtype_and_cast): Convert any allowed type into an array and cast it if required.
+- [`utils.check_execution_device_is_valid_and_is_cuda`](./concrete.ml.common.utils.md#function-check_execution_device_is_valid_and_is_cuda): Check whether the circuit can be executed on the required device.
 - [`utils.check_there_is_no_p_error_options_in_configuration`](./concrete.ml.common.utils.md#function-check_there_is_no_p_error_options_in_configuration): Check the user did not set p_error or global_p_error in configuration.
 - [`utils.compute_bits_precision`](./concrete.ml.common.utils.md#function-compute_bits_precision): Compute the number of bits required to represent x.
 - [`utils.generate_proxy_function`](./concrete.ml.common.utils.md#function-generate_proxy_function): Generate a proxy function for a function accepting only \*args type arguments.
@@ -265,7 +277,7 @@
 - [`convert.get_equivalent_numpy_forward_from_onnx`](./concrete.ml.onnx.convert.md#function-get_equivalent_numpy_forward_from_onnx): Get the numpy equivalent forward of the provided ONNX model.
 - [`convert.get_equivalent_numpy_forward_from_onnx_tree`](./concrete.ml.onnx.convert.md#function-get_equivalent_numpy_forward_from_onnx_tree): Get the numpy equivalent forward of the provided ONNX model for tree-based models only.
 - [`convert.get_equivalent_numpy_forward_from_torch`](./concrete.ml.onnx.convert.md#function-get_equivalent_numpy_forward_from_torch): Get the numpy equivalent forward of the provided torch Module.
-- [`convert.preprocess_onnx_model`](./concrete.ml.onnx.convert.md#function-preprocess_onnx_model): Get the numpy equivalent forward of the provided ONNX model.
+- [`convert.preprocess_onnx_model`](./concrete.ml.onnx.convert.md#function-preprocess_onnx_model): Preprocess the ONNX model to be used for numpy execution.
 - [`onnx_impl_utils.compute_conv_output_dims`](./concrete.ml.onnx.onnx_impl_utils.md#function-compute_conv_output_dims): Compute the output shape of a pool or conv operation.
 - [`onnx_impl_utils.compute_onnx_pool_padding`](./concrete.ml.onnx.onnx_impl_utils.md#function-compute_onnx_pool_padding): Compute any additional padding needed to compute pooling layers.
 - [`onnx_impl_utils.numpy_onnx_pad`](./concrete.ml.onnx.onnx_impl_utils.md#function-numpy_onnx_pad): Pad a tensor according to ONNX spec, using an optional custom pad value.
@@ -273,11 +285,13 @@
 - [`onnx_impl_utils.rounded_comparison`](./concrete.ml.onnx.onnx_impl_utils.md#function-rounded_comparison): Comparison operation using `round_bit_pattern` function.
 - [`onnx_model_manipulations.clean_graph_after_node_op_type`](./concrete.ml.onnx.onnx_model_manipulations.md#function-clean_graph_after_node_op_type): Remove the nodes following first node matching node_op_type from the ONNX graph.
 - [`onnx_model_manipulations.clean_graph_at_node_op_type`](./concrete.ml.onnx.onnx_model_manipulations.md#function-clean_graph_at_node_op_type): Remove the first node matching node_op_type and its following nodes from the ONNX graph.
+- [`onnx_model_manipulations.convert_first_gather_to_matmul`](./concrete.ml.onnx.onnx_model_manipulations.md#function-convert_first_gather_to_matmul): Convert the first Gather node to a matrix multiplication node.
 - [`onnx_model_manipulations.keep_following_outputs_discard_others`](./concrete.ml.onnx.onnx_model_manipulations.md#function-keep_following_outputs_discard_others): Keep the outputs given in outputs_to_keep and remove the others from the model.
 - [`onnx_model_manipulations.remove_identity_nodes`](./concrete.ml.onnx.onnx_model_manipulations.md#function-remove_identity_nodes): Remove identity nodes from a model.
 - [`onnx_model_manipulations.remove_node_types`](./concrete.ml.onnx.onnx_model_manipulations.md#function-remove_node_types): Remove unnecessary nodes from the ONNX graph.
 - [`onnx_model_manipulations.remove_unused_constant_nodes`](./concrete.ml.onnx.onnx_model_manipulations.md#function-remove_unused_constant_nodes): Remove unused Constant nodes in the provided onnx model.
 - [`onnx_model_manipulations.simplify_onnx_model`](./concrete.ml.onnx.onnx_model_manipulations.md#function-simplify_onnx_model): Simplify an ONNX model, removes unused Constant nodes and Identity nodes.
+- [`onnx_utils.check_onnx_model`](./concrete.ml.onnx.onnx_utils.md#function-check_onnx_model): Check an ONNX model, handling large models (>2GB) by using external data.
 - [`onnx_utils.execute_onnx_with_numpy`](./concrete.ml.onnx.onnx_utils.md#function-execute_onnx_with_numpy): Execute the provided ONNX graph on the given inputs.
 - [`onnx_utils.execute_onnx_with_numpy_trees`](./concrete.ml.onnx.onnx_utils.md#function-execute_onnx_with_numpy_trees): Execute the provided ONNX graph on the given inputs for tree-based models only.
 - [`onnx_utils.get_attribute`](./concrete.ml.onnx.onnx_utils.md#function-get_attribute): Get the attribute from an ONNX AttributeProto.
@@ -390,3 +404,4 @@
 - [`hybrid_model.convert_conv1d_to_linear`](./concrete.ml.torch.hybrid_model.md#function-convert_conv1d_to_linear): Convert all Conv1D layers in a module or a Conv1D layer itself to nn.Linear.
 - [`hybrid_model.tuple_to_underscore_str`](./concrete.ml.torch.hybrid_model.md#function-tuple_to_underscore_str): Convert a tuple to a string representation.
 - [`hybrid_model.underscore_str_to_tuple`](./concrete.ml.torch.hybrid_model.md#function-underscore_str_to_tuple): Convert a a string representation of a tuple to a tuple.
+- [`lora.get_remote_names`](./concrete.ml.torch.lora.md#function-get_remote_names): Get names of modules to be executed remotely.

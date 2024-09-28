@@ -146,3 +146,27 @@ Remove the nodes following first node matching node_op_type from the ONNX graph.
 **Raises:**
 
 - <b>`ValueError`</b>:  If no node matched the given op_type and fail_if_not_found is set to True
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/onnx/onnx_model_manipulations.py#L297"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `convert_first_gather_to_matmul`
+
+```python
+convert_first_gather_to_matmul(
+    onnx_model: ModelProto
+) → Tuple[Union[ModelProto, NoneType], ModelProto]
+```
+
+Convert the first Gather node to a matrix multiplication node.
+
+In FHE, Gather is a costly operation since it can involve many PBS. When it appears first in the onnx model, we can remove it and replace it by a matrix multiplication node by converting the indices to a one-hot encoding.
+
+**Args:**
+
+- <b>`onnx_model`</b> (onnx.ModelProto):  The onnx model.
+
+**Returns:**
+
+- <b>`Tuple[Optional[onnx.ModelProto], onnx.ModelProto]`</b>:  The pre-processing model and the modified  onnx model.
