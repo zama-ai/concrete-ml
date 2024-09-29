@@ -935,9 +935,9 @@ jobs:
           ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --sync_env
 
       # Check installation with pip
-      - name: Check installation with pip and python ${{ matrix.python_version }} (weekly, release)
+      - name: Check installation with pip and python ${{ matrix.python_version }} (weekly)
         if: |
-            (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE))
+            (fromJSON(env.IS_WEEKLY))
             && steps.conformance.outcome == 'success'
             && !cancelled()
         run: |
