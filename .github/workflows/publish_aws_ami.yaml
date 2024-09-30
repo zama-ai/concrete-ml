@@ -23,7 +23,7 @@ jobs:
       # FIXME: We still need to check that it matches a version tag
       # This won't work on automatically triggered based on release
       - name: Checkout Concrete ML Repository
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
         with:
           ref: ${{ inputs.version || github.ref_name}}
           fetch-depth: 1
@@ -32,14 +32,14 @@ jobs:
 
       # To use the files and all
       - name: Checkout Concrete ML Repository
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
         with:
           fetch-depth: 1
           lfs: false
           path: "concrete-ml-latest"
 
       - name: Checkout Slab Repository
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
         with:
           repository: "zama-ai/slab"
           path: "slab"
