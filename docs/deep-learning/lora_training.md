@@ -1,49 +1,33 @@
 # Encrypted fine-tuning
 
-This section explains how to fine-tune neural-network models and large
-language-models on private data. Small models can be be fine-tuned
-using a single-client/single-server setup. For optimal
-latency when fine-tuning larger models (e.g., GPT2 and bigger)
-you should consider distributed computation, with multiple worker nodes performing the
-training on encrypted data.
+This document explains how to fine-tune neural-network models and large language-models(LLMs) on private data. 
+
+Small models can be fine-tuned using a single-client/single-server setup. For larger models (such as GPT-2 and above), consider using distributed computation across multiple worker nodes to perform training on encrypted data for optimal latency.
 
 ## Overview
 
 {% hint style="info" %}
-For a tutorial about applying FHE LORA fine-tuning to a small neural network, see [this notebook](../advanced_examples/LoraMLP.ipynb).
+Refer to [this notebook](../advanced_examples/LoraMLP.ipynb) to see the tutorial about applying FHE LORA fine-tuning to a small neural network.
 {% endhint %}
 
-Concrete ML supports LORA, a parameter efficient fine-tuning (PEFT) approach, in
-the [hybrid model](../guides/hybrid-models.md) paradigm. LORA adds
-adapters, which contain a low number of fine-tunable weights, to the linear layers
-in an original model.
+Concrete ML supports LORA, a parameter efficient fine-tuning (PEFT) approach, in the [hybrid model](../guides/hybrid-models.md) paradigm. LORA adds adapters, which contain a low number of fine-tunable weights, to the linear layers in an original model.
 
-Concrete ML will outsource the logic of a model's original forward and backward passes
-to one or more remote servers. On the other hand, the forward and backward passes
-over the LORA weights, the loss computation and the weight updates are performed
-by the client side. As the number of LORA weights is low, this does not incur
-significant added computation time for the model training client machine. More than
-99% of a model's weights can be outsourced for large LLMs.
+In this setup, Concrete ML outsources the forward and backward passes of the model's original logic to one or more remote servers. Meanwhile, the forward and backward passes over the LORA weights, the loss computation and the weight updates are performed by the client side. As the number of LORA weights is low, this does not significantly increase the computational load for the model training client machine. For large LLMs, over 99% of the model's weights can be outsourced.
 
-The main benefit of hybrid-model LORA training is outsourcing the computation of the
-linear layers. In LLMs these layers have considerable size and performing inference
-and gradient computations for them requires significant hardware. Using Concrete ML,
-these computations can be securely outsourced, eliminating the memory bottleneck that
-previously constrained such operations.
+The main benefit of hybrid-model LORA training is outsourcing the computation of linear layers, which are typically large in LLMs. These layers require substantial hardware for inference and gradient computation. By securely outsourcing this work, Concrete ML removes the memory bottleneck that previously limited such operations.
 
 ## Usage
 
-Concrete ML integrates with the [`peft` package](https://huggingface.co/docs/peft/index)
+Concrete ML integrates with the [`peft` package](https://huggingface.co/docs/peft/index),
 which adds LORA layer adapters to a model's linear layers. Here are the steps to convert
 a model to hybrid FHE LORA training.
 
 ### 1. Apply the `peft` LORA layers
 
-The `LoraConfig` class from the `peft` package contains the various LORA parameters. It
-is possible to specify which layers have LORA adapters through the `target_modules` argument.
-Please refer to the
+The `LoraConfig` class from the `peft` package contains the various LORA parameters. You can specify which layers have LORA adapters through the `target_modules` argument.
+For a detailed reference of the various configuration options, refer to the
 [`LoraConfig`](https://huggingface.co/docs/peft/package_reference/lora#peft.LoraConfig)
-documentation for a reference on the various config options.
+documentation.
 
 ```python
 import torch
@@ -92,14 +76,13 @@ peft_model = get_peft_model(model, lora_config)
 
 ### 2. Convert the LORA model to use custom Concrete ML layers
 
-Concrete ML requires a conversion step for the `peft` model, adding
-FHE compatible layers. In this step the several fine-tuning
-parameters can be configured:
+Concrete ML requires converting the `peft` model to add
+FHE compatible layers. In this step, you can configure several fine-tuning
+parameters:
 
-- the number of gradient accumulation steps: for LORA it is common to accumulate gradients over
-  several gradient descent steps before updating weights.
-- the optimizer parameters
-- the loss function
+- The number of gradient accumulation steps: LORA commonly accumulate gradients over several gradient descent steps before updating weights.
+- The optimizer parameters
+- The loss function
 
 <!--pytest-codeblocks:cont-->
 
@@ -118,10 +101,7 @@ lora_training.update_training_parameters(
 
 ### 3. Compile a hybrid FHE model for the LORA adapted PyTorch model
 
-Next, a hybrid FHE model must be compiled in order to convert
-the selected outsourced layers to use FHE. Other layers
-will be executed on the client side. The back-and-forth communication
-of encrypted activations and gradients may require significant bandwidth.
+Compile the hybrid FHE model to convert the selected outsourced layers to use FHE, while the rest will run on the client side. Note that the exchange of encrypted activations and gradients may require significant bandwidth.
 
 <!--pytest-codeblocks:cont-->
 
@@ -146,9 +126,7 @@ hybrid_model.model.toggle_calibrate(enable=False)
 
 ### 4. Train the model on private data
 
-Finally, the hybrid model can be trained, much in the same way
-a PyTorch model is trained. The client is responsible for generating and iterating
-on training data batches.
+Finally, the hybrid model can be trained, similar to training a PyTorch model. The client handles training data batches generation and iteration.
 
 <!--pytest-codeblocks:cont-->
 
@@ -166,7 +144,7 @@ for x_batch, y_batch in train_loader_task2:
 
 ### Inference
 
-One fine-tuned, the LORA hybrid FHE model can perform inference only, through the
+Once fine-tuned, the LORA hybrid FHE model can perform inference only, through the
 `model.inference_model` attribute of the hybrid FHE model.
 
 <!--pytest-codeblocks:skip-->
@@ -177,8 +155,7 @@ hybrid_model.model.inference_model(x)
 
 ### Toggle LORA layers
 
-To compare to the original model, it is possible to disable the LORA weights
-in order to use  the original model for inference.
+To compare to the original model, you can disable the LORA weights to use the original model for inference.
 
 <!--pytest-codeblocks:skip-->
 
