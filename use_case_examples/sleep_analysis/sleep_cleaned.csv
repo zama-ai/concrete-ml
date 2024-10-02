@@ -1,4 +1,4 @@
-cycle_type,Date,start_time,end_time,duration_(s)
+stage_type,Date,start_time,end_time,duration_(s)
 3,2024-10-01,07:03:00,07:05:30,150.0
 5,2024-10-01,06:59:00,07:03:00,240.0
 3,2024-10-01,06:57:00,06:59:00,120.0

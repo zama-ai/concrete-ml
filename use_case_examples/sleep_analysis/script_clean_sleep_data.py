@@ -29,7 +29,7 @@ with open(input_file, 'r', encoding="utf-8") as file:
             ])
 
 # Create a DataFrame with the specified columns
-df = pd.DataFrame(data, columns=['cycle_type', 'Date', 'start_time', 'end_time', 'duration_(s)'])
+df = pd.DataFrame(data, columns=['stage_type', 'Date', 'start_time', 'end_time', 'duration_(s)'])
 
 # Save the DataFrame to a CSV file
 df.to_csv(output_file, index=False)
