@@ -9,7 +9,7 @@ a model is compiled for CUDA, executing it on a non-CUDA-enabled machine will ra
 
 | Feature     | Built-in models | Custom models | Deployment | DataFrame |
 | ----------- | --------------- | ------------- | ---------- | --------- |
-| GPU support | ✅              | ✅            | ✅         | ❌        |
+| GPU support | ✅               | ✅             | ✅          | ❌         |
 |             |                 |               |            |           |
 
 {% hint style="warning" %}
@@ -61,7 +61,7 @@ print("GPU available: ", concrete.compiler.check_gpu_available())
 
 ## Usage
 
-To compile a model for CUDA, simply supply the `device='cuda'` argument to its compilation function: 
+To compile a model for CUDA, simply supply the `device='cuda'` argument to its compilation function:
 
 - For built-in models, use `.compile` function.
 - For custom models, use either`compile_torch_model` or `compile_brevitas_qat_model`.

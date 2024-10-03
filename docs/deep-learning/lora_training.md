@@ -1,6 +1,6 @@
 # Encrypted fine-tuning
 
-This document explains how to fine-tune neural-network models and large language-models(LLMs) on private data. 
+This document explains how to fine-tune neural-network models and large language-models(LLMs) on private data.
 
 Small models can be fine-tuned using a single-client/single-server setup. For larger models (such as GPT-2 and above), consider using distributed computation across multiple worker nodes to perform training on encrypted data for optimal latency.
 
