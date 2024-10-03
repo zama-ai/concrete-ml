@@ -9,7 +9,7 @@ a model is compiled for CUDA, executing it on a non-CUDA-enabled machine will ra
 
 | Feature     | Built-in models | Custom models | Deployment | DataFrame |
 | ----------- | --------------- | ------------- | ---------- | --------- |
-| GPU support | ✅               | ✅             | ✅          | ❌         |
+| GPU support | ✅              | ✅            | ✅         | ❌        |
 |             |                 |               |            |           |
 
 {% hint style="warning" %}
