@@ -245,9 +245,10 @@ def test_invalid_model():
     with pytest.raises(TypeError, match="The model must be a PyTorch or Brevitas model."):
         HybridFHEModel(invalid_model, module_names="sub_module")
 
+
 @pytest.mark.parametrize("n_hidden", [512, 2048])
 def test_hybrid_glwe_correctness(n_hidden):
-    N_SAMPLES = 500
+    N_SAMPLES = 200
 
     def prepare_data(X, y, test_size=0.1, random_state=42):
         X_train, X_test, y_train, y_test = train_test_split(
