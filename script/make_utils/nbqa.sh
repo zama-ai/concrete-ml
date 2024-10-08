@@ -28,7 +28,7 @@ function nbqa_ize()
         #       %matplotlib inline
         # --extend-ignore=DAR is because we don't want to run darglint
         poetry run nbqa flake8 "${NB}" --max-line-length 100 --per-file-ignores="__init__.py:F401" \
-            --ignore=E402 --extend-ignore=DAR
+            --ignore=E402,W503 --extend-ignore=DAR
 
         # With some ignored errors, since we don't care:
         #       that the notebook filename is capitalized (invalid-name)
@@ -46,9 +46,10 @@ function nbqa_ize()
                 --disable=missing-module-docstring --disable=missing-class-docstring \
                 --disable=missing-function-docstring \
                 --disable=wrong-import-position --disable=ungrouped-imports \
-                --disable=wrong-import-order\
+                --disable=wrong-import-order \
                 --extension-pkg-whitelist=numpy --disable=redefined-outer-name \
-                $PYLINT_EXTRA_OPTIONS
+                --disable=line-too-long \
+                ${PYLINT_EXTRA_OPTIONS}
     fi
 }
 
@@ -100,5 +101,3 @@ then
     PYLINT_EXTRA_OPTIONS=""
     nbqa_ize "${NOTEBOOK}" "${PYLINT_EXTRA_OPTIONS}"
 fi
-
-

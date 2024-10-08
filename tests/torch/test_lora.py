@@ -74,7 +74,7 @@ class DummyInferenceModel(torch.nn.Module):
             loss = ((logits - labels) ** 2).mean()
             Output = namedtuple("Output", ["loss"])
             return Output(loss=loss)
-        return logits
+        return {"logits": logits, "something_else": torch.tensor(1.0)}
 
 
 @pytest.fixture
@@ -89,20 +89,20 @@ def base_lora_training(base_inference_model):
     return LoraTraining(base_inference_model)
 
 
-@pytest.mark.parametrize("skip_first", [True, False])
-def test_lora_training_replace_layers(base_lora_training, skip_first):
+@pytest.mark.parametrize("n_layers_to_skip", [0, 1, 2])
+def test_lora_training_replace_layers(base_lora_training, n_layers_to_skip):
     """Test that LoraTraining replaces layers correctly."""
     original_linear1 = base_lora_training.inference_model.linear1
     original_lora_layer = base_lora_training.inference_model.lora_layer
 
     # Replace layers with custom layers
     base_lora_training.replace_layers_with_custom(
-        base_lora_training.inference_model, skip_first=skip_first
+        base_lora_training.inference_model, n_layers_to_skip=n_layers_to_skip
     )
 
     inference_model = base_lora_training.inference_model
 
-    if skip_first:
+    if n_layers_to_skip > 0:
         # First eligible layer should be skipped
         assert inference_model.linear1 is original_linear1
     else:
@@ -169,7 +169,7 @@ def test_lora_training_forward_with_loss_fn(base_lora_training):
     y = torch.tensor([[0.5, 1.5]])
 
     outputs = base_lora_training.inference_model(x)
-    expected_loss = loss_fn(outputs, y) / base_lora_training.gradient_accumulation_steps
+    expected_loss = loss_fn(outputs["logits"], y) / base_lora_training.gradient_accumulation_steps
 
     loss, _ = base_lora_training((x, y))
 
@@ -225,7 +225,7 @@ def test_lora_training_forward_with_optimizer(base_lora_training):
         SimpleNamespace(gradient_accumulation_steps=1, max_grad_norm=1.0),
     )
     base_lora_training.replace_layers_with_custom(
-        base_lora_training.inference_model, skip_first=False
+        base_lora_training.inference_model, n_layers_to_skip=0
     )
     base_lora_training.toggle_run_optimizer(True)
 

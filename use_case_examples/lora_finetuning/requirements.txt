@@ -1,4 +1,8 @@
+-e ../../.
 transformers==4.41.2
 peft==0.11.1
 Jinja2==3.1.4
 matplotlib==3.7.5
+datasets==3.0.1
+jupyter==1.0.0
+tqdm==4.66.5
