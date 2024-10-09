@@ -491,6 +491,61 @@ class QuantizedGemm(QuantizedMixingOp):
             params=self.output_quant_params,
         )
 
+    def calibrate_analytical_output(self, *inputs: QuantizedArray):
+        """Calibrate output quantization based on analytical formulas.
+
+        Args:
+            *inputs (QuantizedArray): quantized operation inputs. Quantized weights
+                are storea in the op instance
+        """
+
+        q_input1 = inputs[0]
+        assert isinstance(q_input1, QuantizedArray)
+        q_input2 = inputs[1]
+        assert isinstance(q_input2, QuantizedArray)
+
+        # In the operation Y = alpha * A' * B' + beta * C, q_bias is used for
+        # generalised matrix multiplication. q_bias is set to None for standard
+        # matrix multiplication (beta == 0 or only two inputs)
+        q_bias = None if len(inputs) == 2 or self.attrs["beta"] == 0 else inputs[2]
+        assert isinstance(q_bias, (type(None), QuantizedArray))
+
+        # Using snake case here to please the Python format, the original attrs don't have the '_'
+        # Use default false so we also support MatMul impl, MatMul does not have these flags
+        transpose_inputs1 = self.attrs.get("transA", False)
+        transpose_inputs2 = self.attrs.get("transB", False)
+
+        # TODO TRanspose
+
+        p = q_input2.qvalues.shape[-2]
+
+        m_matmul = q_input1.quantizer.scale * q_input2.quantizer.scale
+
+        # Compute the third term, the sum of the weights which is a constant
+        sum_weights = q_input1.quantizer.zero_point * numpy.sum(
+            q_input2.qvalues, axis=-2, keepdims=True
+        )
+
+        final_term = p * q_input1.quantizer.zero_point * q_input2.quantizer.zero_point
+
+        out_zp: Union[int, numpy.ndarray] = sum_weights - final_term
+        if q_bias is not None:
+            # Make mypy happy
+            assert q_bias is not None
+            # Reshape the biases to broadcast them to each neuron
+            bias_out = q_bias.values if isinstance(q_bias, QuantizedArray) else q_bias
+            out_zp = out_zp + bias_out / (-m_matmul)
+
+        out_params = UniformQuantizationParameters(
+            scale=m_matmul,
+            zero_point=out_zp,
+            offset=0,
+        )
+
+        print("Calibrated analytically!")
+
+        return UniformQuantizer(self._get_output_quant_opts(), self.output_quant_stats, out_params)
+
 
 class QuantizedMatMul(QuantizedGemm):
     """Quantized MatMul op."""

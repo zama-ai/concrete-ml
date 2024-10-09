@@ -89,7 +89,12 @@ def run_hybrid_llm_test(
     else:
         # Check for zero programmable bootstrapping
         for module in hybrid_model.private_q_modules.values():
-            assert module.fhe_circuit.statistics["programmable_bootstrap_count"] == 0, (
+            # The RemoteModule does not have a circuit if it was optimized
+            # (in the case of pure linear remote modules)
+            assert (
+                not module.fhe_circuit
+                or module.fhe_circuit.statistics["programmable_bootstrap_count"] == 0
+            ), (
                 "Programmable bootstrap count should be 0, "
                 f"but found {module.fhe_circuit.statistics['programmable_bootstrap_count']}"
             )

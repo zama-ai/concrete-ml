@@ -1,5 +1,6 @@
 """Post Training Quantization methods."""
 
+import enum
 from abc import abstractmethod
 from typing import Dict, List, Optional, Set, Tuple, Type, Union, cast
 
@@ -22,7 +23,7 @@ from .base_quantized_op import (
 )
 from .quantized_module import QuantizedModule
 from .quantized_module_passes import PowerOfTwoScalingRoundPBSAdapter
-from .quantized_ops import QuantizedBrevitasQuant
+from .quantized_ops import QuantizedAdd, QuantizedBrevitasQuant, QuantizedGemm, QuantizedMatMul
 from .quantizers import QuantizationOptions, QuantizedArray, UniformQuantizer
 
 # pylint: disable=too-many-lines
@@ -187,6 +188,14 @@ def get_n_bits_dict(n_bits: Union[int, Dict[str, int]]) -> Dict[str, int]:
     return n_bits_dict
 
 
+class CalibrationMode(enum.Enum):
+    """Simple enum for different modes of execution of HybridModel."""
+
+    RAW = "raw"  # Output the raw float values, process rounding
+    QUANTIZED = "quantized"  # Output the de-quantized values, process rounding
+    FAST_RAW = "fast"  # Output raw float values, don't process rounding
+
+
 class ONNXConverter:
     """Base ONNX to Concrete ML computation graph conversion class.
 
@@ -280,6 +289,7 @@ class ONNXConverter:
         quantized_op: QuantizedOp,
         *calibration_data: numpy.ndarray,
         quantizers: List[Optional[UniformQuantizer]],
+        fast_calibration: bool = False,
     ) -> Tuple[numpy.ndarray, Optional[UniformQuantizer]]:
         """Configure a graph operation according to model conversion mode.
 
@@ -298,7 +308,7 @@ class ONNXConverter:
 
     def _calibrate_layers_activation(
         self,
-        calibrate_quantized: bool,
+        calibrate_mode: CalibrationMode,
         quantized_op: QuantizedOp,
         *calibration_data: numpy.ndarray,
         quantizers: List[Optional[UniformQuantizer]],
@@ -306,8 +316,9 @@ class ONNXConverter:
         """Calibrate the QuantizedOp with the previous layer's output calibration data.
 
         Args:
-            calibrate_quantized (bool): determines if we use de-quantized values (True) or
-                raw values (False) during calibration.
+            calibrate_mode (CalibrationMOde): whether to use data-based quantization for
+                output de-quantized values or raw values during calibration,
+                or analytically determine output quantization parameters (for linear layers)
             quantized_op (QuantizedOp): the quantized operator for the current layer.
             *calibration_data: numpy.ndarray: the previous layer's calibration data.
             quantizers (List[Optional[UniformQuantizer]]): a list of quantizers that
@@ -318,9 +329,6 @@ class ONNXConverter:
         Returns:
             numpy.ndarray: the output of the newly calibrated layer.
         """
-        # Calibrate the output of the layer
-        raw_result = quantized_op.calibrate(*calibration_data)
-
         # Some operators need to quantize their inputs using model_outputs instead of op_inputs in
         # order to reduce the impact of quantization.
         if quantized_op.quantize_inputs_with_model_outputs_precision:
@@ -331,32 +339,54 @@ class ONNXConverter:
         # Create new calibration data (output of the previous layer)
         # Use the op's input options (thus behavior in calibration is the same as in compilation)
         q_calibration_data: List[ONNXOpInputOutputType] = []
-        for data in calibration_data:
+        for idx, data in enumerate(calibration_data):
             is_clear_value = isinstance(data, RawOpOutput)
             if is_clear_value or data is None:
                 q_calibration_data.append(data)
             else:
-                q_calibration_data.append(
-                    QuantizedArray(n_bits, data, True, options=quantized_op.input_quant_opts)
-                )
+                if quantizers[idx] is None:
+                    q_calibration_data.append(
+                        QuantizedArray(n_bits, data, True, options=quantized_op.input_quant_opts)
+                    )
+                else:
+                    # Override, when necessary, the calibration data with data that is quantized with
+                    # layer quantizers that are overridden by the QAT graph quantizers
+                    quantizer = quantizers[idx]
+                    q_calibration_data.append(
+                        QuantizedArray(
+                            quantizer.n_bits,
+                            data,
+                            True,
+                            options=quantizer.quant_options,
+                            stats=quantizer.quant_stats,
+                            params=quantizer.quant_params,
+                        )
+                    )
 
-        # Override, when necessary, the calibration data with data that is quantized with
-        # layer quantizers that are overridden by the QAT graph quantizers
-        for idx, data in enumerate(calibration_data):
-            if quantizers[idx] is None:
-                continue
+        # Fast quantization relies on an analytical computation
+        # of the output quantization parameters
+        if calibrate_mode == CalibrationMode.FAST_RAW:
+            assert isinstance(quantized_op, QuantizedMixingOp)
 
-            quantizer = quantizers[idx]
-            assert quantizer is not None
+            # Calibrate the output of the layer using
+            # analytical formuals to avoid computation on quantized values
+            raw_result = quantized_op.calibrate(*q_calibration_data)
 
-            q_calibration_data[idx] = QuantizedArray(
-                quantizer.n_bits,
-                data,
-                True,
-                options=quantizer.quant_options,
-                stats=quantizer.quant_stats,
-                params=quantizer.quant_params,
+            output_quant_opts = QuantizationOptions(quantized_op.input_quant_opts.n_bits)
+            output_quant_opts.copy_opts(quantized_op.input_quant_opts)
+            return (
+                raw_result,
+                UniformQuantizer(
+                    output_quant_opts,
+                    quantized_op.output_quant_stats,
+                    quantized_op.output_quant_params,
+                ),
             )
+
+        print(f"Calibrating with q_impl: {quantized_op._impl_for_op_named}")
+
+        # Calibrate the output of the layer
+        raw_result = quantized_op.calibrate(*calibration_data)
 
         # Enable rounding calibration if used has set a rounding_threshold_bits
         calibrate_attr = (
@@ -389,7 +419,9 @@ class ONNXConverter:
         )
         # For PTQ, the calibration is performed on quantized data. But
         # raw operation output (RawOpOutput) data should not be quantized
-        if calibrate_quantized and not isinstance(quant_result, RawOpOutput):
+        if calibrate_mode == CalibrationMode.QUANTIZED and not isinstance(
+            quant_result, RawOpOutput
+        ):
             assert isinstance(quant_result, QuantizedArray)
             return (
                 quant_result.dequant(),
@@ -477,6 +509,13 @@ class ONNXConverter:
         node_override_quantizer: Dict[str, Optional[UniformQuantizer]] = {}
 
         constants: Set[str] = set(self.quant_params.keys())
+
+        fast_calibration = True
+        for node in graph.node:
+            op_type = get_op_type(node)
+            quantized_op_class = ONNX_OPS_TO_QUANTIZED_IMPL[op_type]
+            if quantized_op_class not in [QuantizedGemm, QuantizedMatMul]:
+                fast_calibration = False
 
         # We need to determine, for each op, whether it only performs univariate computations.
         # A univariate computation is one which depends on a single scalar integer encrypted input
@@ -625,7 +664,10 @@ class ONNXConverter:
                     for input_name in variable_input_names
                 )
                 output_calibration_data, layer_quantizer = self._process_layer(
-                    quantized_op_instance, *curr_calibration_data, quantizers=layer_quant
+                    quantized_op_instance,
+                    *curr_calibration_data,
+                    quantizers=layer_quant,
+                    fast_calibration=fast_calibration,
                 )
                 node_results[output_name] = output_calibration_data
                 node_override_quantizer[output_name] = layer_quantizer
@@ -859,6 +901,7 @@ class PostTrainingAffineQuantization(ONNXConverter):
         quantized_op: QuantizedOp,
         *calibration_data: numpy.ndarray,
         quantizers: List[Optional[UniformQuantizer]],
+        fast_calibration: bool = False,
     ) -> Tuple[numpy.ndarray, Optional[UniformQuantizer]]:
         """Configure a graph operation by performing calibration for uniform quantization.
 
@@ -875,8 +918,20 @@ class PostTrainingAffineQuantization(ONNXConverter):
             numpy.ndarray: calibration data for the following operators
         """
 
+        # Fast calibration can only be enabled in special cases such as a module with
+        # only a single Gemm layer
+        calibrate_mode = CalibrationMode.FAST_RAW if fast_calibration else CalibrationMode.QUANTIZED
+
+        # Only mixing ops (e.g. gemm/add) can use fast calibrate (which doesn't call the q_impl)
+        assert not calibrate_mode == CalibrationMode.FAST_RAW or isinstance(
+            quantized_op, QuantizedMixingOp
+        )
+
         return self._calibrate_layers_activation(
-            True, quantized_op, *calibration_data, quantizers=quantizers
+            calibrate_mode,
+            quantized_op,
+            *calibration_data,
+            quantizers=quantizers,
         )
 
     def _process_initializer(
@@ -987,6 +1042,7 @@ class PostTrainingQATImporter(ONNXConverter):
         quantized_op: QuantizedOp,
         *calibration_data: numpy.ndarray,
         quantizers: List[Optional[UniformQuantizer]],
+        fast_calibration: bool = False,
     ) -> Tuple[numpy.ndarray, Optional[UniformQuantizer]]:
         """Configure a graph operation by calibrating it for Quantization Aware Training.
 
@@ -1004,7 +1060,7 @@ class PostTrainingQATImporter(ONNXConverter):
         """
 
         return self._calibrate_layers_activation(
-            False, quantized_op, *calibration_data, quantizers=quantizers
+            CalibrationMode.RAW, quantized_op, *calibration_data, quantizers=quantizers
         )
 
     def _process_initializer(

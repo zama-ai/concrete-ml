@@ -16,13 +16,14 @@ from ..common.utils import QUANT_ROUND_LIKE_ROUND_PBS, array_allclose_and_same_s
 STABILITY_CONST = 10**-6
 
 
-def fill_from_kwargs(obj, klass, **kwargs):
+def fill_from_kwargs(obj, klass, accept_missing, **kwargs):
     """Fill a parameter set structure from kwargs parameters.
 
     Args:
         obj: an object of type klass, if None the object is created if any of the type's
             members appear in the kwargs
         klass: the type of object to fill
+        accept_missing: don't assert if the fields are None in the kwargs
         kwargs: parameter names and values to fill into an instance of the klass type
 
     Returns:
@@ -61,7 +62,7 @@ def fill_from_kwargs(obj, klass, **kwargs):
 
     # If the structure was created or modified by a call to this function, check
     # that it is completely filled
-    if obj is not None:
+    if obj is not None and not accept_missing:
         for name in hints:
             if getattr(obj, name) is None:
                 raise TypeError(f"Missing quantizer parameter {name}")
@@ -238,7 +239,7 @@ class MinMaxQuantizationStats:
 
     rmax: Optional[float] = None
     rmin: Optional[float] = None
-    uvalues: Optional[numpy.ndarray] = None
+    # uvalues: Optional[numpy.ndarray] = None
 
     def __init__(
         self,
@@ -319,11 +320,11 @@ class MinMaxQuantizationStats:
         # Floating point inaccuracies in computation can lead to differences in the last
         # decimal figures. We want to ignore such differences but also avoid
         # coalescing float values that should be distinct
-        rvalues = numpy.round(values, decimals=2)
+        # rvalues = numpy.round(values, decimals=2)
 
         # Unique values from the distribution sample. These values are sorted
         # in order to extract the quantization scale in the case of QAT
-        self.uvalues = numpy.unique(rvalues)
+        # self.uvalues = numpy.unique(rvalues)
 
     @property
     def quant_stats(self):
@@ -347,7 +348,7 @@ class MinMaxQuantizationStats:
 
         self.rmax = stats.rmax
         self.rmin = stats.rmin
-        self.uvalues = stats.uvalues
+        # self.uvalues = stats.uvalues
 
     def check_is_uniform_quantized(self, options: QuantizationOptions) -> bool:
         """Check if these statistics correspond to uniformly quantized values.
@@ -361,6 +362,8 @@ class MinMaxQuantizationStats:
         Returns:
             bool: check result.
         """
+
+        return True
 
         assert self.uvalues is not None
 
@@ -543,7 +546,8 @@ class UniformQuantizationParameters:
                 # The QuantizedModule will perform error checking of quantized tensors
                 # and will issue an error if the network is not well quantized during training
                 if (
-                    options.is_qat
+                    False
+                    and options.is_qat
                     and not options.is_precomputed_qat
                     and stats.uvalues is not None
                     and stats.check_is_uniform_quantized(options)
@@ -852,9 +856,13 @@ class QuantizedArray:
         options.n_bits = n_bits
         self.n_bits = n_bits
 
-        options, kwargs = fill_from_kwargs(options, QuantizationOptions, **kwargs)
-        stats, kwargs = fill_from_kwargs(stats, MinMaxQuantizationStats, **kwargs)
-        params, kwargs = fill_from_kwargs(params, UniformQuantizationParameters, **kwargs)
+        # Options are alawys needed
+        options, kwargs = fill_from_kwargs(options, QuantizationOptions, False, **kwargs)
+        # Stats are only necessary for quantization but not needed for dequantiztion
+        # thus they can be considered optional
+        stats, kwargs = fill_from_kwargs(stats, MinMaxQuantizationStats, True, **kwargs)
+        # Params are needed for both quant / dequant
+        params, kwargs = fill_from_kwargs(params, UniformQuantizationParameters, False, **kwargs)
 
         # All kwargs should belong to one of the parameter sets, anything else is unsupported
         if len(kwargs) > 0:

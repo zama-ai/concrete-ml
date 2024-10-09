@@ -30,6 +30,7 @@ from .compile import (
     compile_torch_model,
     has_any_qnn_layers,
 )
+from .lora import BackwardModuleLinear, ForwardModuleLinear
 
 
 class HybridFHEMode(enum.Enum):
@@ -145,29 +146,48 @@ class OptimizedLinearLayerExecutor:
 
         q_x = q_module.quantize_input(x)
 
-        q_weight = q_weight.T
+        return_2d = False
+        if q_x.ndim == 2:
+            return_2d = True
+            q_x = numpy.expand_dims(q_x, -1)
+        q_x = numpy.ascontiguousarray(q_x.astype(numpy.uint64))
 
-        num_valid_glwe_values_in_last_ciphertext = (
-            q_weight.shape[1] % self.poly_size or self.poly_size
+        assert q_weight.ndim == 2
+        result_buffer = numpy.zeros(
+            (q_x.shape[0], q_x.shape[1], q_weight.shape[1]), dtype=numpy.uint64
         )
 
-        ciphertext = fhext.encrypt_matrix(
-            self.private_key, self.glwe_crypto_params, q_x.astype(numpy.uint64)
-        )
-        encrypted_result = fhext.matrix_multiplication(
-            encrypted_matrix=ciphertext,
-            data=q_weight.astype(numpy.uint64),
-            compression_key=self.compression_key,
-        )
-        q_result = fhext.decrypt_matrix(
-            encrypted_result,
-            self.private_key,
-            self.glwe_crypto_params,
-            num_valid_glwe_values_in_last_ciphertext,
-        )
-        q_result = q_result.astype(numpy.int64)
+        for idx, q_x_sample in enumerate(q_x):
 
-        y = q_module.dequantize_output(*to_tuple(q_result))
+            q_weight = q_weight.astype(numpy.uint64)
+            #        q_weight = q_weight.T
+
+            num_valid_glwe_values_in_last_ciphertext = (
+                q_weight.shape[1] % self.poly_size or self.poly_size
+            )
+
+            ciphertext = fhext.encrypt_matrix(
+                pkey=self.private_key, crypto_params=self.glwe_crypto_params, data=q_x_sample
+            )
+            encrypted_result = fhext.matrix_multiplication(
+                encrypted_matrix=ciphertext,
+                data=q_weight.astype(numpy.uint64),
+                compression_key=self.compression_key,
+            )
+            q_result = fhext.decrypt_matrix(
+                encrypted_result,
+                self.private_key,
+                self.glwe_crypto_params,
+                num_valid_glwe_values_in_last_ciphertext,
+            )
+            q_result = q_result.astype(numpy.int64)
+
+            result_buffer[idx, :] = q_result
+
+        y = q_module.dequantize_output(*to_tuple(result_buffer))
+
+        if return_2d:
+            y = y.squeeze()
 
         if len(weight_bias) > 1:
             bias = weight_bias[1].values
@@ -474,7 +494,10 @@ class HybridFHEModel:
             # Determine if this remote module is a pure linear one
             # that is supported for compressed encrypted matmul
             # Conv1D will have been converted to Linear by the line above
-            is_pure_linear_layer = isinstance(self.private_modules[module_name], nn.Linear)
+            is_pure_linear_layer = isinstance(
+                self.private_modules[module_name],
+                (nn.Linear, ForwardModuleLinear, BackwardModuleLinear),
+            )
             if not is_pure_linear_layer:
                 self._all_layers_are_pure_linear = False
 
