@@ -15,7 +15,6 @@ from transformers import GPT2LMHeadModel, GPT2Tokenizer
 
 from concrete.ml.pytest.torch_models import FCSmall, PartialQATModel
 from concrete.ml.torch.hybrid_model import (
-    HybridFHEMode,
     HybridFHEModel,
     tuple_to_underscore_str,
     underscore_str_to_tuple,
@@ -253,23 +252,25 @@ def test_invalid_model():
 
 @pytest.mark.parametrize("n_hidden", [512, 2048])
 def test_hybrid_glwe_correctness(n_hidden):
-    N_SAMPLES = 200
+    """Tests that the GLWE backend produces correct results for the hybrid model."""
 
-    def prepare_data(X, y, test_size=0.1, random_state=42):
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=test_size, random_state=random_state
+    num_samples = 200
+
+    def prepare_data(x, y, test_size=0.1, random_state=42):
+        x_train, x_test, y_train, y_test = train_test_split(
+            x, y, test_size=test_size, random_state=random_state
         )
-        X_train = torch.tensor(X_train, dtype=torch.float32)
-        X_test = torch.tensor(X_test, dtype=torch.float32)
+        x_train = torch.tensor(x_train, dtype=torch.float32)
+        x_test = torch.tensor(x_test, dtype=torch.float32)
         y_train = torch.tensor(y_train, dtype=torch.long)
         y_test = torch.tensor(y_test, dtype=torch.long)
-        return X_train, X_test, y_train, y_test
+        return x_train, x_test, y_train, y_test
 
     # Generate synthetic 2D data
-    X1, y1 = make_moons(n_samples=N_SAMPLES, noise=0.2, random_state=42)
+    x1_data, y1_data = make_moons(n_samples=num_samples, noise=0.2, random_state=42)
 
     # Prepare data
-    X1_train, X1_test, y1_train, y1_test = prepare_data(X1, y1)
+    x1_train, x1_test, y1_train, y1_test = prepare_data(x1_data, y1_data)
 
     model = FCSmall(2, torch.nn.ReLU, hidden=n_hidden)
     optimizer = torch.optim.Adam(model.parameters())
@@ -278,7 +279,7 @@ def test_hybrid_glwe_correctness(n_hidden):
     model.train()
     for _ in range(num_epochs):
         optimizer.zero_grad()
-        outputs = model(X1_train)
+        outputs = model(x1_train)
         loss = torch.nn.functional.cross_entropy(outputs, y1_train)
         loss.backward()
         optimizer.step()
@@ -290,18 +291,38 @@ def test_hybrid_glwe_correctness(n_hidden):
         if isinstance(p, torch.nn.Linear):
             param_names.append(k)
 
+    y_torch = model(x1_test).detach().numpy()
     hybrid_local = HybridFHEModel(model, param_names)
 
-    assert hybrid_local._all_layers_are_pure_linear
+    # This internal flag tells us whether all the layers
+    # were linear and were replaced with the GLWE backend
+    assert hybrid_local._all_layers_are_pure_linear  # pylint: disable=protected-access
 
-    hybrid_local.compile_model(X1_train, n_bits=8)
+    hybrid_local.compile_model(x1_train, n_bits=12)
 
-    y_qm = hybrid_local(X1_test, fhe="disable").numpy()
-    y_glwe = hybrid_local(X1_test, fhe="execute").numpy()
+    y_qm = hybrid_local(x1_test, fhe="disable").numpy()
+    y_hybrid_torch = hybrid_local(x1_test, fhe="torch").detach().numpy()
+    y_glwe = hybrid_local(x1_test, fhe="execute").numpy()
 
     y1_test = y1_test.numpy()
+    acc_fp32 = numpy.sum(numpy.argmax(y_torch, axis=1) == y1_test)
     acc_qm = numpy.sum(numpy.argmax(y_qm, axis=1) == y1_test)
     acc_glwe = numpy.sum(numpy.argmax(y_glwe, axis=1) == y1_test)
 
-    assert numpy.all(numpy.allclose(y_qm, y_glwe, atol=0.1))
+    # These two should be exactly the same
+    assert numpy.all(numpy.allclose(y_torch, y_hybrid_torch, rtol=1, atol=0.001))
+
+    # The clear quantization vs fp32 test has more tolerance
+    diff = numpy.abs(y_torch - y_glwe) > 0.1
+    print(y_torch[diff])
+    print(y_glwe[diff])
+    print(y_qm[diff])
+
+    assert numpy.all(numpy.allclose(y_qm, y_glwe, rtol=1, atol=0.1))
+    assert numpy.all(numpy.allclose(y_torch, y_glwe, rtol=1, atol=0.1))
+
+    # Check accuracy between fp32 and glwe
+    assert numpy.abs(acc_fp32 - acc_glwe) < 0.01
+
+    # Check accuracy between quantized and glwe
     assert numpy.abs(acc_qm - acc_glwe) < 0.01

@@ -18,6 +18,7 @@ from .quantizers import (
     QuantizationOptions,
     QuantizedArray,
     UniformQuantizationParameters,
+    UniformQuantizer,
 )
 
 # pylint: disable=too-many-lines
@@ -647,7 +648,7 @@ class QuantizedOp:
         # QuantizedArrays, else we return the float32 values directly.
 
         curr_input_fill_idx = 0
-        for input_idx, input_ in enumerate(inputs):
+        for input_ in inputs:
             while prepared_inputs[curr_input_fill_idx] is not None:
                 curr_input_fill_idx += 1
 
@@ -668,20 +669,6 @@ class QuantizedOp:
                 # This is used by mixing (conv/gemm) or value re-arranging ops (reshape)
                 input_ = cast(QuantizedArray, input_)
                 new_input = self._prepare_quantized_input(input_)
-
-                # Check that the input quantizer is correct - that it can de-quantize
-                # values correctly. If it is not, it is added to the list of invalid tensors
-                # for which an error is raised
-                if (
-                    new_input.quantizer.is_qat
-                    and not input_.quantizer.is_precomputed_qat
-                    and self.error_tracker is not None
-                    and not new_input.quantizer.check_is_uniform_quantized(
-                        new_input.quantizer.quant_options
-                    )
-                ):
-                    self.error_tracker.append(input_idx)
-
                 prepared_inputs[curr_input_fill_idx] = new_input
             else:
                 # This is usually used for univariate ops that are fused into TLUs
@@ -725,7 +712,7 @@ class QuantizedOp:
             return raw_result
 
         supports_analytical_quant = all(
-            [isinstance(qv, QuantizedArray) for qv in inputs]
+            isinstance(qv, QuantizedArray) for qv in inputs
         ) and isinstance(self, QuantizedMixingOp)
         if supports_analytical_quant:
             q_prepared_inputs = self._prepare_inputs_with_constants(
@@ -745,12 +732,15 @@ class QuantizedOp:
 
         return raw_result
 
-    def calibrate_analytical_output(self, *inputs: QuantizedArray):
+    def calibrate_analytical_output(self, *inputs: QuantizedArray) -> UniformQuantizer:
         """Calibrate output quantization based on analytical formulas.
 
         Args:
             *inputs (QuantizedArray): quantized operation inputs. Quantized weights
                 are storea in the op instance
+
+        Raises:
+            AssertionError: if the operation does not support analytical calibration
         """
         raise AssertionError(
             f"calibrate_analytical_output: not implemented for {self._impl_for_op_named} op"

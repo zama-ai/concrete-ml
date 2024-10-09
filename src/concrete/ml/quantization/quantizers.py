@@ -11,7 +11,7 @@ from concrete.fhe.tracing.tracer import Tracer
 
 from ..common.debugging import assert_true
 from ..common.serialization.dumpers import dump, dumps
-from ..common.utils import QUANT_ROUND_LIKE_ROUND_PBS, array_allclose_and_same_shape
+from ..common.utils import QUANT_ROUND_LIKE_ROUND_PBS
 
 STABILITY_CONST = 10**-6
 
@@ -239,25 +239,18 @@ class MinMaxQuantizationStats:
 
     rmax: Optional[float] = None
     rmin: Optional[float] = None
-    # uvalues: Optional[numpy.ndarray] = None
 
     def __init__(
         self,
         rmax: Optional[float] = None,
         rmin: Optional[float] = None,
-        uvalues: Optional[numpy.ndarray] = None,
     ):
         self.rmax = rmax
         self.rmin = rmin
-        self.uvalues = uvalues
 
     def __eq__(self, other) -> bool:
         # Disable mypy as numpy.array_equal properly handles None types
-        return (
-            other.rmax == self.rmax
-            and other.rmin == self.rmin
-            and numpy.array_equal(other.uvalues, self.uvalues)  # type: ignore[arg-type]
-        )
+        return other.rmax == self.rmax and other.rmin == self.rmin
 
     def dump_dict(self) -> Dict:
         """Dump itself to a dict.
@@ -269,7 +262,6 @@ class MinMaxQuantizationStats:
 
         metadata["rmax"] = self.rmax
         metadata["rmin"] = self.rmin
-        metadata["uvalues"] = self.uvalues
         return metadata
 
     @staticmethod
@@ -285,7 +277,6 @@ class MinMaxQuantizationStats:
         to_return = MinMaxQuantizationStats(
             rmax=metadata["rmax"],
             rmin=metadata["rmin"],
-            uvalues=metadata["uvalues"],
         )
 
         return to_return
@@ -316,16 +307,6 @@ class MinMaxQuantizationStats:
         self.rmin = numpy.min(values)
         self.rmax = numpy.max(values)
 
-        # To find unique float values we need to round. We round to 2 decimal figures.
-        # Floating point inaccuracies in computation can lead to differences in the last
-        # decimal figures. We want to ignore such differences but also avoid
-        # coalescing float values that should be distinct
-        # rvalues = numpy.round(values, decimals=2)
-
-        # Unique values from the distribution sample. These values are sorted
-        # in order to extract the quantization scale in the case of QAT
-        # self.uvalues = numpy.unique(rvalues)
-
     @property
     def quant_stats(self):
         """Get a copy of the calibration set statistics.
@@ -348,37 +329,6 @@ class MinMaxQuantizationStats:
 
         self.rmax = stats.rmax
         self.rmin = stats.rmin
-        # self.uvalues = stats.uvalues
-
-    def check_is_uniform_quantized(self, options: QuantizationOptions) -> bool:
-        """Check if these statistics correspond to uniformly quantized values.
-
-        Determines whether the values represented by this QuantizedArray show
-        a quantized structure that allows to infer the scale of quantization.
-
-        Args:
-            options (QuantizationOptions): used to quantize the values in the QuantizedArray
-
-        Returns:
-            bool: check result.
-        """
-
-        return True
-
-        assert self.uvalues is not None
-
-        if self.uvalues.size > 2**options.n_bits:
-            return False
-
-        if self.uvalues.size == 1:
-            return False
-
-        unique_scales = numpy.unique(numpy.diff(self.uvalues))
-        min_scale = unique_scales[0]
-
-        re_quant_scales = numpy.rint(unique_scales / min_scale) * min_scale
-
-        return array_allclose_and_same_shape(unique_scales, re_quant_scales, atol=0.02)
 
 
 class UniformQuantizationParameters:
@@ -535,9 +485,6 @@ class UniformQuantizationParameters:
                     / ((2**options.n_bits - 1 - self.offset))
                 ).astype(numpy.float64)
             else:
-                # Infer the QAT parameters if this is a custom QAT network
-                # which does not store scale/zero-point in the ONNX directly.
-
                 # Do not infer the parameters if the network was trained with Brevitas
                 # they are stored in the ONNX file and are the true quantization parameters
                 # used in training - no need to infer them.
@@ -545,23 +492,6 @@ class UniformQuantizationParameters:
                 # If the parameters do not appear quantized, use PTQ for quantization.
                 # The QuantizedModule will perform error checking of quantized tensors
                 # and will issue an error if the network is not well quantized during training
-                if (
-                    False
-                    and options.is_qat
-                    and not options.is_precomputed_qat
-                    and stats.uvalues is not None
-                    and stats.check_is_uniform_quantized(options)
-                ):
-                    assert_true(
-                        len(stats.uvalues) > 1,
-                        "A single unique value was detected in a tensor of "
-                        "quantized values in a QAT import.\n"
-                        "Please check the stability thresholds.\n"
-                        "This can occur with a badly trained model.",
-                    )
-                    unique_scales = numpy.unique(numpy.diff(stats.uvalues))
-                    self.scale = numpy.float64(unique_scales[0])
-
                 if self.scale is None:
                     self.scale = numpy.float64(
                         (stats.rmax - stats.rmin) / (2**options.n_bits - 1)
@@ -637,7 +567,6 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
             "is_precomputed_qat",
             "rmax",
             "rmin",
-            "uvalues",
             "scale",
             "zero_point",
             "offset",
@@ -676,7 +605,6 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
             "is_precomputed_qat",
             "rmax",
             "rmin",
-            "uvalues",
             "scale",
             "zero_point",
             "offset",
@@ -710,7 +638,6 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
             "is_precomputed_qat",
             "rmax",
             "rmin",
-            "uvalues",
             "scale",
             "zero_point",
             "offset",
@@ -718,10 +645,6 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
         ]:
             if attribute in metadata:
                 setattr(obj, attribute, metadata[attribute])
-
-        # The `uvalues` attribute needs to be put back to a numpy.array object
-        if "uvalues" in metadata:
-            obj.uvalues = metadata["uvalues"]
 
         return obj
 
@@ -761,13 +684,13 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
         else:
             qvalues = numpy.rint(values / self.scale + self.zero_point)
 
-        # Clipping can be performed for PTQ and for precomputed (for now only Brevitas) QAT
+        # Clipping must be performed for PTQ and for precomputed (for now only Brevitas) QAT
         # (where quantizer parameters are available in ONNX layers).
-        # For Custom QAT, with inferred parameters the type of quantization (signed/narrow)
-        # can not be inferred and thus clipping can not be performed reliably
         # It is possible to disable this clipping step for specific cases such as quantizing values
         # within fully-leveled circuits (where not bounds are needed)
-        if (not self.is_qat or self.is_precomputed_qat) and not self.no_clipping:
+        if self.is_qat and not self.no_clipping:
+            # Only pre-computed (Brevitas) QAT is supported
+            assert self.is_precomputed_qat is True
             # Offset is either 2^(n-1) or 0, but for narrow range
             # the values should be clipped to [2^(n-1)+1, .. 2^(n-1)-1], so we add
             # one to the minimum value for narrow range

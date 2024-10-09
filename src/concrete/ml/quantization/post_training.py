@@ -23,8 +23,10 @@ from .base_quantized_op import (
 )
 from .quantized_module import QuantizedModule
 from .quantized_module_passes import PowerOfTwoScalingRoundPBSAdapter
-from .quantized_ops import QuantizedAdd, QuantizedBrevitasQuant, QuantizedGemm, QuantizedMatMul
+from .quantized_ops import QuantizedBrevitasQuant, QuantizedGemm, QuantizedMatMul
 from .quantizers import QuantizationOptions, QuantizedArray, UniformQuantizer
+
+OPS_WITH_GLWE_BACKEND_SUPPORT = [QuantizedGemm, QuantizedMatMul]
 
 # pylint: disable=too-many-lines
 
@@ -301,7 +303,10 @@ class ONNXConverter:
                 should produce the quantized values used in calibration. If none are given,
                 the calibration will generate the quantized values with the layer's input
                 calibration options.
-
+            fast_calibration(bool): whether to perform calibration without
+                computing the result of the operation on calibration data, but
+                rather by using analytical formulas to determine the output
+                quantization parameters
         Returns:
             numpy.ndarray: calibration data for the following operators
         """
@@ -316,7 +321,7 @@ class ONNXConverter:
         """Calibrate the QuantizedOp with the previous layer's output calibration data.
 
         Args:
-            calibrate_mode (CalibrationMOde): whether to use data-based quantization for
+            calibrate_mode (CalibrationMode): whether to use data-based quantization for
                 output de-quantized values or raw values during calibration,
                 or analytically determine output quantization parameters (for linear layers)
             quantized_op (QuantizedOp): the quantized operator for the current layer.
@@ -338,20 +343,20 @@ class ONNXConverter:
 
         # Create new calibration data (output of the previous layer)
         # Use the op's input options (thus behavior in calibration is the same as in compilation)
-        q_calibration_data: List[ONNXOpInputOutputType] = []
+        q_calibration_data: List[Union[QuantizedArray, numpy.ndarray]] = []
         for idx, data in enumerate(calibration_data):
             is_clear_value = isinstance(data, RawOpOutput)
             if is_clear_value or data is None:
                 q_calibration_data.append(data)
             else:
-                if quantizers[idx] is None:
+                quantizer = quantizers[idx]
+                if quantizer is None:
                     q_calibration_data.append(
                         QuantizedArray(n_bits, data, True, options=quantized_op.input_quant_opts)
                     )
                 else:
-                    # Override, when necessary, the calibration data with data that is quantized with
-                    # layer quantizers that are overridden by the QAT graph quantizers
-                    quantizer = quantizers[idx]
+                    # Override, when necessary, the calibration data with data that is quantized
+                    # with layer quantizers that are overridden by the QAT graph quantizers
                     q_calibration_data.append(
                         QuantizedArray(
                             quantizer.n_bits,
@@ -367,6 +372,7 @@ class ONNXConverter:
         # of the output quantization parameters
         if calibrate_mode == CalibrationMode.FAST_RAW:
             assert isinstance(quantized_op, QuantizedMixingOp)
+            assert all(isinstance(inp, QuantizedArray) for inp in q_calibration_data)
 
             # Calibrate the output of the layer using
             # analytical formuals to avoid computation on quantized values
@@ -382,8 +388,6 @@ class ONNXConverter:
                     quantized_op.output_quant_params,
                 ),
             )
-
-        print(f"Calibrating with q_impl: {quantized_op._impl_for_op_named}")
 
         # Calibrate the output of the layer
         raw_result = quantized_op.calibrate(*calibration_data)
@@ -514,7 +518,7 @@ class ONNXConverter:
         for node in graph.node:
             op_type = get_op_type(node)
             quantized_op_class = ONNX_OPS_TO_QUANTIZED_IMPL[op_type]
-            if quantized_op_class not in [QuantizedGemm, QuantizedMatMul]:
+            if quantized_op_class not in OPS_WITH_GLWE_BACKEND_SUPPORT:
                 fast_calibration = False
 
         # We need to determine, for each op, whether it only performs univariate computations.
@@ -913,7 +917,10 @@ class PostTrainingAffineQuantization(ONNXConverter):
                 should produce the quantized values used in calibration. If none are given,
                 the calibration will generate the quantized values with the layer's input
                 calibration options.
-
+            fast_calibration(bool): whether to perform calibration without
+                computing the result of the operation on calibration data, but
+                rather by using analytical formulas to determine the output
+                quantization parameters
         Returns:
             numpy.ndarray: calibration data for the following operators
         """
@@ -923,7 +930,7 @@ class PostTrainingAffineQuantization(ONNXConverter):
         calibrate_mode = CalibrationMode.FAST_RAW if fast_calibration else CalibrationMode.QUANTIZED
 
         # Only mixing ops (e.g. gemm/add) can use fast calibrate (which doesn't call the q_impl)
-        assert not calibrate_mode == CalibrationMode.FAST_RAW or isinstance(
+        assert calibrate_mode != CalibrationMode.FAST_RAW or isinstance(
             quantized_op, QuantizedMixingOp
         )
 
@@ -992,7 +999,7 @@ class PostTrainingAffineQuantization(ONNXConverter):
 
         opts = QuantizationOptions(
             n_bits,
-            is_signed=False,
+            is_signed=is_signed,
         )
         return opts
 
@@ -1054,7 +1061,10 @@ class PostTrainingQATImporter(ONNXConverter):
                 should produce the quantized values used in calibration. If none are given,
                 the calibration will generate the quantized values with the layer's input
                 calibration options.
-
+            fast_calibration(bool): whether to perform calibration without
+                computing the result of the operation on calibration data, but
+                rather by using analytical formulas to determine the output
+                quantization parameters
         Returns:
             numpy.ndarray: calibration data for the following operators
         """
