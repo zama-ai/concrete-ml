@@ -303,10 +303,11 @@ class ONNXConverter:
                 should produce the quantized values used in calibration. If none are given,
                 the calibration will generate the quantized values with the layer's input
                 calibration options.
-            fast_calibration(bool): whether to perform calibration without
+            fast_calibration (bool): whether to perform calibration without
                 computing the result of the operation on calibration data, but
                 rather by using analytical formulas to determine the output
                 quantization parameters
+
         Returns:
             numpy.ndarray: calibration data for the following operators
         """
@@ -917,10 +918,11 @@ class PostTrainingAffineQuantization(ONNXConverter):
                 should produce the quantized values used in calibration. If none are given,
                 the calibration will generate the quantized values with the layer's input
                 calibration options.
-            fast_calibration(bool): whether to perform calibration without
+            fast_calibration (bool): whether to perform calibration without
                 computing the result of the operation on calibration data, but
                 rather by using analytical formulas to determine the output
                 quantization parameters
+
         Returns:
             numpy.ndarray: calibration data for the following operators
         """
@@ -929,7 +931,7 @@ class PostTrainingAffineQuantization(ONNXConverter):
         # only a single Gemm layer
         calibrate_mode = CalibrationMode.FAST_RAW if fast_calibration else CalibrationMode.QUANTIZED
 
-        # Only mixing ops (e.g. gemm/add) can use fast calibrate (which doesn't call the q_impl)
+        # Only mixing ops (e.g., gemm/add) can use fast calibrate (which doesn't call the q_impl)
         assert calibrate_mode != CalibrationMode.FAST_RAW or isinstance(
             quantized_op, QuantizedMixingOp
         )
@@ -1061,10 +1063,11 @@ class PostTrainingQATImporter(ONNXConverter):
                 should produce the quantized values used in calibration. If none are given,
                 the calibration will generate the quantized values with the layer's input
                 calibration options.
-            fast_calibration(bool): whether to perform calibration without
+            fast_calibration (bool): whether to perform calibration without
                 computing the result of the operation on calibration data, but
                 rather by using analytical formulas to determine the output
                 quantization parameters
+
         Returns:
             numpy.ndarray: calibration data for the following operators
         """

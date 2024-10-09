@@ -239,6 +239,9 @@ class OptimizedLinearLayerExecutor:
             if return_2d:
                 y = numpy.squeeze(y)
 
+        # Only single outputs are supported
+        assert isinstance(y, numpy.ndarray)
+
         return y
 
 
