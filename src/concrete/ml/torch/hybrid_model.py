@@ -128,7 +128,7 @@ class OptimizedLinearLayerExecutor:
         self.poly_size = glwe_crypto_params["packing_ks_polynomial_size"]
         self.calibrated_max_bits = glwe_crypto_params["bits_reserved_for_computation"]
 
-    def forward(self, x: numpy.ndarray, q_module: QuantizedModule):
+    def forward(self, x: numpy.ndarray, q_module: QuantizedModule, fhe: HybridFHEMode):
         # Extract all the layers in this quantized module
         # and check that there is only one, as only a single linear layer QM
         # can be optimized
@@ -146,48 +146,51 @@ class OptimizedLinearLayerExecutor:
 
         q_x = q_module.quantize_input(x)
 
-        return_2d = False
-        if q_x.ndim == 2:
-            return_2d = True
-            q_x = numpy.expand_dims(q_x, -1)
-        q_x = numpy.ascontiguousarray(q_x.astype(numpy.uint64))
+        if fhe == HybridFHEMode.DISABLE:
+            y = q_module.dequantize_output(*to_tuple(numpy.matmul(q_x, q_weight)))
+        else:
+            return_2d = False
+            if q_x.ndim == 2:
+                return_2d = True
+                q_x = numpy.expand_dims(q_x, -1)
+            q_x = numpy.ascontiguousarray(q_x.astype(numpy.uint64))
 
-        assert q_weight.ndim == 2
-        result_buffer = numpy.zeros(
-            (q_x.shape[0], q_x.shape[1], q_weight.shape[1]), dtype=numpy.uint64
-        )
-
-        for idx, q_x_sample in enumerate(q_x):
-
-            q_weight = q_weight.astype(numpy.uint64)
-            #        q_weight = q_weight.T
-
-            num_valid_glwe_values_in_last_ciphertext = (
-                q_weight.shape[1] % self.poly_size or self.poly_size
+            assert q_weight.ndim == 2
+            result_buffer = numpy.zeros(
+                (q_x.shape[0], q_x.shape[1], q_weight.shape[1]), dtype=numpy.uint64
             )
 
-            ciphertext = fhext.encrypt_matrix(
-                pkey=self.private_key, crypto_params=self.glwe_crypto_params, data=q_x_sample
-            )
-            encrypted_result = fhext.matrix_multiplication(
-                encrypted_matrix=ciphertext,
-                data=q_weight.astype(numpy.uint64),
-                compression_key=self.compression_key,
-            )
-            q_result = fhext.decrypt_matrix(
-                encrypted_result,
-                self.private_key,
-                self.glwe_crypto_params,
-                num_valid_glwe_values_in_last_ciphertext,
-            )
-            q_result = q_result.astype(numpy.int64)
+            for idx, q_x_sample in enumerate(q_x):
 
-            result_buffer[idx, :] = q_result
+                q_weight = q_weight.astype(numpy.uint64)
+                #        q_weight = q_weight.T
 
-        y = q_module.dequantize_output(*to_tuple(result_buffer))
+                num_valid_glwe_values_in_last_ciphertext = (
+                    q_weight.shape[1] % self.poly_size or self.poly_size
+                )
 
-        if return_2d:
-            y = y.squeeze()
+                ciphertext = fhext.encrypt_matrix(
+                    pkey=self.private_key, crypto_params=self.glwe_crypto_params, data=q_x_sample
+                )
+                encrypted_result = fhext.matrix_multiplication(
+                    encrypted_matrix=ciphertext,
+                    data=q_weight.astype(numpy.uint64),
+                    compression_key=self.compression_key,
+                )
+                q_result = fhext.decrypt_matrix(
+                    encrypted_result,
+                    self.private_key,
+                    self.glwe_crypto_params,
+                    num_valid_glwe_values_in_last_ciphertext,
+                )
+                q_result = q_result.astype(numpy.int64)
+
+                result_buffer[idx, :] = q_result
+
+            y = q_module.dequantize_output(*to_tuple(result_buffer))
+
+            if return_2d:
+                y = y.squeeze()
 
         if len(weight_bias) > 1:
             bias = weight_bias[1].values
@@ -339,10 +342,16 @@ class RemoteModule(nn.Module):
         }:
             assert self.private_q_module is not None
             if self.optimized_linear_layer_executor:
+                assert_true(
+                    not self.fhe_local_mode == HybridFHEMode.SIMULATE,
+                    "When the HybridFHEModel is instantiated with only "
+                    "linear remote layers, fhe=simulate is not supported for now.",
+                )
+
                 # Delegate to the optimized GLWE executor
                 y = torch.Tensor(
                     self.optimized_linear_layer_executor.forward(
-                        x.detach().numpy(), self.private_q_module
+                        x.detach().numpy(), self.private_q_module, self.fhe_local_mode
                     )
                 )
             else:
