@@ -729,7 +729,8 @@ check_links:
 		--ignore-url=https://www.conventionalcommits.org/en/v1.0.0/ \
 		--ignore-url=https://www.openml.org \
 		--ignore-url=https://github.com/zama-ai/concrete-ml-internal/issues \
-		--ignore-url=https://arxiv.org
+		--ignore-url=https://arxiv.org \
+		--ignore-url=https://www.kdnuggets.com
 
 .PHONY: actionlint # Linter for our github actions
 actionlint:
