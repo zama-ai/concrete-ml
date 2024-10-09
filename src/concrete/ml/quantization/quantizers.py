@@ -689,8 +689,6 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
         # It is possible to disable this clipping step for specific cases such as quantizing values
         # within fully-leveled circuits (where not bounds are needed)
         if self.is_qat and not self.no_clipping:
-            # Only pre-computed (Brevitas) QAT is supported
-            assert self.is_precomputed_qat is True
             # Offset is either 2^(n-1) or 0, but for narrow range
             # the values should be clipped to [2^(n-1)+1, .. 2^(n-1)-1], so we add
             # one to the minimum value for narrow range
