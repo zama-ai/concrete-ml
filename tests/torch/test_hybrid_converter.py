@@ -99,12 +99,15 @@ def run_hybrid_llm_test(
             )
 
     # Check we can run the simulate locally
-    logits_simulate = hybrid_model(inputs, fhe="simulate").logits
+    logits_simulate = None
+    if has_pbs:
+        logits_simulate = hybrid_model(inputs, fhe="simulate").logits
+    else:
+        with pytest.raises(AssertionError, match=".*fhe=simulate is not supported.*"):
+            hybrid_model(inputs, fhe="simulate")
+
     logits_disable = hybrid_model(inputs, fhe="disable").logits
     logits_original = hybrid_model(inputs, fhe="torch").logits
-
-    # Ensure logits_disable and logits_original return the same output for the logits
-    assert torch.allclose(logits_disable, logits_simulate, atol=1e-7), "Outputs do not match!"
 
     # Compare the topk accuracy of the FHE simulate circuit vs. the original.
     k = 5
@@ -114,21 +117,25 @@ def run_hybrid_llm_test(
 
     # Get the topk indices for logits_disable and logits_simulate
     topk_disable = logits_disable.topk(k, dim=-1).indices
-    topk_simulate = logits_simulate.topk(k, dim=-1).indices
     topk_original = logits_original.topk(k, dim=-1).indices
 
     # Compute accuracy of disable and simulate by checking
     # how many labels correspond with the topk_original
     accuracy_disable = (topk_disable == topk_original).float().mean().item()
-    accuracy_simulate = (topk_simulate == topk_original).float().mean().item()
-
+    # Ensure logits_disable and logits_original return the same output for the logits
     # Assert that both accuracy values are above the expected threshold
     assert (
         accuracy_disable >= expected_accuracy
     ), f"Disable accuracy {accuracy_disable:.4f} is below the expected {expected_accuracy:.4f}"
-    assert (
-        accuracy_simulate >= expected_accuracy
-    ), f"Simulate accuracy {accuracy_simulate:.4f} is below the expected {expected_accuracy:.4f}"
+
+    if logits_simulate:
+        assert torch.allclose(logits_disable, logits_simulate, atol=1e-7), "Outputs do not match!"
+        topk_simulate = logits_simulate.topk(k, dim=-1).indices
+        accuracy_simulate = (topk_simulate == topk_original).float().mean().item()
+        assert accuracy_simulate >= expected_accuracy, (
+            f"Simulate accuracy {accuracy_simulate:.4f} is below "
+            f"the expected {expected_accuracy:.4f}"
+        )
 
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_dir_path = Path(temp_dir)
@@ -298,7 +305,7 @@ def test_hybrid_glwe_correctness(n_hidden):
     # were linear and were replaced with the GLWE backend
     assert hybrid_local._all_layers_are_pure_linear  # pylint: disable=protected-access
 
-    hybrid_local.compile_model(x1_train, n_bits=12)
+    hybrid_local.compile_model(x1_train, n_bits=10)
 
     y_qm = hybrid_local(x1_test, fhe="disable").numpy()
     y_hybrid_torch = hybrid_local(x1_test, fhe="torch").detach().numpy()
@@ -313,13 +320,17 @@ def test_hybrid_glwe_correctness(n_hidden):
     assert numpy.all(numpy.allclose(y_torch, y_hybrid_torch, rtol=1, atol=0.001))
 
     # The clear quantization vs fp32 test has more tolerance
-    diff = numpy.abs(y_torch - y_glwe) > 0.1
-    print(y_torch[diff])
-    print(y_glwe[diff])
-    print(y_qm[diff])
+    threshold_fhe = 0.01
 
-    assert numpy.all(numpy.allclose(y_qm, y_glwe, rtol=1, atol=0.1))
-    assert numpy.all(numpy.allclose(y_torch, y_glwe, rtol=1, atol=0.1))
+    diff = numpy.abs(y_torch - y_glwe) > threshold_fhe
+    if numpy.any(diff):
+        print(f"Value discrepancy detected for GLWE backend, with epsilon={threshold_fhe}")
+        print("Model output (torch fp32)", y_torch[diff])
+        print("Model output (glwe)", y_glwe[diff])
+        print("Model output (quantized clear)", y_qm[diff])
+
+    assert numpy.all(numpy.allclose(y_qm, y_glwe, rtol=1, atol=threshold_fhe))
+    assert numpy.all(numpy.allclose(y_torch, y_glwe, rtol=1, atol=threshold_fhe))
 
     # Check accuracy between fp32 and glwe
     assert numpy.abs(acc_fp32 - acc_glwe) < 0.01
