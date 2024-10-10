@@ -65,4 +65,3 @@ unfoldNd, 0.2.2, MIT License
 urllib3, 2.2.3, MIT License
 xgboost, 1.6.2, Apache Software License
 z3-solver, 4.13.0.0, MIT License
-zipp, 3.20.2, MIT License
