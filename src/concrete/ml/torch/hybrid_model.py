@@ -135,13 +135,19 @@ class OptimizedLinearLayerExecutor:
     ):
         self.compression_key = compression_key
         self.private_key = private_key
-        self.glwe_crypto_params = (
-            fhext.MatmulCryptoParameters.deserialize(  # pylint: disable=no-member
-                json.dumps(glwe_crypto_params)
+
+        self.glwe_crypto_params = None
+        self.poly_size = None
+        self.calibrated_max_bits = None
+        if private_key is not None and compression_key is not None:
+            self.glwe_crypto_params = (
+                fhext.MatmulCryptoParameters.deserialize(  # pylint: disable=no-member
+                    json.dumps(glwe_crypto_params)
+                )
             )
-        )
-        self.poly_size = glwe_crypto_params["packing_ks_polynomial_size"]
-        self.calibrated_max_bits = glwe_crypto_params["bits_reserved_for_computation"]
+
+            self.poly_size = glwe_crypto_params["packing_ks_polynomial_size"]
+            self.calibrated_max_bits = glwe_crypto_params["bits_reserved_for_computation"]
 
     def forward(
         self, x: numpy.ndarray, q_module: QuantizedModule, fhe: HybridFHEMode
@@ -183,9 +189,6 @@ class OptimizedLinearLayerExecutor:
         q_weight = weight_bias[0].qvalues
 
         q_weight = numpy.transpose(q_weight) if transpose_inputs2 else q_weight
-        num_valid_glwe_values_in_last_ciphertext = (
-            q_weight.shape[1] % self.poly_size or self.poly_size
-        )
 
         q_x = q_module.quantize_input(x)
         assert q_x is not None
@@ -197,8 +200,15 @@ class OptimizedLinearLayerExecutor:
             # There is no need to add the bias to the de-quantized values
             # as the bias is already included in the output quantizer
             # zero-point, in the analytical calibration
+            q_x = q_x.astype(numpy.float32)
+            q_weight = q_weight.astype(numpy.float32)
             y = q_module.dequantize_output(*to_tuple(numpy.matmul(q_x, q_weight)))
         else:
+            # Need to slice the last GLWE (this will be improved in later cml-extensions)
+            num_valid_glwe_values_in_last_ciphertext = (
+                q_weight.shape[1] % self.poly_size or self.poly_size
+            )
+
             # The GLWE backend needs uint64 encoding for both neg/pos values
             q_weight = q_weight.astype(numpy.uint64)
 
@@ -626,12 +636,12 @@ class HybridFHEModel:
                     "linear remote layers, fhe=simulate is not supported for now.",
                 )
 
-            if fhe_mode in (HybridFHEMode.EXECUTE, HybridFHEMode.REMOTE):
+            if fhe_mode in (HybridFHEMode.EXECUTE, HybridFHEMode.REMOTE, HybridFHEMode.DISABLE):
                 # If all layers are pure linear, enable the GLWE optimization for all layers
                 # and generate an encryption and compression key for all layers
                 # as they share crypto-parameters
                 private_key, compression_key = None, None
-                if self._all_layers_are_pure_linear:
+                if fhe_mode != HybridFHEMode.DISABLE and self._all_layers_are_pure_linear:
                     # pylint: disable-next=no-member
                     fhext_glwe_crypto_params = fhext.MatmulCryptoParameters.deserialize(
                         json.dumps(self.default_crypto_params_glwe)

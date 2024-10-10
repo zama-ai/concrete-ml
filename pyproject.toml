@@ -155,6 +155,7 @@ filterwarnings = [
     "ignore:You are using `torch.load`*",
     "ignore:open_text is deprecated.*:DeprecationWarning",
     "ignore:read_text is deprecated.*:DeprecationWarning",
+    "ignore:open_binary is deprecated.*:DeprecationWarning",
 ]
 
 [tool.semantic_release]

@@ -47,9 +47,9 @@ from concrete.ml.pytest.torch_models import (
     PaddingNet,
     ShapeOperationsNet,
     SimpleNet,
-    SimpleQAT,
     SingleMixNet,
     StepActivationModule,
+    StepFunctionPTQ,
     TinyQATCNN,
     TorchDivide,
     TorchMultiply,
@@ -603,7 +603,7 @@ def test_compile_torch_or_onnx_activations(
 @pytest.mark.parametrize(
     "model",
     [
-        pytest.param(SimpleQAT),
+        pytest.param(StepFunctionPTQ),
     ],
 )
 @pytest.mark.parametrize(
@@ -629,7 +629,7 @@ def test_compile_torch_qat(
 
     # Import these networks from torch directly
     is_onnx = False
-    qat_bits = n_bits
+    qat_bits = 0
 
     compile_and_test_torch_or_onnx(
         input_output_feature,
@@ -955,7 +955,7 @@ def test_qat_import_check(default_configuration, check_is_good_execution_for_cml
     with pytest.raises(ValueError, match=error_message_pattern):
         compile_and_test_torch_or_onnx(
             10,
-            partial(SimpleQAT, n_bits=6, disable_bit_check=True),
+            partial(StepFunctionPTQ, n_bits=6, disable_bit_check=True),
             nn.ReLU,
             qat_bits,
             default_configuration,

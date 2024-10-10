@@ -560,7 +560,9 @@ class QuantizedOp:
         # but when parsing the ONNX graph, some options can be overwritten. Thus
         # when evaluating QAT layers we ignore one of these options to allow the
         # override.
-        if quant_opts.is_equal(input_.quantizer.quant_options, ignore_sign_qat=True):
+        if (
+            input_.quantizer.quant_options.is_precomputed_qat
+        ):  # quant_opts.is_equal(, ignore_sign_qat=True):
             # Pass-through the input quantizer when the input is already quantized in
             # the manner that this op requires: this makes the op use the qvalues directly,
             # in q_impl and will avoid a TLU to re-quantize.

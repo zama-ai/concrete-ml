@@ -852,7 +852,7 @@ class TinyQATCNN(nn.Module):
         return x
 
 
-class SimpleQAT(nn.Module):
+class StepFunctionPTQ(nn.Module):
     """Torch model implements a step function that needs Greater, Cast and Where."""
 
     def __init__(self, input_output, activation_function, n_bits=2, disable_bit_check=False):
@@ -1356,17 +1356,17 @@ class ConcatFancyIndexing(nn.Module):
         super().__init__()
 
         self.n_blocks = n_blocks
-        self.quant_1 = qnn.QuantIdentity(bit_width=n_bits, return_quant_tensor=True)
+        self.quant_1 = qnn.QuantIdentity(bit_width=n_bits, return_quant_tensor=False)
         self.fc1 = qnn.QuantLinear(input_shape, hidden_shape, bias=False, weight_bit_width=n_bits)
 
-        self.quant_concat = qnn.QuantIdentity(bit_width=n_bits, return_quant_tensor=True)
+        self.quant_concat = qnn.QuantIdentity(bit_width=n_bits, return_quant_tensor=False)
 
-        self.quant_2 = qnn.QuantIdentity(bit_width=n_bits, return_quant_tensor=True)
+        self.quant_2 = qnn.QuantIdentity(bit_width=n_bits, return_quant_tensor=False)
         self.fc2 = qnn.QuantLinear(
             hidden_shape * self.n_blocks, hidden_shape, bias=True, weight_bit_width=n_bits
         )
 
-        self.quant_3 = qnn.QuantIdentity(bit_width=n_bits, return_quant_tensor=True)
+        self.quant_3 = qnn.QuantIdentity(bit_width=n_bits, return_quant_tensor=False)
         self.fc4 = qnn.QuantLinear(hidden_shape, output_shape, bias=True, weight_bit_width=n_bits)
 
     def forward(self, x):
@@ -1381,9 +1381,9 @@ class ConcatFancyIndexing(nn.Module):
         x_pre = []
 
         for i in range(self.n_blocks):
-            x_block = x[:, i, :]
-            q1_out = self.quant_1(x_block)
-            fc1_out = self.fc1(q1_out)
+            q_x = self.quant_1(x)
+            q_x_block = q_x[:, i, :]
+            fc1_out = self.fc1(q_x_block)
             q_concat_out = self.quant_concat(fc1_out)
 
             x_pre.append(q_concat_out)
