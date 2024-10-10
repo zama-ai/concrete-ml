@@ -1,16 +1,28 @@
 """Implement the conversion of a torch model to a hybrid fhe/torch inference."""
 
+# pylint: disable=too-many-lines
 import ast
+import contextvars
 import enum
 import io
+import json
 import sys
 import time
 import uuid
 from abc import abstractmethod
 from collections import defaultdict
+from copy import deepcopy
 from functools import lru_cache
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
+
+try:
+    import concrete_ml_extensions as fhext
+
+    _HAS_GLWE_BACKEND = True
+except ImportError:  # pragma: no cover
+    fhext = None
+    _HAS_GLWE_BACKEND = False
 
 import numpy
 import requests
@@ -19,14 +31,17 @@ from brevitas.quant_tensor import QuantTensor
 from concrete.fhe import Configuration
 from torch import nn
 
-from ..common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE
+from ..common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE, to_tuple
 from ..deployment.fhe_client_server import FHEModelClient, FHEModelDev, FHEModelServer
+from ..quantization.post_training import OPS_WITH_GLWE_BACKEND_SUPPORT
 from .compile import (
     QuantizedModule,
+    build_quantized_module,
     compile_brevitas_qat_model,
     compile_torch_model,
     has_any_qnn_layers,
 )
+from .lora import BackwardModuleLinear, ForwardModuleLinear
 
 
 class HybridFHEMode(enum.Enum):
@@ -109,6 +124,152 @@ def convert_conv1d_to_linear(layer_or_module):
     return layer_or_module
 
 
+class OptimizedLinearLayerExecutor:
+    """GLWE execution helper for pure linear layers."""
+
+    def __init__(
+        self,
+        glwe_crypto_params: Dict[str, Union[int, float]],
+        private_key=None,
+        compression_key=None,
+    ):
+        self.compression_key = compression_key
+        self.private_key = private_key
+
+        self.glwe_crypto_params = None
+        self.poly_size = None
+        self.calibrated_max_bits = None
+        if private_key is not None and compression_key is not None:
+            self.glwe_crypto_params = (
+                fhext.MatmulCryptoParameters.deserialize(  # pylint: disable=no-member
+                    json.dumps(glwe_crypto_params)
+                )
+            )
+
+            self.poly_size = glwe_crypto_params["packing_ks_polynomial_size"]
+            self.calibrated_max_bits = glwe_crypto_params["bits_reserved_for_computation"]
+
+    def forward(
+        self, x: numpy.ndarray, q_module: QuantizedModule, fhe: HybridFHEMode
+    ) -> numpy.ndarray:
+        """Perform the inference of this linear layer.
+
+        Args:
+            x (numpy.ndarray): inputs or previous layer activations
+            q_module (QuantizedModule): quantized module that contains the layer which
+                is executed through this helper. Stores quantized weights and input
+                and output quantizers
+            fhe (HybridFHEMode): execution mode, can be 'disable' or 'execute'
+
+        Returns:
+            numpy.ndarray: result of applying the linear layer
+        """
+
+        # Extract all the layers in this quantized module
+        # and check that there is only one, as only a single linear layer QM
+        # can be optimized
+        layers_in_module = list(q_module.quant_layers_dict.values())
+        assert len(layers_in_module) == 1
+
+        # Get the single linear op in this module
+        quantized_linear_op = layers_in_module[0][1]
+        assert isinstance(quantized_linear_op, tuple(OPS_WITH_GLWE_BACKEND_SUPPORT))
+
+        # Use default false so we also support MatMul impl, MatMul does not have these flags
+        transpose_inputs1 = quantized_linear_op.attrs.get("transA", False)
+        transpose_inputs2 = quantized_linear_op.attrs.get("transB", False)
+
+        # Extract the weights and bias in this single linear layer
+        weight_bias = list(quantized_linear_op.constant_inputs.values())
+
+        # Make sure the weights used symmetric quantization
+        assert weight_bias[0].quantizer.quant_params.zero_point == 0
+
+        # Retrieve quantized weights
+        q_weight = weight_bias[0].qvalues
+
+        q_weight = numpy.transpose(q_weight) if transpose_inputs2 else q_weight
+
+        q_x = q_module.quantize_input(x)
+        assert q_x is not None
+        assert isinstance(q_x, numpy.ndarray)
+
+        q_x = numpy.transpose(q_x) if transpose_inputs1 else q_x
+
+        if fhe == HybridFHEMode.DISABLE:
+            # There is no need to add the bias to the de-quantized values
+            # as the bias is already included in the output quantizer
+            # zero-point, in the analytical calibration
+            q_x = q_x.astype(numpy.float32)
+            q_weight = q_weight.astype(numpy.float32)
+            y = q_module.dequantize_output(*to_tuple(numpy.matmul(q_x, q_weight)))
+        else:
+            # Need to slice the last GLWE (this will be improved in later cml-extensions)
+            num_valid_glwe_values_in_last_ciphertext = (
+                q_weight.shape[1] % self.poly_size or self.poly_size
+            )
+
+            # The GLWE backend needs uint64 encoding for both neg/pos values
+            q_weight = q_weight.astype(numpy.uint64)
+
+            # Some models have (B, C, H)-size activations,
+            # for example LLMs: B=batch size, C=context length, H=hidden dime
+            # while other models only have (B, H)-size activations.
+            # Add a B=1 dimension if needed
+            return_2d = False
+            if q_x.ndim == 2:
+                return_2d = True
+                q_x = numpy.expand_dims(q_x, 0)
+
+            # The GLWE backend needs contiguous memory uint64 encoding for both neg/pos values
+            q_x = numpy.ascontiguousarray(q_x.astype(numpy.uint64))
+
+            assert q_weight.ndim == 2
+            result_buffer = numpy.zeros(
+                (q_x.shape[0], q_x.shape[1], q_weight.shape[1]), dtype=numpy.int64
+            )
+
+            for idx, q_x_sample in enumerate(q_x):
+
+                ciphertext = fhext.encrypt_matrix(  # pylint: disable=no-member
+                    pkey=self.private_key, crypto_params=self.glwe_crypto_params, data=q_x_sample
+                )
+                encrypted_result = fhext.matrix_multiplication(  # pylint: disable=no-member
+                    encrypted_matrix=ciphertext,
+                    data=q_weight.astype(numpy.uint64),
+                    compression_key=self.compression_key,
+                )
+                q_result = fhext.decrypt_matrix(  # pylint: disable=no-member
+                    encrypted_result,
+                    self.private_key,
+                    self.glwe_crypto_params,
+                    num_valid_glwe_values_in_last_ciphertext,
+                )
+                q_result = q_result.astype(numpy.int64)
+
+                result_buffer[idx, :] = q_result
+
+            # There is no need to add the bias to the de-quantized values
+            # as the bias is already included in the output quantizer
+            # zero-point, in the analytical calibration
+            y = q_module.dequantize_output(*to_tuple(result_buffer))
+
+            if return_2d:
+                y = numpy.squeeze(y)
+
+        # Only single outputs are supported
+        assert isinstance(y, numpy.ndarray)
+
+        return y
+
+
+# This module member is instantiated by the Hybrid FHE model
+# when hybrid FHE forward is called and the GLWE backend is available
+_optimized_linear_executor: contextvars.ContextVar[Optional[OptimizedLinearLayerExecutor]] = (
+    contextvars.ContextVar("optimized_linear_executor")
+)
+
+
 # pylint: disable-next=too-many-instance-attributes
 class RemoteModule(nn.Module):
     """A wrapper class for the modules to be evaluated remotely with FHE."""
@@ -120,6 +281,7 @@ class RemoteModule(nn.Module):
         module_name: Optional[str] = None,
         model_name: Optional[str] = None,
         verbose: int = 0,
+        optimized_linear_execution: bool = False,
     ):
         super().__init__()
         self.private_module: Optional[nn.Module] = module
@@ -134,6 +296,7 @@ class RemoteModule(nn.Module):
         self.module_name: Optional[str] = module_name
         self.model_name: Optional[str] = model_name
         self.verbose = verbose
+        self.optimized_linear_execution = optimized_linear_execution
 
     def init_fhe_client(
         self, path_to_client: Optional[Path] = None, path_to_keys: Optional[Path] = None
@@ -248,12 +411,25 @@ class RemoteModule(nn.Module):
             HybridFHEMode.TORCH,
             None,
         }:
-            # Using quantized module
             assert self.private_q_module is not None
-            y = torch.Tensor(
-                self.private_q_module.forward(x.detach().numpy(), fhe=self.fhe_local_mode.value)
-            )
 
+            try:
+                optimized_linear_layer_executor = _optimized_linear_executor.get()
+            except LookupError:
+                optimized_linear_layer_executor = None
+
+            if optimized_linear_layer_executor:
+                # Delegate to the optimized GLWE executor
+                y = torch.Tensor(
+                    optimized_linear_layer_executor.forward(
+                        x.detach().numpy(), self.private_q_module, self.fhe_local_mode
+                    )
+                )
+            else:
+                # Delegate to the quantized module for all fhe modes
+                y = torch.Tensor(
+                    self.private_q_module.forward(x.detach().numpy(), fhe=self.fhe_local_mode.value)
+                )
         elif self.fhe_local_mode == HybridFHEMode.CALIBRATE:
             # Calling torch + gathering calibration data
             assert self.private_module is not None
@@ -263,7 +439,16 @@ class RemoteModule(nn.Module):
 
         elif self.fhe_local_mode == HybridFHEMode.REMOTE:  # pragma:no cover
             # Remote call
+            try:
+                optimized_linear_layer_executor = _optimized_linear_executor.get()
+            except LookupError:
+                optimized_linear_layer_executor = None
+
+            assert optimized_linear_layer_executor is None, (
+                "Remote optimized linear layers " "are not yet implemented"
+            )
             y = self.remote_call(x)
+
         elif self.fhe_local_mode == HybridFHEMode.TORCH:
             # Using torch layers
             assert self.private_module is not None
@@ -336,6 +521,7 @@ class RemoteModule(nn.Module):
         return torch.Tensor(numpy.array(inferences)).to(device=base_device)
 
 
+# pylint: disable-next=too-many-instance-attributes
 class HybridFHEModel:
     """Convert a model to a hybrid model.
 
@@ -364,7 +550,7 @@ class HybridFHEModel:
         if not isinstance(model, torch.nn.Module):
             raise TypeError("The model must be a PyTorch or Brevitas model.")
 
-        self.model = model
+        self.model = deepcopy(model)
         self.module_names = [module_names] if isinstance(module_names, str) else module_names
         self.server_remote_address = server_remote_address
         self.private_modules: Dict[str, nn.Module] = {
@@ -375,25 +561,45 @@ class HybridFHEModel:
         self.configuration: Optional[Configuration] = None
         self.model_name = model_name
         self.verbose = verbose
+
+        self.default_crypto_params_glwe = (
+            json.loads(fhext.default_params())  # pylint: disable=no-member
+            if _HAS_GLWE_BACKEND
+            else None
+        )
+
         self._replace_modules()
 
     def _replace_modules(self):
         """Replace the private modules in the model with remote layers."""
 
+        self._all_layers_are_pure_linear = True
         for module_name in self.module_names:
-
             # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3858
             # Conv1d introduce reshaping operations which adds more TLU
             self.private_modules[module_name] = convert_conv1d_to_linear(
                 self.private_modules[module_name]
             )
 
+            # Determine if this remote module is a pure linear one
+            # that is supported for compressed encrypted matmul
+            # Conv1D will have been converted to Linear by the line above
+            is_pure_linear_layer = isinstance(
+                self.private_modules[module_name],
+                (nn.Linear, ForwardModuleLinear, BackwardModuleLinear),
+            )
+            if not is_pure_linear_layer:
+                self._all_layers_are_pure_linear = False
+
+        for module_name in self.module_names:
+            # Create the optimized glwe linear layer executor if needed
             remote_module = RemoteModule(
                 module=self.private_modules[module_name],
                 server_remote_address=self.server_remote_address,
                 module_name=module_name,
                 model_name=self.model_name,
                 verbose=self.verbose,
+                optimized_linear_execution=self._all_layers_are_pure_linear,
             )
 
             self.remote_modules[module_name] = remote_module
@@ -414,9 +620,50 @@ class HybridFHEModel:
 
         Returns:
             torch.Tensor: The output tensor.
+
+        Raises:
+            AssertionError: if the execution mode is not supported
         """
         self.set_fhe_mode(fhe)
-        return self.model(x)
+
+        # Validate the FHE mode
+        fhe_mode = HybridFHEMode(fhe)
+
+        if _HAS_GLWE_BACKEND and self._all_layers_are_pure_linear:
+            if fhe_mode == HybridFHEMode.SIMULATE:
+                raise AssertionError(
+                    "When the HybridFHEModel is instantiated with only "
+                    "linear remote layers, fhe=simulate is not supported for now.",
+                )
+
+            if fhe_mode in (HybridFHEMode.EXECUTE, HybridFHEMode.REMOTE, HybridFHEMode.DISABLE):
+                # If all layers are pure linear, enable the GLWE optimization for all layers
+                # and generate an encryption and compression key for all layers
+                # as they share crypto-parameters
+                private_key, compression_key = None, None
+                if fhe_mode != HybridFHEMode.DISABLE and self._all_layers_are_pure_linear:
+                    # pylint: disable-next=no-member
+                    fhext_glwe_crypto_params = fhext.MatmulCryptoParameters.deserialize(
+                        json.dumps(self.default_crypto_params_glwe)
+                    )
+                    # pylint: disable-next=no-member
+                    private_key, compression_key = fhext.create_private_key(
+                        fhext_glwe_crypto_params
+                    )
+
+                _optimized_linear_executor.set(
+                    OptimizedLinearLayerExecutor(
+                        self.default_crypto_params_glwe,
+                        private_key=private_key,
+                        compression_key=compression_key,
+                    )
+                )
+
+        result = self.model(x)
+
+        _optimized_linear_executor.set(None)
+
+        return result
 
     def __call__(self, x: torch.Tensor, fhe: str = "disable") -> torch.Tensor:
         """Call method to run the model locally with a fhe mode.
@@ -515,15 +762,25 @@ class HybridFHEModel:
                     device=device,
                 )
             else:
-                self.private_q_modules[name] = compile_torch_model(
-                    self.private_modules[name],
-                    calibration_data_tensor,
-                    n_bits=n_bits,
-                    rounding_threshold_bits=rounding_threshold_bits,
-                    configuration=configuration,
-                    p_error=p_error,
-                    device=device,
-                )
+                # If all layers are linear and the GLWE backend is available
+                # then simply quantize the model without compiling with
+                # Concrete Python.
+                if self._all_layers_are_pure_linear and _HAS_GLWE_BACKEND:
+                    self.private_q_modules[name] = build_quantized_module(
+                        self.private_modules[name],
+                        calibration_data_tensor,
+                        n_bits=n_bits,
+                        rounding_threshold_bits=rounding_threshold_bits,
+                    )
+                else:
+                    self.private_q_modules[name] = compile_torch_model(
+                        self.private_modules[name],
+                        calibration_data_tensor,
+                        n_bits=n_bits,
+                        rounding_threshold_bits=rounding_threshold_bits,
+                        configuration=configuration,
+                        p_error=p_error,
+                    )
 
             self.remote_modules[name].private_q_module = self.private_q_modules[name]
 
@@ -573,7 +830,14 @@ class HybridFHEModel:
         torch.save(self.model.state_dict(), complete_model_path.resolve())
 
         def clear_private_info(module):
-            for attr in ["private_module", "calibration_data", "private_q_module"]:
+            # Remove private information
+            for attr in [
+                "private_module",
+                "calibration_data",
+                "private_q_module",
+                "private_key",
+                "compression_key",
+            ]:
                 if hasattr(module, attr):
                     setattr(module, attr, None)
 
@@ -585,10 +849,7 @@ class HybridFHEModel:
 
         # Save the model with a specific filename
         model_path = path / "model.pth"
-
-        # Save the model state dict due to a Brevitas issue
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4572
-        torch.save(self.model.state_dict(), model_path.resolve())
+        torch.save(self.model, model_path.resolve())
 
         # Save the FHE circuit in the same directory
         self._save_fhe_circuit(path, via_mlir=via_mlir)

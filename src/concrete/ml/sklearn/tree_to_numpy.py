@@ -201,7 +201,6 @@ def preprocess_tree_predictions(
         is_signed = is_symmetric = False
         quant_args["rmax"] = numpy.max(init_tensor)
         quant_args["rmin"] = 0
-        quant_args["uvalues"] = []
 
     q_y = QuantizedArray(
         n_bits=output_n_bits,
