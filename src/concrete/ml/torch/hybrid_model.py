@@ -492,6 +492,8 @@ class HybridFHEModel:
         """
         # We do a forward pass where we accumulate inputs to use for compilation
         self.set_fhe_mode(HybridFHEMode.CALIBRATE)
+
+        # Run the model to get the calibration data
         self.model(x)
 
         self.configuration = configuration

@@ -1,6 +1,6 @@
 """This module contains classes for LoRA (Low-Rank Adaptation) training and custom layers."""
 
-from typing import List
+from typing import List, Tuple, Union
 
 import torch
 
@@ -32,15 +32,16 @@ class LoraTraining(torch.nn.Module):
 
     Args:
         inference_model (torch.nn.Module): The base model to be fine-tuned.
-
+        n_layers_to_skip (int): Number of layers to skip. Linear layers that do not require
+            gradient to be propagated are skipped. Defaults to 1.
     """
 
-    def __init__(self, inference_model) -> None:
+    def __init__(self, inference_model, n_layers_to_skip: int = 1) -> None:
         super().__init__()
 
         self.inference_model = inference_model
 
-        self.replace_layers_with_custom(self.inference_model)
+        self.replace_layers_with_custom(self.inference_model, n_layers_to_skip)
 
         self.optimizer = None
         self.lr_scheduler = None
@@ -52,7 +53,7 @@ class LoraTraining(torch.nn.Module):
         self.run_optimizer = False
 
     @staticmethod
-    def replace_layers_with_custom(model: torch.nn.Module, skip_first: bool = True):
+    def replace_layers_with_custom(model: torch.nn.Module, n_layers_to_skip: int):
         """Replace linear layers with custom ones.
 
         This method replaces eligible linear layers in the model with custom layers
@@ -60,21 +61,19 @@ class LoraTraining(torch.nn.Module):
 
         Args:
             model (torch.nn.Module): The model to replace layers in.
-            skip_first (bool): Whether to skip the first eligible layer.
+            n_layers_to_skip (int): Number of layers to skip.
         """
-        # Flag to track if the first layer has been skipped
-        skipped = False
 
         def _replace(module: torch.nn.Module):
-            nonlocal skipped
+            nonlocal n_layers_to_skip
             for name, child in list(module.named_children()):
                 # Skip modules containing "lora" in their name
                 if "lora" in name:
                     continue
 
                 if isinstance(child, LINEAR_LAYERS):
-                    if skip_first and not skipped:
-                        skipped = True
+                    if n_layers_to_skip > 0:
+                        n_layers_to_skip -= 1
 
                         # Skip the first eligible layer
                         continue
@@ -129,11 +128,15 @@ class LoraTraining(torch.nn.Module):
             self.gradient_accumulation_steps = 1
             self.max_grad_norm = None
 
-    def forward(self, inputs):
+    def forward(
+        self, inputs: Tuple[torch.Tensor, ...]
+    ) -> Tuple[torch.Tensor, Union[torch.Tensor, None]]:
         """Forward pass of the LoRA training module.
 
         Args:
-            inputs: A tuple containing input tensors and labels.
+            inputs (tuple): A tuple containing the input tensors. The first two elements should be
+                            the features and the labels. Additional elements will be passed
+                            to the model as needed.
 
         Returns:
             A tuple containing the loss and gradient norm.
@@ -141,26 +144,41 @@ class LoraTraining(torch.nn.Module):
         Raises:
             ValueError: If the model does not return a loss when `self.loss_fn` is None.
         """
+        assert (
+            len(inputs) >= 2
+        ), "Expected at least two inputs in the tuple: inputs (x) and targets (y)"
+
         # Remove this once hybrid model supports multiple inputs
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4568
-        x, y = inputs
+        # Extract x (input features) and y (labels)
+        x, y = inputs[0], inputs[1]
 
-        # Forward pass
+        # Additional inputs, if any (e.g., attention_mask)
+        additional_inputs = inputs[2:]
+
+        # If no loss function is provided, we assume the model can compute the loss internally
         if self.loss_fn is None:
+            # Forward pass through the inference model with labels
+            outputs = self.inference_model(x, labels=y, *additional_inputs)
 
-            # Assume model computes loss internally
-            outputs = self.inference_model(x, labels=y)
-
-            # Use getattr to safely access the loss attribute
+            # Use getattr to safely access the loss attribute from the outputs
             loss = getattr(outputs, "loss", None)
             if loss is None:
                 raise ValueError(
                     "The model did not return a loss. Ensure that 'labels' are correctly provided."
                 )
         else:
-            outputs = self.inference_model(x)
+            # Forward pass through the inference model without labels
+            outputs = self.inference_model(x, *additional_inputs)
+
+            # If the outputs contain several keys, extract the logits
+            if isinstance(outputs, dict) and "logits" in outputs:
+                outputs = outputs["logits"]
+
+            # Compute the loss using the provided loss function
             loss = self.loss_fn(outputs, y)
 
+        # Scale the loss based on gradient accumulation
         loss = loss / self.gradient_accumulation_steps
 
         # Update gradients
@@ -188,7 +206,7 @@ class LoraTraining(torch.nn.Module):
         elif self.calibrate:
             self.inference_model.zero_grad()
 
-        return (loss, grad_norm)
+        return loss, grad_norm
 
     def toggle_calibrate(self, enable: bool = True):
         """Toggle calibration mode.
