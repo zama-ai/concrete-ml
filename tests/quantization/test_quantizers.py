@@ -115,6 +115,9 @@ def test_quantized_array_constructor():
     value_shape = (10,)
     values = numpy.random.uniform(0, 1, size=value_shape)
 
+    # Missing rmin/rmax, should be recomputed
+    QuantizedArray(2, values, stats=None)
+
     # Create an array with precomputed statistics
     qarr = QuantizedArray(2, values, stats=None, rmax=2, rmin=-1)
 
@@ -127,7 +130,7 @@ def test_quantized_array_constructor():
         QuantizedArray(2, values, stats=None, __InvalidParam=2)
 
     # Test an incomplete stats structure, should throw an error
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError, match="Missing quantizer parameter rmin, but rmax were given"):
         QuantizedArray(2, values, stats=None, rmax=2)
 
 

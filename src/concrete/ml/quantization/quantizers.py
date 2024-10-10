@@ -62,10 +62,17 @@ def fill_from_kwargs(obj, klass, accept_missing, **kwargs):
 
     # If the structure was created or modified by a call to this function, check
     # that it is completely filled
-    if obj is not None and not accept_missing:
-        for name in hints:
-            if getattr(obj, name) is None:
-                raise TypeError(f"Missing quantizer parameter {name}")
+    if obj is not None:
+        all_members_missing = all(getattr(obj, name) is None for name in hints)
+
+        if not accept_missing or (accept_missing and not all_members_missing):
+            missing_params_str = ",".join([name for name in hints if getattr(obj, name) is None])
+            given_params_str = ",".join([name for name in hints if getattr(obj, name) is not None])
+            if len(missing_params_str) > 0:
+                raise TypeError(
+                    f"Missing quantizer parameter {missing_params_str}, "
+                    f"but {given_params_str} were given"
+                )
 
     # Return the parameter structure and the kwargs with the used parameters removed
     return obj, kwargs
@@ -688,7 +695,7 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
         # (where quantizer parameters are available in ONNX layers).
         # It is possible to disable this clipping step for specific cases such as quantizing values
         # within fully-leveled circuits (where not bounds are needed)
-        if self.is_qat and not self.no_clipping:
+        if not self.no_clipping:
             # Offset is either 2^(n-1) or 0, but for narrow range
             # the values should be clipped to [2^(n-1)+1, .. 2^(n-1)-1], so we add
             # one to the minimum value for narrow range

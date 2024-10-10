@@ -648,7 +648,7 @@ class QuantizedOp:
         # QuantizedArrays, else we return the float32 values directly.
 
         curr_input_fill_idx = 0
-        for input_ in inputs:
+        for input_idx, input_ in enumerate(inputs):
             while prepared_inputs[curr_input_fill_idx] is not None:
                 curr_input_fill_idx += 1
 
@@ -669,6 +669,17 @@ class QuantizedOp:
                 # This is used by mixing (conv/gemm) or value re-arranging ops (reshape)
                 input_ = cast(QuantizedArray, input_)
                 new_input = self._prepare_quantized_input(input_)
+
+                # Check that the input quantizer is correct - that it can de-quantize
+                # values correctly. If it is not, it is added to the list of invalid tensors
+                # for which an error is raised
+                if (
+                    new_input.quantizer.is_qat
+                    and not input_.quantizer.is_precomputed_qat
+                    and self.error_tracker is not None
+                ):
+                    self.error_tracker.append(input_idx)
+
                 prepared_inputs[curr_input_fill_idx] = new_input
             else:
                 # This is usually used for univariate ops that are fused into TLUs

@@ -515,9 +515,13 @@ class ONNXConverter:
 
         constants: Set[str] = set(self.quant_params.keys())
 
+        # Check if the model has only GLWE supported linear layers.
+        # In this case, use analytical calibration which is much faster
         fast_calibration = True
         for node in graph.node:
             op_type = get_op_type(node)
+            if op_type == "Constant":
+                continue
             quantized_op_class = ONNX_OPS_TO_QUANTIZED_IMPL[op_type]
             if quantized_op_class not in OPS_WITH_GLWE_BACKEND_SUPPORT:
                 fast_calibration = False

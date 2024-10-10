@@ -13,6 +13,7 @@ from sklearn.datasets import make_moons
 from sklearn.model_selection import train_test_split
 from transformers import GPT2LMHeadModel, GPT2Tokenizer
 
+import concrete.ml.torch.hybrid_model
 from concrete.ml.pytest.torch_models import FCSmall, PartialQATModel
 from concrete.ml.torch.hybrid_model import (
     HybridFHEModel,
@@ -36,7 +37,7 @@ def test_tuple_serialization(tup):
     assert tup == underscore_str_to_tuple(tuple_to_underscore_str(tup))
 
 
-# pylint: disable=too-many-locals
+# pylint: disable=too-many-locals, too-many-branches
 def run_hybrid_llm_test(
     model: torch.nn.Module,
     inputs: torch.Tensor,
@@ -46,6 +47,7 @@ def run_hybrid_llm_test(
     has_pbs_reshape: bool,
     monkeypatch,
     transformers_installed,
+    glwe_backend_installed,
 ):
     """Run the test for any model with its private module names."""
 
@@ -55,11 +57,16 @@ def run_hybrid_llm_test(
         compress_input_ciphertexts=True,
     )
 
+    logits_simulate = None
+
     with monkeypatch.context() as m:
         if not transformers_installed:
             m.setitem(sys.modules, "transformers", None)
             if has_pbs_reshape:
                 has_pbs = True
+        if not glwe_backend_installed:
+            m.setattr(concrete.ml.torch.hybrid_model, "_HAS_GLWE_BACKEND", False)
+
         # Create a hybrid model
         hybrid_model = HybridFHEModel(model, module_names)
         try:
@@ -77,6 +84,13 @@ def run_hybrid_llm_test(
             # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4183
             assert "NoParametersFound" in error.args[0]
             pytest.skip(error.args[0])
+
+        # Check we can run the simulate locally
+        if has_pbs or not glwe_backend_installed:
+            logits_simulate = hybrid_model(inputs, fhe="simulate").logits
+        else:
+            with pytest.raises(AssertionError, match=".*fhe=simulate is not supported.*"):
+                hybrid_model(inputs, fhe="simulate")
 
     if has_pbs:
         # Check for non-zero programmable bootstrapping
@@ -97,14 +111,6 @@ def run_hybrid_llm_test(
                 "Programmable bootstrap count should be 0, "
                 f"but found {module.fhe_circuit.statistics['programmable_bootstrap_count']}"
             )
-
-    # Check we can run the simulate locally
-    logits_simulate = None
-    if has_pbs:
-        logits_simulate = hybrid_model(inputs, fhe="simulate").logits
-    else:
-        with pytest.raises(AssertionError, match=".*fhe=simulate is not supported.*"):
-            hybrid_model(inputs, fhe="simulate")
 
     logits_disable = hybrid_model(inputs, fhe="disable").logits
     logits_original = hybrid_model(inputs, fhe="torch").logits
@@ -128,7 +134,7 @@ def run_hybrid_llm_test(
         accuracy_disable >= expected_accuracy
     ), f"Disable accuracy {accuracy_disable:.4f} is below the expected {expected_accuracy:.4f}"
 
-    if logits_simulate:
+    if logits_simulate is not None:
         assert torch.allclose(logits_disable, logits_simulate, atol=1e-7), "Outputs do not match!"
         topk_simulate = logits_simulate.topk(k, dim=-1).indices
         accuracy_simulate = (topk_simulate == topk_original).float().mean().item()
@@ -141,20 +147,28 @@ def run_hybrid_llm_test(
         temp_dir_path = Path(temp_dir)
 
         # Get the temp directory path
-        hybrid_model.save_and_clear_private_info(temp_dir_path)
-        hybrid_model.set_fhe_mode("remote")
 
-        # At this point, the hybrid model does not have
-        # the parameters necessaryto run the module_names
-        module_names = module_names if isinstance(module_names, list) else [module_names]
+        if not has_pbs and glwe_backend_installed:
+            # Deployment of GLWE backend hybrid models is not yet supported
+            with pytest.raises(AttributeError, match="The quantized module is not compiled.*"):
+                hybrid_model.save_and_clear_private_info(temp_dir_path)
 
-        # Check that files are there
-        assert (temp_dir_path / "model.pth").exists()
-        for module_name in module_names:
-            module_dir_path = temp_dir_path / module_name
-            module_dir_files = set(str(elt.name) for elt in module_dir_path.glob("**/*"))
-            for file_name in ["client.zip", "server.zip"]:
-                assert file_name in module_dir_files
+        else:
+            hybrid_model.save_and_clear_private_info(temp_dir_path)
+
+            hybrid_model.set_fhe_mode("remote")
+
+            # At this point, the hybrid model does not have
+            # the parameters necessaryto run the module_names
+            module_names = module_names if isinstance(module_names, list) else [module_names]
+
+            # Check that files are there
+            assert (temp_dir_path / "model.pth").exists()
+            for module_name in module_names:
+                module_dir_path = temp_dir_path / module_name
+                module_dir_files = set(str(elt.name) for elt in module_dir_path.glob("**/*"))
+                for file_name in ["client.zip", "server.zip"]:
+                    assert file_name in module_dir_files
 
 
 # Dependency 'huggingface-hub' raises a 'FutureWarning' from version 0.23.0 when calling the
@@ -169,12 +183,14 @@ def run_hybrid_llm_test(
     ],
 )
 @pytest.mark.parametrize("transformers_installed", [True, False])
+@pytest.mark.parametrize("glwe_backend_installed", [True, False])
 def test_gpt2_hybrid_mlp(
     list_or_str_private_modules_names,
     expected_accuracy,
     has_pbs,
     has_pbs_reshape,
     transformers_installed,
+    glwe_backend_installed,
     monkeypatch,
 ):
     """Test GPT2 hybrid."""
@@ -197,6 +213,7 @@ def test_gpt2_hybrid_mlp(
         has_pbs_reshape,
         monkeypatch,
         transformers_installed,
+        glwe_backend_installed,
     )
 
 

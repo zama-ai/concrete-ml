@@ -2,6 +2,7 @@
 
 # pylint: disable=too-many-lines
 import ast
+import contextvars
 import enum
 import io
 import json
@@ -15,7 +16,14 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
-import concrete_ml_extensions as fhext
+try:
+    import concrete_ml_extensions as fhext
+
+    _HAS_GLWE_BACKEND = True
+except ImportError:  # pragma: no cover
+    fhext = None
+    _HAS_GLWE_BACKEND = False
+
 import numpy
 import requests
 import torch
@@ -23,7 +31,7 @@ from brevitas.quant_tensor import QuantTensor
 from concrete.fhe import Configuration
 from torch import nn
 
-from ..common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE, assert_true, to_tuple
+from ..common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE, to_tuple
 from ..deployment.fhe_client_server import FHEModelClient, FHEModelDev, FHEModelServer
 from ..quantization.post_training import OPS_WITH_GLWE_BACKEND_SUPPORT
 from .compile import (
@@ -245,6 +253,13 @@ class OptimizedLinearLayerExecutor:
         return y
 
 
+# This module member is instantiated by the Hybrid FHE model
+# when hybrid FHE forward is called and the GLWE backend is available
+_optimized_linear_executor: contextvars.ContextVar[Optional[OptimizedLinearLayerExecutor]] = (
+    contextvars.ContextVar("optimized_linear_executor")
+)
+
+
 # pylint: disable-next=too-many-instance-attributes
 class RemoteModule(nn.Module):
     """A wrapper class for the modules to be evaluated remotely with FHE."""
@@ -256,7 +271,7 @@ class RemoteModule(nn.Module):
         module_name: Optional[str] = None,
         model_name: Optional[str] = None,
         verbose: int = 0,
-        optimized_linear_layer_executor: OptimizedLinearLayerExecutor = None,
+        optimized_linear_execution: bool = False,
     ):
         super().__init__()
         self.private_module: Optional[nn.Module] = module
@@ -271,7 +286,7 @@ class RemoteModule(nn.Module):
         self.module_name: Optional[str] = module_name
         self.model_name: Optional[str] = model_name
         self.verbose = verbose
-        self.optimized_linear_layer_executor = optimized_linear_layer_executor
+        self.optimized_linear_execution = optimized_linear_execution
 
     def init_fhe_client(
         self, path_to_client: Optional[Path] = None, path_to_keys: Optional[Path] = None
@@ -387,16 +402,16 @@ class RemoteModule(nn.Module):
             None,
         }:
             assert self.private_q_module is not None
-            if self.optimized_linear_layer_executor:
-                assert_true(
-                    self.fhe_local_mode != HybridFHEMode.SIMULATE,
-                    "When the HybridFHEModel is instantiated with only "
-                    "linear remote layers, fhe=simulate is not supported for now.",
-                )
 
+            try:
+                optimized_linear_layer_executor = _optimized_linear_executor.get()
+            except LookupError:
+                optimized_linear_layer_executor = None
+
+            if optimized_linear_layer_executor:
                 # Delegate to the optimized GLWE executor
                 y = torch.Tensor(
-                    self.optimized_linear_layer_executor.forward(
+                    optimized_linear_layer_executor.forward(
                         x.detach().numpy(), self.private_q_module, self.fhe_local_mode
                     )
                 )
@@ -414,7 +429,12 @@ class RemoteModule(nn.Module):
 
         elif self.fhe_local_mode == HybridFHEMode.REMOTE:  # pragma:no cover
             # Remote call
-            assert self.optimized_linear_layer_executor is None, (
+            try:
+                optimized_linear_layer_executor = _optimized_linear_executor.get()
+            except LookupError:
+                optimized_linear_layer_executor = None
+
+            assert optimized_linear_layer_executor is None, (
                 "Remote optimized linear layers " "are not yet implemented"
             )
             y = self.remote_call(x)
@@ -532,8 +552,10 @@ class HybridFHEModel:
         self.model_name = model_name
         self.verbose = verbose
 
-        self.default_crypto_params_glwe = json.loads(
-            fhext.default_params()  # pylint: disable=no-member
+        self.default_crypto_params_glwe = (
+            json.loads(fhext.default_params())  # pylint: disable=no-member
+            if _HAS_GLWE_BACKEND
+            else None
         )
 
         self._replace_modules()
@@ -559,35 +581,15 @@ class HybridFHEModel:
             if not is_pure_linear_layer:
                 self._all_layers_are_pure_linear = False
 
-        # If all layers are pure linear, enable the GLWE optimization for all layers
-        # and generate an encryption and compression key for all layers
-        # as they share crypto-parameters
-        private_key, compression_key = None, None
-        if self._all_layers_are_pure_linear:
-            # pylint: disable-next=no-member
-            fhext_glwe_crypto_params = fhext.MatmulCryptoParameters.deserialize(
-                json.dumps(self.default_crypto_params_glwe)
-            )
-            # pylint: disable-next=no-member
-            private_key, compression_key = fhext.create_private_key(fhext_glwe_crypto_params)
-
         for module_name in self.module_names:
             # Create the optimized glwe linear layer executor if needed
-            optimized_linear_executor = None
-            if self._all_layers_are_pure_linear:
-                optimized_linear_executor = OptimizedLinearLayerExecutor(
-                    self.default_crypto_params_glwe,
-                    private_key=private_key,
-                    compression_key=compression_key,
-                )
-
             remote_module = RemoteModule(
                 module=self.private_modules[module_name],
                 server_remote_address=self.server_remote_address,
                 module_name=module_name,
                 model_name=self.model_name,
                 verbose=self.verbose,
-                optimized_linear_layer_executor=optimized_linear_executor,
+                optimized_linear_execution=self._all_layers_are_pure_linear,
             )
 
             self.remote_modules[module_name] = remote_module
@@ -608,10 +610,50 @@ class HybridFHEModel:
 
         Returns:
             torch.Tensor: The output tensor.
+
+        Raises:
+            AssertionError: if the execution mode is not supported
         """
         self.set_fhe_mode(fhe)
 
-        return self.model(x)
+        # Validate the FHE mode
+        fhe_mode = HybridFHEMode(fhe)
+
+        if _HAS_GLWE_BACKEND and self._all_layers_are_pure_linear:
+            if fhe_mode == HybridFHEMode.SIMULATE:
+                raise AssertionError(
+                    "When the HybridFHEModel is instantiated with only "
+                    "linear remote layers, fhe=simulate is not supported for now.",
+                )
+
+            if fhe_mode in (HybridFHEMode.EXECUTE, HybridFHEMode.REMOTE):
+                # If all layers are pure linear, enable the GLWE optimization for all layers
+                # and generate an encryption and compression key for all layers
+                # as they share crypto-parameters
+                private_key, compression_key = None, None
+                if self._all_layers_are_pure_linear:
+                    # pylint: disable-next=no-member
+                    fhext_glwe_crypto_params = fhext.MatmulCryptoParameters.deserialize(
+                        json.dumps(self.default_crypto_params_glwe)
+                    )
+                    # pylint: disable-next=no-member
+                    private_key, compression_key = fhext.create_private_key(
+                        fhext_glwe_crypto_params
+                    )
+
+                _optimized_linear_executor.set(
+                    OptimizedLinearLayerExecutor(
+                        self.default_crypto_params_glwe,
+                        private_key=private_key,
+                        compression_key=compression_key,
+                    )
+                )
+
+        result = self.model(x)
+
+        _optimized_linear_executor.set(None)
+
+        return result
 
     def __call__(self, x: torch.Tensor, fhe: str = "disable") -> torch.Tensor:
         """Call method to run the model locally with a fhe mode.
@@ -708,7 +750,10 @@ class HybridFHEModel:
                     device=device,
                 )
             else:
-                if self._all_layers_are_pure_linear:
+                # If all layers are linear and the GLWE backend is available
+                # then simply quantize the model without compiling with
+                # Concrete Python.
+                if self._all_layers_are_pure_linear and _HAS_GLWE_BACKEND:
                     self.private_q_modules[name] = build_quantized_module(
                         self.private_modules[name],
                         calibration_data_tensor,
