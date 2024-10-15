@@ -59,7 +59,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871
         with:
           ref: ${{ github.ref }}
           token: ${{ secrets.BOT_TOKEN }}
@@ -135,7 +135,7 @@ jobs:
 
       # We need to include LFS files as some are needed for checking the documentation
       - name: Checkout Code
-        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871
         with:
           ref: ${{ github.ref }}
           token: ${{ secrets.BOT_TOKEN }}
@@ -333,7 +333,7 @@ jobs:
           apt -y install sudo
 
       - name: Checkout Code
-        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871
         with:
           ref: ${{ github.ref }}
           token: ${{ secrets.BOT_TOKEN }}
@@ -617,7 +617,7 @@ jobs:
       GIT_TAG: ${{ needs.release-checks.outputs.git_tag }}
 
     steps:
-      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
+      - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871
 
       - name: Prepare whole job status
         if: ${{ always() }}
