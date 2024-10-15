@@ -72,7 +72,6 @@ jobs:
     runs-on: ${{ needs.setup-ec2.outputs.runner-name }}
     env:
       PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
-      PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
     steps:
       - name: Add masks
         run: |

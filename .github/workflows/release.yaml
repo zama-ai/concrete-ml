@@ -305,7 +305,6 @@ jobs:
       PRIVATE_RELEASE_IMAGE_BASE: ghcr.io/zama-ai/concrete-ml
       PUBLIC_RELEASE_IMAGE_BASE: zamafhe/concrete-ml
       PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
-      PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
       GIT_TAG: ${{ needs.release-checks.outputs.git_tag }}
       PROJECT_VERSION: ${{ needs.release-checks.outputs.project_version }}
       IS_RC: ${{needs.release-checks.outputs.is_rc}}

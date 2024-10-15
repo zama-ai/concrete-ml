@@ -24,7 +24,6 @@ OPEN_PR="true"
 setup_env:
 	@# The keyring install is to allow pip to fetch credentials for our internal repo if needed
 	PIP_INDEX_URL=https://pypi.org/simple \
-	PIP_EXTRA_INDEX_URL=https://pypi.org/simple \
 	poetry run python --version
 	poetry run python -m pip install keyring
 	poetry run python -m pip install -U pip wheel
@@ -369,7 +368,6 @@ docker_start:
 	-p 8888:8888 \
 	--env DISPLAY=host.docker.internal:0 \
 	$${PIP_INDEX_URL:+--env "PIP_INDEX_URL=$${PIP_INDEX_URL}"} \
-	$${PIP_EXTRA_INDEX_URL:+--env "PIP_EXTRA_INDEX_URL=$${PIP_EXTRA_INDEX_URL}"} \
 	--volume /"$$(pwd)":/src \
 	--volume $(DEV_CONTAINER_VENV_VOLUME):/home/dev_user/dev_venv \
 	--volume $(DEV_CONTAINER_CACHE_VOLUME):/home/dev_user/.cache \
