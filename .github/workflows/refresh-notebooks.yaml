@@ -50,7 +50,6 @@ jobs:
         shell: bash
     env:
       PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
-      PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
       KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
       KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
 

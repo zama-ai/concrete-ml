@@ -33,7 +33,6 @@ jobs:
     timeout-minutes: 5
     env:
       PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
-      PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
     steps:
       - name: Add masks
         run: |

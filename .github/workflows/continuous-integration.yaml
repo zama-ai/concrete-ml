@@ -388,7 +388,6 @@ jobs:
     env:
       IS_REF_BUILD: ${{ matrix.python_version == '3.8' }}
       PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
-      PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     outputs:
@@ -1061,8 +1060,6 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJSON(format('{{"include":{0}}}', needs.matrix-preparation.outputs.macos-matrix)) }}
     env:
-      PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
-      PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
