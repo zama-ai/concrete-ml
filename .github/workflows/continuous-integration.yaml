@@ -97,8 +97,62 @@ env:
   FAILED_TESTS_ARE_FLAKY: "false"
 
 jobs:
+  commit-checks:
+    name: Commit Checks
+    runs-on: ubuntu-20.04
+    outputs:
+      commits_ok: ${{ steps.commit-conformance.outcome == 'success' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
+
+      - name: Check commit signatures
+        id: check-commit-signatures
+        uses: 1Password/check-signed-commits-action@ed2885f3ed2577a4f5d3c3fe895432a557d23d52
+
+      - name: Check commits first line format
+        id: commit-first-line
+        if: ${{ fromJSON(env.IS_PR) && !cancelled() }}
+        uses: gsactions/commit-message-checker@16fa2d5de096ae0d35626443bcd24f1e756cafee
+        with:
+          pattern: '^((build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)\:) .+$'
+          flags: 'gs'
+          error: "Your first line has to contain a commit type like \"feat: message\".\
+            Pattern: '^((build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)\\:)'"
+          excludeDescription: 'true' # optional: this excludes the description body of a pull request
+          excludeTitle: 'true' # optional: this excludes the title of a pull request
+          checkAllCommitMessages: 'true' # optional: this checks all commits associated with a pull request
+          accessToken: ${{ secrets.GITHUB_TOKEN }} # github access token is only required if checkAllCommitMessages is true
+
+      - name: Check commits line length
+        id: commit-line-length
+        if: ${{ fromJSON(env.IS_PR) && !cancelled() }}
+        uses: gsactions/commit-message-checker@16fa2d5de096ae0d35626443bcd24f1e756cafee
+        with:
+          pattern: '(^.{0,74}$\r?\n?){0,20}'
+          flags: 'gm'
+          error: 'The maximum line length of 74 characters is exceeded.'
+          excludeDescription: 'true' # optional: this excludes the description body of a pull request
+          excludeTitle: 'true' # optional: this excludes the title of a pull request
+          checkAllCommitMessages: 'true' # optional: this checks all commits associated with a pull request
+          accessToken: ${{ secrets.GITHUB_TOKEN }} # github access token is only required if checkAllCommitMessages is true
+
+      - name: Commit conformance
+        id: commit-conformance
+        if: ${{ !cancelled() }}
+        env:
+          SIGNATURE_OK: ${{ steps.check-commit-signatures.outcome == 'success' || steps.check-commit-signatures.outcome == 'skipped' }}
+          FIRST_LINE_OK: ${{ (fromJSON(env.IS_PR) && steps.commit-first-line.outcome == 'success') || steps.commit-first-line.outcome == 'skipped' }}
+          LINE_LENGTH_OK: ${{ (fromJSON(env.IS_PR) && steps.commit-line-length.outcome == 'success') || steps.commit-line-length.outcome == 'skipped' }}
+        run: |
+          if [[ "${SIGNATURE_OK}" != "true" || "${FIRST_LINE_OK}" != "true" || "${LINE_LENGTH_OK}" != "true" ]]; then
+            echo "Issues with commits. Signature ok: ${SIGNATURE_OK}. First line ok: ${FIRST_LINE_OK}. Line length ok: ${LINE_LENGTH_OK}."
+            exit 1
+          fi
+
   matrix-preparation:
     name: Prepare versions and OS
+    needs: [commit-checks]
     # We skip the CI in cases of pushing to internal main (because all pushes to main internal are now from the bot)
     if: ${{ !( github.repository != 'zama-ai/concrete-ml' && github.event_name == 'push' && github.ref == 'refs/heads/main' ) }}
     runs-on: ubuntu-20.04
@@ -231,7 +285,7 @@ jobs:
           echo "instance-type=${INSTANCE_TYPE}" >> $GITHUB_OUTPUT
 
   start-runner-linux:
-    needs: [matrix-preparation]
+    needs: [commit-checks, matrix-preparation]
     name: Start EC2 runner (Linux)
     runs-on: ubuntu-20.04
     timeout-minutes: 15
@@ -458,46 +512,6 @@ jobs:
 
           make setup_env
 
-      # Commit types are found in https://www.conventionalcommits.org/en/v1.0.0/
-      - name: Check commits first line format
-        id: commit-first-line
-        if: ${{ fromJSON(env.IS_PR) && steps.install-deps.outcome == 'success' && !cancelled() }}
-        uses: gsactions/commit-message-checker@16fa2d5de096ae0d35626443bcd24f1e756cafee
-        with:
-          pattern: '^((build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)\:) .+$'
-          flags: 'gs'
-          error: "Your first line has to contain a commit type like \"feat: message\".\
-            Pattern: '^((build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)\\:)'"
-          excludeDescription: 'true' # optional: this excludes the description body of a pull request
-          excludeTitle: 'true' # optional: this excludes the title of a pull request
-          checkAllCommitMessages: 'true' # optional: this checks all commits associated with a pull request
-          accessToken: ${{ secrets.GITHUB_TOKEN }} # github access token is only required if checkAllCommitMessages is true
-
-      - name: Check commits line length
-        id: commit-line-length
-        if: ${{ fromJSON(env.IS_PR) && steps.install-deps.outcome == 'success' && !cancelled() }}
-        uses: gsactions/commit-message-checker@16fa2d5de096ae0d35626443bcd24f1e756cafee
-        with:
-          pattern: '(^.{0,74}$\r?\n?){0,20}'
-          flags: 'gm'
-          error: 'The maximum line length of 74 characters is exceeded.'
-          excludeDescription: 'true' # optional: this excludes the description body of a pull request
-          excludeTitle: 'true' # optional: this excludes the title of a pull request
-          checkAllCommitMessages: 'true' # optional: this checks all commits associated with a pull request
-          accessToken: ${{ secrets.GITHUB_TOKEN }} # github access token is only required if checkAllCommitMessages is true
-
-      - name: Commit conformance
-        id: commit-conformance
-        if: ${{ steps.install-deps.outcome == 'success' && !cancelled() }}
-        env:
-          FIRST_LINE_OK: ${{ (fromJSON(env.IS_PR) && steps.commit-first-line.outcome == 'success') || steps.commit-first-line.outcome == 'skipped' }}
-          LINE_LENGTH_OK: ${{ (fromJSON(env.IS_PR) && steps.commit-line-length.outcome == 'success') || steps.commit-line-length.outcome == 'skipped' }}
-        run: |
-          if [[ "${FIRST_LINE_OK}" != "true" || "${LINE_LENGTH_OK}" != "true" ]]; then
-            echo "Issues with commits. First line ok: ${FIRST_LINE_OK}. Line length ok: ${LINE_LENGTH_OK}."
-            exit 1
-          fi
-
       - name: Check actionlint
         run:
           make actionlint
@@ -635,8 +649,7 @@ jobs:
         env:
           CONFORMANCE_STATUS: >-
             ${{
-              steps.commit-conformance.outcome == 'success'
-              && steps.make-pcc.outcome == 'success'
+              steps.make-pcc.outcome == 'success'
               && steps.determinism.outcome != 'failure'
               && steps.fix-docs.outcome != 'failure'
               && steps.check_links.outcome != 'failure'
@@ -644,7 +657,6 @@ jobs:
         run: |
           if [[ "${CONFORMANCE_STATUS}" != "true" ]]; then
             echo "Conformance failed, got:"
-            echo "Commit conformance success step: ${{ steps.commit-conformance.outcome }}"
             echo "Make conformance step: ${{ steps.make-pcc.outcome }}"
             echo "Determinism step: ${{ steps.determinism.outcome }}"
             echo "Fix docs step: ${{ steps.fix-docs.outcome }}"
