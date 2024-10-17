@@ -65,6 +65,7 @@ def run_hybrid_llm_test(
             if has_pbs_reshape:
                 has_pbs = True
         if not glwe_backend_installed:
+            m.setattr(concrete.ml.quantization.linear_op_glwe_backend, "_HAS_GLWE_BACKEND", False)
             m.setattr(concrete.ml.torch.hybrid_model, "_HAS_GLWE_BACKEND", False)
 
         # Create a hybrid model
