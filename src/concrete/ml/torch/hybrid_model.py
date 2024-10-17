@@ -502,6 +502,10 @@ class HybridFHEModel:
             remote_module = self._get_module_by_name(self.model, name)
             assert isinstance(remote_module, RemoteModule)
 
+            assert remote_module.calibration_data, (
+                f"Calibration failed for module '{remote_module.module_name}':",
+                "There was no output from this layer.",
+            )
             calibration_data_tensor = torch.cat(remote_module.calibration_data, dim=0)
 
             if has_any_qnn_layers(self.private_modules[name]):

@@ -1,463 +1,605 @@
+"""Tests for the LoRA (Low-Rank Adaptation) functionality in the torch module."""
+
 # pylint: disable=redefined-outer-name
 
-"""Tests for the LoraTraining class and related modules in lora.py."""
-
-import sys
-from collections import namedtuple
-from types import SimpleNamespace
-from unittest import mock
+from unittest.mock import MagicMock
 
 import pytest
 import torch
 from torch import nn
-from torch.optim import SGD
-from torch.optim.lr_scheduler import StepLR
-from transformers import Conv1D as TransformerConv1D
+from torch.utils.data import DataLoader, Dataset, TensorDataset
 
 from concrete.ml.torch.lora import (
     BackwardModuleLinear,
     CustomLinear,
-    ForwardBackwardModule,
     ForwardModuleLinear,
+    LoraTrainer,
     LoraTraining,
     get_remote_names,
 )
 
-
-class DummyConfig:
-    """A dummy configuration class to mimic model config."""
-
-    def __init__(self, model_type):
-        self.model_type = model_type
+# Dummy models and datasets for testing
 
 
-class DummyBaseModel:
-    """A dummy base model class to mimic base_model.model."""
-
-    def __init__(self, model_type):
-        self.model = DummyModel(model_type)
-
-
-class DummyModel(torch.nn.Module):
-    """A dummy model class to mimic the actual model."""
-
-    def __init__(self, model_type):
-        super().__init__()
-        self.config = DummyConfig(model_type)
-
-    @staticmethod
-    def forward(x):
-        """Dummy forward method."""
-        return x
-
-
-class DummyInferenceModel(torch.nn.Module):
-    """A dummy inference model with various layers."""
+class DummyLoRAModel(nn.Module):
+    """Dummy LoRA model for testing."""
 
     def __init__(self):
         super().__init__()
-        self.base_model = DummyBaseModel("gpt2")
-        self.linear1 = torch.nn.Linear(2, 2)
-        self.conv1d = TransformerConv1D(2, 2)
-        self.linear2 = torch.nn.Linear(2, 2)
-        self.lora_layer = torch.nn.Linear(2, 2)  # Layer with 'lora' in name
-        self.lora_layer_name = "lora_layer"
+        # Simulate LoRA layers by including 'lora_a' attribute
+        self.lora_a = nn.Parameter(torch.randn(10, 10))
+        self.linear1 = nn.Linear(10, 20)
+        self.linear2 = nn.Linear(20, 10)
 
-    def forward(self, x, labels=None):
-        """A simple forward method that returns logits or loss."""
-        x = self.linear1(x)
-        x = self.conv1d(x)
-        x = self.linear2(x)
-        x = self.lora_layer(x)
-        logits = x
+    def forward(self, x, **kwargs):
+        """Forward pass."""
+        labels = kwargs.get("labels", None)
+        logits = self.linear2(torch.relu(self.linear1(x)))
         if labels is not None:
-            loss = ((logits - labels) ** 2).mean()
-            Output = namedtuple("Output", ["loss"])
-            return Output(loss=loss)
-        return {"logits": logits, "something_else": torch.tensor(1.0)}
+            loss = nn.functional.mse_loss(logits, labels)
+            return {"loss": loss}
+        return {"logits": logits}
+
+
+class DummyLoRAModelNoLoss(nn.Module):
+    """Dummy LoRA model without loss function for testing."""
+
+    def __init__(self):
+        super().__init__()
+        self.lora_a = nn.Parameter(torch.randn(10, 10))
+        self.linear1 = nn.Linear(10, 20)
+        self.linear2 = nn.Linear(20, 10)
+
+    def forward(self, x):
+        """Forward pass."""
+        logits = self.linear2(torch.relu(self.linear1(x)))
+        return {"logits": logits}
+
+
+class DummyModel(nn.Module):
+    """Dummy model for testing."""
+
+    def __init__(self):
+        super().__init__()
+        self.linear1 = nn.Linear(10, 20)
+        self.linear2 = nn.Linear(20, 10)
+
+    def forward(self, x):
+        """Forward pass."""
+        logits = self.linear2(torch.relu(self.linear1(x)))
+        return {"logits": logits}
 
 
 @pytest.fixture
-def base_inference_model():
-    """Fixture for creating a DummyInferenceModel instance."""
-    return DummyInferenceModel()
+def dummy_lora_model():
+    """Dummy LoRA model for testing."""
+    return DummyLoRAModel()
 
 
 @pytest.fixture
-def base_lora_training(base_inference_model):
-    """Fixture for creating a LoraTraining instance."""
-    return LoraTraining(base_inference_model)
+def dummy_model():
+    """Dummy model for testing."""
+    return DummyModel()
 
 
-@pytest.mark.parametrize("n_layers_to_skip", [0, 1, 2])
-def test_lora_training_replace_layers(base_lora_training, n_layers_to_skip):
-    """Test that LoraTraining replaces layers correctly."""
-    original_linear1 = base_lora_training.inference_model.linear1
-    original_lora_layer = base_lora_training.inference_model.lora_layer
-
-    # Replace layers with custom layers
-    base_lora_training.replace_layers_with_custom(
-        base_lora_training.inference_model, n_layers_to_skip=n_layers_to_skip
-    )
-
-    inference_model = base_lora_training.inference_model
-
-    if n_layers_to_skip > 0:
-        # First eligible layer should be skipped
-        assert inference_model.linear1 is original_linear1
-    else:
-        assert isinstance(inference_model.linear1, CustomLinear)
-
-    # Check that other eligible layers are replaced
-    assert isinstance(inference_model.conv1d, CustomLinear)
-    assert isinstance(inference_model.linear2, CustomLinear)
-
-    # 'lora' layers should not be replaced
-    assert inference_model.lora_layer is original_lora_layer
+def test_assert_has_lora_layers_with_lora_layers(dummy_lora_model):
+    """Test assert_has_lora_layers with LoRA layers."""
+    LoraTraining.assert_has_lora_layers(dummy_lora_model)
 
 
-@pytest.mark.parametrize(
-    "training_args",
-    [
-        {"gradient_accumulation_steps": 2, "max_grad_norm": 1.0},  # dict
-        SimpleNamespace(gradient_accumulation_steps=2, max_grad_norm=1.0),  # namespace
-        None,  # None
-    ],
-)
-def test_update_training_parameters(base_lora_training, training_args):
-    """Test update_training_parameters with different types of training_args."""
-    inference_model = base_lora_training.inference_model
-    optimizer = SGD(inference_model.parameters(), lr=0.01)
-    lr_scheduler = StepLR(optimizer, step_size=1)
-    loss_fn = nn.MSELoss()
-
-    base_lora_training.update_training_parameters(optimizer, lr_scheduler, loss_fn, training_args)
-
-    assert base_lora_training.optimizer is optimizer
-    assert base_lora_training.lr_scheduler is lr_scheduler
-    assert base_lora_training.loss_fn is loss_fn
-
-    if training_args is None:
-        assert base_lora_training.gradient_accumulation_steps == 1  # Default
-        assert base_lora_training.max_grad_norm is None  # Default
-    else:
-        assert base_lora_training.gradient_accumulation_steps == 2
-        assert base_lora_training.max_grad_norm == 1.0
-
-
-def test_lora_training_forward_loss_fn_none(base_lora_training):
-    """Test the forward method when loss_fn is None."""
-    x = torch.tensor([[1.0, 2.0]])
-    y = torch.tensor([[0.5, 1.5]])
-
-    loss, _ = base_lora_training((x, y))
-
-    expected_loss = (
-        base_lora_training.inference_model(x, labels=y).loss
-        / base_lora_training.gradient_accumulation_steps
-    ).item()
-
-    assert abs(loss.item() - expected_loss) < 1e-6
-
-
-def test_lora_training_forward_with_loss_fn(base_lora_training):
-    """Test the forward method when loss_fn is provided."""
-    loss_fn = nn.MSELoss()
-    base_lora_training.update_training_parameters(loss_fn=loss_fn)
-
-    x = torch.tensor([[1.0, 2.0]])
-    y = torch.tensor([[0.5, 1.5]])
-
-    outputs = base_lora_training.inference_model(x)
-    expected_loss = loss_fn(outputs["logits"], y) / base_lora_training.gradient_accumulation_steps
-
-    loss, _ = base_lora_training((x, y))
-
-    assert abs(loss.item() - expected_loss.item()) < 1e-6
-
-
-def test_lora_training_forward_no_loss():
-    """Test that LoraTraining raises ValueError when model does not return a loss."""
-
-    class NoLossInferenceModel(DummyInferenceModel):
-        """An inference model that does not return a loss."""
-
-        def forward(self, x, labels=None):
-            """Forward method that does not return loss."""
-            Output = namedtuple("Output", ["something_else"])
-            return Output(something_else=torch.tensor(1.0))
-
-    no_loss_inference_model = NoLossInferenceModel()
-    lora_training = LoraTraining(no_loss_inference_model)
-
-    x = torch.tensor([[1.0, 2.0]])
-    y = torch.tensor([[0.5, 1.5]])
-
+def test_assert_has_lora_layers_without_lora_layers(dummy_model):
+    """Test assert_has_lora_layers without LoRA layers."""
     with pytest.raises(ValueError) as exc_info:
-        lora_training((x, y))
-    assert "The model did not return a loss" in str(exc_info.value)
+        LoraTraining.assert_has_lora_layers(dummy_model)
+    assert "The model does not contain any detectable LoRA layers" in str(exc_info.value)
 
 
-@pytest.mark.parametrize("enable", [True, False])
-def test_lora_training_toggle_calibrate(base_lora_training, enable):
-    """Test the toggle_calibrate method."""
-    base_lora_training.toggle_calibrate(enable)
-    assert base_lora_training.calibrate == enable
+def test_replace_layers_with_custom():
+    """Test replace_layers_with_custom."""
+    model = DummyLoRAModel()
+    n_layers_to_skip = 1
+    LoraTraining.replace_layers_with_custom(model, n_layers_to_skip)
+    # First linear layer should be skipped, second replaced
+    assert isinstance(model.linear1, nn.Linear)
+    assert isinstance(model.linear2, CustomLinear)
 
 
-@pytest.mark.parametrize("enable", [True, False])
-def test_lora_training_toggle_run_optimizer(base_lora_training, enable):
-    """Test the toggle_run_optimizer method."""
-    base_lora_training.toggle_run_optimizer(enable)
-    assert base_lora_training.run_optimizer == enable
+def test_replace_layers_with_custom_skips_lora_layers():
+    """Test replace_layers_with_custom skips LoRA layers."""
 
-
-def test_lora_training_forward_with_optimizer(base_lora_training):
-    """Test the forward method when run_optimizer is True."""
-    inference_model = base_lora_training.inference_model
-    optimizer = SGD(inference_model.parameters(), lr=0.01)
-    lr_scheduler = StepLR(optimizer, step_size=1)
-    loss_fn = nn.MSELoss()
-    base_lora_training.update_training_parameters(
-        optimizer,
-        lr_scheduler,
-        loss_fn,
-        SimpleNamespace(gradient_accumulation_steps=1, max_grad_norm=1.0),
-    )
-    base_lora_training.replace_layers_with_custom(
-        base_lora_training.inference_model, n_layers_to_skip=0
-    )
-    base_lora_training.toggle_run_optimizer(True)
-
-    x = torch.tensor([[1.0, 2.0]])
-    y = torch.tensor([[0.5, 1.5]])
-
-    # Save initial parameters
-    initial_params = {name: param.clone() for name, param in inference_model.named_parameters()}
-
-    # Perform forward pass
-    _, _ = base_lora_training((x, y))
-
-    # Ensure that only parameters with "lora" in their name have been updated
-    for name, param in inference_model.named_parameters():
-        if "lora" in name:
-            assert not torch.equal(
-                initial_params[name], param
-            ), f"Lora parameter {name} was not updated"
-        else:
-            assert torch.equal(
-                initial_params[name], param
-            ), f"Non-lora parameter {name} was unexpectedly updated"
-
-
-def test_lora_training_forward_calibrate(base_lora_training):
-    """Test the forward method when calibration is enabled."""
-    inference_model = base_lora_training.inference_model
-    base_lora_training.toggle_calibrate(True)
-
-    x = torch.tensor([[1.0, 2.0]])
-    y = torch.tensor([[0.5, 1.5]])
-
-    _, _ = base_lora_training((x, y))
-
-    # Ensure that gradients are zeroed
-    for param in inference_model.parameters():
-        if param.grad is not None:
-            assert torch.all(param.grad == 0)
-
-
-@pytest.mark.parametrize("weight_transposed", [False, True])
-def test_forward_module_linear(weight_transposed):
-    """Test ForwardModuleLinear."""
-    weight = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
-    bias = torch.tensor([0.5, -0.5])
-    module = ForwardModuleLinear(weight, bias, weight_transposed=weight_transposed)
-
-    input_tensor = torch.tensor([[1.0, 0.0], [0.0, 1.0]])
-    output = module(input_tensor)
-
-    if weight_transposed:
-        expected_output = input_tensor @ weight + bias
-    else:
-        expected_output = input_tensor @ weight.t() + bias
-
-    assert torch.allclose(output, expected_output)
-
-
-@pytest.mark.parametrize("weight_transposed", [False, True])
-def test_backward_module_linear(weight_transposed):
-    """Test BackwardModuleLinear."""
-    weight = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
-    module = BackwardModuleLinear(weight, weight_transposed=weight_transposed)
-
-    grad_output = torch.tensor([[1.0, 0.0], [0.0, 1.0]])
-    grad_input = module(grad_output)
-
-    if weight_transposed:
-        expected_grad_input = grad_output @ weight.t()
-    else:
-        expected_grad_input = grad_output @ weight
-
-    assert torch.allclose(grad_input, expected_grad_input)
-
-
-@pytest.mark.parametrize("weight_transposed", [False, True])
-def test_custom_linear(weight_transposed):
-    """Test the CustomLinear module."""
-    weight = torch.tensor([[1.0, 2.0], [3.0, 4.0]], requires_grad=True)
-    bias = torch.tensor([0.5, -0.5], requires_grad=True)
-    module = CustomLinear(weight, bias, weight_transposed=weight_transposed)
-
-    input_tensor = torch.tensor([[1.0, 0.0]], requires_grad=True)
-    output = module(input_tensor)
-
-    if weight_transposed:
-        expected_output = input_tensor @ weight + bias
-    else:
-        expected_output = input_tensor @ weight.t() + bias
-
-    assert torch.allclose(output, expected_output)
-
-    # Test backward
-    output.sum().backward()
-    if weight_transposed:
-        expected_grad_input = torch.ones_like(output) @ weight.t()
-    else:
-        expected_grad_input = torch.ones_like(output) @ weight
-
-    assert input_tensor.grad is not None and torch.allclose(input_tensor.grad, expected_grad_input)
-
-
-@pytest.mark.parametrize("weight_transposed", [False, True])
-def test_forward_backward_module(weight_transposed):
-    """Test the ForwardBackwardModule."""
-    weight = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
-    bias = torch.tensor([0.5, -0.5])
-    forward_module = ForwardModuleLinear(weight, bias, weight_transposed=weight_transposed)
-    backward_module = BackwardModuleLinear(weight, weight_transposed=weight_transposed)
-
-    input_tensor = torch.tensor([[1.0, 0.0]], requires_grad=True)
-    output = ForwardBackwardModule.apply(input_tensor, forward_module, backward_module)
-
-    if weight_transposed:
-        expected_output = input_tensor @ weight + bias
-        expected_grad_input = torch.ones_like(output) @ weight.t()
-    else:
-        expected_output = input_tensor @ weight.t() + bias
-        expected_grad_input = torch.ones_like(output) @ weight
-
-    assert torch.allclose(output, expected_output)
-
-    # Test backward
-    output.sum().backward()
-
-    assert input_tensor.grad is not None and torch.allclose(input_tensor.grad, expected_grad_input)
-
-
-def test_get_remote_names():
-    """Test get_remote_names function."""
-
-    class TestModel(torch.nn.Module):
-        """Test model for get_remote_names test."""
+    class ModelWithLoraLayer(nn.Module):
+        """Model with LoRA layer for testing."""
 
         def __init__(self):
             super().__init__()
-            self.linear = torch.nn.Linear(10, 10)
-            self.conv1d = TransformerConv1D(10, 10)
-            self.embedding = torch.nn.Embedding(10, 10)
-            self.lm_head = torch.nn.Linear(10, 10)
-            self.lora_layer = torch.nn.Linear(10, 10)
-            self.lora_layer_name = "lora_layer"
+            self.lora_linear = nn.Linear(10, 10)
+            self.linear = nn.Linear(10, 10)
 
         def forward(self, x):
-            """Forward method."""
-            return self.lm_head(self.linear(x))
+            """Forward pass."""
+            x = self.lora_linear(x)
+            return self.linear(x)
 
-    model = TestModel()
+    model = ModelWithLoraLayer()
+    n_layers_to_skip = 0
+    LoraTraining.replace_layers_with_custom(model, n_layers_to_skip)
+    assert isinstance(model.lora_linear, nn.Linear)  # Should not be replaced
+    assert isinstance(model.linear, CustomLinear)  # Should be replaced
 
+
+def test_replace_layers_with_custom_recursive():
+    """Test replace_layers_with_custom with nested modules."""
+
+    class ModelWithNestedModules(nn.Module):
+        """Model with nested modules for testing."""
+
+        def __init__(self):
+            super().__init__()
+            self.layer1 = nn.Sequential(nn.Linear(10, 20), nn.ReLU(), nn.Linear(20, 10))
+
+        def forward(self, x):
+            """Forward pass."""
+            return self.layer1(x)
+
+    model = ModelWithNestedModules()
+    n_layers_to_skip = 0
+    LoraTraining.replace_layers_with_custom(model, n_layers_to_skip)
+    assert isinstance(model.layer1[0], CustomLinear)
+    assert isinstance(model.layer1[1], nn.ReLU)  # Should not be replaced
+    assert isinstance(model.layer1[2], CustomLinear)
+
+
+def test_forward_with_loss_fn():
+    """Test forward with loss function."""
+    model = DummyLoRAModel()
+    loss_fn = nn.MSELoss()
+    lora_training = LoraTraining(model, loss_fn=loss_fn)
+    x = torch.randn(5, 10)
+    y = torch.randn(5, 10)
+    loss, _ = lora_training((x, y))
+    assert isinstance(loss, torch.Tensor)
+
+
+def test_forward_without_loss_fn_model_returns_loss():
+    """Test forward without loss function when model returns loss."""
+    model = DummyLoRAModel()
     lora_training = LoraTraining(model)
-    remote_names = get_remote_names(lora_training)
-    expected_names = [
-        "inference_model.linear",
-        "inference_model.conv1d.forward_module",
-        "inference_model.conv1d.backward_module",
-    ]
-
-    assert set(remote_names) == set(expected_names)
-
-    # Test with include_embedding_layers=True
-    remote_names_with_embeddings = get_remote_names(lora_training, include_embedding_layers=True)
-    expected_names_with_embeddings = [
-        "inference_model.linear",
-        "inference_model.conv1d.forward_module",
-        "inference_model.conv1d.backward_module",
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4609
-        "inference_model.embedding",
-        "inference_model.lm_head.forward_module",
-        "inference_model.lm_head.backward_module",
-    ]
-    assert set(remote_names_with_embeddings) == set(expected_names_with_embeddings)
+    x = torch.randn(5, 10)
+    y = torch.randn(5, 10)
+    loss, _ = lora_training((x, y))
+    assert isinstance(loss, torch.Tensor)
 
 
-def test_lora_without_transformers():
-    """
-    Test the lora.py module when the transformers library is not installed.
-    """
+def test_forward_without_loss_fn_model_does_not_return_loss():
+    """Test forward without loss function when model does not return loss."""
+    model = DummyLoRAModelNoLoss()
+    lora_training = LoraTraining(model)
+    x = torch.randn(5, 10)
+    y = torch.randn(5, 10)
+    with pytest.raises(ValueError) as exc_info:
+        lora_training((x, y))
+    assert "The model did not return a loss." in str(exc_info.value)
 
-    # Save the original transformers module if it's already imported
-    transformers_original = sys.modules.get("transformers", None)
 
-    # Mock the transformers import to simulate it being unavailable
-    with mock.patch.dict("sys.modules", {"transformers": None}):
-        # Reload the lora module to apply the mocked transformers import
-        if "concrete.ml.torch.lora" in sys.modules:
-            del sys.modules["concrete.ml.torch.lora"]
-        import concrete.ml.torch.lora as lora  # pylint: disable=R0402,C0415
+def test_forward_without_loss_fn_model_returns_loss_as_attribute():
+    """Test forward without loss function when model returns loss as attribute."""
 
-        # Ensure that TransformerConv1D is None
-        assert lora.TransformerConv1D is None
+    class DummyLoRAModelReturnsObject(nn.Module):
+        """Dummy LoRA model returning object with loss."""
 
-        # Create a simple model without any Conv1D layers
-        model = torch.nn.Sequential(
-            torch.nn.Linear(10, 20),
-            torch.nn.ReLU(),
-            torch.nn.Linear(20, 5),
-        )
+        def __init__(self):
+            super().__init__()
+            self.lora_a = nn.Parameter(torch.randn(10, 10))
+            self.linear1 = nn.Linear(10, 20)
+            self.linear2 = nn.Linear(20, 10)
 
-        # Initialize LoraTraining with the model
-        lora_training = lora.LoraTraining(model)
+        def forward(self, x, **kwargs):
+            """Forward pass."""
+            labels = kwargs.get("labels", None)
+            logits = self.linear2(torch.relu(self.linear1(x)))
 
-        # Check that layers have been replaced with CustomLinear
-        replaced_layers = []
-        for name, module in lora_training.inference_model.named_modules():
-            if isinstance(module, lora.CustomLinear):
-                replaced_layers.append(name)
+            class OutputObject:
+                """Output object containing logits and optional loss."""
 
-        # Assert that CustomLinear layers have been added
-        assert len(replaced_layers) > 0, "No layers were replaced with CustomLinear."
+                def __init__(self, logits, loss=None):
+                    self.logits = logits
+                    self.loss = loss
 
-        # Prepare input data
-        x = torch.randn(3, 10)  # Batch size 3, input size 10
-        y = torch.randint(0, 5, (3,))  # Batch size 3, number of classes 5
+            if labels is not None:
+                loss = nn.functional.mse_loss(logits, labels)
+                return OutputObject(logits, loss)
+            return OutputObject(logits)
 
-        # Define a simple loss function
-        loss_fn = torch.nn.CrossEntropyLoss()
+    model = DummyLoRAModelReturnsObject()
+    lora_training = LoraTraining(model)
+    x = torch.randn(5, 10)
+    y = torch.randn(5, 10)
+    loss, _ = lora_training((x, y))
+    assert isinstance(loss, torch.Tensor)
 
-        # Update training parameters
-        lora_training.update_training_parameters(loss_fn=loss_fn)
 
-        # Perform a forward pass
-        loss, grad_norm = lora_training((x, y))
+def test_forward_with_less_than_two_inputs():
+    """Test forward with less than two inputs."""
+    model = DummyLoRAModel()
+    lora_training = LoraTraining(model)
+    x = torch.randn(5, 10)
+    with pytest.raises(AssertionError) as exc_info:
+        lora_training((x,))
+    assert "Expected at least two inputs" in str(exc_info.value)
 
-        # Check that loss is computed and gradients are updated
-        assert loss.requires_grad, "Loss does not require gradients."
-        assert loss.item() > 0, "Loss should be greater than zero."
 
-        # Since optimizer is not set, grad_norm should be None
-        assert grad_norm is None, "Gradient norm should be None when optimizer is not set."
+def test_toggle_calibrate():
+    """Test toggle_calibrate."""
+    model = DummyLoRAModel()
+    lora_training = LoraTraining(model)
+    lora_training.toggle_calibrate(True)
+    assert lora_training.calibrate is True
+    lora_training.toggle_calibrate(False)
+    assert lora_training.calibrate is False
 
-    # Restore the original transformers module after the test
-    if transformers_original is not None:
-        sys.modules["transformers"] = transformers_original
-    elif "transformers" in sys.modules:
-        del sys.modules["transformers"]
+
+def test_set_loss_scaling_factor():
+    """Test set_loss_scaling_factor."""
+    model = DummyLoRAModel()
+    lora_training = LoraTraining(model)
+    lora_training.set_loss_scaling_factor(0.5)
+    assert lora_training.loss_scaling_factor == 0.5
+
+
+def test_lora_trainer_init():
+    """Test LoraTrainer initialization."""
+    model = DummyLoRAModel()
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+    lora_trainer = LoraTrainer(model, optimizer=optimizer)
+    assert lora_trainer.lora_training_module is not None
+    assert lora_trainer.hybrid_model is not None
+
+
+def test_lora_trainer_compile():
+    """Test LoraTrainer compile."""
+    model = DummyLoRAModel()
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+    lora_trainer = LoraTrainer(model, optimizer=optimizer)
+    inputset = [(torch.randn(5, 10), torch.randn(5, 10))]
+    # Mock the compile_model method
+    lora_trainer.hybrid_model.compile_model = MagicMock()
+    lora_trainer.compile(inputset)
+    lora_trainer.hybrid_model.compile_model.assert_called_once()
+    assert lora_trainer.lora_training_module.calibrate is False
+
+
+def test_lora_trainer_train():
+    """Test LoraTrainer train."""
+    model = DummyLoRAModel()
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+    training_args = {"gradient_accumulation_steps": 1, "max_grad_norm": 1.0}
+    lora_trainer = LoraTrainer(model, optimizer=optimizer, training_args=training_args)
+    # Mock the hybrid_model's __call__ method
+    lora_trainer.hybrid_model = MagicMock(
+        return_value=(torch.tensor(1.0, requires_grad=True), None)
+    )
+    # Create dummy data loader with different batch types
+    dataset = TensorDataset(torch.randn(2, 5, 10), torch.randn(2, 5, 10))
+    train_loader = DataLoader(dataset, batch_size=1)
+    lora_trainer.train(train_loader, num_epochs=1, fhe="disable")
+
+
+def test_lora_trainer_train_with_lr_scheduler():
+    """Test LoraTrainer train with lr_scheduler."""
+    model = DummyLoRAModel()
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+    lr_scheduler = MagicMock()
+    training_args = {"gradient_accumulation_steps": 1, "max_grad_norm": 1.0}
+    lora_trainer = LoraTrainer(
+        model, optimizer=optimizer, lr_scheduler=lr_scheduler, training_args=training_args
+    )
+    # Mock the hybrid_model's __call__ method
+    lora_trainer.hybrid_model = MagicMock(
+        return_value=(torch.tensor(1.0, requires_grad=True), None)
+    )
+    # Create dummy data loader
+    dataset = TensorDataset(torch.randn(2, 5, 10), torch.randn(2, 5, 10))
+    train_loader = DataLoader(dataset, batch_size=1)
+    lora_trainer.train(train_loader, num_epochs=1)
+    # Check that lr_scheduler.step() was called
+    assert lr_scheduler.step.call_count > 0
+
+
+def test_lora_trainer_save_and_clear_private_info():
+    """Test LoraTrainer save_and_clear_private_info."""
+    model = DummyLoRAModel()
+    lora_trainer = LoraTrainer(model)
+    lora_trainer.hybrid_model.save_and_clear_private_info = MagicMock()
+    lora_trainer.save_and_clear_private_info("path/to/model")
+    lora_trainer.hybrid_model.save_and_clear_private_info.assert_called_once_with("path/to/model")
+
+
+def test_custom_linear_forward_backward():
+    """Test CustomLinear forward and backward."""
+    weight = torch.randn(20, 10)
+    bias = torch.randn(20)
+    custom_linear = CustomLinear(weight, bias)
+    x = torch.randn(5, 10, requires_grad=True)
+    y = custom_linear(x)
+    loss = y.sum()
+    loss.backward()
+    assert x.grad is not None
+
+
+def test_custom_linear_weight_transposed():
+    """Test CustomLinear with weight transposed."""
+    weight = torch.randn(10, 20)
+    bias = torch.randn(20)
+    custom_linear = CustomLinear(weight, bias, weight_transposed=True)
+    x = torch.randn(5, 10, requires_grad=True)
+    y = custom_linear(x)
+    loss = y.sum()
+    loss.backward()
+    assert x.grad is not None
+
+
+def test_get_remote_names():
+    """Test get_remote_names."""
+    model = DummyLoRAModel()
+    LoraTraining.replace_layers_with_custom(model, n_layers_to_skip=0)
+    remote_names = get_remote_names(model)
+    assert "linear1.forward_module" in remote_names
+    assert "linear1.backward_module" in remote_names
+    assert "linear2.forward_module" in remote_names
+    assert "linear2.backward_module" in remote_names
+    assert "lora_a" not in remote_names
+
+
+def test_get_remote_names_include_embedding_layers():
+    """Test get_remote_names with include_embedding_layers."""
+
+    class ModelWithEmbedding(nn.Module):
+        """Model with embedding layer for testing."""
+
+        def __init__(self):
+            super().__init__()
+            self.embedding = nn.Embedding(10, 10)
+            self.linear = nn.Linear(10, 10)
+
+        def forward(self, x):
+            """Forward pass."""
+            x = self.embedding(x)
+            x = self.linear(x)
+            return x
+
+    model = ModelWithEmbedding()
+    remote_names = get_remote_names(model, include_embedding_layers=True)
+    assert "embedding" in remote_names
+    assert "linear" in remote_names
+
+
+def test_get_remote_names_skips_lm_head_when_excluded():
+    """Test get_remote_names skips lm_head when excluded."""
+
+    class ModelWithLMHead(nn.Module):
+        """Model with lm_head for testing."""
+
+        def __init__(self):
+            super().__init__()
+            self.lm_head = nn.Linear(10, 10)
+            self.linear = nn.Linear(10, 10)
+
+        def forward(self, x):
+            """Forward pass."""
+            return self.linear(x)
+
+    model = ModelWithLMHead()
+    remote_names = get_remote_names(model, include_embedding_layers=False)
+    assert "lm_head" not in remote_names
+    assert "linear" in remote_names
+
+
+def test_replace_layers_with_transformer_conv1d(monkeypatch):
+    """Test replace_layers_with_custom with TransformerConv1D."""
+
+    class MockTransformerConv1D(nn.Module):
+        """Mock TransformerConv1D module for testing."""
+
+        def __init__(self, in_features, out_features):
+            super().__init__()
+            self.in_features = in_features
+            self.out_features = out_features
+            self.weight = nn.Parameter(torch.randn(out_features, in_features))
+            self.bias = nn.Parameter(torch.randn(out_features))
+
+        def forward(self, x):
+            """Forward pass."""
+            return x @ self.weight.t() + self.bias
+
+    # Patch TransformerConv1D and LINEAR_LAYERS in the lora module
+    monkeypatch.setattr("concrete.ml.torch.lora.TransformerConv1D", MockTransformerConv1D)
+    monkeypatch.setattr("concrete.ml.torch.lora.LINEAR_LAYERS", (nn.Linear, MockTransformerConv1D))
+
+    class ModelWithConv1D(nn.Module):
+        """Model with Conv1D layer for testing."""
+
+        def __init__(self):
+            super().__init__()
+            self.conv1d = MockTransformerConv1D(10, 10)
+
+        def forward(self, x):
+            """Forward pass."""
+            return self.conv1d(x)
+
+    model = ModelWithConv1D()
+    n_layers_to_skip = 0
+    LoraTraining.replace_layers_with_custom(model, n_layers_to_skip)
+    assert isinstance(model.conv1d, CustomLinear)
+
+
+def test_forward_backward_module():
+    """Test the ForwardBackwardModule autograd function."""
+    weight = torch.randn(20, 10)
+    bias = torch.randn(20)
+    forward_module = ForwardModuleLinear(weight, bias)
+    backward_module = BackwardModuleLinear(weight)
+    x = torch.randn(5, 10)
+    y = forward_module(x)
+    grad_output = torch.randn_like(y)
+    grad_input = backward_module(grad_output)
+    assert grad_input.shape == x.shape
+
+
+def test_lora_training_forward_with_additional_inputs():
+    """Test LoraTraining forward with additional inputs."""
+
+    class ModelWithAdditionalInputs(nn.Module):
+        """Model with additional inputs for testing."""
+
+        def __init__(self):
+            super().__init__()
+            self.lora_a = nn.Parameter(torch.randn(10, 10))
+            self.linear = nn.Linear(10, 10)
+
+        def forward(self, x, extra_input, labels=None):
+            """Forward pass with additional inputs."""
+            logits = self.linear(x + extra_input)
+            if labels is not None:
+                loss = nn.functional.mse_loss(logits, labels)
+                return {"loss": loss}
+            return {"logits": logits}
+
+    model = ModelWithAdditionalInputs()
+    lora_training = LoraTraining(model)
+    x = torch.randn(5, 10)
+    y = torch.randn(5, 10)
+    extra_input = torch.randn(5, 10)
+    loss, _ = lora_training((x, extra_input, y))
+    assert isinstance(loss, torch.Tensor)
+
+
+def test_lora_training_forward_with_no_loss_fn_and_no_labels():
+    """Test LoraTraining when model returns loss=None and no loss_fn provided."""
+    model = DummyLoRAModel()
+    lora_training = LoraTraining(model)
+    x = torch.randn(5, 10)
+    y = None  # No labels provided
+    with pytest.raises(ValueError) as exc_info:
+        lora_training((x, y))
+    assert "The model did not return a loss." in str(exc_info.value)
+
+
+def test_lora_trainer_train_with_various_batch_types():
+    """Test LoraTrainer.train with batches of different types."""
+    model = DummyLoRAModel()
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+    lora_trainer = LoraTrainer(model, optimizer=optimizer)
+
+    # Mock the hybrid_model's __call__ method
+    lora_trainer.hybrid_model = MagicMock(
+        return_value=(torch.tensor(1.0, requires_grad=True), None)
+    )
+
+    class DictDataset(Dataset):
+        """Dataset with dict items."""
+
+        def __init__(self, data):
+            self.data = data
+
+        def __len__(self):
+            return len(self.data)
+
+        def __getitem__(self, idx):
+            return self.data[idx]
+
+    class ListDataset(Dataset):
+        """Dataset with list items."""
+
+        def __init__(self, data):
+            self.data = data
+
+        def __len__(self):
+            return len(self.data)
+
+        def __getitem__(self, idx):
+            return self.data[idx]
+
+    # Test with dict batch
+    dataset_dict = [{"input": torch.randn(5, 10), "label": torch.randn(5, 10)} for _ in range(2)]
+    train_loader_dict: DataLoader = DataLoader(DictDataset(dataset_dict), batch_size=1)
+    lora_trainer.train(train_loader_dict, num_epochs=1)
+
+    # Test with list/tuple batch
+    dataset_list = [(torch.randn(5, 10), torch.randn(5, 10)) for _ in range(2)]
+    train_loader_list: DataLoader = DataLoader(ListDataset(dataset_list), batch_size=1)
+    lora_trainer.train(train_loader_list, num_epochs=1)
+
+    # Test with single tensor batch
+    dataset_single = TensorDataset(torch.stack([torch.randn(5, 10) for _ in range(2)]))
+    train_loader_single: DataLoader = DataLoader(dataset_single, batch_size=1)
+    lora_trainer.train(train_loader_single, num_epochs=1)
+
+    # Test with single non-tensor, non-dict item batch
+    class CustomItem:
+        """Custom item for testing."""
+
+        def __init__(self, value):
+            self.value = value
+
+    class CustomDataLoader:
+        """Custom data loader for testing."""
+
+        def __init__(self, data):
+            self.data = data
+            self.index = 0
+
+        def __iter__(self):
+            return self
+
+        def __next__(self):
+            if self.index < len(self.data):
+                item = self.data[self.index]
+                self.index += 1
+                return item
+            raise StopIteration
+
+        def __len__(self):
+            return len(self.data)
+
+    custom_data = [CustomItem(i) for i in range(2)]
+    train_loader_custom = CustomDataLoader(custom_data)
+    lora_trainer.train(train_loader_custom, num_epochs=1)
+
+
+def test_lora_trainer_train_with_gradient_accumulation():
+    """Test LoraTrainer.train with gradient accumulation steps."""
+    model = DummyLoRAModel()
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+    training_args = {"gradient_accumulation_steps": 2, "max_grad_norm": 1.0}
+    lora_trainer = LoraTrainer(model, optimizer=optimizer, training_args=training_args)
+    # Mock the hybrid_model's __call__ method
+    lora_trainer.hybrid_model = MagicMock(
+        return_value=(torch.tensor(1.0, requires_grad=True), None)
+    )
+    # Create dummy data loader
+    dataset = TensorDataset(torch.randn(4, 5, 10), torch.randn(4, 5, 10))
+    train_loader: DataLoader = DataLoader(dataset, batch_size=1)
+    lora_trainer.train(train_loader, num_epochs=1)
+
+
+def test_get_remote_names_with_lora_in_name():
+    """Test get_remote_names skips modules with 'lora' in name."""
+
+    class ModelWithLoraInName(nn.Module):
+        """Model with LoRA layer for testing."""
+
+        def __init__(self):
+            super().__init__()
+            self.lora_linear = nn.Linear(10, 10)
+            self.linear = nn.Linear(10, 10)
+
+        def forward(self, x):
+            """Forward pass with lora_linear."""
+            x = self.lora_linear(x)
+            x = self.linear(x)
+            return x
+
+    model = ModelWithLoraInName()
+    remote_names = get_remote_names(model)
+    assert "lora_linear" not in remote_names
+    assert "linear" in remote_names

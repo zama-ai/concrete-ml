@@ -1,16 +1,21 @@
-"""This module contains classes for LoRA (Low-Rank Adaptation) training and custom layers."""
+"""This module contains classes for LoRA (Low-Rank Adaptation) FHE training and custom layers."""
 
 from typing import List, Tuple, Union
 
 import torch
+from torch import Tensor, autograd, nn
+from torch.utils.data import DataLoader
+from tqdm import tqdm
+
+from .hybrid_model import HybridFHEModel
 
 try:
     from transformers import Conv1D as TransformerConv1D
-except ImportError:
+except ImportError:  # pragma: no cover
     TransformerConv1D = None
 
 # Create a tuple of linear layer classes to check against
-LINEAR_LAYERS: tuple = (torch.nn.Linear,)
+LINEAR_LAYERS: tuple = (nn.Linear,)
 if TransformerConv1D is not None:
     LINEAR_LAYERS = LINEAR_LAYERS + (TransformerConv1D,)
 
@@ -31,43 +36,76 @@ class LoraTraining(torch.nn.Module):
     toggle between calibration and optimization modes.
 
     Args:
-        inference_model (torch.nn.Module): The base model to be fine-tuned.
+        model (torch.nn.Module): The base model with LoRA layers to be fine-tuned.
         n_layers_to_skip (int): Number of layers to skip. Linear layers that do not require
             gradient to be propagated are skipped. Defaults to 1.
+        loss_fn (callable, optional): Loss function to compute the loss. If None, the model
+            is expected to return a loss.
     """
 
-    def __init__(self, inference_model, n_layers_to_skip: int = 1) -> None:
+    def __init__(self, model, n_layers_to_skip=1, loss_fn=None):
         super().__init__()
 
-        self.inference_model = inference_model
+        # Assert that the model contains LoRA layers
+        self.assert_has_lora_layers(model)
 
+        self.inference_model = model
         self.replace_layers_with_custom(self.inference_model, n_layers_to_skip)
 
-        self.optimizer = None
-        self.lr_scheduler = None
-        self.loss_fn = None
-        self.gradient_accumulation_steps = 1
-        self.max_grad_norm = None
-
         self.calibrate = False
-        self.run_optimizer = False
+        self.loss_fn = loss_fn
+        self.loss_scaling_factor = 1.0
 
-    @staticmethod
-    def replace_layers_with_custom(model: torch.nn.Module, n_layers_to_skip: int):
-        """Replace linear layers with custom ones.
-
-        This method replaces eligible linear layers in the model with custom layers
-        that are compatible with the LoRA training procedure.
+    def set_loss_scaling_factor(self, loss_scaling_factor: float):
+        """Set the loss scaling factor for gradient accumulation.
 
         Args:
-            model (torch.nn.Module): The model to replace layers in.
+            loss_scaling_factor (float): The factor to scale the loss by.
+        """
+        self.loss_scaling_factor = loss_scaling_factor
+
+    @staticmethod
+    def assert_has_lora_layers(model):
+        """Assert that the model contains LoRA layers.
+
+        Args:
+            model (torch.nn.Module): The model to check for LoRA layers.
+
+        Raises:
+            ValueError: If the model does not contain any LoRA layers.
+        """
+
+        def is_lora_module(module):
+            # Check for common LoRA attributes with case-insensitive matching
+            lora_attributes = ["lora_a", "lora_b", "lora_dropout"]
+            return any(
+                hasattr(module, attr)
+                or hasattr(module, attr.lower())
+                or hasattr(module, attr.upper())
+                for attr in lora_attributes
+            )
+
+        has_lora = any(is_lora_module(module) for module in model.modules())
+
+        if not has_lora:
+            raise ValueError("The model does not contain any detectable LoRA layers.")
+
+        print("LoRA layers detected in the model.")
+
+    @staticmethod
+    def replace_layers_with_custom(model: nn.Module, n_layers_to_skip: int) -> None:
+        """Replace linear layers with custom ones.
+
+        Args:
+            model (nn.Module): The model to replace layers in.
             n_layers_to_skip (int): Number of layers to skip.
         """
 
-        def _replace(module: torch.nn.Module):
+        def _replace(module: nn.Module):
             nonlocal n_layers_to_skip
             for name, child in list(module.named_children()):
-                # Skip modules containing "lora" in their name
+
+                # Skip lora layers as they are computed on the client side
                 if "lora" in name:
                     continue
 
@@ -85,7 +123,9 @@ class LoraTraining(torch.nn.Module):
 
                     # Create the CustomLinear layer
                     custom_layer = CustomLinear(
-                        weight=child.weight, bias=child.bias, weight_transposed=weight_transposed
+                        weight=child.weight,
+                        bias=child.bias,
+                        weight_transposed=weight_transposed,
                     )
 
                     # Replace the original layer with the custom layer
@@ -96,118 +136,6 @@ class LoraTraining(torch.nn.Module):
 
         _replace(model)
 
-    def update_training_parameters(
-        self, optimizer=None, lr_scheduler=None, loss_fn=None, training_args=None
-    ):
-        """Update training parameters for the LoRA module.
-
-        Args:
-            optimizer (optional): The optimizer to use for training.
-            lr_scheduler (optional): The learning rate scheduler to use for training.
-            loss_fn (callable, optional): Loss function to compute the loss.
-            training_args (dict or namespace, optional): Training arguments containing
-                'gradient_accumulation_steps' and 'max_grad_norm'.
-        """
-        self.optimizer = optimizer
-        self.lr_scheduler = lr_scheduler
-        self.loss_fn = loss_fn
-
-        if training_args is not None:
-            # Check if training_args is a dict or an object with attributes
-            if isinstance(training_args, dict):
-                self.gradient_accumulation_steps = training_args.get(
-                    "gradient_accumulation_steps", 1
-                )
-                self.max_grad_norm = training_args.get("max_grad_norm", None)
-            else:
-                self.gradient_accumulation_steps = getattr(
-                    training_args, "gradient_accumulation_steps", 1
-                )
-                self.max_grad_norm = getattr(training_args, "max_grad_norm", None)
-        else:
-            self.gradient_accumulation_steps = 1
-            self.max_grad_norm = None
-
-    def forward(
-        self, inputs: Tuple[torch.Tensor, ...]
-    ) -> Tuple[torch.Tensor, Union[torch.Tensor, None]]:
-        """Forward pass of the LoRA training module.
-
-        Args:
-            inputs (tuple): A tuple containing the input tensors. The first two elements should be
-                            the features and the labels. Additional elements will be passed
-                            to the model as needed.
-
-        Returns:
-            A tuple containing the loss and gradient norm.
-
-        Raises:
-            ValueError: If the model does not return a loss when `self.loss_fn` is None.
-        """
-        assert (
-            len(inputs) >= 2
-        ), "Expected at least two inputs in the tuple: inputs (x) and targets (y)"
-
-        # Remove this once hybrid model supports multiple inputs
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4568
-        # Extract x (input features) and y (labels)
-        x, y = inputs[0], inputs[1]
-
-        # Additional inputs, if any (e.g., attention_mask)
-        additional_inputs = inputs[2:]
-
-        # If no loss function is provided, we assume the model can compute the loss internally
-        if self.loss_fn is None:
-            # Forward pass through the inference model with labels
-            outputs = self.inference_model(x, labels=y, *additional_inputs)
-
-            # Use getattr to safely access the loss attribute from the outputs
-            loss = getattr(outputs, "loss", None)
-            if loss is None:
-                raise ValueError(
-                    "The model did not return a loss. Ensure that 'labels' are correctly provided."
-                )
-        else:
-            # Forward pass through the inference model without labels
-            outputs = self.inference_model(x, *additional_inputs)
-
-            # If the outputs contain several keys, extract the logits
-            if isinstance(outputs, dict) and "logits" in outputs:
-                outputs = outputs["logits"]
-
-            # Compute the loss using the provided loss function
-            loss = self.loss_fn(outputs, y)
-
-        # Scale the loss based on gradient accumulation
-        loss = loss / self.gradient_accumulation_steps
-
-        # Update gradients
-        # We need to set requires grad to the loss manually because the inference model's last
-        # step is the "lm_head" layer, which might be detached from the graph by the hybrid model
-        loss.requires_grad_(True)
-        loss.backward()
-
-        grad_norm = None
-        if not self.calibrate and self.run_optimizer:
-            if self.max_grad_norm is not None:
-                grad_norm = torch.nn.utils.clip_grad_norm_(
-                    self.inference_model.parameters(), max_norm=self.max_grad_norm, norm_type=2
-                )
-
-            if self.optimizer is not None:
-                self.optimizer.step()
-
-            if self.lr_scheduler is not None:
-                self.lr_scheduler.step()
-
-            self.inference_model.zero_grad()
-
-        # Clean gradients after calibration
-        elif self.calibrate:
-            self.inference_model.zero_grad()
-
-        return loss, grad_norm
-
     def toggle_calibrate(self, enable: bool = True):
         """Toggle calibration mode.
 
@@ -216,16 +144,207 @@ class LoraTraining(torch.nn.Module):
         """
         self.calibrate = enable
 
-    def toggle_run_optimizer(self, enable: bool = True):
-        """Toggle optimizer execution.
+    def forward(self, inputs: Tuple[Tensor, ...]) -> Tuple[Tensor, Union[Tensor, None]]:
+        """Forward pass of the LoRA training module.
 
         Args:
-            enable (bool): Whether to enable optimizer execution.
+            inputs (tuple): A tuple containing the input tensors.
+
+        Returns:
+            A tuple containing the original (unscaled) loss and None.
+
+        Raises:
+            ValueError: If the model does not return a loss and no loss function is provided.
         """
-        self.run_optimizer = enable
+        assert (
+            len(inputs) >= 2
+        ), "Expected at least two inputs in the tuple: inputs (x) and targets (y)"
+
+        # FIXME:
+        # Remove when hybrid model supports multiple inputs modules
+        # Unpack model inputs and labels
+        *model_inputs, y = inputs
+
+        if self.loss_fn is None:
+            # Pass inputs and labels to the model
+            outputs = self.inference_model(*model_inputs, labels=y)
+
+            # Check if outputs is a dict and retrieve the loss
+            if isinstance(outputs, dict):
+                loss = outputs.get("loss", None)
+            else:
+                loss = getattr(outputs, "loss", None)
+            if loss is None:
+                raise ValueError(
+                    "The model did not return a loss.",
+                    "Ensure that 'labels' are correctly provided or provide a loss_fn.",
+                )
+        else:
+            # Forward pass without labels; compute loss manually
+            outputs = self.inference_model(*model_inputs)
+            if isinstance(outputs, dict) and "logits" in outputs:
+                outputs = outputs["logits"]
+            loss = self.loss_fn(outputs, y)
+
+        # Scale the loss for gradient accumulation
+        scaled_loss = loss / self.loss_scaling_factor
+
+        # We need to set requires grad to the loss manually because the inference model's last
+        # step is the "lm_head" layer, which might be detached from the graph by the hybrid model
+        scaled_loss.requires_grad_(True)
+        scaled_loss.backward()
+
+        # Return the original (unscaled) loss for logging
+        return loss.detach(), None
 
 
-class ForwardModuleLinear(torch.nn.Module):
+class LoraTrainer:
+    """Trainer class for LoRA fine-tuning with FHE support.
+
+    This class handles the training loop, optimizer, scheduler,
+    and integrates with the hybrid model.
+
+    Args:
+        model (nn.Module): The base model with LoRA layers to be fine-tuned.
+        optimizer (torch.optim.Optimizer): Optimizer for training.
+        loss_fn (callable): Loss function to compute the loss.
+        lr_scheduler (optional): Learning rate scheduler.
+        training_args (dict): Training arguments.
+        n_layers_to_skip (int): Number of layers to skip. Defaults to 1.
+    """
+
+    def __init__(
+        self,
+        model,
+        optimizer=None,
+        loss_fn=None,
+        lr_scheduler=None,
+        training_args=None,
+        n_layers_to_skip=1,
+    ):
+        self.optimizer = optimizer
+        self.lr_scheduler = lr_scheduler
+        self.training_args = training_args or {}
+        self.gradient_accumulation_steps = self.training_args.get("gradient_accumulation_steps", 1)
+        self.max_grad_norm = self.training_args.get("max_grad_norm", None)
+
+        # Create the LoRA training module
+        self.lora_training_module = LoraTraining(
+            model, n_layers_to_skip=n_layers_to_skip, loss_fn=loss_fn
+        )
+
+        # Determine modules to be executed remotely
+        remote_names = get_remote_names(self.lora_training_module)
+
+        # Create the hybrid model
+        self.hybrid_model = HybridFHEModel(self.lora_training_module, module_names=remote_names)
+
+    def compile(self, inputset, n_bits=8):
+        """Compile the hybrid model with the given input set.
+
+        Args:
+            inputset (tuple): Input set for compilation.
+            n_bits (int): Bit width for quantization.
+        """
+        self.lora_training_module.toggle_calibrate(enable=True)
+        self.hybrid_model.compile_model(inputset, n_bits=n_bits)
+        self.lora_training_module.toggle_calibrate(enable=False)
+
+    def train(
+        self,
+        train_loader: DataLoader,
+        num_epochs: int = 10,
+        fhe: str = "simulate",
+    ):
+        """Train the model using the hybrid FHE model.
+
+        Args:
+            train_loader (DataLoader): DataLoader for training data.
+            num_epochs (int): Number of epochs to train.
+            fhe (str): FHE mode ('disable', 'simulate', 'execute' or 'torch').
+        """
+        device = torch.device("cpu")
+        self.lora_training_module.to(device)
+        self.lora_training_module.inference_model.train()
+
+        # Set the loss scaling factor for gradient accumulation
+        self.lora_training_module.set_loss_scaling_factor(self.gradient_accumulation_steps)
+
+        epoch_pbar = tqdm(range(1, num_epochs + 1), desc="Training", unit="epoch")
+
+        for epoch in epoch_pbar:
+            total_loss = 0.0
+            self.optimizer.zero_grad()  # Zero gradients at the start of the epoch
+
+            for step, batch in enumerate(train_loader):
+
+                # Convert batch to tuple and move to device
+                if isinstance(batch, dict):
+
+                    # Convert dict to tuple of values and move tensors to device
+                    batch = tuple(
+                        v.to(device) if isinstance(v, torch.Tensor) else v for v in batch.values()
+                    )
+                elif isinstance(batch, (tuple, list)):
+
+                    # Move tensor items to the device
+                    batch = tuple(
+                        item.to(device) if isinstance(item, torch.Tensor) else item
+                        for item in batch
+                    )
+                else:
+
+                    # If it's a single item, wrap it in a tuple and move to device if it's a tensor
+                    batch = (batch.to(device) if isinstance(batch, torch.Tensor) else batch,)
+
+                # Forward pass
+                loss, _ = self.hybrid_model(batch, fhe=fhe)
+
+                # Loss scaling and backward is done inside LoraTraining
+
+                # Accumulate loss for logging
+                total_loss += loss.item()
+
+                # Update weights and reset gradients after specified steps
+                if (step + 1) % self.gradient_accumulation_steps == 0 or (step + 1) == len(
+                    train_loader
+                ):
+                    if self.max_grad_norm is not None:
+                        torch.nn.utils.clip_grad_norm_(
+                            self.lora_training_module.parameters(), self.max_grad_norm
+                        )
+
+                    # Optimizer step
+                    self.optimizer.step()
+
+                    # Scheduler step
+                    if self.lr_scheduler is not None:
+                        self.lr_scheduler.step()
+
+                    # Zero gradients
+                    self.optimizer.zero_grad()
+
+            avg_loss = total_loss / len(train_loader)
+            epoch_pbar.set_postfix(
+                {
+                    "Epoch": epoch,
+                    "Avg Loss": f"{avg_loss:.4f}",
+                    "FHE Mode": fhe,
+                }
+            )
+
+        print(f"Training completed. Final Avg Loss: {avg_loss:.4f}, FHE Mode: {fhe}")
+
+    def save_and_clear_private_info(self, path):
+        """Save the model and remove private information.
+
+        Args:
+            path (str): The path to save the model.
+        """
+        self.hybrid_model.save_and_clear_private_info(path)
+
+
+class ForwardModuleLinear(nn.Module):
     """Forward module for linear layers."""
 
     def __init__(self, weight, bias=None, weight_transposed=False):
@@ -254,7 +373,7 @@ class ForwardModuleLinear(torch.nn.Module):
         return output
 
 
-class BackwardModuleLinear(torch.nn.Module):
+class BackwardModuleLinear(nn.Module):
     """Backward module for linear layers."""
 
     def __init__(self, weight, weight_transposed=False):
@@ -278,7 +397,7 @@ class BackwardModuleLinear(torch.nn.Module):
         return grad_input
 
 
-class CustomLinear(torch.nn.Module):
+class CustomLinear(nn.Module):
     """Custom linear module."""
 
     def __init__(self, weight, bias=None, weight_transposed=False):
@@ -298,7 +417,7 @@ class CustomLinear(torch.nn.Module):
         return ForwardBackwardModule.apply(input_tensor, self.forward_module, self.backward_module)
 
 
-class ForwardBackwardModule(torch.autograd.Function):
+class ForwardBackwardModule(autograd.Function):
     """Custom autograd function for forward and backward passes."""
 
     @staticmethod
@@ -336,11 +455,11 @@ class ForwardBackwardModule(torch.autograd.Function):
         return grad_input, None, None
 
 
-def get_remote_names(model: torch.nn.Module, include_embedding_layers: bool = False) -> List[str]:
+def get_remote_names(model: nn.Module, include_embedding_layers: bool = False) -> List[str]:
     """Get names of modules to be executed remotely.
 
     Args:
-        model (torch.nn.Module): The model to inspect.
+        model (nn.Module): The model to inspect.
         include_embedding_layers (bool): Whether to include embedding layers.
 
     Returns:
@@ -363,7 +482,7 @@ def get_remote_names(model: torch.nn.Module, include_embedding_layers: bool = Fa
         elif isinstance(module, CustomLinear):
             remote_names.append(f"{name}.forward_module")
             remote_names.append(f"{name}.backward_module")
-        elif include_embedding_layers and (isinstance(module, torch.nn.Embedding) or is_lm_head):
+        elif include_embedding_layers and (isinstance(module, nn.Embedding) or is_lm_head):
             remote_names.append(name)
 
     return remote_names
