@@ -162,6 +162,10 @@ class QuantizedGemm(QuantizedMixingOp):
             f"Got alpha == {alpha} and beta == {beta}.",
         )
 
+    @classmethod
+    def supported_by_linear_backend(cls) -> bool:
+        return True
+
     # pylint: disable-next=too-many-statements,too-many-locals
     def q_impl(
         self,
@@ -201,12 +205,12 @@ class QuantizedGemm(QuantizedMixingOp):
         # Using snake case here to please the Python format, the original attrs don't have the '_'
         # Use default false so we also support MatMul impl, MatMul does not have these flags
         transpose_inputs1 = attrs.get("transA", False)
-        transpose_inputs2 = attrs.get("transB", False)
-
         with tag(self.op_instance_name + ".input"):
             input1_q_values = (
                 numpy.transpose(q_input1.qvalues) if transpose_inputs1 else q_input1.qvalues
             )
+
+        transpose_inputs2 = attrs.get("transB", False)
         input2_q_values = (
             numpy.transpose(q_input2.qvalues) if transpose_inputs2 else q_input2.qvalues
         )
@@ -490,6 +494,68 @@ class QuantizedGemm(QuantizedMixingOp):
             stats=self.output_quant_stats,
             params=self.output_quant_params,
         )
+
+    def calibrate_analytical_output(self, *inputs: QuantizedArray) -> UniformQuantizer:
+        """Calibrate output quantization based on analytical formulas.
+
+        Args:
+            *inputs (QuantizedArray): quantized operation inputs. Quantized weights
+                are stored in the op instance
+
+        Returns:
+            res (UniformQuantizer): the quantizer of the operation's output values
+                that can be used to de-quantize these values.
+        """
+
+        q_input1 = inputs[0]
+        assert isinstance(q_input1, QuantizedArray)
+        q_input2 = inputs[1]
+        assert isinstance(q_input2, QuantizedArray)
+
+        # In the operation Y = alpha * A' * B' + beta * C, q_bias is used for
+        # generalised matrix multiplication. q_bias is set to None for standard
+        # matrix multiplication (beta == 0 or only two inputs)
+        q_bias = None if len(inputs) == 2 or self.attrs["beta"] == 0 else inputs[2]
+        assert isinstance(q_bias, (type(None), QuantizedArray))
+
+        # Using snake case here to please the Python format, the original attrs don't have the '_'
+        # Use default false so we also support MatMul impl, MatMul does not have these flags
+        transpose_inputs2 = self.attrs.get("transB", False)
+
+        p = q_input2.qvalues.shape[-2]
+
+        assert q_input1.quantizer.scale is not None
+        assert q_input2.quantizer.scale is not None
+        m_matmul = q_input1.quantizer.scale * q_input2.quantizer.scale
+
+        input2_q_values = (
+            numpy.transpose(q_input2.qvalues) if transpose_inputs2 else q_input2.qvalues
+        )
+
+        # Compute the third term, the sum of the weights which is a constant
+        sum_weights = q_input1.quantizer.zero_point * numpy.sum(
+            input2_q_values, axis=-2, keepdims=True
+        )
+
+        assert q_input1.quantizer.zero_point is not None
+        assert q_input2.quantizer.zero_point is not None
+        final_term = p * q_input1.quantizer.zero_point * q_input2.quantizer.zero_point
+
+        out_zp: Union[int, numpy.ndarray] = sum_weights - final_term
+        if q_bias is not None:
+            # Make mypy happy
+            assert q_bias is not None
+            # Reshape the biases to broadcast them to each neuron
+            bias_out = q_bias.values if isinstance(q_bias, QuantizedArray) else q_bias
+            out_zp = out_zp + bias_out / (-m_matmul)
+
+        out_params = UniformQuantizationParameters(
+            scale=m_matmul,
+            zero_point=out_zp,
+            offset=0,
+        )
+
+        return UniformQuantizer(self._get_output_quant_opts(), self.output_quant_stats, out_params)
 
 
 class QuantizedMatMul(QuantizedGemm):
@@ -1595,11 +1661,11 @@ class QuantizedDiv(QuantizedMixingOp):
         self.divider_quantizer: Optional[UniformQuantizer] = None
         self.min_non_zero_value: Optional[numpy.float64] = None
 
-    def calibrate(self, *inputs: numpy.ndarray) -> numpy.ndarray:
+    def calibrate(self, *inputs: Union[QuantizedArray, numpy.ndarray]) -> numpy.ndarray:
         """Create corresponding QuantizedArray for the output of the activation function.
 
         Args:
-            *inputs (numpy.ndarray): Calibration sample inputs.
+            *inputs (Union[QuantizedArray, numpy.ndarray]): Calibration sample inputs.
 
         Returns:
             numpy.ndarray: the output values for the provided calibration samples.
@@ -1609,6 +1675,10 @@ class QuantizedDiv(QuantizedMixingOp):
         # we need to compute the quantizer of the divider since we are doing
         # an encrypted division where both numerator and denominator are encrypted
         if not self.can_fuse() and len(inputs) == 2:
+            assert isinstance(
+                inputs[0], numpy.ndarray
+            ), "Div calibrate does not support analytical calibration for now"
+            assert isinstance(inputs[1], numpy.ndarray)
 
             # FIXME https://github.com/zama-ai/concrete-ml-internal/issues/4556
             min_non_zero_index = numpy.abs(inputs[1]).argmin(axis=None)
@@ -1864,7 +1934,7 @@ class QuantizedBatchNormalization(QuantizedOp):
 
     _impl_for_op_named: str = "BatchNormalization"
 
-    def calibrate(self, *inputs: numpy.ndarray) -> numpy.ndarray:
+    def calibrate(self, *inputs: Union[QuantizedArray, numpy.ndarray]) -> numpy.ndarray:
         """Create corresponding QuantizedArray for the output of the activation function.
 
         Args:
@@ -1873,6 +1943,10 @@ class QuantizedBatchNormalization(QuantizedOp):
         Returns:
             numpy.ndarray: the output values for the provided calibration samples.
         """
+
+        assert all(
+            isinstance(inp, numpy.ndarray) for inp in inputs
+        ), "Batch Normalization calibrate does not support analytical calibration"
 
         # Here we need the actual values of the constants, we need to pass through
         # the numpy.ndarrays in the computation graph
@@ -2023,7 +2097,7 @@ class QuantizedReduceSum(QuantizedMixingOp):
         self.noop_with_empty_axes = attrs.get("noop_with_empty_axes", 0)
         self.copy_inputs = False
 
-    def calibrate(self, *inputs: numpy.ndarray) -> numpy.ndarray:
+    def calibrate(self, *inputs: Union[QuantizedArray, numpy.ndarray]) -> numpy.ndarray:
         """Create corresponding QuantizedArray for the output of the activation function.
 
         Args:
@@ -2270,7 +2344,7 @@ class QuantizedBrevitasQuant(QuantizedOp):
         self.output_quant_opts.is_narrow = self.is_narrow
         self.output_quant_opts.is_signed = self.is_signed
 
-    def calibrate(self, *inputs: numpy.ndarray) -> numpy.ndarray:
+    def calibrate(self, *inputs: Union[QuantizedArray, numpy.ndarray]) -> numpy.ndarray:
         """Create corresponding QuantizedArray for the output of Quantization function.
 
         Args:

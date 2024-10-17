@@ -77,7 +77,7 @@ concrete_clf.compile(X, debug_config)
 
 #### 3. Quantization import failed
 
-**Error message**: `Error occurred during quantization aware training (QAT) import [...] Could not determine a unique scale for the quantization!`.
+**Error message**: `Error occurred during quantization aware training (QAT) import [...] Are you missing a QuantIdentity layer in your Brevitas model?`.
 
 **Cause**: This error occurs when the model imported as a quantized-aware training model lacks quantization operators. See [this guide](../deep-learning/fhe_friendly_models.md) on how to use Brevitas layers. This error message indicates that some layers do not take inputs quantized through `QuantIdentity` layers.
 
