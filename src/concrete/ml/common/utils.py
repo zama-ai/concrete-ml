@@ -105,6 +105,17 @@ class FheMode(str, enum.Enum):
         return fhe in FheMode.__members__.values()
 
 
+class HybridFHEMode(enum.Enum):
+    """Simple enum for different modes of execution of HybridModel."""
+
+    DISABLE = "disable"  # Use torch weights
+    REMOTE = "remote"  # Use remote FHE server
+    SIMULATE = "simulate"  # Use FHE simulation
+    CALIBRATE = "calibrate"  # Use calibration (to run before FHE compilation)
+    EXECUTE = "execute"  # Use FHE execution
+    TORCH = "torch"  # Use torch layers
+
+
 def replace_invalid_arg_name_chars(arg_name: str) -> str:
     """Sanitize arg_name, replacing invalid chars by _.
 

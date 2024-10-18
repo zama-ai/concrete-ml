@@ -161,6 +161,7 @@ then
     # And check with a white-list
     # Brevitas has an "UNKNOWN" license, but is actually a BSD, so it is ignored in this test
     # pkg-resources reports UNKNOWN due to a Ubuntu bug, but is Apache - ignore
+    # concrete-ml-extensions has the same license as Concrete ML, so skip checking
     LICENSES_WHITELIST="new BSD 3-Clause"
     LICENSES_WHITELIST="${LICENSES_WHITELIST};3-Clause BSD License"
     LICENSES_WHITELIST="${LICENSES_WHITELIST};new BSD"
@@ -181,7 +182,7 @@ then
     LICENSES_WHITELIST="${LICENSES_WHITELIST};ISC License (ISCL)"
     LICENSES_WHITELIST="${LICENSES_WHITELIST};The Unlicense (Unlicense)"
 
-    pip-licenses --allow-only="${LICENSES_WHITELIST}" --ignore-packages brevitas pkg-resources pkg_resources concrete-ml-extensions-brevitas
+    pip-licenses --allow-only="${LICENSES_WHITELIST}" --ignore-packages brevitas pkg-resources pkg_resources concrete-ml-extensions
 
     deactivate
 

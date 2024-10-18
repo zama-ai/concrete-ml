@@ -55,7 +55,7 @@ def _raise_qat_import_error(bad_qat_ops: List[Tuple[str, str]]):
                 bad_qat_ops,
             )
         )
-        + "\n\nCould not determine a unique scale for the quantization! "
+        + "\n\nAre you missing a QuantIdentity layer in your Brevitas model? "
         "Please check the ONNX graph of this model."
     )
 

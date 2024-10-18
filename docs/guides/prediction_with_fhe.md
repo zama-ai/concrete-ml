@@ -112,11 +112,12 @@ class FCSmall(nn.Module):
         super().__init__()
         self.quant_input = qnn.QuantIdentity(bit_width=3)
         self.fc1 = qnn.QuantLinear(in_features=input_output, out_features=input_output, weight_bit_width=3, bias=True)
+        self.quant_2 = qnn.QuantIdentity(bit_width=3)
         self.act_f = nn.ReLU()
         self.fc2 = qnn.QuantLinear(in_features=input_output, out_features=input_output, weight_bit_width=3, bias=True)
 
     def forward(self, x):
-        return self.fc2(self.act_f(self.fc1(self.quant_input(x))))
+        return self.fc2(self.quant_2(self.act_f(self.fc1(self.quant_input(x)))))
 
 torch_model = FCSmall(3)
 
