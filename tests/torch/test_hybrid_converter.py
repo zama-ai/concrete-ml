@@ -37,7 +37,7 @@ def test_tuple_serialization(tup):
     assert tup == underscore_str_to_tuple(tuple_to_underscore_str(tup))
 
 
-# pylint: disable=too-many-locals, too-many-branches
+# pylint: disable=too-many-locals, too-many-branches, too-many-statements
 def run_hybrid_llm_test(
     model: torch.nn.Module,
     inputs: torch.Tensor,
