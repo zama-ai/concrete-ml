@@ -1496,6 +1496,27 @@ class ManualLogisticRegressionTraining(torch.nn.Module):
         return outputs.squeeze()
 
 
+class WhereNet(torch.nn.Module):
+    """Simple network with a where operation for testing."""
+
+    def __init__(self, n_hidden):
+        super().__init__()
+        self.n_hidden = n_hidden
+        self.fc_tot = torch.rand(1, n_hidden) > 0.5
+
+    def forward(self, x):
+        """Forward pass.
+
+        Args:
+            x (torch.Tensor): The input tensor.
+
+        Returns:
+            torch.Tensor: The output tensor after applying the where operation.
+        """
+        y = torch.where(self.fc_tot, x, 0.0)
+        return y
+
+
 class AddNet(nn.Module):
     """Torch model that performs a simple addition between two inputs."""
 
