@@ -108,6 +108,7 @@ jobs:
 
       - name: Check commit signatures
         id: check-commit-signatures
+        if: ${{ !fromJSON(env.IS_WEEKLY) && !fromJSON(env.IS_RELEASE) }}
         uses: 1Password/check-signed-commits-action@ed2885f3ed2577a4f5d3c3fe895432a557d23d52
 
       - name: Check commits first line format
@@ -132,10 +133,10 @@ jobs:
           pattern: '(^.{0,74}$\r?\n?){0,20}'
           flags: 'gm'
           error: 'The maximum line length of 74 characters is exceeded.'
-          excludeDescription: 'true' # optional: this excludes the description body of a pull request
-          excludeTitle: 'true' # optional: this excludes the title of a pull request
-          checkAllCommitMessages: 'true' # optional: this checks all commits associated with a pull request
-          accessToken: ${{ secrets.GITHUB_TOKEN }} # github access token is only required if checkAllCommitMessages is true
+          excludeDescription: 'true'
+          excludeTitle: 'true'
+          checkAllCommitMessages: 'true'
+          accessToken: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Commit conformance
         id: commit-conformance
