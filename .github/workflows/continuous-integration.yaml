@@ -108,7 +108,7 @@ jobs:
 
       - name: Check commit signatures
         id: check-commit-signatures
-        if: ${{ !fromJSON(env.IS_WEEKLY) && !fromJSON(env.IS_RELEASE) }}
+        if: ${{ fromJSON(env.IS_PR) }}
         uses: 1Password/check-signed-commits-action@ed2885f3ed2577a4f5d3c3fe895432a557d23d52
 
       - name: Check commits first line format
