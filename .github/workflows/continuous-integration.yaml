@@ -104,7 +104,7 @@ jobs:
       commits_ok: ${{ steps.commit-conformance.outcome == 'success' }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Check commit signatures
         id: check-commit-signatures
@@ -170,7 +170,7 @@ jobs:
       macos-python-versions: ${{ steps.set-matrix.outputs.macos-python-versions }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Set matrix
         id: set-matrix
@@ -302,7 +302,7 @@ jobs:
       matrix: ${{ steps.update-linux-matrix.outputs.linux-matrix }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
@@ -474,7 +474,7 @@ jobs:
       # Checkout the code
       # 'fetch-depth' is set to 0 in order to fetch all tags (used for generating the changelog)
       - name: Checkout Code
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           fetch-depth: 0
 
@@ -1088,7 +1088,7 @@ jobs:
 
       # Checkout the code
       - name: Checkout Code
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       # Pull necessary LFS files (and thus avoid downloading files stored for benchmarks, use cases, ...)
       - name: Pull LFS files
@@ -1185,7 +1185,7 @@ jobs:
       ]
 
     steps:
-      - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Prepare whole job status
         env:
