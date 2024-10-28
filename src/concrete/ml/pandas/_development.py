@@ -22,7 +22,7 @@ API_VERSION_SPECS = {
     1: {"configuration": Configuration(), "join_function": "main"},
     2: {
         "configuration": Configuration(
-            compress_evaluation_keys=True #compress_input_ciphertexts=True, 
+            compress_evaluation_keys=True, compress_input_ciphertexts=True,
         ),
         "join_function": "left_right_join_to_compile",
         "batch_1d_function": "build_batch_1d",
