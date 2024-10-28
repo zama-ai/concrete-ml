@@ -64,9 +64,13 @@ def run_hybrid_llm_test(
             m.setitem(sys.modules, "transformers", None)
             if has_pbs_reshape:
                 has_pbs = True
-        if not glwe_backend_installed:
-            m.setattr(concrete.ml.quantization.linear_op_glwe_backend, "_HAS_GLWE_BACKEND", False)
-            m.setattr(concrete.ml.torch.hybrid_model, "_HAS_GLWE_BACKEND", False)
+
+        # Propagate glwe_backend_installed state being tested to constants of affected modules
+        for affected_module in (
+            concrete.ml.quantization.linear_op_glwe_backend,
+            concrete.ml.torch.hybrid_model,
+        ):
+            m.setattr(affected_module, "_HAS_GLWE_BACKEND", glwe_backend_installed)
 
         # Create a hybrid model
         hybrid_model = HybridFHEModel(model, module_names)
