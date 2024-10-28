@@ -98,7 +98,8 @@ def check_concrete_versions(zip_path: Path):
             f"{sys.version_info.major}.{sys.version_info.minor}"
         ):  # pragma: no cover
             raise ValueError(
-                "Not the same Python version between the compiler and the server."
+                "Not the same Python version between the zip file "
+                "({zip_path}) and the current machine: "
                 f"{versions['python']} != {sys.version_info.major}.{sys.version_info.minor}"
             )
 
