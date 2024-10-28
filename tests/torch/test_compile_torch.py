@@ -54,6 +54,7 @@ from concrete.ml.pytest.torch_models import (
     TorchDivide,
     TorchMultiply,
     UnivariateModule,
+    WhereNet,
 )
 from concrete.ml.quantization import QuantizedModule
 
@@ -773,6 +774,37 @@ def test_dump_torch_network(
         expected_onnx_str=expected_onnx_str,
         verbose=False,
     )
+
+
+def test_compile_where_net(default_configuration, check_is_good_execution_for_cml_vs_circuit):
+    """Test compilation and execution of PTQSimpleNet."""
+    n_feat = 32
+    n_examples = 100
+
+    torch_model = WhereNet(n_feat)
+
+    # Create random input
+    inputset = numpy.random.uniform(-100, 100, size=(n_examples, n_feat))
+
+    # Compile the model
+    quantized_module = compile_torch_model(
+        torch_model,
+        inputset,
+        n_bits=16,
+        configuration=default_configuration,
+    )
+
+    # Test execution
+    x_test = inputset[:10]  # Use first 10 samples for testing
+
+    # Check if FHE simulation and quantized module forward give the same output
+    check_is_good_execution_for_cml_vs_circuit(x_test, model=quantized_module, simulate=True)
+
+    # Compare with PyTorch model
+    torch_output = torch_model(torch.from_numpy(x_test).float()).detach().numpy()
+    quantized_output = quantized_module.forward(x_test, fhe="disable")
+
+    numpy.testing.assert_allclose(torch_output, quantized_output, rtol=1e-2, atol=1e-2)
 
 
 @pytest.mark.parametrize("verbose", [True, False], ids=["with_verbose", "without_verbose"])

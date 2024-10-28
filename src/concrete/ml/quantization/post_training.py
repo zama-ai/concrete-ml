@@ -965,7 +965,15 @@ class PostTrainingAffineQuantization(ONNXConverter):
             return values.view(RawOpOutput)
         if not isinstance(values, (numpy.ndarray, Tracer)):
             values = numpy.array(values)
-        is_signed = is_symmetric = self._check_distribution_is_symmetric_around_zero(values)
+        if not numpy.issubdtype(values.dtype, numpy.bool_):
+            is_signed = is_symmetric = self._check_distribution_is_symmetric_around_zero(values)
+        # Boolean parameters are quantized to 1 bit
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4593
+        # We should not quantize boolean parameters in the future
+        else:
+            is_signed = is_symmetric = False
+            n_bits = 1
+            values = values.astype(numpy.float64)
 
         return QuantizedArray(
             n_bits,
