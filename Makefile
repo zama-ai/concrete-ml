@@ -788,7 +788,7 @@ check_utils_use_case:
 # This command does not use a make script because of obscure import issues with Skops on macOS
 .PHONY: update_encrypted_dataframe # Update encrypted data-frame's development files
 update_encrypted_dataframe:
-	poetry run python ./src/concrete/ml/pandas/_development.py
+	poetry run python -c "from concrete.ml.pandas._development import save_client_server; save_client_server()"
 
 .PHONY: check_symlinks # Check that no utils.py are found in use_case_examples
 check_symlinks:

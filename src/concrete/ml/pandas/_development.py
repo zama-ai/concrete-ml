@@ -12,7 +12,7 @@ from concrete.fhe.tracing import Tracer
 
 from concrete import fhe
 
-from ..quantization.quantized_module import _get_inputset_generator
+from  ..quantization.quantized_module import _get_inputset_generator
 
 script_dir = Path(__file__).parent
 
@@ -115,13 +115,13 @@ def create_api_v2():
         @fhe.function({"value": "encrypted"})
         def create_batch_2d(value):
             batch = fhe.zeros((DFApiV2StaticHelper.BATCH_SIZE, DFApiV2StaticHelper.N_DIMS_TRAINING))
-            batch[0,0] = value
+            batch[0,0] = fhe.refresh(value)
             return batch
 
         @fhe.function({"value": "encrypted"})
         def create_batch_1d(value):
             batch = fhe.zeros((DFApiV2StaticHelper.BATCH_SIZE, ))
-            batch[0] = value
+            batch[0] = fhe.refresh(value)
             return batch
 
         @fhe.function(
@@ -138,7 +138,7 @@ def create_api_v2():
             index1: Union[Tracer, int],
             index2: Union[Tracer, int],
         ):
-            batch[index1, index2] = value
+            batch[index1, index2] = fhe.refresh(value)
             return batch
 
         @fhe.function(
@@ -153,7 +153,7 @@ def create_api_v2():
             value: Union[Tracer, int],
             index1: Union[Tracer, int],
         ):
-            batch[index1] = value
+            batch[index1] = fhe.refresh(value)
             return batch
 
         composition = Wired(
