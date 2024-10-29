@@ -107,10 +107,10 @@ if [[ "${OS_NAME}" == "Linux" ]]; then
     PYTHON_PACKAGES=
     if [[ "${LINUX_INSTALL_PYTHON}" == "1" ]]; then
         PYTHON_PACKAGES="python3-pip \
-        python3.8 \
-        python3.8-dev \
-        python3.8-tk \
-        python3.8-venv \
+        python3 \
+        python3-dev \
+        python3-tk \
+        python3-venv \
         python-is-python3 \
         "
     fi
@@ -136,10 +136,8 @@ if [[ "${OS_NAME}" == "Linux" ]]; then
         openssl \
         shellcheck \
         texlive-latex-base texlive-latex-extra texlive-fonts-recommended texlive-xetex lmodern \
-        wget && \
+        wget pipx adduser && \
         ${CLEAR_APT_LISTS:+$CLEAR_APT_LISTS} \
-        python3 -m pip install --no-cache-dir --upgrade pip && \
-        python3 -m pip install --no-cache-dir --ignore-installed poetry==1.7.1 && \
         linux_install_gitleaks && linux_install_actionlint && linux_install_github_cli"
     fi
     eval "${SETUP_CMD}"

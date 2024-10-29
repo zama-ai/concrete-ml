@@ -1,4 +1,5 @@
-FROM ubuntu:20.04
+ARG UBUNTU_BASE=20.04
+FROM ubuntu:${UBUNTU_BASE}
 
 ENV TZ=Europe/Paris
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
@@ -22,12 +23,17 @@ RUN apt-get update && \
     apt-get install --no-install-recommends -y sudo vim && \
     rm -rf /var/lib/apt/lists/*
 
+# For ubuntu>23 the ubuntu user will exist and use uid/gid=1000
+# we need to remove this user if it exists
+RUN userdel -f -r ubuntu; exit 0
+
 # From https://dev.to/emmanuelnk/using-sudo-without-password-prompt-as-non-root-docker-user-52bg
 # Create dev_user and add it to relevant groups
 # Create /src and make the dev user own it
 # Ensure sudo group users are not asked for a password when using
 # sudo command by ammending sudoers file
-RUN groupadd -g "${BUILD_GID}" dev_user && \
+
+RUN groupadd -f -g "${BUILD_GID}" dev_user && \
     adduser --disabled-password \
     --uid "${BUILD_UID}" --gid "${BUILD_GID}" --shell /bin/bash --gecos "" dev_user && \
     usermod -aG sudo dev_user && \
@@ -37,6 +43,13 @@ RUN groupadd -g "${BUILD_GID}" dev_user && \
 
 # Now switch to the newly created user
 USER dev_user
+
+RUN (pipx install poetry && pipx ensurepath) || \
+    (\ 
+        python3 -m pip install --no-cache-dir --upgrade pip && \
+        python3 -m pip install --no-cache-dir --ignore-installed poetry==1.7.1 && \
+        echo 'PATH=$PATH:/home/dev_user/.local/bin/' >> ~/.bashrc \
+    )
 
 RUN echo "source ~/dev_venv/bin/activate" >> ~/.bashrc && \
     echo "if [[ \"\$?\" != \"0\" ]]; then" >> ~/.bashrc && \
