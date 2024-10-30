@@ -124,6 +124,30 @@ def parse_line(line):
     }
 
 
+def reformat_data(data, previous_output_shape):
+
+    layers = []
+    for i, line in enumerate(data):
+
+        if line is None:
+            continue
+
+        input_shape = previous_output_shape
+        output_shape = line["output_shape"]
+
+        layers.append(
+            {
+                "class_name": f"{line['class_name']}-{line['layer_name']}",
+                "input_shape": input_shape,
+                "output_shape": output_shape,
+            }
+        )
+        # Update the previous output shape
+        previous_output_shape = output_shape
+
+    return layers
+
+
 def filter_conv_layers(data, previous_output_shape):
     conv_layers = []
     total_data = 0
