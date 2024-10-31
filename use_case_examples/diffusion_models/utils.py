@@ -27,54 +27,6 @@ def get_shape(obj, layer_name):
         )
 
 
-def custom_torch_summary1(model, input_tensor, verbose=2):
-
-    layer_shapes = {}
-    hooks = []
-
-    for name, layer in model.named_modules():
-        # Skip the top-level module
-        if layer == model:
-            continue
-
-        def hook(module, input, output, layer_name=name):
-            # Store the input and output shapes for the module
-            try:
-                input_shapes = get_shape(input, layer_name)
-                output_shapes = get_shape(output, layer_name)
-
-                layer_shapes[layer_name] = {
-                    "input_shapes": input_shapes,
-                    "output_shapes": output_shapes,
-                    "module": module,
-                    "class_name": type(module).__name__,
-                }
-            except Exception as e:
-                print(f"Error processing module {module}: {e}")
-                print(f"Input type: {type(input)}, Output type: {type(output)}")
-
-        # Register the hook with the current layer
-        hooks.append(layer.register_forward_hook(hook))
-
-    # Run a forward pass to trigger the hooks
-    with torch.no_grad():
-        model(input_tensor)
-
-    # Remove all hooks
-    for h in hooks:
-        h.remove()
-
-    # Optional: Print the shapes in a readable format
-    for i, (layer_name, shapes) in enumerate(layer_shapes.items()):
-        if i > verbose:
-            break
-        print(f"Layer: {layer_name} - {shapes['class_name']}")
-        print(f"  Input shapes: {shapes['input_shapes']}")
-        print(f"  Output shapes: {shapes['output_shapes']}\n")
-
-    return layer_shapes
-
-
 def custom_torch_summary(model, input_tensor, verbose=2):
 
     layer_shapes = []
