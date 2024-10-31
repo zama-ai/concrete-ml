@@ -138,9 +138,7 @@ def extract_dimensions(shape, layer_name):
         # Get the first element if it's a list, why ? because in the second layer, I observe that they took the first element as input
     elif isinstance(shape, dict):
         elem = list(shape.values())[0]
-    elif isinstance(shape, torch.Size) and len(shape) == 4:
-        elem = shape
-    elif isinstance(shape, tuple) and len(shape) == 4:
+    elif isinstance(shape, (torch.Size, tuple)) and len(shape) == 4:
         elem = shape
     else:
         raise ValueError(f"Unexpected shape {shape} in layer {layer_name}")
