@@ -75,7 +75,6 @@ def custom_torch_summary1(model, input_tensor, verbose=2):
     return layer_shapes
 
 
-
 def custom_torch_summary(model, input_tensor, verbose=2):
 
     layer_shapes = []
@@ -93,13 +92,14 @@ def custom_torch_summary(model, input_tensor, verbose=2):
                 output_shapes = get_shape(output, layer_name)
 
                 layer_shapes.append(
-                     {
-                         "layer_name": layer_name,
-                      "input_shapes": input_shapes,
-                    "output_shapes": output_shapes,
-                    "module": module,
-                    "class_name": type(module).__name__,
-                })
+                    {
+                        "layer_name": layer_name,
+                        "input_shapes": input_shapes,
+                        "output_shapes": output_shapes,
+                        "module": module,
+                        "class_name": type(module).__name__,
+                    }
+                )
             except Exception as e:
                 print(f"Error processing module {module}: {e}")
                 print(f"Input type: {type(input)}, Output type: {type(output)}")
@@ -115,7 +115,10 @@ def custom_torch_summary(model, input_tensor, verbose=2):
     for h in hooks:
         h.remove()
 
-    # Optional: Print the shapes in a readable format
+    # Optional
+    if verbose:
+        print("\n\nSummary ===================================================================")
+
     for i, shapes in enumerate(layer_shapes):
         if i > verbose:
             break
@@ -129,7 +132,7 @@ def custom_torch_summary(model, input_tensor, verbose=2):
 
 # Function to extract C, H, W from shape
 def extract_dimensions(shape, layer_name):
-    
+
     if isinstance(shape, list):
         elem = shape[0]
         # Get the first element if it's a list, why ? because in the second layer, I observe that they took the first element as input
@@ -204,7 +207,6 @@ def reformat_data(data, previous_output_shape):
     return layers
 
 
-
 def filter_conv_layers(data, previous_output_shape):
 
     conv_layers = []
@@ -230,8 +232,8 @@ def filter_conv_layers(data, previous_output_shape):
 
             conv_layers.append(
                 {
-                    "layer_name": parsed['layer_name'],
-                    "class_name": parsed['class_name'],
+                    "layer_name": parsed["layer_name"],
+                    "class_name": parsed["class_name"],
                     "input_shapes": input_shape,
                     "output_shapes": output_shape,
                     "total_size": layer_data,
