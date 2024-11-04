@@ -706,7 +706,7 @@ check_links:
 
 	@# Run linkcheck on mardown files. It is mainly used for web links
 	poetry run python -m linkcheckmd docs -local
-	poetry run python -m linkcheckmd README.md
+	poetry run python -m linkcheckmd --verbose README.md
 
 	@# Check that relative links in mardown files are targeting existing files 
 	poetry run python ./script/make_utils/local_link_check.py
