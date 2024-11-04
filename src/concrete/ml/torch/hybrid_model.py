@@ -32,6 +32,7 @@ from .compile import (
 )
 from .lora import BackwardModuleLinear, ForwardModuleLinear
 
+DEBUG = True
 
 def tuple_to_underscore_str(tup: Tuple) -> str:
     """Convert a tuple to a string representation.
@@ -565,6 +566,7 @@ class HybridFHEModel:
         self.set_fhe_mode(HybridFHEMode.CALIBRATE)
 
         # Run the model to get the calibration data
+        if DEBUG: print(type(x), x.shape)
         self.model(x)
 
         self.configuration = configuration
