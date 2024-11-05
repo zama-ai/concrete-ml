@@ -1,4 +1,9 @@
-"""Check external web links."""
+"""
+Check external web links.
+
+Note: We avoid using `poetry run python -m linkcheckmd README.md` because
+some servers restrict access when they detect requests from chatbots.
+"""
 
 import argparse
 import re
