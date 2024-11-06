@@ -1021,12 +1021,14 @@ class AllZeroCNN(CNNOther):
     ],
 )
 
-def test_qat_import_check(model, input_shape, input_output, default_configuration, check_is_good_execution_for_cml_vs_circuit):
+def test_qat_import_check(id, model, input_shape, input_output, default_configuration, check_is_good_execution_for_cml_vs_circuit):
     """Test two cases of custom (non brevitas) NNs where importing as QAT networks should fail."""
 
     qat_bits = 4
     simulate = True
     error_message_pattern = "Error occurred during quantization aware training.*"
+
+    Tracer.is_tracing = False
    
     with pytest.raises(ValueError, match=error_message_pattern):
         compile_and_test_torch_or_onnx(
@@ -1040,6 +1042,7 @@ def test_qat_import_check(model, input_shape, input_output, default_configuratio
             check_is_good_execution_for_cml_vs_circuit,
             input_shape=input_shape,
         )
+
 
 
 @pytest.mark.parametrize("n_bits", [2])
