@@ -1688,3 +1688,19 @@ class EmbeddingModel(nn.Module):
         x = self.relu(x)
         x = self.linear(x)
         return x
+
+
+class AllZeroCNN(CNNOther):
+    """A CNN class that has all zero weights and biases."""
+
+    def __init__(self, input_output, activation_function):
+        super().__init__(input_output, activation_function)
+
+        for module in self.modules():
+            # assert m.bias is not None
+            # Disable mypy as it properly detects that module's bias term is None end therefore
+            # does not have a `data` attribute but fails to take into consideration the fact
+            # that `torch.nn.init.constant_` actually handles such a case
+            if isinstance(module, (nn.Conv2d, nn.Linear)):
+                torch.nn.init.constant_(module.weight.data, 0)
+                torch.nn.init.constant_(module.bias.data, 0)  # type: ignore[union-attr]

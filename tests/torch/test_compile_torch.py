@@ -26,6 +26,7 @@ from concrete.ml.onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
 from concrete.ml.pytest.torch_models import (
     FC,
     AddNet,
+    AllZeroCNN,
     BranchingGemmModule,
     BranchingModule,
     CNNGrouped,
@@ -983,33 +984,17 @@ def test_qat_import_bits_check(default_configuration):
             )
 
 
-class AllZeroCNN(CNNOther):
-    """A CNN class that has all zero weights and biases."""
-
-    def __init__(self, input_output, activation_function):
-        super().__init__(input_output, activation_function)
-
-        for module in self.modules():
-            # assert m.bias is not None
-            # Disable mypy as it properly detects that module's bias term is None end therefore
-            # does not have a `data` attribute but fails to take into consideration the fact
-            # that `torch.nn.init.constant_` actually handles such a case
-            if isinstance(module, (nn.Conv2d, nn.Linear)):
-                torch.nn.init.constant_(module.weight.data, 0)
-                torch.nn.init.constant_(module.bias.data, 0)  # type: ignore[union-attr]
-
-
 @pytest.mark.parametrize(
     "id, model, input_shape, input_output",
     [
-        # This first test is trying to import a network that is QAT (has a quantizer in the graph)
+        # This model is trying to import a network that is QAT (has a quantizer in the graph)
         # but the import bit-width is wrong (mismatch between bit-width specified in training
         # and the bit-width specified during import). For NNs that are not built with Brevitas
         # the bit-width must be manually specified and is used to infer quantization parameters.
         (1, partial(StepFunctionPTQ, n_bits=6, disable_bit_check=True), None, 10),
-        # A network that may look like QAT but it just zeros all inputs
+        # This network may look like QAT but it just zeros all inputs
         (3, AllZeroCNN, (1, 7, 7), 1),
-        # The second case is a network that is not QAT but is being imported as a QAT network
+        # This second case is a network that is not QAT but is being imported as a QAT network
         (2, CNNOther, (1, 7, 7), 1),
         # input_output = input_shape[0]
     ],
