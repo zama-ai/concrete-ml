@@ -996,9 +996,7 @@ def test_qat_import_bits_check(default_configuration):
         (AllZeroCNN, (1, 7, 7), 1),
         # This second case is a network that is not QAT but is being imported as a QAT network
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4667
-        pytest.param(
-            CNNOther, (1, 7, 7), 1, marks=pytest.mark.skip(reason="Temporarily ignored")
-        ),
+        pytest.param(CNNOther, (1, 7, 7), 1, marks=pytest.mark.skip(reason="Temporarily skipped")),
         # input_output = input_shape[0]
     ],
 )
@@ -1011,20 +1009,16 @@ def test_qat_import_check(
 ):
     """Test two cases of custom (non brevitas) NNs where importing as QAT networks should fail."""
 
-    qat_bits = 4
-    simulate = True
-    error_message_pattern = "Error occurred during quantization aware training.*"
-
-    with pytest.raises(ValueError, match=error_message_pattern):
+    with pytest.raises(ValueError, match="Error occurred during quantization aware training.*"):
         compile_and_test_torch_or_onnx(
-            input_output,
-            model,
-            nn.ReLU,
-            qat_bits,
-            default_configuration,
-            simulate,
-            False,
-            check_is_good_execution_for_cml_vs_circuit,
+            input_output_feature=input_output,
+            model_class=model,
+            activation_function=nn.ReLU,
+            qat_bits=4,
+            default_configuration=default_configuration,
+            simulate=True,
+            is_onnx=False,
+            check_is_good_execution_for_cml_vs_circuit=check_is_good_execution_for_cml_vs_circuit,
             input_shape=input_shape,
         )
 
