@@ -50,11 +50,15 @@ def numpy_onnx_pad(
         # Initialize a padded version of the input, setting
         # the values on the edges to the input zero_point, which corresponds
         # to the real-axis 0
-        if int_only and isinstance(x_pad, Tracer):
-            # Work in integer Concrete mode
-            x_pad = fhe_ones(tuple(padded_shape)) * numpy.int64(pad_value)
+        if int_only:
+            if isinstance(x_pad, Tracer):
+                # Quantized execution: integer mode with tracing
+                x_pad = fhe_ones(tuple(padded_shape)) * numpy.int64(pad_value)
+            else:
+                # Quantized execution: integer mode without tracing
+                x_pad = numpy.ones(padded_shape, dtype=numpy.int64) * pad_value
         else:
-            # Floating point mode
+            # Calibration mode: floating-point padding for non-quantized execution
             x_pad = numpy.ones(padded_shape, dtype=numpy.float32) * pad_value
         assert isinstance(x_pad, (numpy.ndarray, Tracer))
 

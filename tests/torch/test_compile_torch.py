@@ -995,8 +995,7 @@ def test_qat_import_bits_check(default_configuration):
         # This network may look like QAT but it just zeros all inputs
         (AllZeroCNN, (1, 7, 7), 1),
         # This second case is a network that is not QAT but is being imported as a QAT network
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4667
-        pytest.param(CNNOther, (1, 7, 7), 1, marks=pytest.mark.skip(reason="Temporarily skipped")),
+        (CNNOther, (1, 7, 7), 1),
     ],
 )
 def test_qat_import_check(
