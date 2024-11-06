@@ -37,7 +37,7 @@ def check_links(file_path: Path, verbose: bool) -> List[str]:
     # Read the file
     content = file_path.read_text(encoding="utf-8")
 
-    # Use a regular expression to extract all links starting with https
+    # Use a regular expression to extract all links starting with https up to the next whitespace.
     raw_links = re.findall(r"https://\S+", content)
 
     # Clean the links by removing everything after any of these characters: '", ], }, ), >'
