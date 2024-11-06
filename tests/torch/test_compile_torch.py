@@ -17,6 +17,8 @@ import torch.quantization
 from concrete.fhe import ParameterSelectionStrategy  # pylint: disable=ungrouped-imports
 from torch import nn
 
+from concrete.fhe.tracing import Tracer
+
 from concrete.ml.common.utils import (
     array_allclose_and_same_shape,
     manage_parameters_for_pbs_errors,
@@ -281,6 +283,8 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
                 )
 
             else:
+                print("======= In: tests/torch/test_compile_torch.py:284: in compile_and_test_torch_or_onnx")
+                print(type(torch_model), type(inputset), qat_bits != 0, n_bits, n_rounding_bits)
                 quantized_numpy_module = compile_torch_model(
                     torch_model,
                     inputset,
@@ -291,6 +295,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
                     verbose=verbose,
                     device="cpu",
                 )
+                print(f"======= out: tests/torch/test_compile_torch.py:284: in compile_and_test_torch_or_onnx: {quantized_numpy_module=}")
 
         accuracy_test_rounding(
             torch_model,
@@ -982,71 +987,51 @@ def test_qat_import_bits_check(default_configuration):
                 configuration=default_configuration,
             )
 
+class AllZeroCNN(CNNOther):
+    """A CNN class that has all zero weights and biases."""
 
-def test_qat_import_check(default_configuration, check_is_good_execution_for_cml_vs_circuit):
+    def __init__(self, input_output, activation_function):
+        super().__init__(input_output, activation_function)
+
+        for module in self.modules():
+            # assert m.bias is not None
+            # Disable mypy as it properly detects that module's bias term is None end therefore
+            # does not have a `data` attribute but fails to take into consideration the fact
+            # that `torch.nn.init.constant_` actually handles such a case
+            if isinstance(module, (nn.Conv2d, nn.Linear)):
+                torch.nn.init.constant_(module.weight.data, 0)
+                torch.nn.init.constant_(module.bias.data, 0)  # type: ignore[union-attr]
+
+@pytest.mark.parametrize(
+    "id, model, input_shape, input_output",
+    [
+        # This first test is trying to import a network that is QAT (has a quantizer in the graph)
+        # but the import bit-width is wrong (mismatch between bit-width specified in training
+        # and the bit-width specified during import). For NNs that are not built with Brevitas
+        # the bit-width must be manually specified and is used to infer quantization parameters.
+        (1, partial(StepFunctionPTQ, n_bits=6, disable_bit_check=True), None, 10),
+
+        # The second case is a network that is not QAT but is being imported as a QAT network
+        (2, CNNOther, (1, 7, 7), 1),
+
+        # A network that may look like QAT but it just zeros all inputs
+        (3, AllZeroCNN, (1, 7, 7), 1),
+
+        # input_output = input_shape[0]
+    ],
+)
+
+def test_qat_import_check(model, input_shape, input_output, default_configuration, check_is_good_execution_for_cml_vs_circuit):
     """Test two cases of custom (non brevitas) NNs where importing as QAT networks should fail."""
+
     qat_bits = 4
-
     simulate = True
-
     error_message_pattern = "Error occurred during quantization aware training.*"
-
-    # This first test is trying to import a network that is QAT (has a quantizer in the graph)
-    # but the import bit-width is wrong (mismatch between bit-width specified in training
-    # and the bit-width specified during import). For NNs that are not built with Brevitas
-    # the bit-width must be manually specified and is used to infer quantization parameters.
-    with pytest.raises(ValueError, match=error_message_pattern):
-        compile_and_test_torch_or_onnx(
-            10,
-            partial(StepFunctionPTQ, n_bits=6, disable_bit_check=True),
-            nn.ReLU,
-            qat_bits,
-            default_configuration,
-            simulate,
-            False,
-            check_is_good_execution_for_cml_vs_circuit,
-        )
-
-    input_shape = (1, 7, 7)
-    input_output = input_shape[0]
-
-    # The second case is a network that is not QAT but is being imported as a QAT network
+   
     with pytest.raises(ValueError, match=error_message_pattern):
         compile_and_test_torch_or_onnx(
             input_output,
-            CNNOther,
-            nn.ReLU,
-            qat_bits,
-            default_configuration,
-            simulate,
-            False,
-            check_is_good_execution_for_cml_vs_circuit,
-            input_shape=input_shape,
-        )
-
-    class AllZeroCNN(CNNOther):
-        """A CNN class that has all zero weights and biases."""
-
-        def __init__(self, input_output, activation_function):
-            super().__init__(input_output, activation_function)
-
-            for module in self.modules():
-                # assert m.bias is not None
-                # Disable mypy as it properly detects that module's bias term is None end therefore
-                # does not have a `data` attribute but fails to take into consideration the fact
-                # that `torch.nn.init.constant_` actually handles such a case
-                if isinstance(module, (nn.Conv2d, nn.Linear)):
-                    torch.nn.init.constant_(module.weight.data, 0)
-                    torch.nn.init.constant_(module.bias.data, 0)  # type: ignore[union-attr]
-
-    input_shape = (1, 7, 7)
-    input_output = input_shape[0]
-
-    # A network that may look like QAT but it just zeros all inputs
-    with pytest.raises(ValueError, match=error_message_pattern):
-        compile_and_test_torch_or_onnx(
-            input_output,
-            AllZeroCNN,
+            model,
             nn.ReLU,
             qat_bits,
             default_configuration,
