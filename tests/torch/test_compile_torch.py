@@ -997,7 +997,6 @@ def test_qat_import_bits_check(default_configuration):
         # This second case is a network that is not QAT but is being imported as a QAT network
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4667
         pytest.param(CNNOther, (1, 7, 7), 1, marks=pytest.mark.skip(reason="Temporarily skipped")),
-        # input_output = input_shape[0]
     ],
 )
 def test_qat_import_check(
@@ -1019,6 +1018,7 @@ def test_qat_import_check(
             simulate=True,
             is_onnx=False,
             check_is_good_execution_for_cml_vs_circuit=check_is_good_execution_for_cml_vs_circuit,
+            # For non-null input_shape values, input_output is input_shape[0]
             input_shape=input_shape,
         )
 
