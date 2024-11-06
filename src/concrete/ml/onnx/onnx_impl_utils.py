@@ -50,7 +50,7 @@ def numpy_onnx_pad(
         # Initialize a padded version of the input, setting
         # the values on the edges to the input zero_point, which corresponds
         # to the real-axis 0
-        if int_only:
+        if int_only and isinstance(x_pad, Tracer):
             # Work in integer Concrete mode
             x_pad = fhe_ones(tuple(padded_shape)) * numpy.int64(pad_value)
         else:
