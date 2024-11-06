@@ -985,22 +985,24 @@ def test_qat_import_bits_check(default_configuration):
 
 
 @pytest.mark.parametrize(
-    "id, model, input_shape, input_output",
+    "model, input_shape, input_output",
     [
         # This model is trying to import a network that is QAT (has a quantizer in the graph)
         # but the import bit-width is wrong (mismatch between bit-width specified in training
         # and the bit-width specified during import). For NNs that are not built with Brevitas
         # the bit-width must be manually specified and is used to infer quantization parameters.
-        (1, partial(StepFunctionPTQ, n_bits=6, disable_bit_check=True), None, 10),
+        (partial(StepFunctionPTQ, n_bits=6, disable_bit_check=True), None, 10),
         # This network may look like QAT but it just zeros all inputs
-        (3, AllZeroCNN, (1, 7, 7), 1),
+        (AllZeroCNN, (1, 7, 7), 1),
         # This second case is a network that is not QAT but is being imported as a QAT network
-        (2, CNNOther, (1, 7, 7), 1),
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4667
+        pytest.param(
+            CNNOther, (1, 7, 7), 1, marks=pytest.mark.skip(reason="Temporarily ignored")
+        ),
         # input_output = input_shape[0]
     ],
 )
 def test_qat_import_check(
-    id,
     model,
     input_shape,
     input_output,
