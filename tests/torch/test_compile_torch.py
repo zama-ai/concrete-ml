@@ -15,7 +15,6 @@ import pytest
 import torch
 import torch.quantization
 from concrete.fhe import ParameterSelectionStrategy  # pylint: disable=ungrouped-imports
-from concrete.fhe.tracing import Tracer
 from torch import nn
 
 from concrete.ml.common.utils import (
