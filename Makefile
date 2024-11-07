@@ -704,14 +704,16 @@ check_links:
 	@# To avoid some issues with priviledges and linkcheckmd
 	find docs/ -name "*.md" -type f | xargs chmod +r
 
-	@# Run linkcheck on mardown files. It is mainly used for web links
+	@# Run linkcheck on markdown files to check only local files
 	poetry run python -m linkcheckmd docs -local
-	poetry run python -m linkcheckmd README.md
 
-	@# Check that relative links in mardown files are targeting existing files 
+	@# Check that web links are functional or not broken
+	poetry run python ./script/make_utils/check_links_with_agent.py README.md --verbose
+
+	@# Check that relative links in markdown files are targeting existing files 
 	poetry run python ./script/make_utils/local_link_check.py
 
-	@# Check that links to mardown headers in mardown files are targeting existing headers 
+	@# Check that links to markdown headers in markdown files are targeting existing headers 
 	poetry run python ./script/make_utils/check_headers.py
 
 	@# For weblinks and internal references

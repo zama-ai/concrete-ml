@@ -301,9 +301,7 @@ def test_clip_op(
 ARITH_N_BITS_LIST = [20, 16, 8]
 
 
-# This test is a known flaky (in particular, with the QuantizedDiv operator)
-# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4563
-@pytest.mark.flaky
+# This test was known to be flaky, in particular, with the QuantizedDiv operator (see issue 4563).
 @pytest.mark.parametrize(
     "operator, supports_enc_with_enc, r2_threshold_bits",
     [
