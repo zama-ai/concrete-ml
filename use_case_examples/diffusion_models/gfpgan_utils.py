@@ -1,18 +1,24 @@
 import collections
-import re
 import os
-import torch
-import numpy
-import cv2
-from pathlib import Path 
+import re
+from pathlib import Path
 
-def extract_specific_module(model, dtype_layer=torch.nn.Linear, verbose=True):
+import cv2
+import numpy
+import torch
+
+
+def extract_specific_module(model, dtype_layer=torch.nn.Linear, name_only=True, verbose=False):
     layers = []
     for name, module in model.named_modules():
         if isinstance(module, dtype_layer):
             if verbose:
                 print(name, module)
             layers.append((name, module))
+
+    if name_only:
+        return [name for name, _ in layers]
+
     return layers
 
 
@@ -229,7 +235,7 @@ def read_img(img_path, verbose=False):
         print(f"Processing {img_name} ...")
     basename, ext = os.path.splitext(img_name)
     input_img = cv2.imread(img_path, cv2.IMREAD_COLOR)
-    if verbose: 
+    if verbose:
         print(f"{input_img.shape=}")
 
     return input_img, basename, ext
@@ -241,7 +247,9 @@ def save_image(image, path):
     cv2.imwrite(path, image)
 
 
-def save_restored_faces(cropped_faces, restored_faces, restored_img, output, basename, suffix, ext, verbose=True):
+def save_restored_faces(
+    cropped_faces, restored_faces, restored_img, output, basename, suffix, ext, verbose=True
+):
     """Save restored faces and comparison images."""
     suffix = f"_{suffix}" if suffix else ""
     for idx, (cropped_face, restored_face) in enumerate(zip(cropped_faces, restored_faces)):
@@ -252,7 +260,7 @@ def save_restored_faces(cropped_faces, restored_faces, restored_img, output, bas
         # Save comparison image
         cmp_img = numpy.concatenate((cropped_face, restored_face), axis=1)
         save_image(cmp_img, output / "cmp" / f"{basename}_{idx:02d}.png")
-        
+
     if restored_img is not None:
         extension = ext[1:] if ext == "auto" else ext
         save_image(restored_img, output / "restored_imgs" / f"{basename}{suffix}.{extension}")
