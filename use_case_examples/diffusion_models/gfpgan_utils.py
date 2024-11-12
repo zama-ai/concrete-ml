@@ -1,8 +1,10 @@
 import collections
 import re
-
+import os
 import torch
-
+import numpy
+import cv2
+from pathlib import Path 
 
 def extract_specific_module(model, dtype_layer=torch.nn.Linear, verbose=True):
     layers = []
@@ -82,7 +84,6 @@ def custom_torch_summary(model, input_tensor, verbose=2):
     return layer_shapes
 
 
-# Function to extract C, H, W from shape
 def extract_dimensions(shape, layer_name):
 
     if isinstance(shape, list):
@@ -199,3 +200,62 @@ def filter_conv_layers(data, previous_output_shape):
             previous_output_shape = parsed["output_shapes"]
 
     return conv_layers, total_data
+
+
+def get_gfpgan_path(version="1.4"):
+
+    if version == "1.3":
+        model_name = "GFPGANv1.3"
+        url = "https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.3.pth"
+    elif version == "1.4":
+        model_name = "GFPGANv1.4"
+        url = "https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.4.pth"
+
+    # determine model paths
+    model_path = os.path.join("experiments/pretrained_models", model_name + ".pth")
+    if not os.path.isfile(model_path):
+        model_path = os.path.join("gfpgan/weights", model_name + ".pth")
+    if not os.path.isfile(model_path):
+        # download pre-trained models from url
+        model_path = url
+
+    return model_path
+
+
+def read_img(img_path, verbose=False):
+
+    img_name = os.path.basename(img_path)
+    if verbose:
+        print(f"Processing {img_name} ...")
+    basename, ext = os.path.splitext(img_name)
+    input_img = cv2.imread(img_path, cv2.IMREAD_COLOR)
+    if verbose: 
+        print(f"{input_img.shape=}")
+
+    return input_img, basename, ext
+
+
+def save_image(image, path):
+    """Save an image to the specified path."""
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    cv2.imwrite(path, image)
+
+
+def save_restored_faces(cropped_faces, restored_faces, restored_img, output, basename, suffix, ext, verbose=True):
+    """Save restored faces and comparison images."""
+    suffix = f"_{suffix}" if suffix else ""
+    for idx, (cropped_face, restored_face) in enumerate(zip(cropped_faces, restored_faces)):
+        # Save cropped faces from the processed images.
+        save_image(cropped_face, output / "cropped_faces" / f"{basename}_{idx:02d}.png")
+        # Save restored face
+        save_image(restored_face, output / "restored_faces" / f"{basename}_{idx:02d}{suffix}.png")
+        # Save comparison image
+        cmp_img = numpy.concatenate((cropped_face, restored_face), axis=1)
+        save_image(cmp_img, output / "cmp" / f"{basename}_{idx:02d}.png")
+        
+    if restored_img is not None:
+        extension = ext[1:] if ext == "auto" else ext
+        save_image(restored_img, output / "restored_imgs" / f"{basename}{suffix}.{extension}")
+
+    if verbose:
+        print(f"Results are in the [{output}] folder.")
