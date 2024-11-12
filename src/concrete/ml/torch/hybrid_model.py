@@ -445,12 +445,13 @@ class HybridFHEModel:
             )
             setattr(parent_module, last, remote_module)
 
-    def forward(self, x: torch.Tensor, fhe: str = "disable") -> torch.Tensor:
+    def forward(self, x: torch.Tensor, fhe: str = "disable", **model_kwargs) -> torch.Tensor:
         """Forward pass of the hybrid model.
 
         Args:
             x (torch.Tensor): The input tensor.
             fhe (str): The Fully Homomorphic Encryption (FHE) mode (default is "disable").
+            model_kwargs (dict): Additional model parameters.
 
         Returns:
             torch.Tensor: The output tensor.
@@ -484,23 +485,24 @@ class HybridFHEModel:
 
                 _optimized_linear_executor.set(executor)
 
-        result = self.model(x)
+        result = self.model(x, **model_kwargs)
 
         _optimized_linear_executor.set(None)
 
         return result
 
-    def __call__(self, x: torch.Tensor, fhe: str = "disable") -> torch.Tensor:
+    def __call__(self, x: torch.Tensor, fhe: str = "disable", **model_kwargs) -> torch.Tensor:
         """Call method to run the model locally with a fhe mode.
 
         Args:
             x (torch.Tensor): The input tensor.
             fhe (str): The Fully Homomorphic Encryption (FHE) mode (default is "disable").
+            **model_kwargs (dict): Additional model parameters.
 
         Returns:
             (torch.Tensor): The output tensor.
         """
-        return self.forward(x, fhe)
+        return self.forward(x, fhe, **model_kwargs)
 
     @staticmethod
     def _get_module_by_name(model: nn.Module, name: str) -> Union[RemoteModule, nn.Module]:
