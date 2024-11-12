@@ -1,0 +1,9 @@
+concrete-ml
+basicsr
+facexlib
+realesrgan
+lmdb
+opencv-python
+pyyaml
+tb-nightly
+yapf
