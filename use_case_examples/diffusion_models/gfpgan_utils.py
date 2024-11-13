@@ -5,6 +5,7 @@ from pathlib import Path
 
 import cv2
 import numpy
+import matplotlib.pyplot as plt
 import torch
 
 
@@ -267,3 +268,23 @@ def save_restored_faces(
 
     if verbose:
         print(f"Results are in the [{output}] folder.")
+
+def display_difference_grid(image_pairs, titles):
+
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+
+    for idx, (image_a, image_b) in enumerate(image_pairs):
+        
+        # Sum on the third channel
+        color_diff = numpy.sqrt(numpy.sum((image_a - image_b) ** 2, axis=2))
+        # MAE
+        mae = numpy.mean(numpy.abs(image_a.astype("float") - image_b.astype("float")))
+
+        im = axes[idx].imshow(color_diff)
+        axes[idx].set_title(f"{titles[idx]} with MAE {mae:.5f} ")
+        axes[idx].axis('off')
+        fig.colorbar(im, ax=axes[idx], fraction=0.2, pad=0.04)
+
+    plt.suptitle('Color difference per pixel between image')
+    plt.tight_layout()
+    plt.show()
