@@ -7,7 +7,8 @@ import cv2
 import numpy
 import matplotlib.pyplot as plt
 import torch
-
+from time import time 
+import matplotlib.image as mpimg
 
 def extract_specific_module(model, dtype_layer=torch.nn.Linear, name_only=True, verbose=False):
     layers = []
@@ -287,4 +288,76 @@ def display_difference_grid(image_pairs, titles):
 
     plt.suptitle('Color difference per pixel between image')
     plt.tight_layout()
+    plt.show()
+
+
+def benchmark(wrapped_gfpgan, remote_linear_layer_names, remote_conv_layer_names, bit_list, img_list, args, extra):
+
+    restored_images = []
+
+    remote_layers = remote_linear_layer_names + remote_conv_layer_names
+
+    wrapped_gfpgan.use_hybrid_model(remote_layers)
+
+    input_size = (3, 512, 512)
+    inputs = torch.randn((10, *input_size))
+
+    for n_bits in bit_list:
+
+        start_time = time()
+        wrapped_gfpgan.compile(inputs, n_bits=n_bits)
+        compilation_time = time() - start_time
+        
+        for fhe_mode in ['disable', 'simulate', 'execute']:
+
+            for img_path in img_list:
+
+                input_img, basename, ext = read_img(img_path)
+                start_time = time()
+                cropped_faces, restored_faces, restored_img = wrapped_gfpgan(input_img, fhe_mode=fhe_mode)
+                inference_time = time() - start_time
+                restored_images.append(restored_img)
+                
+                save_restored_faces(
+                    cropped_faces,
+                    restored_faces,
+                    restored_img,
+                    Path(args.output) / f"{extra}_{fhe_mode}",
+                    basename,
+                    args.suffix,
+                    ext,
+                )
+
+                path = f"nb_lin={len(remote_linear_layer_names)}_nb_conv={len(remote_conv_layer_names)}_fhe_mode={fhe_mode}_n_bits={wrapped_gfpgan.n_bits}_cts={compilation_time:.5f}_its={inference_time:.5f}.png"
+                
+                print(path)
+
+                save_image(restored_img, Path("comparison") / path)
+
+def display(img_paths):
+    n_bits_values = sorted(set(int(img_path.split('n_bits=')[1].split('_')[0]) for img_path in img_paths))
+    fhe_modes = ['disable', 'execute', 'simulate']
+    fig, axes = plt.subplots(len(n_bits_values), len(fhe_modes), figsize=(20, len(n_bits_values) * 8))
+    fig.suptitle('Generated Images', fontsize=20)
+
+    for i, n_bits in enumerate(n_bits_values):
+        img_list_filter_nbits = [img_path for img_path in img_paths if f'n_bits={n_bits}' in img_path]
+        
+        img_paths_mode = {
+            'disable': [img for img in img_list_filter_nbits if 'fhe_mode=disable' in img][0],
+            'simulate': [img for img in img_list_filter_nbits if 'fhe_mode=simulate' in img][0],
+            'execute': [img for img in img_list_filter_nbits if 'fhe_mode=execute' in img][0],
+        }
+        for j, fhe_mode in enumerate(fhe_modes):
+            img_path = img_paths_mode[fhe_mode]
+            if img_path and os.path.exists(img_path):
+                image = mpimg.imread(img_path)
+                axes[i, j].imshow(image)
+            else:
+                axes[i, j].text(0.5, 0.5, 'Image not found', ha='center', va='center', fontsize=8)
+            
+            axes[i, j].axis('off')
+            axes[i, j].set_title(f'{n_bits=} - {fhe_mode=}', fontsize=12)
+
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.show()
