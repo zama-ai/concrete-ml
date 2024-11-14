@@ -2,7 +2,6 @@
 
 # pylint: disable=too-many-lines
 import ast
-import contextvars
 import io
 import sys
 import time
@@ -102,13 +101,6 @@ def convert_conv1d_to_linear(layer_or_module):
     return layer_or_module
 
 
-# This module member is instantiated by the Hybrid FHE model
-# when hybrid FHE forward is called and the GLWE backend is available
-_optimized_linear_executor: contextvars.ContextVar[Optional[GLWELinearLayerExecutor]] = (
-    contextvars.ContextVar("optimized_linear_executor")
-)
-
-
 # pylint: disable-next=too-many-instance-attributes
 class RemoteModule(nn.Module):
     """A wrapper class for the modules to be evaluated remotely with FHE."""
@@ -136,6 +128,7 @@ class RemoteModule(nn.Module):
         self.model_name: Optional[str] = model_name
         self.verbose = verbose
         self.optimized_linear_execution = optimized_linear_execution
+        self.executor: Optional[GLWELinearLayerExecutor] = None
 
     def init_fhe_client(
         self, path_to_client: Optional[Path] = None, path_to_keys: Optional[Path] = None
@@ -252,15 +245,10 @@ class RemoteModule(nn.Module):
         }:
             assert self.private_q_module is not None
 
-            try:
-                optimized_linear_layer_executor = _optimized_linear_executor.get()
-            except LookupError:
-                optimized_linear_layer_executor = None
-
-            if optimized_linear_layer_executor:
+            if self.executor:
                 # Delegate to the optimized GLWE executor
                 y = torch.Tensor(
-                    optimized_linear_layer_executor.forward(
+                    self.executor.forward(
                         x.detach().numpy(), self.private_q_module, self.fhe_local_mode
                     )
                 )
@@ -269,6 +257,7 @@ class RemoteModule(nn.Module):
                 y = torch.Tensor(
                     self.private_q_module.forward(x.detach().numpy(), fhe=self.fhe_local_mode.value)
                 )
+
         elif self.fhe_local_mode == HybridFHEMode.CALIBRATE:
             # Calling torch + gathering calibration data
             assert self.private_module is not None
@@ -278,14 +267,7 @@ class RemoteModule(nn.Module):
 
         elif self.fhe_local_mode == HybridFHEMode.REMOTE:  # pragma:no cover
             # Remote call
-            try:
-                optimized_linear_layer_executor = _optimized_linear_executor.get()
-            except LookupError:
-                optimized_linear_layer_executor = None
-
-            assert optimized_linear_layer_executor is None, (
-                "Remote optimized linear layers " "are not yet implemented"
-            )
+            assert self.executor is None, "Remote optimized linear layers are not yet implemented"
             y = self.remote_call(x)
 
         elif self.fhe_local_mode == HybridFHEMode.TORCH:
@@ -400,6 +382,7 @@ class HybridFHEModel:
         self.configuration: Optional[Configuration] = None
         self.model_name = model_name
         self.verbose = verbose
+        self.executor: Optional[GLWELinearLayerExecutor] = None
 
         self._replace_modules()
 
@@ -461,6 +444,7 @@ class HybridFHEModel:
 
         # Validate the FHE mode
         fhe_mode = HybridFHEMode(fhe)
+        self.executor = None
 
         if _HAS_GLWE_BACKEND and self._all_layers_are_pure_linear:
             if fhe_mode == HybridFHEMode.SIMULATE:
@@ -476,16 +460,15 @@ class HybridFHEModel:
 
                 # Loading keys from a file could be done here, and the
                 # keys could be passed as arguments to the Executor
-                executor = GLWELinearLayerExecutor()
-
+                self.executor = GLWELinearLayerExecutor()
                 if fhe_mode != HybridFHEMode.DISABLE:
-                    executor.keygen()
+                    self.executor.keygen()
 
-                _optimized_linear_executor.set(executor)
+        # Update executor for all remote modules
+        for module in self.remote_modules.values():
+            module.executor = self.executor
 
         result = self.model(x)
-
-        _optimized_linear_executor.set(None)
 
         return result
 
