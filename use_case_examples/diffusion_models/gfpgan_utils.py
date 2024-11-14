@@ -378,9 +378,7 @@ def benchmark(
 def extract_param(path, param_name):
     return path.split(f"{param_name}=")[1].split("_")[0]
 
-
 def display(img_paths, fhe_modes=["disable", "execute", "simulate"], verbose=True):
-
     distinct_imgs = set(img_path.split("/")[1].split("_")[0] for img_path in img_paths)
 
     for img in distinct_imgs:
@@ -404,13 +402,7 @@ def display(img_paths, fhe_modes=["disable", "execute", "simulate"], verbose=Tru
             ax1[0].set_title("Original")
         else:
             ax1[0].text(
-                0.5,
-                0.5,
-                "Original Image Missing",
-                ha="center",
-                va="center",
-                fontsize=12,
-                color="red",
+                0.5, 0.5, "Original Image Missing", ha="center", va="center", fontsize=12, color="red"
             )
             ax1[0].set_title("Original")
         ax1[0].axis("off")
@@ -420,13 +412,7 @@ def display(img_paths, fhe_modes=["disable", "execute", "simulate"], verbose=Tru
             ax1[1].set_title("Base Restoration")
         else:
             ax1[1].text(
-                0.5,
-                0.5,
-                "Base Restoration Missing",
-                ha="center",
-                va="center",
-                fontsize=12,
-                color="red",
+                0.5, 0.5, "Base Restoration Missing", ha="center", va="center", fontsize=12, color="red"
             )
             ax1[1].set_title("Base Restoration")
         ax1[1].axis("off")
@@ -440,7 +426,6 @@ def display(img_paths, fhe_modes=["disable", "execute", "simulate"], verbose=Tru
             and ("fhe_mode=" in path and path.split("fhe_mode=")[1].split("_")[0] in fhe_modes)
         ]
 
-        # Sort relevant images by n_bits, nb_lin, nb_conv, then by FHE mode
         sorted_img_paths = sorted(
             relevant_img_paths,
             key=lambda p: (
@@ -458,11 +443,8 @@ def display(img_paths, fhe_modes=["disable", "execute", "simulate"], verbose=Tru
         n_bits_to_col = {bit: idx for idx, bit in enumerate(n_distinct_bits)}
         n_cols = len(n_distinct_bits)
 
-        fig2, axes = plt.subplots(
-            len(relevant_img_paths) // n_cols + 1,
-            n_cols,
-            figsize=(15, 3 * (len(relevant_img_paths) // n_cols + 1)),
-        )
+        n_rows = max((len(relevant_img_paths) + n_cols - 1) // n_cols, 1)
+        fig2, axes = plt.subplots(n_rows, n_cols, figsize=(15, 3 * n_rows), squeeze=False)
 
         row_counters = [0] * n_cols
         for img_path in sorted_img_paths:
@@ -471,21 +453,25 @@ def display(img_paths, fhe_modes=["disable", "execute", "simulate"], verbose=Tru
             row = row_counters[col]
             row_counters[col] += 1
 
-            ax = axes[row, col] if len(axes.shape) == 2 else axes[col]
-            ax.imshow(mpimg.imread(img_path))
+            # Check if the row index is within bounds
+            if row < n_rows:
+                ax = axes[row, col]
+                ax.imshow(mpimg.imread(img_path))
 
-            formatted_title = (
-                f"n_bits: {n_bits}\n"
-                f"fhe_mode: {extract_param(img_path, 'fhe_mode')}\n"
-                f"nb_lin: {extract_param(img_path, 'nb_lin')} | nb_conv: {extract_param(img_path, 'nb_conv')}\n"
-            )
+                formatted_title = (
+                    f"n_bits: {n_bits}\n"
+                    f"fhe_mode: {extract_param(img_path, 'fhe_mode')}\n"
+                    f"nb_lin: {extract_param(img_path, 'nb_lin')} | nb_conv: {extract_param(img_path, 'nb_conv')}\n"
+                )
 
-            ax.set_title(formatted_title, fontsize=5)
-            ax.axis("off")
+                ax.set_title(formatted_title, fontsize=5)
+                ax.axis("off")
 
-        for col, row in enumerate(row_counters):
-            for extra_row in range(row, len(axes)):
-                axes[extra_row, col].axis("off")
+        # Hide any unused subplots
+        for col in range(n_cols):
+            for row in range(row_counters[col], n_rows):
+                axes[row, col].axis("off")
 
         plt.tight_layout()
         plt.show()
+
