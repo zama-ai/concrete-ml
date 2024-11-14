@@ -1,16 +1,28 @@
 import collections
 import os
 import re
+from glob import glob
 from pathlib import Path
+from time import time
 
 import cv2
-import numpy
-import matplotlib.pyplot as plt
-import torch
-from time import time 
 import matplotlib.image as mpimg
+import matplotlib.pyplot as plt
+import numpy
+import torch
 
-def extract_specific_module(model, dtype_layer=torch.nn.Linear, name_only=True, verbose=False):
+
+def extract_specific_module(
+    model_class, attr, dtype_layer=torch.nn.Linear, name_only=True, verbose=False
+):
+
+    wrapped_model = model_class()
+
+    if not hasattr(wrapped_model, attr):
+        raise AttributeError(f"'{attr}' doesn't exist in {model_class.__name__}.")
+
+    model = getattr(wrapped_model, attr)
+
     layers = []
     for name, module in model.named_modules():
         if isinstance(module, dtype_layer):
@@ -270,12 +282,13 @@ def save_restored_faces(
     if verbose:
         print(f"Results are in the [{output}] folder.")
 
+
 def display_difference_grid(image_pairs, titles):
 
     fig, axes = plt.subplots(1, 3, figsize=(15, 5))
 
     for idx, (image_a, image_b) in enumerate(image_pairs):
-        
+
         # Sum on the third channel
         color_diff = numpy.sqrt(numpy.sum((image_a - image_b) ** 2, axis=2))
         # MAE
@@ -283,81 +296,196 @@ def display_difference_grid(image_pairs, titles):
 
         im = axes[idx].imshow(color_diff)
         axes[idx].set_title(f"{titles[idx]} with MAE {mae:.5f} ")
-        axes[idx].axis('off')
+        axes[idx].axis("off")
         fig.colorbar(im, ax=axes[idx], fraction=0.2, pad=0.04)
 
-    plt.suptitle('Color difference per pixel between image')
+    plt.suptitle("Color difference per pixel between image")
     plt.tight_layout()
     plt.show()
 
 
-def benchmark(wrapped_gfpgan, remote_linear_layer_names, remote_conv_layer_names, bit_list, img_list, args, extra):
+def benchmark(
+    wrapped_class,
+    remote_linear_layer_names,
+    remote_conv_layer_names,
+    bit_list,
+    img_list,
+    output_dir,
+    suffix,
+    extra,
+    fhe_mode_list=["disable", "simulate", "execute"],
+    verbose=True,
+    input_size=(3, 512, 512),
+    **kwargs_compilation,
+):
 
-    restored_images = []
+    wrapped_model = wrapped_class()
+
+    p_error = kwargs_compilation.get("p_error", None)
+    rounding_threshold_bits = kwargs_compilation.get("rounding_threshold_bits", None)
+    compilation_size = kwargs_compilation.get("compilation_size", 10)
 
     remote_layers = remote_linear_layer_names + remote_conv_layer_names
 
-    wrapped_gfpgan.use_hybrid_model(remote_layers)
+    wrapped_model.use_hybrid_model(remote_layers)
 
-    input_size = (3, 512, 512)
-    inputs = torch.randn((10, *input_size))
+    inputs = torch.randn((compilation_size, *input_size))
 
     for n_bits in bit_list:
-
         start_time = time()
-        wrapped_gfpgan.compile(inputs, n_bits=n_bits)
+        wrapped_model.compile(
+            inputs, n_bits=n_bits, p_error=p_error, rounding_threshold_bits=rounding_threshold_bits
+        )
         compilation_time = time() - start_time
-        
-        for fhe_mode in ['disable', 'simulate', 'execute']:
 
-            for img_path in img_list:
-
+        for img_path in img_list:
+            for fhe_mode in fhe_mode_list:
                 input_img, basename, ext = read_img(img_path)
                 start_time = time()
-                cropped_faces, restored_faces, restored_img = wrapped_gfpgan(input_img, fhe_mode=fhe_mode)
+                cropped_faces, restored_faces, restored_img = wrapped_model(
+                    input_img, fhe_mode=fhe_mode
+                )
                 inference_time = time() - start_time
-                restored_images.append(restored_img)
-                
+
                 save_restored_faces(
                     cropped_faces,
                     restored_faces,
                     restored_img,
-                    Path(args.output) / f"{extra}_{fhe_mode}",
+                    Path(output_dir) / f"{extra}_{fhe_mode}",
                     basename,
-                    args.suffix,
+                    suffix,
                     ext,
                 )
 
-                path = f"nb_lin={len(remote_linear_layer_names)}_nb_conv={len(remote_conv_layer_names)}_fhe_mode={fhe_mode}_n_bits={wrapped_gfpgan.n_bits}_cts={compilation_time:.5f}_its={inference_time:.5f}.png"
-                
-                print(path)
+                path = (
+                    f"{basename}_"
+                    f"nb_lin={len(remote_linear_layer_names)}_"
+                    f"nb_conv={len(remote_conv_layer_names)}_"
+                    f"fhe_mode={fhe_mode}_"
+                    f"n_bits={n_bits}_"
+                    f"perror={p_error}_"
+                    f"rounding={rounding_threshold_bits}_"
+                    f"cts={compilation_time:.5f}_"
+                    f"its={inference_time:.5f}{ext}"
+                )
+
+                if verbose:
+                    print(path)
 
                 save_image(restored_img, Path("comparison") / path)
 
-def display(img_paths):
-    n_bits_values = sorted(set(int(img_path.split('n_bits=')[1].split('_')[0]) for img_path in img_paths))
-    fhe_modes = ['disable', 'execute', 'simulate']
-    fig, axes = plt.subplots(len(n_bits_values), len(fhe_modes), figsize=(20, len(n_bits_values) * 8))
-    fig.suptitle('Generated Images', fontsize=20)
 
-    for i, n_bits in enumerate(n_bits_values):
-        img_list_filter_nbits = [img_path for img_path in img_paths if f'n_bits={n_bits}' in img_path]
-        
-        img_paths_mode = {
-            'disable': [img for img in img_list_filter_nbits if 'fhe_mode=disable' in img][0],
-            'simulate': [img for img in img_list_filter_nbits if 'fhe_mode=simulate' in img][0],
-            'execute': [img for img in img_list_filter_nbits if 'fhe_mode=execute' in img][0],
-        }
-        for j, fhe_mode in enumerate(fhe_modes):
-            img_path = img_paths_mode[fhe_mode]
-            if img_path and os.path.exists(img_path):
-                image = mpimg.imread(img_path)
-                axes[i, j].imshow(image)
-            else:
-                axes[i, j].text(0.5, 0.5, 'Image not found', ha='center', va='center', fontsize=8)
-            
-            axes[i, j].axis('off')
-            axes[i, j].set_title(f'{n_bits=} - {fhe_mode=}', fontsize=12)
+def extract_param(path, param_name):
+    return path.split(f"{param_name}=")[1].split("_")[0]
 
-    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-    plt.show()
+
+def display(img_paths, fhe_modes=["disable", "execute", "simulate"], verbose=True):
+
+    distinct_imgs = set(img_path.split("/")[1].split("_")[0] for img_path in img_paths)
+
+    for img in distinct_imgs:
+        original_img = next(
+            (path for path in img_paths if path.startswith(f"comparison/{img}_original_img.")), None
+        )
+        base_restoration = next(
+            (
+                path
+                for path in img_paths
+                if path.startswith(f"comparison/{img}_restored_by_base_gfpgan.")
+            ),
+            None,
+        )
+
+        fig1, ax1 = plt.subplots(1, 2, figsize=(10, 5))
+        fig1.suptitle(f"Image_{img}")
+
+        if original_img:
+            ax1[0].imshow(mpimg.imread(original_img))
+            ax1[0].set_title("Original")
+        else:
+            ax1[0].text(
+                0.5,
+                0.5,
+                "Original Image Missing",
+                ha="center",
+                va="center",
+                fontsize=12,
+                color="red",
+            )
+            ax1[0].set_title("Original")
+        ax1[0].axis("off")
+
+        if base_restoration:
+            ax1[1].imshow(mpimg.imread(base_restoration))
+            ax1[1].set_title("Base Restoration")
+        else:
+            ax1[1].text(
+                0.5,
+                0.5,
+                "Base Restoration Missing",
+                ha="center",
+                va="center",
+                fontsize=12,
+                color="red",
+            )
+            ax1[1].set_title("Base Restoration")
+        ax1[1].axis("off")
+
+        plt.show()
+
+        relevant_img_paths = [
+            path
+            for path in img_paths
+            if (path.startswith(f"comparison/{img}_") and "n_bits=" in path)
+            and ("fhe_mode=" in path and path.split("fhe_mode=")[1].split("_")[0] in fhe_modes)
+        ]
+
+        # Sort relevant images by n_bits, nb_lin, nb_conv, then by FHE mode
+        sorted_img_paths = sorted(
+            relevant_img_paths,
+            key=lambda p: (
+                int(p.split("n_bits=")[1].split("_")[0]),
+                p.split("nb_lin=")[1].split("_")[0] if "nb_lin=" in p else "",
+                p.split("nb_conv=")[1].split("_")[0] if "nb_conv=" in p else "",
+                fhe_modes.index(p.split("fhe_mode=")[1].split("_")[0]) if "fhe_mode=" in p else -1,
+            ),
+        )
+
+        n_distinct_bits = sorted(
+            set(int(img_path.split("n_bits=")[1].split("_")[0]) for img_path in relevant_img_paths)
+        )
+
+        n_bits_to_col = {bit: idx for idx, bit in enumerate(n_distinct_bits)}
+        n_cols = len(n_distinct_bits)
+
+        fig2, axes = plt.subplots(
+            len(relevant_img_paths) // n_cols + 1,
+            n_cols,
+            figsize=(15, 3 * (len(relevant_img_paths) // n_cols + 1)),
+        )
+
+        row_counters = [0] * n_cols
+        for img_path in sorted_img_paths:
+            n_bits = int(extract_param(img_path, "n_bits"))
+            col = n_bits_to_col[n_bits]
+            row = row_counters[col]
+            row_counters[col] += 1
+
+            ax = axes[row, col] if len(axes.shape) == 2 else axes[col]
+            ax.imshow(mpimg.imread(img_path))
+
+            formatted_title = (
+                f"n_bits: {n_bits}\n"
+                f"fhe_mode: {extract_param(img_path, 'fhe_mode')}\n"
+                f"nb_lin: {extract_param(img_path, 'nb_lin')} | nb_conv: {extract_param(img_path, 'nb_conv')}\n"
+            )
+
+            ax.set_title(formatted_title, fontsize=5)
+            ax.axis("off")
+
+        for col, row in enumerate(row_counters):
+            for extra_row in range(row, len(axes)):
+                axes[extra_row, col].axis("off")
+
+        plt.tight_layout()
+        plt.show()

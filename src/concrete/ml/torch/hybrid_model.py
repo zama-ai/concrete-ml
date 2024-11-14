@@ -460,11 +460,12 @@ class HybridFHEModel:
         Raises:
             AssertionError: if the execution mode is not supported
         """
-        print(f"Forward pass: {model_kwargs=} - {fhe=}, {self._all_layers_are_pure_linear=}")
+        # print(f"Forward pass: {model_kwargs=} - {fhe=}, {self._all_layers_are_pure_linear=}")
         self.set_fhe_mode(fhe)
 
         # Validate the FHE mode
         fhe_mode = HybridFHEMode(fhe)
+        # print(f"{fhe_mode in (HybridFHEMode.EXECUTE, HybridFHEMode.REMOTE, HybridFHEMode.DISABLE)=}")
 
         if _HAS_GLWE_BACKEND and self._all_layers_are_pure_linear:
 
