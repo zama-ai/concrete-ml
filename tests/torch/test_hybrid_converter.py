@@ -328,7 +328,7 @@ def test_hybrid_glwe_correctness(n_hidden):
     # were linear and were replaced with the GLWE backend
     # Check if GLWE optimization should be used based on input dimension
     should_use_glwe = n_hidden >= 512
-    is_pure_linear = hybrid_local._has_large_linear_layers  # pylint: disable=protected-access
+    is_pure_linear = hybrid_local._has_only_large_linear_layers  # pylint: disable=protected-access
     assert is_pure_linear == should_use_glwe
 
     hybrid_local.compile_model(x1_train, n_bits=10)

@@ -389,7 +389,7 @@ class HybridFHEModel:
     def _replace_modules(self):
         """Replace the private modules in the model with remote layers."""
 
-        self._has_large_linear_layers = True
+        self._has_only_large_linear_layers = True
         for module_name in self.module_names:
             # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3858
             # Conv1d introduce reshaping operations which adds more TLU
@@ -417,7 +417,7 @@ class HybridFHEModel:
                 )
 
             if not is_pure_linear_layer:
-                self._has_large_linear_layers = False
+                self._has_only_large_linear_layers = False
 
         for module_name in self.module_names:
             # Create the optimized glwe linear layer executor if needed
@@ -427,7 +427,7 @@ class HybridFHEModel:
                 module_name=module_name,
                 model_name=self.model_name,
                 verbose=self.verbose,
-                optimized_linear_execution=(self._has_large_linear_layers),
+                optimized_linear_execution=(self._has_only_large_linear_layers),
             )
 
             self.remote_modules[module_name] = remote_module
@@ -457,7 +457,7 @@ class HybridFHEModel:
         # Validate the FHE mode
         fhe_mode = HybridFHEMode(fhe)
 
-        if _HAS_GLWE_BACKEND and self._has_large_linear_layers:
+        if _HAS_GLWE_BACKEND and self._has_only_large_linear_layers:
             if fhe_mode == HybridFHEMode.SIMULATE:
                 raise AssertionError(
                     "When the HybridFHEModel is instantiated with only "
@@ -468,9 +468,10 @@ class HybridFHEModel:
                 # Initialize executor only if not already done
                 if self.executor is None:
                     self.executor = GLWELinearLayerExecutor()
-                    # Generate keys only if needed and not already done
-                    if fhe_mode != HybridFHEMode.DISABLE:
-                        self.executor.keygen()
+
+                # Generate keys only if needed and not already done
+                if fhe_mode != HybridFHEMode.DISABLE and self.executor.private_key is None:
+                    self.executor.keygen()
 
         # Update executor for all remote modules
         for module in self.remote_modules.values():
@@ -580,7 +581,7 @@ class HybridFHEModel:
                 # If all layers are linear and the GLWE backend is available
                 # then simply quantize the model without compiling with
                 # Concrete Python.
-                if self._has_large_linear_layers and _HAS_GLWE_BACKEND:
+                if self._has_only_large_linear_layers and _HAS_GLWE_BACKEND:
                     self.private_q_modules[name] = build_quantized_module(
                         self.private_modules[name],
                         calibration_data_tensor,
