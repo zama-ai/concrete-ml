@@ -456,7 +456,6 @@ class HybridFHEModel:
 
         # Validate the FHE mode
         fhe_mode = HybridFHEMode(fhe)
-        self.executor = None
 
         if _HAS_GLWE_BACKEND and self._has_large_linear_layers:
             if fhe_mode == HybridFHEMode.SIMULATE:
@@ -466,15 +465,12 @@ class HybridFHEModel:
                 )
 
             if fhe_mode in (HybridFHEMode.EXECUTE, HybridFHEMode.REMOTE, HybridFHEMode.DISABLE):
-                # If all layers are pure linear, enable the GLWE optimization for all layers
-                # and generate an encryption and compression key for all layers
-                # as they share crypto-parameters
-
-                # Loading keys from a file could be done here, and the
-                # keys could be passed as arguments to the Executor
-                self.executor = GLWELinearLayerExecutor()
-                if fhe_mode != HybridFHEMode.DISABLE:
-                    self.executor.keygen()
+                # Initialize executor only if not already done
+                if self.executor is None:
+                    self.executor = GLWELinearLayerExecutor()
+                    # Generate keys only if needed and not already done
+                    if fhe_mode != HybridFHEMode.DISABLE:
+                        self.executor.keygen()
 
         # Update executor for all remote modules
         for module in self.remote_modules.values():
