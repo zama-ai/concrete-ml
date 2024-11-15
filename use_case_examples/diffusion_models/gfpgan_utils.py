@@ -378,6 +378,7 @@ def benchmark(
 def extract_param(path, param_name):
     return path.split(f"{param_name}=")[1].split("_")[0]
 
+
 def display(img_paths, fhe_modes=["disable", "execute", "simulate"], verbose=True):
     distinct_imgs = set(img_path.split("/")[1].split("_")[0] for img_path in img_paths)
 
@@ -402,7 +403,13 @@ def display(img_paths, fhe_modes=["disable", "execute", "simulate"], verbose=Tru
             ax1[0].set_title("Original")
         else:
             ax1[0].text(
-                0.5, 0.5, "Original Image Missing", ha="center", va="center", fontsize=12, color="red"
+                0.5,
+                0.5,
+                "Original Image Missing",
+                ha="center",
+                va="center",
+                fontsize=12,
+                color="red",
             )
             ax1[0].set_title("Original")
         ax1[0].axis("off")
@@ -412,7 +419,13 @@ def display(img_paths, fhe_modes=["disable", "execute", "simulate"], verbose=Tru
             ax1[1].set_title("Base Restoration")
         else:
             ax1[1].text(
-                0.5, 0.5, "Base Restoration Missing", ha="center", va="center", fontsize=12, color="red"
+                0.5,
+                0.5,
+                "Base Restoration Missing",
+                ha="center",
+                va="center",
+                fontsize=12,
+                color="red",
             )
             ax1[1].set_title("Base Restoration")
         ax1[1].axis("off")
@@ -459,9 +472,9 @@ def display(img_paths, fhe_modes=["disable", "execute", "simulate"], verbose=Tru
                 ax.imshow(mpimg.imread(img_path))
 
                 formatted_title = (
-                    f"n_bits: {n_bits}\n"
-                    f"fhe_mode: {extract_param(img_path, 'fhe_mode')}\n"
+                    f"n_bits: {n_bits} | fhe_mode: {extract_param(img_path, 'fhe_mode')}\n"
                     f"nb_lin: {extract_param(img_path, 'nb_lin')} | nb_conv: {extract_param(img_path, 'nb_conv')}\n"
+                    f"round: {extract_param(img_path, 'rounding')} | perr: {extract_param(img_path, 'perror')}\n"
                 )
 
                 ax.set_title(formatted_title, fontsize=5)
@@ -474,4 +487,3 @@ def display(img_paths, fhe_modes=["disable", "execute", "simulate"], verbose=Tru
 
         plt.tight_layout()
         plt.show()
-
