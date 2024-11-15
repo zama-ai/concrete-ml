@@ -389,7 +389,7 @@ class HybridFHEModel:
     def _replace_modules(self):
         """Replace the private modules in the model with remote layers."""
 
-        self._all_layers_are_pure_linear = True
+        self._has_large_linear_layers = True
         for module_name in self.module_names:
             # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3858
             # Conv1d introduce reshaping operations which adds more TLU
@@ -404,8 +404,20 @@ class HybridFHEModel:
                 self.private_modules[module_name],
                 (nn.Linear, ForwardModuleLinear, BackwardModuleLinear),
             )
+
+            # Check input dimensions for linear layers
+            # If the input dimension is less than 512 we do not use the GLWE optimization.
+            # Optimal input dimension is 2048, below 512 the performance are too low.
+            if is_pure_linear_layer:
+                module = self.private_modules[module_name]
+                input_dim = module.in_features if hasattr(module, "in_features") else 0
+                output_dim = module.out_features if hasattr(module, "out_features") else 0
+                is_pure_linear_layer = (
+                    is_pure_linear_layer and input_dim >= 512 and output_dim >= 512
+                )
+
             if not is_pure_linear_layer:
-                self._all_layers_are_pure_linear = False
+                self._has_large_linear_layers = False
 
         for module_name in self.module_names:
             # Create the optimized glwe linear layer executor if needed
@@ -415,7 +427,7 @@ class HybridFHEModel:
                 module_name=module_name,
                 model_name=self.model_name,
                 verbose=self.verbose,
-                optimized_linear_execution=self._all_layers_are_pure_linear,
+                optimized_linear_execution=(self._has_large_linear_layers),
             )
 
             self.remote_modules[module_name] = remote_module
@@ -446,7 +458,7 @@ class HybridFHEModel:
         fhe_mode = HybridFHEMode(fhe)
         self.executor = None
 
-        if _HAS_GLWE_BACKEND and self._all_layers_are_pure_linear:
+        if _HAS_GLWE_BACKEND and self._has_large_linear_layers:
             if fhe_mode == HybridFHEMode.SIMULATE:
                 raise AssertionError(
                     "When the HybridFHEModel is instantiated with only "
@@ -572,7 +584,7 @@ class HybridFHEModel:
                 # If all layers are linear and the GLWE backend is available
                 # then simply quantize the model without compiling with
                 # Concrete Python.
-                if self._all_layers_are_pure_linear and _HAS_GLWE_BACKEND:
+                if self._has_large_linear_layers and _HAS_GLWE_BACKEND:
                     self.private_q_modules[name] = build_quantized_module(
                         self.private_modules[name],
                         calibration_data_tensor,

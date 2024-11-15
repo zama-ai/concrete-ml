@@ -9,7 +9,6 @@ import numpy
 import pytest
 import torch
 from concrete.fhe import Configuration
-from sklearn.datasets import make_moons
 from sklearn.model_selection import train_test_split
 from transformers import GPT2LMHeadModel, GPT2Tokenizer
 
@@ -279,7 +278,7 @@ def test_invalid_model():
         HybridFHEModel(invalid_model, module_names="sub_module")
 
 
-@pytest.mark.parametrize("n_hidden", [512, 2048])
+@pytest.mark.parametrize("n_hidden", [256, 512, 2048])
 def test_hybrid_glwe_correctness(n_hidden):
     """Tests that the GLWE backend produces correct results for the hybrid model."""
 
@@ -295,13 +294,15 @@ def test_hybrid_glwe_correctness(n_hidden):
         y_test = torch.tensor(y_test, dtype=torch.long)
         return x_train, x_test, y_train, y_test
 
-    # Generate synthetic 2D data
-    x1_data, y1_data = make_moons(n_samples=num_samples, noise=0.2, random_state=42)
+    # Generate random data with n_hidden features and n_hidden classes
+    # keeping input and output dimensions equal to n_hidden.
+    x1_data = numpy.random.randn(num_samples, n_hidden)
+    y1_data = numpy.random.randint(0, n_hidden, size=num_samples)  # n_hidden classes
 
     # Prepare data
     x1_train, x1_test, y1_train, y1_test = prepare_data(x1_data, y1_data)
 
-    model = FCSmall(2, torch.nn.ReLU, hidden=n_hidden)
+    model = FCSmall(n_hidden, torch.nn.ReLU, hidden=n_hidden)
     optimizer = torch.optim.Adam(model.parameters())
 
     num_epochs = 100
@@ -325,38 +326,48 @@ def test_hybrid_glwe_correctness(n_hidden):
 
     # This internal flag tells us whether all the layers
     # were linear and were replaced with the GLWE backend
-    assert hybrid_local._all_layers_are_pure_linear  # pylint: disable=protected-access
+    # Check if GLWE optimization should be used based on input dimension
+    should_use_glwe = n_hidden >= 512
+    is_pure_linear = hybrid_local._has_large_linear_layers  # pylint: disable=protected-access
+    assert is_pure_linear == should_use_glwe
 
     hybrid_local.compile_model(x1_train, n_bits=10)
 
     y_qm = hybrid_local(x1_test, fhe="disable").numpy()
     y_hybrid_torch = hybrid_local(x1_test, fhe="torch").detach().numpy()
-    y_glwe = hybrid_local(x1_test, fhe="execute").numpy()
 
-    y1_test = y1_test.numpy()
-    n_correct_fp32 = numpy.sum(numpy.argmax(y_torch, axis=1) == y1_test)
-    n_correct_qm = numpy.sum(numpy.argmax(y_qm, axis=1) == y1_test)
-    n_correct_glwe = numpy.sum(numpy.argmax(y_glwe, axis=1) == y1_test)
+    # Only test GLWE execution if input dimension is >= 512
+    if should_use_glwe:
+        y_glwe = hybrid_local(x1_test, fhe="execute").numpy()
 
-    # These two should be exactly the same
-    assert numpy.all(numpy.allclose(y_torch, y_hybrid_torch, rtol=1, atol=0.001))
+        y1_test = y1_test.numpy()
+        n_correct_fp32 = numpy.sum(numpy.argmax(y_torch, axis=1) == y1_test)
+        n_correct_qm = numpy.sum(numpy.argmax(y_qm, axis=1) == y1_test)
+        n_correct_glwe = numpy.sum(numpy.argmax(y_glwe, axis=1) == y1_test)
 
-    # The clear quantization vs fp32 test has more tolerance
-    threshold_fhe = 0.01
+        # These two should be exactly the same
+        assert numpy.all(numpy.allclose(y_torch, y_hybrid_torch, rtol=1, atol=0.001))
 
-    diff = numpy.abs(y_torch - y_glwe) > threshold_fhe
-    if numpy.any(diff):
-        print(f"Value discrepancy detected for GLWE backend, with epsilon={threshold_fhe}")
-        print("Model output (torch fp32)", y_torch[diff])
-        print("Model output (glwe)", y_glwe[diff])
-        print("Model output (quantized clear)", y_qm[diff])
+        # The clear quantization vs fp32 test has more tolerance
+        threshold_fhe = 0.01
 
-    assert numpy.all(numpy.allclose(y_qm, y_glwe, rtol=1, atol=threshold_fhe))
-    assert numpy.all(numpy.allclose(y_torch, y_glwe, rtol=1, atol=threshold_fhe))
+        diff = numpy.abs(y_torch - y_glwe) > threshold_fhe
+        if numpy.any(diff):
+            print(f"Value discrepancy detected for GLWE backend, with epsilon={threshold_fhe}")
+            print("Model output (torch fp32)", y_torch[diff])
+            print("Model output (glwe)", y_glwe[diff])
+            print("Model output (quantized clear)", y_qm[diff])
 
-    n_correct_delta_threshold_fhe = 1
-    # Check accuracy between fp32 and glwe
-    assert numpy.abs(n_correct_fp32 - n_correct_glwe) <= n_correct_delta_threshold_fhe
+        assert numpy.all(numpy.allclose(y_qm, y_glwe, rtol=1, atol=threshold_fhe))
+        assert numpy.all(numpy.allclose(y_torch, y_glwe, rtol=1, atol=threshold_fhe))
 
-    # Check accuracy between quantized and glwe
-    assert numpy.abs(n_correct_qm - n_correct_glwe) <= n_correct_delta_threshold_fhe
+        n_correct_delta_threshold_fhe = 1
+        # Check accuracy between fp32 and glwe
+        assert numpy.abs(n_correct_fp32 - n_correct_glwe) <= n_correct_delta_threshold_fhe
+
+        # Check accuracy between quantized and glwe
+        assert numpy.abs(n_correct_qm - n_correct_glwe) <= n_correct_delta_threshold_fhe
+    else:
+        # For non-GLWE cases, just verify the torch outputs match
+        assert numpy.all(numpy.allclose(y_torch, y_hybrid_torch, rtol=1, atol=0.001))
+        assert numpy.all(numpy.allclose(y_qm, y_hybrid_torch, rtol=1, atol=0.01))
