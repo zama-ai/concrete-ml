@@ -73,6 +73,7 @@ def run_hybrid_llm_test(
 
         # Create a hybrid model
         hybrid_model = HybridFHEModel(model, module_names)
+        is_compiled = False
         try:
             hybrid_model.compile_model(
                 inputs,
@@ -81,6 +82,7 @@ def run_hybrid_llm_test(
                 rounding_threshold_bits=8,
                 configuration=configuration,
             )
+            is_compiled = True
         except RuntimeError as error:
             # When reshaping adds PBSs we sometimes encounter NoParametersFound
             # when compiling. In this case we skip the rest since we can't simulate
@@ -153,10 +155,20 @@ def run_hybrid_llm_test(
         # Get the temp directory path
 
         if not has_pbs and glwe_backend_installed:
-            # Deployment of GLWE backend hybrid models is not yet supported
-            with pytest.raises(AttributeError, match="The quantized module is not compiled.*"):
-                hybrid_model.save_and_clear_private_info(temp_dir_path)
 
+            if is_compiled:
+                # Deployment of GLWE backend hybrid models is not yet supported
+                with pytest.raises(
+                    NotImplementedError, match="GLWE backend deployment is not yet supported"
+                ):
+                    hybrid_model.save_and_clear_private_info(temp_dir_path)
+            else:
+                # Check that we get an error when trying to save a non-compiled model
+                with pytest.raises(
+                    AttributeError,
+                    match="The quantized module is not compiled. Please run compile*",
+                ):
+                    hybrid_model.save_and_clear_private_info(temp_dir_path)
         else:
             hybrid_model.save_and_clear_private_info(temp_dir_path)
 

@@ -267,6 +267,7 @@ class RemoteModule(nn.Module):
 
         elif self.fhe_local_mode == HybridFHEMode.REMOTE:  # pragma:no cover
             # Remote call
+            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4672
             assert self.executor is None, "Remote optimized linear layers are not yet implemented"
             y = self.remote_call(x)
 
@@ -410,8 +411,15 @@ class HybridFHEModel:
             # Optimal input dimension is 2048, below 512 the performance are too low.
             if is_pure_linear_layer:
                 module = self.private_modules[module_name]
-                input_dim = module.in_features if hasattr(module, "in_features") else 0
-                output_dim = module.out_features if hasattr(module, "out_features") else 0
+                # Use weight shape instead of in/out_features
+                if hasattr(module, "weight"):
+                    input_dim = module.weight.shape[
+                        1
+                    ]  # Input dimension is second dimension for Linear layers
+                    output_dim = module.weight.shape[0]  # Output dimension is first dimension
+                else:
+                    input_dim = output_dim = 0
+
                 is_pure_linear_layer = (
                     is_pure_linear_layer and input_dim >= 512 and output_dim >= 512
                 )
@@ -582,6 +590,7 @@ class HybridFHEModel:
                 # then simply quantize the model without compiling with
                 # Concrete Python.
                 if self._has_only_large_linear_layers and _HAS_GLWE_BACKEND:
+                    self.executor = GLWELinearLayerExecutor()
                     self.private_q_modules[name] = build_quantized_module(
                         self.private_modules[name],
                         calibration_data_tensor,
@@ -637,7 +646,15 @@ class HybridFHEModel:
             path (Path): The directory where the model and the FHE circuit will be saved.
             via_mlir (bool): if fhe circuits should be serialized using via_mlir option
                 useful for cross-platform (compile on one architecture and run on another)
+
+        Raises:
+            NotImplementedError: GLWE backend deployment is not yet supported
         """
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4672
+        # GLWE backend deployment is not yet supported
+        if self.executor is not None:
+            raise NotImplementedError("GLWE backend deployment is not yet supported")
+
         path = Path(path)
         path.mkdir(parents=True, exist_ok=True)
 
