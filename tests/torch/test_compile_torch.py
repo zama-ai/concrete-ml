@@ -1213,7 +1213,7 @@ def test_torch_padding(default_configuration, check_circuit_has_no_tlu):
     torch_output = torch_output > 0
     cml_output = cml_output > 0
 
-    assert numpy.alltrue(torch_output == cml_output)
+    assert numpy.all(torch_output == cml_output)
     check_circuit_has_no_tlu(quant_model.fhe_circuit)
 
 

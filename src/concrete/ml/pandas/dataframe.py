@@ -1,8 +1,9 @@
 """Define the encrypted data-frame framework."""
 
 import json
+from collections.abc import Hashable
 from pathlib import Path
-from typing import Dict, Hashable, List, Optional, Sequence, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 from zipfile import ZIP_STORED, ZipFile
 
 import numpy

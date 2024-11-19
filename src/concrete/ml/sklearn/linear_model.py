@@ -1147,7 +1147,7 @@ class SGDRegressor(SklearnSGDRegressorMixin):
 
     _is_a_public_cml_model = True
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         n_bits=8,
         loss="squared_error",

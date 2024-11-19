@@ -1,6 +1,7 @@
 """Implement Pandas operators in FHE using encrypted data-frames."""
 
-from typing import Any, Dict, Hashable, List, Optional, Sequence, Tuple, Union
+from collections.abc import Hashable
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy
 import pandas

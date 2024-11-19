@@ -94,7 +94,7 @@ def ml_check(args, keyring_dir_as_str):
     print(f"Prediction sklearn       : {y_pred[:nb_samples]}")
 
     print(
-        f"{numpy.sum(y_pred_simulated==y_pred[:nb_samples])}/{nb_samples} "
+        f"{numpy.sum(y_pred_simulated == y_pred[:nb_samples])}/{nb_samples} "
         "predictions are similar between the FHE simulated model and the clear sklearn model."
     )
 

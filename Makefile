@@ -1,7 +1,6 @@
 SHELL:=$(shell /usr/bin/env which bash)
 
 DEV_DOCKER_PYTHON?=py38
-$(warning now we reached ifeq DEV_DOCKER_PYTHON=$(DEV_DOCKER_PYTHON))
 ifeq ($(DEV_DOCKER_PYTHON),py312)
 UBUNTU_BASE=24.10
 else 

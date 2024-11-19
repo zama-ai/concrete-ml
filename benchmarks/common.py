@@ -757,6 +757,8 @@ def benchmark_name_generator(
 
     elif model_name in DEEP_LEARNING_NAMES:
         config_str = f"_{config['n_bits']}"
+    else:
+        config_str = "UNKNOWN"
 
     # We remove underscores to make sure to not have any conflict when splitting
     return model_name.replace("_", "-") + config_str + joiner + dataset_name.replace("_", "-")

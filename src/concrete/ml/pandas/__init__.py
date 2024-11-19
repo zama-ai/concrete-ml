@@ -1,7 +1,8 @@
 """Public API for encrypted data-frames."""
 
+from collections.abc import Hashable
 from pathlib import Path
-from typing import Hashable, Optional, Sequence, Tuple, Union
+from typing import Optional, Sequence, Tuple, Union
 
 from .client_engine import ClientEngine
 from .dataframe import EncryptedDataFrame
