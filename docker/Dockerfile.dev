@@ -8,10 +8,6 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # original archive showed performance issues and is farther away
 RUN sed -i 's|^deb http://archive|deb http://fr.archive|g' /etc/apt/sources.list
 
-COPY ./script/make_utils/setup_os_deps.sh ./setup_os_deps.sh
-COPY ./script/make_utils/detect_docker.sh ./detect_docker.sh
-RUN ./setup_os_deps.sh --linux-install-python && rm ./setup_os_deps.sh && rm ./detect_docker.sh
-
 ENV SRC_DIR=/src
 
 # Default to Ubuntu default uid for first user
@@ -20,7 +16,7 @@ ARG BUILD_UID=1000
 
 # Get sudo and vim for our future user
 RUN apt-get update && \
-    apt-get install --no-install-recommends -y sudo vim && \
+    apt-get install --no-install-recommends -y sudo vim adduser && \
     rm -rf /var/lib/apt/lists/*
 
 # For ubuntu>23 the ubuntu user will exist and use uid/gid=1000
@@ -41,15 +37,14 @@ RUN groupadd -f -g "${BUILD_GID}" dev_user && \
     chown dev_user "${SRC_DIR}" && \
     echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
+RUN groupadd docker && usermod -aG docker dev_user
+
 # Now switch to the newly created user
 USER dev_user
 
-RUN (pipx install poetry && pipx ensurepath) || \
-    (\ 
-        python3 -m pip install --no-cache-dir --upgrade pip && \
-        python3 -m pip install --no-cache-dir --ignore-installed poetry==1.7.1 && \
-        echo 'PATH=$PATH:/home/dev_user/.local/bin/' >> ~/.bashrc \
-    )
+COPY ./script/make_utils/setup_os_deps.sh ./setup_os_deps.sh
+COPY ./script/make_utils/detect_docker.sh ./detect_docker.sh
+RUN ./setup_os_deps.sh --linux-install-python && sudo rm ./setup_os_deps.sh && sudo rm ./detect_docker.sh
 
 RUN echo "source ~/dev_venv/bin/activate" >> ~/.bashrc && \
     echo "if [[ \"\$?\" != \"0\" ]]; then" >> ~/.bashrc && \

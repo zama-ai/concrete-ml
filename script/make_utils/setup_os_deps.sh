@@ -93,17 +93,12 @@ OS_NAME=$(uname)
 
 if [[ "${OS_NAME}" == "Linux" ]]; then
     # Docker build
-    if isDockerBuildkit || (isDocker && ! isDockerContainer); then
-        CLEAR_APT_LISTS="rm -rf /var/lib/apt/lists/* &&"
-        SUDO_BIN=""
-    else
-        CLEAR_APT_LISTS=""
-        SUDO_BIN="$(command -v sudo)"
-        if [[ "${SUDO_BIN}" != "" ]]; then
-            SUDO_BIN="${SUDO_BIN} "
-        fi
+    CLEAR_APT_LISTS=""
+    SUDO_BIN="$(command -v sudo)"
+    if [[ "${SUDO_BIN}" != "" ]]; then
+        SUDO_BIN="${SUDO_BIN} "
     fi
-
+   
     PYTHON_PACKAGES=
     if [[ "${LINUX_INSTALL_PYTHON}" == "1" ]]; then
         PYTHON_PACKAGES="python3-pip \
@@ -119,7 +114,8 @@ if [[ "${OS_NAME}" == "Linux" ]]; then
     then
         SETUP_CMD="linux_install_actionlint"
     else
-        SETUP_CMD="${SUDO_BIN:+$SUDO_BIN}apt-get update && apt-get upgrade --no-install-recommends -y && \
+        SETUP_CMD="${SUDO_BIN:+$SUDO_BIN}apt-get update && \
+        ${SUDO_BIN:+$SUDO_BIN}apt-get upgrade --no-install-recommends -y && \
         ${SUDO_BIN:+$SUDO_BIN}apt-get install --no-install-recommends -y \
         build-essential \
         curl \
@@ -136,22 +132,20 @@ if [[ "${OS_NAME}" == "Linux" ]]; then
         openssl \
         shellcheck \
         texlive-latex-base texlive-latex-extra texlive-fonts-recommended texlive-xetex lmodern \
-        wget pipx adduser &&
+        wget pipx &&
         ${CLEAR_APT_LISTS:+$CLEAR_APT_LISTS} \
-        linux_install_gitleaks && linux_install_actionlint && linux_install_github_cli"
+        ${SUDO_BIN:+$SUDO_BIN} linux_install_gitleaks && \
+        ${SUDO_BIN:+$SUDO_BIN} linux_install_actionlint && \
+        ${SUDO_BIN:+$SUDO_BIN} linux_install_github_cli"
     fi
     eval "${SETUP_CMD}"
 
-    # If this is a CI build, install poetry (installs as root)
-    # if not, the Dockerfile installs poetry for docker builds (under dev_user)
-    if !isDockerBuildkit; then
-        (pipx install poetry && pipx ensurepath) || \
-        (\ 
-            python3 -m pip install --no-cache-dir --upgrade pip && \
-            python3 -m pip install --no-cache-dir --ignore-installed poetry==1.7.1 && \
-            echo 'PATH=$PATH:/home/dev_user/.local/bin/' >> ~/.bashrc \
-        )
-    fi
+    (pipx install poetry && pipx ensurepath) || \
+    (\ 
+        python3 -m pip install --no-cache-dir --upgrade pip && \
+        python3 -m pip install --no-cache-dir --ignore-installed poetry==1.7.1 \
+    );    
+    echo 'PATH=$PATH:/home/dev_user/.local/bin/' >> ~/.bashrc    
 elif [[ "${OS_NAME}" == "Darwin" ]]; then
 
     # Some problems with the git which is preinstalled on AWS virtual machines. Let's unlink it
