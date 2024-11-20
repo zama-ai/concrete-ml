@@ -43,7 +43,7 @@ linux_install_gitleaks () {
         tar -xvf "${DOWNLOADED_FILE}" -C "${TMP_WORKDIR}"
         GITLEAKS_BIN="${TMP_WORKDIR}/gitleaks"
         chmod +x "${GITLEAKS_BIN}"
-        cp "${GITLEAKS_BIN}" /usr/local/bin/
+        ${SUDO_BIN:+$SUDO_BIN} cp "${GITLEAKS_BIN}" /usr/local/bin/
     else
         echo "Hash mismatch"
         echo "Got sha256:           ${SHA256_DOWNLOADED_FILE}"
@@ -69,7 +69,7 @@ linux_install_actionlint () {
         tar -xvf "${DOWNLOADED_FILE}" -C "${TMP_WORKDIR}"
         ACTIONLINT_BIN="${TMP_WORKDIR}/actionlint"
         chmod +x "${ACTIONLINT_BIN}"
-        cp "${ACTIONLINT_BIN}" /usr/local/bin/
+        ${SUDO_BIN:+$SUDO_BIN} cp "${ACTIONLINT_BIN}" /usr/local/bin/
     else
         echo "Hash mismatch"
         echo "Got sha256:           ${SHA256_DOWNLOADED_FILE}"
@@ -85,8 +85,8 @@ linux_install_github_cli () {
     # https://github.com/cli/cli/blob/trunk/docs/install_linux.md#debian-ubuntu-linux-raspberry-pi-os-apt
     echo "Installing github-CLI"
     export GH_CLI_VERSION="2.51.0"
-    wget https://github.com/cli/cli/releases/download/v${GH_CLI_VERSION}/gh_${GH_CLI_VERSION}_linux_amd64.deb
-    dpkg -i gh_${GH_CLI_VERSION}_linux_amd64.deb
+    wget -P /home/dev_user https://github.com/cli/cli/releases/download/v${GH_CLI_VERSION}/gh_${GH_CLI_VERSION}_linux_amd64.deb
+    ${SUDO_BIN:+$SUDO_BIN} dpkg -i /home/dev_user/gh_${GH_CLI_VERSION}_linux_amd64.deb
 }
 
 OS_NAME=$(uname)
@@ -134,9 +134,9 @@ if [[ "${OS_NAME}" == "Linux" ]]; then
         texlive-latex-base texlive-latex-extra texlive-fonts-recommended texlive-xetex lmodern \
         wget pipx &&
         ${CLEAR_APT_LISTS:+$CLEAR_APT_LISTS} \
-        ${SUDO_BIN:+$SUDO_BIN} linux_install_gitleaks && \
-        ${SUDO_BIN:+$SUDO_BIN} linux_install_actionlint && \
-        ${SUDO_BIN:+$SUDO_BIN} linux_install_github_cli"
+        linux_install_gitleaks && \
+        linux_install_actionlint && \
+        linux_install_github_cli"
     fi
     eval "${SETUP_CMD}"
 

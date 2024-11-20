@@ -24,7 +24,7 @@ on:
         description: "Space separated list of python versions (3.8, 3.9, 3.10, 3.11, 3.12 are supported) to launch on linux"
         required: false
         type: string
-        default: "3.12"
+        default: "3.8"
 
       macos_python_versions:
         description: "Space separated list of python versions (3.8, 3.9, 3.10, 3.11, 3.12 are supported) to launch on macos (intel)"

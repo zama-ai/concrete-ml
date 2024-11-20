@@ -42,6 +42,8 @@ RUN groupadd docker && usermod -aG docker dev_user
 # Now switch to the newly created user
 USER dev_user
 
+RUN cd /home/dev_user
+
 COPY ./script/make_utils/setup_os_deps.sh ./setup_os_deps.sh
 COPY ./script/make_utils/detect_docker.sh ./detect_docker.sh
 RUN ./setup_os_deps.sh --linux-install-python && sudo rm ./setup_os_deps.sh && sudo rm ./detect_docker.sh
