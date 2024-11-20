@@ -19,12 +19,77 @@ import requests
 from sklearn.datasets import load_breast_cancer
 from tqdm import tqdm
 
+from concrete import fhe
 from concrete.ml.deployment import FHEModelClient
 
 URL = os.environ.get("URL", f"http://localhost:8888")
 STATUS_OK = 200
 ROOT = Path(__file__).parent / "client"
 ROOT.mkdir(exist_ok=True)
+
+encrypt_with_tfhe = False
+nb_samples = 10
+
+def to_tuple(x) -> tuple:
+    """Make the input a tuple if it is not already the case.
+
+    Args:
+        x (Any): The input to consider. It can already be an input.
+
+    Returns:
+        tuple: The input as a tuple.
+    """
+    # If the input is not a tuple, return a tuple of a single element
+    if not isinstance(x, tuple):
+        return (x,)
+
+    return x
+
+def serialize_encrypted_values(
+    *values_enc,
+):
+    """Serialize encrypted values.
+
+    If a value is None, None is returned.
+
+    Args:
+        values_enc (Optional[fhe.Value]): The values to serialize.
+
+    Returns:
+        Union[Optional[bytes], Optional[Tuple[bytes]]]: The serialized values.
+    """
+    values_enc_serialized = tuple(
+        value_enc.serialize() if value_enc is not None else None for value_enc in values_enc
+    )
+
+    if len(values_enc_serialized) == 1:
+        return values_enc_serialized[0]
+
+    return values_enc_serialized
+
+def deserialize_encrypted_values(
+    *values_serialized,
+):
+    """Deserialize encrypted values.
+
+    If a value is None, None is returned.
+
+    Args:
+        values_serialized (Optional[bytes]): The values to deserialize.
+
+    Returns:
+        Union[Optional[fhe.Value], Optional[Tuple[fhe.Value]]]: The deserialized values.
+    """
+    values_enc = tuple(
+        fhe.Value.deserialize(value_serialized) if value_serialized is not None else None
+        for value_serialized in values_serialized
+    )
+
+    if len(values_enc) == 1:
+        return values_enc[0]
+
+    return values_enc
+
 
 if __name__ == "__main__":
     # Get the necessary data for the client
@@ -38,8 +103,8 @@ if __name__ == "__main__":
     X, y = load_breast_cancer(return_X_y=True)
     assert isinstance(X, numpy.ndarray)
     assert isinstance(y, numpy.ndarray)
-    X = X[-10:]
-    y = y[-10:]
+    X = X[-nb_samples:]
+    y = y[-nb_samples:]
 
     assert isinstance(X, numpy.ndarray)
     assert isinstance(y, numpy.ndarray)
@@ -80,7 +145,23 @@ if __name__ == "__main__":
         clear_input = X[[i], :]
 
         assert isinstance(clear_input, numpy.ndarray)
-        encrypted_input = client.quantize_encrypt_serialize(clear_input)
+
+        quantized_input = to_tuple(client.model.quantize_input(clear_input))
+
+        # Here, we can encrypt with TFHE-rs instead of Concrete
+        if encrypt_with_tfhe:
+            pass
+        else:
+            encrypted_input = to_tuple(client.client.encrypt(*quantized_input))
+
+        encrypted_input = serialize_encrypted_values(*encrypted_input)
+
+        # Debugging
+        if False:
+            print(f"Clear input: {clear_input}")
+            print(f"Quantized input: {quantized_input}")
+            print(f"Quantized input: {encrypted_input}")
+
         assert isinstance(encrypted_input, bytes)
 
         inferences.append(
@@ -103,7 +184,17 @@ if __name__ == "__main__":
         assert result.status_code == STATUS_OK
 
         encrypted_result = result.content
-        decrypted_prediction = client.deserialize_decrypt_dequantize(encrypted_result)[0]
+
+        # Decrypt and deserialize the values
+        result_quant_encrypted = to_tuple(
+            deserialize_encrypted_values(encrypted_result)
+        )
+
+        result_quant = to_tuple(client.client.decrypt(*result_quant_encrypted))
+
+        result = to_tuple(client.model.dequantize_output(*result_quant))
+        decrypted_prediction = client.model.post_processing(*result)[0]
+
         decrypted_predictions.append(decrypted_prediction)
     print(f"Decrypted predictions are: {decrypted_predictions}")
 
@@ -111,7 +202,7 @@ if __name__ == "__main__":
     print(f"Decrypted prediction classes are: {decrypted_predictions_classes}")
 
     # Let's check the results and compare them against the clear model
-    clear_prediction_classes = y[0:10]
+    clear_prediction_classes = y[0:nb_samples]
     accuracy = (clear_prediction_classes == decrypted_predictions_classes).mean()
     print(f"Accuracy between FHE prediction and expected results is: {accuracy*100:.0f}%")
 
