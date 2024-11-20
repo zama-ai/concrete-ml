@@ -144,7 +144,7 @@ if [[ "${OS_NAME}" == "Linux" ]]; then
 
     # If this is a CI build, install poetry (installs as root)
     # if not, the Dockerfile installs poetry for docker builds (under dev_user)
-    if !isDockerBuildkit then
+    if !isDockerBuildkit; then
         (pipx install poetry && pipx ensurepath) || \
         (\ 
             python3 -m pip install --no-cache-dir --upgrade pip && \
