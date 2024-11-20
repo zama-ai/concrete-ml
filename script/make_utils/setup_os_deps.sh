@@ -136,11 +136,22 @@ if [[ "${OS_NAME}" == "Linux" ]]; then
         openssl \
         shellcheck \
         texlive-latex-base texlive-latex-extra texlive-fonts-recommended texlive-xetex lmodern \
-        wget pipx adduser && \
+        wget pipx adduser &&
         ${CLEAR_APT_LISTS:+$CLEAR_APT_LISTS} \
         linux_install_gitleaks && linux_install_actionlint && linux_install_github_cli"
     fi
     eval "${SETUP_CMD}"
+
+    # If this is a CI build, install poetry (installs as root)
+    # if not, the Dockerfile installs poetry for docker builds (under dev_user)
+    if !isDockerBuildkit then
+        (pipx install poetry && pipx ensurepath) || \
+        (\ 
+            python3 -m pip install --no-cache-dir --upgrade pip && \
+            python3 -m pip install --no-cache-dir --ignore-installed poetry==1.7.1 && \
+            echo 'PATH=$PATH:/home/dev_user/.local/bin/' >> ~/.bashrc \
+        )
+    fi
 elif [[ "${OS_NAME}" == "Darwin" ]]; then
 
     # Some problems with the git which is preinstalled on AWS virtual machines. Let's unlink it
