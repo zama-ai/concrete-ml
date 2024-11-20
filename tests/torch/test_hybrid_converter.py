@@ -1,5 +1,6 @@
 """Tests for the hybrid model converter."""
 
+import importlib
 import sys
 import tempfile
 from pathlib import Path
@@ -64,14 +65,14 @@ def run_hybrid_llm_test(
             if has_pbs_reshape:
                 has_pbs = True
 
-        # Propagate glwe_backend_installed state being tested to constants of affected modules
-        for affected_module in (
-            concrete.ml.quantization.linear_op_glwe_backend,
-            concrete.ml.torch.hybrid_model,
-        ):
-            m.setattr(affected_module, "_HAS_GLWE_BACKEND", glwe_backend_installed)
+        # Patching for GLWE backend
+        if not glwe_backend_installed:
+            m.setitem(sys.modules, "concrete_ml_extensions", None)
 
-        # Create a hybrid model
+        # Reload the affected modules to ensure the changes take effect
+        importlib.reload(concrete.ml.quantization.linear_op_glwe_backend)
+        importlib.reload(concrete.ml.torch.hybrid_model)
+
         hybrid_model = HybridFHEModel(model, module_names)
         is_compiled = False
         try:
