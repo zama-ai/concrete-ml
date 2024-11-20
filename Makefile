@@ -350,7 +350,6 @@ mypy_ci:
 .PHONY: docker_build # Build dev docker
 docker_build:
 	BUILD_ARGS="--build-arg UBUNTU_BASE=$(UBUNTU_BASE) ";\
-	BUILD_ARGS+="--build-arg OS_DEPS_ARG=linux-install-python "; \
 	if [[ $$(uname) == "Linux" ]]; then \
 		BUILD_ARGS+="--build-arg BUILD_UID=$$(id -u) --build-arg BUILD_GID=$$(id -g)"; \
 	fi; \

@@ -140,12 +140,14 @@ if [[ "${OS_NAME}" == "Linux" ]]; then
     fi
     eval "${SETUP_CMD}"
 
+    # Install poetry, either with pipx for ubuntu >= 23
+    # or through regular pip for older ubuntu
     (pipx install poetry && pipx ensurepath) || \
-    (\ 
+    (\
         python3 -m pip install --no-cache-dir --upgrade pip && \
         python3 -m pip install --no-cache-dir --ignore-installed poetry==1.7.1 \
-    );    
-    echo 'PATH=$PATH:/home/dev_user/.local/bin/' >> ~/.bashrc    
+    );
+    echo "PATH=$PATH:/home/dev_user/.local/bin/" >> ~/.bashrc
 elif [[ "${OS_NAME}" == "Darwin" ]]; then
 
     # Some problems with the git which is preinstalled on AWS virtual machines. Let's unlink it
