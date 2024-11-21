@@ -43,7 +43,7 @@ def test_remove_unused_constant_nodes():
 
     output = helper.make_tensor_value_info("used_constant", onnx.TensorProto.FLOAT, ())
     output_2 = helper.make_tensor_value_info("other_used_constant", onnx.TensorProto.FLOAT, ())
-    identity_output = helper.make_tensor_value_info("indentity", onnx.TensorProto.FLOAT, ())
+    identity_output = helper.make_tensor_value_info("identity", onnx.TensorProto.FLOAT, ())
 
     graph_def = helper.make_graph(
         nodes=[unused_constant, used_constant, other_used_constant, identity_node],

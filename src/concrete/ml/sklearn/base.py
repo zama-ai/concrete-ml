@@ -1572,6 +1572,29 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         return super().post_processing(y_preds)
 
+    def get_sklearn_params(self, deep: bool = True) -> dict:
+        """Get parameters for this estimator.
+
+        This method is used to instantiate a scikit-learn model using the Concrete ML model's
+        parameters. It does not override scikit-learn's existing `get_params` method in order to
+        not break its implementation of `set_params`.
+
+        Args:
+            deep (bool): If True, will return the parameters for this estimator and contained
+                subobjects that are estimators. Default to True.
+
+        Returns:
+            params (dict): Parameter names mapped to their values.
+        """
+        # pylint: disable-next=no-member
+        params = super().get_params(deep=deep)  # type: ignore[misc]
+
+        params.pop("n_bits", None)
+        if "1.1." in sklearn.__version__:
+            params.pop("monotonic_cst", None)
+
+        return params
+
 
 class BaseTreeRegressorMixin(BaseTreeEstimatorMixin, sklearn.base.RegressorMixin, ABC):
     """Mixin class for tree-based regressors.
@@ -1667,6 +1690,12 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         # Extract scikit-learn's initialization parameters
         init_params = sklearn_model.get_params()
+
+        # Ensure compatibility for both sklearn 1.1 and >=1.4
+        # This parameter was removed in 1.4. If this package is installed
+        # with sklearn 1.1 which has it, then remove it when
+        # instantiating the 1.4 API compatible Concrete ML model
+        init_params.pop("normalize", None)
 
         # Instantiate the Concrete ML model and update initialization parameters
         # This update is necessary as we currently store scikit-learn attributes in Concrete ML

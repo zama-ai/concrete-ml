@@ -39,6 +39,7 @@ class RandomForestClassifier(BaseTreeClassifierMixin):
         class_weight=None,
         ccp_alpha=0.0,
         max_samples=None,
+        monotonic_cst=None,
     ):
         """Initialize the RandomForestClassifier.
 
@@ -65,6 +66,7 @@ class RandomForestClassifier(BaseTreeClassifierMixin):
         self.max_leaf_nodes = max_leaf_nodes
         self.min_impurity_decrease = min_impurity_decrease
         self.ccp_alpha = ccp_alpha
+        self.monotonic_cst = monotonic_cst
 
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
         # Here, we want to use BaseTreeEstimatorMixin's `post-processing` method as
@@ -106,6 +108,7 @@ class RandomForestClassifier(BaseTreeClassifierMixin):
         metadata["max_leaf_nodes"] = self.max_leaf_nodes
         metadata["min_impurity_decrease"] = self.min_impurity_decrease
         metadata["ccp_alpha"] = self.ccp_alpha
+        metadata["monotonic_cst"] = self.monotonic_cst
 
         return metadata
 
@@ -151,6 +154,7 @@ class RandomForestClassifier(BaseTreeClassifierMixin):
         obj.max_leaf_nodes = metadata["max_leaf_nodes"]
         obj.min_impurity_decrease = metadata["min_impurity_decrease"]
         obj.ccp_alpha = metadata["ccp_alpha"]
+        obj.monotonic_cst = metadata["monotonic_cst"]
 
         return obj
 
@@ -184,6 +188,7 @@ class RandomForestRegressor(BaseTreeRegressorMixin):
         warm_start=False,
         ccp_alpha=0.0,
         max_samples=None,
+        monotonic_cst=None,
     ):
         """Initialize the RandomForestRegressor.
 
@@ -209,6 +214,7 @@ class RandomForestRegressor(BaseTreeRegressorMixin):
         self.max_leaf_nodes = max_leaf_nodes
         self.min_impurity_decrease = min_impurity_decrease
         self.ccp_alpha = ccp_alpha
+        self.monotonic_cst = monotonic_cst
 
     def dump_dict(self) -> Dict[str, Any]:
         metadata: Dict[str, Any] = {}
@@ -243,6 +249,7 @@ class RandomForestRegressor(BaseTreeRegressorMixin):
         metadata["max_leaf_nodes"] = self.max_leaf_nodes
         metadata["min_impurity_decrease"] = self.min_impurity_decrease
         metadata["ccp_alpha"] = self.ccp_alpha
+        metadata["monotonic_cst"] = self.monotonic_cst
 
         return metadata
 
@@ -288,5 +295,6 @@ class RandomForestRegressor(BaseTreeRegressorMixin):
         obj.max_leaf_nodes = metadata["max_leaf_nodes"]
         obj.min_impurity_decrease = metadata["min_impurity_decrease"]
         obj.ccp_alpha = metadata["ccp_alpha"]
+        obj.monotonic_cst = metadata["monotonic_cst"]
 
         return obj

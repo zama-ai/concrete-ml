@@ -51,7 +51,6 @@ class LinearRegression(SklearnLinearRegressorMixin):
         self,
         n_bits=8,
         fit_intercept=True,
-        normalize="deprecated",
         copy_X=True,
         n_jobs=None,
         positive=False,
@@ -60,7 +59,6 @@ class LinearRegression(SklearnLinearRegressorMixin):
         super().__init__(n_bits=n_bits)
 
         self.fit_intercept = fit_intercept
-        self.normalize = normalize
         self.copy_X = copy_X
         self.n_jobs = n_jobs
         self.positive = positive
@@ -85,7 +83,6 @@ class LinearRegression(SklearnLinearRegressorMixin):
 
         # scikit-learn
         metadata["fit_intercept"] = self.fit_intercept
-        metadata["normalize"] = self.normalize
         metadata["copy_X"] = self.copy_X
         metadata["n_jobs"] = self.n_jobs
         metadata["positive"] = self.positive
@@ -112,7 +109,6 @@ class LinearRegression(SklearnLinearRegressorMixin):
 
         # scikit-learn
         obj.fit_intercept = metadata["fit_intercept"]
-        obj.normalize = metadata["normalize"]
         obj.copy_X = metadata["copy_X"]
         obj.n_jobs = metadata["n_jobs"]
         obj.positive = metadata["positive"]
@@ -1302,7 +1298,6 @@ class ElasticNet(SklearnLinearRegressorMixin):
         alpha=1.0,
         l1_ratio=0.5,
         fit_intercept=True,
-        normalize="deprecated",
         precompute=False,
         max_iter=1000,
         copy_X=True,
@@ -1318,7 +1313,6 @@ class ElasticNet(SklearnLinearRegressorMixin):
         self.alpha = alpha
         self.l1_ratio = l1_ratio
         self.fit_intercept = fit_intercept
-        self.normalize = normalize
         self.copy_X = copy_X
         self.positive = positive
         self.precompute = precompute
@@ -1350,7 +1344,6 @@ class ElasticNet(SklearnLinearRegressorMixin):
         metadata["alpha"] = self.alpha
         metadata["l1_ratio"] = self.l1_ratio
         metadata["fit_intercept"] = self.fit_intercept
-        metadata["normalize"] = self.normalize
         metadata["copy_X"] = self.copy_X
         metadata["positive"] = self.positive
         metadata["precompute"] = self.precompute
@@ -1384,7 +1377,6 @@ class ElasticNet(SklearnLinearRegressorMixin):
         obj.alpha = metadata["alpha"]
         obj.l1_ratio = metadata["l1_ratio"]
         obj.fit_intercept = metadata["fit_intercept"]
-        obj.normalize = metadata["normalize"]
         obj.copy_X = metadata["copy_X"]
         obj.positive = metadata["positive"]
         obj.precompute = metadata["precompute"]
@@ -1422,7 +1414,6 @@ class Lasso(SklearnLinearRegressorMixin):
         n_bits=8,
         alpha: float = 1.0,
         fit_intercept=True,
-        normalize="deprecated",
         precompute=False,
         copy_X=True,
         max_iter=1000,
@@ -1437,7 +1428,6 @@ class Lasso(SklearnLinearRegressorMixin):
 
         self.alpha = alpha
         self.fit_intercept = fit_intercept
-        self.normalize = normalize
         self.copy_X = copy_X
         self.positive = positive
         self.max_iter = max_iter
@@ -1468,7 +1458,6 @@ class Lasso(SklearnLinearRegressorMixin):
         # scikit-learn
         metadata["alpha"] = self.alpha
         metadata["fit_intercept"] = self.fit_intercept
-        metadata["normalize"] = self.normalize
         metadata["copy_X"] = self.copy_X
         metadata["positive"] = self.positive
         metadata["max_iter"] = self.max_iter
@@ -1501,7 +1490,6 @@ class Lasso(SklearnLinearRegressorMixin):
         # scikit-learn
         obj.alpha = metadata["alpha"]
         obj.fit_intercept = metadata["fit_intercept"]
-        obj.normalize = metadata["normalize"]
         obj.copy_X = metadata["copy_X"]
         obj.positive = metadata["positive"]
         obj.max_iter = metadata["max_iter"]
@@ -1539,10 +1527,9 @@ class Ridge(SklearnLinearRegressorMixin):
         n_bits=8,
         alpha: float = 1.0,
         fit_intercept=True,
-        normalize="deprecated",
         copy_X=True,
         max_iter=None,
-        tol=0.001,
+        tol=0.0001,
         solver="auto",
         positive=False,
         random_state=None,
@@ -1552,7 +1539,6 @@ class Ridge(SklearnLinearRegressorMixin):
 
         self.alpha = alpha
         self.fit_intercept = fit_intercept
-        self.normalize = normalize
         self.copy_X = copy_X
         self.positive = positive
         self.max_iter = max_iter
@@ -1581,7 +1567,6 @@ class Ridge(SklearnLinearRegressorMixin):
         # scikit-learn
         metadata["alpha"] = self.alpha
         metadata["fit_intercept"] = self.fit_intercept
-        metadata["normalize"] = self.normalize
         metadata["copy_X"] = self.copy_X
         metadata["positive"] = self.positive
         metadata["max_iter"] = self.max_iter
@@ -1612,7 +1597,6 @@ class Ridge(SklearnLinearRegressorMixin):
         # scikit-learn
         obj.alpha = metadata["alpha"]
         obj.fit_intercept = metadata["fit_intercept"]
-        obj.normalize = metadata["normalize"]
         obj.copy_X = metadata["copy_X"]
         obj.positive = metadata["positive"]
         obj.max_iter = metadata["max_iter"]
