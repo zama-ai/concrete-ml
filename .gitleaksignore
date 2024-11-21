@@ -10,3 +10,4 @@ f41de03048a9ed27946b875e81b34138bb4bb17b:use_case_examples/training/analyze.ipyn
 e2904473898ddd325f245f4faca526a0e9520f49:builders/Dockerfile.zamalang-env:generic-api-key:5
 7d5e885816f1f1e432dd94da38c5c8267292056a:docs/advanced_examples/XGBRegressor.ipynb:aws-access-token:1026
 25c5e7abaa7382520af3fb7a64266e193b1f6a59:poetry.lock:square-access-token:6401
+eebd4bea78f6dd2361baa7f94f68ae4cba8b9fe8:tests/deployment/test_deployment.py:generic-api-key:20

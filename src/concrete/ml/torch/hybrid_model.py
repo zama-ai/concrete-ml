@@ -2,7 +2,6 @@
 
 # pylint: disable=too-many-lines
 import ast
-import contextvars
 import io
 import sys
 import time
@@ -102,13 +101,6 @@ def convert_conv1d_to_linear(layer_or_module):
     return layer_or_module
 
 
-# This module member is instantiated by the Hybrid FHE model
-# when hybrid FHE forward is called and the GLWE backend is available
-_optimized_linear_executor: contextvars.ContextVar[Optional[GLWELinearLayerExecutor]] = (
-    contextvars.ContextVar("optimized_linear_executor")
-)
-
-
 # pylint: disable-next=too-many-instance-attributes
 class RemoteModule(nn.Module):
     """A wrapper class for the modules to be evaluated remotely with FHE."""
@@ -136,6 +128,7 @@ class RemoteModule(nn.Module):
         self.model_name: Optional[str] = model_name
         self.verbose = verbose
         self.optimized_linear_execution = optimized_linear_execution
+        self.executor: Optional[GLWELinearLayerExecutor] = None
 
     def init_fhe_client(
         self, path_to_client: Optional[Path] = None, path_to_keys: Optional[Path] = None
@@ -252,15 +245,10 @@ class RemoteModule(nn.Module):
         }:
             assert self.private_q_module is not None
 
-            try:
-                optimized_linear_layer_executor = _optimized_linear_executor.get()
-            except LookupError:
-                optimized_linear_layer_executor = None
-
-            if optimized_linear_layer_executor:
+            if self.executor:
                 # Delegate to the optimized GLWE executor
                 y = torch.Tensor(
-                    optimized_linear_layer_executor.forward(
+                    self.executor.forward(
                         x.detach().numpy(), self.private_q_module, self.fhe_local_mode
                     )
                 )
@@ -269,6 +257,7 @@ class RemoteModule(nn.Module):
                 y = torch.Tensor(
                     self.private_q_module.forward(x.detach().numpy(), fhe=self.fhe_local_mode.value)
                 )
+
         elif self.fhe_local_mode == HybridFHEMode.CALIBRATE:
             # Calling torch + gathering calibration data
             assert self.private_module is not None
@@ -278,14 +267,8 @@ class RemoteModule(nn.Module):
 
         elif self.fhe_local_mode == HybridFHEMode.REMOTE:  # pragma:no cover
             # Remote call
-            try:
-                optimized_linear_layer_executor = _optimized_linear_executor.get()
-            except LookupError:
-                optimized_linear_layer_executor = None
-
-            assert optimized_linear_layer_executor is None, (
-                "Remote optimized linear layers " "are not yet implemented"
-            )
+            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4672
+            assert self.executor is None, "Remote optimized linear layers are not yet implemented"
             y = self.remote_call(x)
 
         elif self.fhe_local_mode == HybridFHEMode.TORCH:
@@ -400,13 +383,14 @@ class HybridFHEModel:
         self.configuration: Optional[Configuration] = None
         self.model_name = model_name
         self.verbose = verbose
+        self.executor: Optional[GLWELinearLayerExecutor] = None
 
         self._replace_modules()
 
     def _replace_modules(self):
         """Replace the private modules in the model with remote layers."""
 
-        self._all_layers_are_pure_linear = True
+        self._has_only_large_linear_layers = True
         for module_name in self.module_names:
             # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3858
             # Conv1d introduce reshaping operations which adds more TLU
@@ -421,8 +405,27 @@ class HybridFHEModel:
                 self.private_modules[module_name],
                 (nn.Linear, ForwardModuleLinear, BackwardModuleLinear),
             )
+
+            # Check input dimensions for linear layers
+            # If the input dimension is less than 512 we do not use the GLWE optimization.
+            # Optimal input dimension is 2048, below 512 the performance are too low.
+            if is_pure_linear_layer:
+                module = self.private_modules[module_name]
+                # Use weight shape instead of in/out_features
+                if hasattr(module, "weight"):
+                    input_dim = module.weight.shape[
+                        1
+                    ]  # Input dimension is second dimension for Linear layers
+                    output_dim = module.weight.shape[0]  # Output dimension is first dimension
+                else:
+                    input_dim = output_dim = 0
+
+                is_pure_linear_layer = (
+                    is_pure_linear_layer and input_dim >= 512 and output_dim >= 512
+                )
+
             if not is_pure_linear_layer:
-                self._all_layers_are_pure_linear = False
+                self._has_only_large_linear_layers = False
 
         for module_name in self.module_names:
             # Create the optimized glwe linear layer executor if needed
@@ -432,7 +435,7 @@ class HybridFHEModel:
                 module_name=module_name,
                 model_name=self.model_name,
                 verbose=self.verbose,
-                optimized_linear_execution=self._all_layers_are_pure_linear,
+                optimized_linear_execution=(self._has_only_large_linear_layers),
             )
 
             self.remote_modules[module_name] = remote_module
@@ -462,7 +465,7 @@ class HybridFHEModel:
         # Validate the FHE mode
         fhe_mode = HybridFHEMode(fhe)
 
-        if _HAS_GLWE_BACKEND and self._all_layers_are_pure_linear:
+        if _HAS_GLWE_BACKEND and self._has_only_large_linear_layers:
             if fhe_mode == HybridFHEMode.SIMULATE:
                 raise AssertionError(
                     "When the HybridFHEModel is instantiated with only "
@@ -470,22 +473,19 @@ class HybridFHEModel:
                 )
 
             if fhe_mode in (HybridFHEMode.EXECUTE, HybridFHEMode.REMOTE, HybridFHEMode.DISABLE):
-                # If all layers are pure linear, enable the GLWE optimization for all layers
-                # and generate an encryption and compression key for all layers
-                # as they share crypto-parameters
+                # Initialize executor only if not already done
+                if self.executor is None:
+                    self.executor = GLWELinearLayerExecutor()
 
-                # Loading keys from a file could be done here, and the
-                # keys could be passed as arguments to the Executor
-                executor = GLWELinearLayerExecutor()
+                # Generate keys only if needed and not already done
+                if fhe_mode != HybridFHEMode.DISABLE and self.executor.private_key is None:
+                    self.executor.keygen()
 
-                if fhe_mode != HybridFHEMode.DISABLE:
-                    executor.keygen()
-
-                _optimized_linear_executor.set(executor)
+        # Update executor for all remote modules
+        for module in self.remote_modules.values():
+            module.executor = self.executor
 
         result = self.model(x)
-
-        _optimized_linear_executor.set(None)
 
         return result
 
@@ -589,7 +589,8 @@ class HybridFHEModel:
                 # If all layers are linear and the GLWE backend is available
                 # then simply quantize the model without compiling with
                 # Concrete Python.
-                if self._all_layers_are_pure_linear and _HAS_GLWE_BACKEND:
+                if self._has_only_large_linear_layers and _HAS_GLWE_BACKEND:
+                    self.executor = GLWELinearLayerExecutor()
                     self.private_q_modules[name] = build_quantized_module(
                         self.private_modules[name],
                         calibration_data_tensor,
@@ -645,7 +646,15 @@ class HybridFHEModel:
             path (Path): The directory where the model and the FHE circuit will be saved.
             via_mlir (bool): if fhe circuits should be serialized using via_mlir option
                 useful for cross-platform (compile on one architecture and run on another)
+
+        Raises:
+            NotImplementedError: GLWE backend deployment is not yet supported
         """
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4672
+        # GLWE backend deployment is not yet supported
+        if self.executor is not None:
+            raise NotImplementedError("GLWE backend deployment is not yet supported")
+
         path = Path(path)
         path.mkdir(parents=True, exist_ok=True)
 
