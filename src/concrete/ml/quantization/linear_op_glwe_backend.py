@@ -29,8 +29,7 @@ class GLWELinearLayerExecutor:
         private_key=None,
         compression_key=None,
     ):
-        if not has_glwe_backend():
-            raise RuntimeError("GLWE backend not installed")
+        assert has_glwe_backend(), "GLWE backend not installed"
 
         import concrete_ml_extensions as fhext
 
