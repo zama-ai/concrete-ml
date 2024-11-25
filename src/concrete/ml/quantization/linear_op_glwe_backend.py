@@ -7,13 +7,18 @@ import numpy
 from ..common.utils import HybridFHEMode, to_tuple
 from .quantized_module import QuantizedModule
 
-try:
-    import concrete_ml_extensions as fhext
 
-    _HAS_GLWE_BACKEND = True
-except ImportError:  # pragma: no cover
-    fhext = None
-    _HAS_GLWE_BACKEND = False
+def has_glwe_backend():
+    """Check if the GLWE backend is installed.
+
+    Returns:
+        bool: True if the GLWE backend is installed, False otherwise.
+    """
+    try:
+        __import__("concrete_ml_extensions")
+        return True
+    except ImportError:
+        return False
 
 
 class GLWELinearLayerExecutor:
@@ -24,6 +29,12 @@ class GLWELinearLayerExecutor:
         private_key=None,
         compression_key=None,
     ):
+        assert has_glwe_backend(), "GLWE backend not installed"
+
+        import concrete_ml_extensions as fhext
+
+        self.fhext = fhext
+
         self.compression_key = compression_key
         self.private_key = private_key
 
@@ -39,7 +50,9 @@ class GLWELinearLayerExecutor:
     def keygen(self):
         """Generate private and compression key."""
         # pylint: disable-next=no-member
-        self.private_key, self.compression_key = fhext.create_private_key(self.glwe_crypto_params)
+        self.private_key, self.compression_key = self.fhext.create_private_key(
+            self.glwe_crypto_params
+        )
 
     def forward(
         self, x: numpy.ndarray, q_module: QuantizedModule, fhe: HybridFHEMode
@@ -123,15 +136,15 @@ class GLWELinearLayerExecutor:
 
             for idx, q_x_sample in enumerate(q_x):
 
-                ciphertext = fhext.encrypt_matrix(  # pylint: disable=no-member
+                ciphertext = self.fhext.encrypt_matrix(  # pylint: disable=no-member
                     pkey=self.private_key, crypto_params=self.glwe_crypto_params, data=q_x_sample
                 )
-                encrypted_result = fhext.matrix_multiplication(  # pylint: disable=no-member
+                encrypted_result = self.fhext.matrix_multiplication(  # pylint: disable=no-member
                     encrypted_matrix=ciphertext,
                     data=q_weight.astype(numpy.uint64),
                     compression_key=self.compression_key,
                 )
-                q_result = fhext.decrypt_matrix(  # pylint: disable=no-member
+                q_result = self.fhext.decrypt_matrix(  # pylint: disable=no-member
                     encrypted_result,
                     self.private_key,
                     self.glwe_crypto_params,

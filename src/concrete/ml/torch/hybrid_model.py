@@ -21,7 +21,7 @@ from torch import nn
 
 from ..common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE, HybridFHEMode
 from ..deployment.fhe_client_server import FHEModelClient, FHEModelDev, FHEModelServer
-from ..quantization.linear_op_glwe_backend import _HAS_GLWE_BACKEND, GLWELinearLayerExecutor
+from ..quantization.linear_op_glwe_backend import GLWELinearLayerExecutor, has_glwe_backend
 from .compile import (
     QuantizedModule,
     build_quantized_module,
@@ -69,7 +69,7 @@ def convert_conv1d_to_linear(layer_or_module):
             or the Conv1D layer converted to a Linear layer.
     """
     try:
-        from transformers import Conv1D  # pylint: disable=import-outside-toplevel
+        from transformers.modeling_utils import Conv1D  # pylint: disable=import-outside-toplevel
     except ImportError:  # pragma: no cover
         return layer_or_module
 
@@ -412,13 +412,14 @@ class HybridFHEModel:
             if is_pure_linear_layer:
                 module = self.private_modules[module_name]
                 # Use weight shape instead of in/out_features
-                if hasattr(module, "weight"):
-                    input_dim = module.weight.shape[
-                        1
-                    ]  # Input dimension is second dimension for Linear layers
-                    output_dim = module.weight.shape[0]  # Output dimension is first dimension
-                else:
-                    input_dim = output_dim = 0
+                input_dim, output_dim = (
+                    (
+                        module.weight.shape[1],
+                        module.weight.shape[0],
+                    )
+                    if hasattr(module, "weight")
+                    else (0, 0)
+                )
 
                 is_pure_linear_layer = (
                     is_pure_linear_layer and input_dim >= 512 and output_dim >= 512
@@ -465,7 +466,7 @@ class HybridFHEModel:
         # Validate the FHE mode
         fhe_mode = HybridFHEMode(fhe)
 
-        if _HAS_GLWE_BACKEND and self._has_only_large_linear_layers:
+        if has_glwe_backend() and self._has_only_large_linear_layers:
             if fhe_mode == HybridFHEMode.SIMULATE:
                 raise AssertionError(
                     "When the HybridFHEModel is instantiated with only "
@@ -474,8 +475,7 @@ class HybridFHEModel:
 
             if fhe_mode in (HybridFHEMode.EXECUTE, HybridFHEMode.REMOTE, HybridFHEMode.DISABLE):
                 # Initialize executor only if not already done
-                if self.executor is None:
-                    self.executor = GLWELinearLayerExecutor()
+                self.executor = self.executor or GLWELinearLayerExecutor()
 
                 # Generate keys only if needed and not already done
                 if fhe_mode != HybridFHEMode.DISABLE and self.executor.private_key is None:
@@ -589,7 +589,7 @@ class HybridFHEModel:
                 # If all layers are linear and the GLWE backend is available
                 # then simply quantize the model without compiling with
                 # Concrete Python.
-                if self._has_only_large_linear_layers and _HAS_GLWE_BACKEND:
+                if self._has_only_large_linear_layers and has_glwe_backend():
                     self.executor = GLWELinearLayerExecutor()
                     self.private_q_modules[name] = build_quantized_module(
                         self.private_modules[name],
