@@ -14,7 +14,7 @@ DEV_CONTAINER_CACHE_VOLUME:=concrete-ml-cache-$(DEV_DOCKER_PYTHON)
 DOCKER_VENV_PATH:="$${HOME}"/dev_venv/
 SRC_DIR:=src
 TEST?=tests
-N_CPU?=1
+N_CPU?=4
 CONCRETE_PACKAGE_PATH=$(SRC_DIR)/concrete
 COUNT?=1
 RANDOMLY_SEED?=$$RANDOM
@@ -214,7 +214,7 @@ spcc_internal: $(SPCC_DEPS)
 .PHONY: pytest_internal # Run pytest
 pytest_internal:
 	poetry run pytest --version
-	poetry run pytest $(TEST) \
+	MKL_NUM_THREADS=4 OMP_NUM_THREADS=4 poetry run pytest $(TEST) \
 	-svv \
 	--count=$(COUNT) \
 	--randomly-dont-reorganize \
