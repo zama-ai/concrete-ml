@@ -43,7 +43,7 @@ linux_install_gitleaks () {
         tar -xvf "${DOWNLOADED_FILE}" -C "${TMP_WORKDIR}"
         GITLEAKS_BIN="${TMP_WORKDIR}/gitleaks"
         chmod +x "${GITLEAKS_BIN}"
-        cp "${GITLEAKS_BIN}" /usr/local/bin/
+        ${SUDO_BIN:+$SUDO_BIN} cp "${GITLEAKS_BIN}" /usr/local/bin/
     else
         echo "Hash mismatch"
         echo "Got sha256:           ${SHA256_DOWNLOADED_FILE}"
@@ -69,7 +69,7 @@ linux_install_actionlint () {
         tar -xvf "${DOWNLOADED_FILE}" -C "${TMP_WORKDIR}"
         ACTIONLINT_BIN="${TMP_WORKDIR}/actionlint"
         chmod +x "${ACTIONLINT_BIN}"
-        cp "${ACTIONLINT_BIN}" /usr/local/bin/
+        ${SUDO_BIN:+$SUDO_BIN} cp "${ACTIONLINT_BIN}" /usr/local/bin/
     else
         echo "Hash mismatch"
         echo "Got sha256:           ${SHA256_DOWNLOADED_FILE}"
@@ -85,32 +85,27 @@ linux_install_github_cli () {
     # https://github.com/cli/cli/blob/trunk/docs/install_linux.md#debian-ubuntu-linux-raspberry-pi-os-apt
     echo "Installing github-CLI"
     export GH_CLI_VERSION="2.51.0"
-    wget https://github.com/cli/cli/releases/download/v${GH_CLI_VERSION}/gh_${GH_CLI_VERSION}_linux_amd64.deb
-    dpkg -i gh_${GH_CLI_VERSION}_linux_amd64.deb
+    wget -P /home/dev_user https://github.com/cli/cli/releases/download/v${GH_CLI_VERSION}/gh_${GH_CLI_VERSION}_linux_amd64.deb
+    ${SUDO_BIN:+$SUDO_BIN} dpkg -i /home/dev_user/gh_${GH_CLI_VERSION}_linux_amd64.deb
 }
 
 OS_NAME=$(uname)
 
 if [[ "${OS_NAME}" == "Linux" ]]; then
     # Docker build
-    if isDockerBuildkit || (isDocker && ! isDockerContainer); then
-        CLEAR_APT_LISTS="rm -rf /var/lib/apt/lists/* &&"
-        SUDO_BIN=""
-    else
-        CLEAR_APT_LISTS=""
-        SUDO_BIN="$(command -v sudo)"
-        if [[ "${SUDO_BIN}" != "" ]]; then
-            SUDO_BIN="${SUDO_BIN} "
-        fi
+    CLEAR_APT_LISTS=""
+    SUDO_BIN="$(command -v sudo)"
+    if [[ "${SUDO_BIN}" != "" ]]; then
+        SUDO_BIN="${SUDO_BIN} "
     fi
-
+   
     PYTHON_PACKAGES=
     if [[ "${LINUX_INSTALL_PYTHON}" == "1" ]]; then
         PYTHON_PACKAGES="python3-pip \
-        python3.8 \
-        python3.8-dev \
-        python3.8-tk \
-        python3.8-venv \
+        python3 \
+        python3-dev \
+        python3-tk \
+        python3-venv \
         python-is-python3 \
         "
     fi
@@ -119,7 +114,8 @@ if [[ "${OS_NAME}" == "Linux" ]]; then
     then
         SETUP_CMD="linux_install_actionlint"
     else
-        SETUP_CMD="${SUDO_BIN:+$SUDO_BIN}apt-get update && apt-get upgrade --no-install-recommends -y && \
+        SETUP_CMD="${SUDO_BIN:+$SUDO_BIN}apt-get update && \
+        ${SUDO_BIN:+$SUDO_BIN}apt-get upgrade --no-install-recommends -y && \
         ${SUDO_BIN:+$SUDO_BIN}apt-get install --no-install-recommends -y \
         build-essential \
         curl \
@@ -136,13 +132,22 @@ if [[ "${OS_NAME}" == "Linux" ]]; then
         openssl \
         shellcheck \
         texlive-latex-base texlive-latex-extra texlive-fonts-recommended texlive-xetex lmodern \
-        wget && \
+        wget pipx &&
         ${CLEAR_APT_LISTS:+$CLEAR_APT_LISTS} \
-        python3 -m pip install --no-cache-dir --upgrade pip && \
-        python3 -m pip install --no-cache-dir --ignore-installed poetry==1.7.1 && \
-        linux_install_gitleaks && linux_install_actionlint && linux_install_github_cli"
+        linux_install_gitleaks && \
+        linux_install_actionlint && \
+        linux_install_github_cli"
     fi
     eval "${SETUP_CMD}"
+
+    # Install poetry, either with pipx for ubuntu >= 23
+    # or through regular pip for older ubuntu
+    (pipx install poetry && pipx ensurepath) || \
+    (\
+        python3 -m pip install --no-cache-dir --upgrade pip && \
+        python3 -m pip install --no-cache-dir --ignore-installed poetry==1.7.1 \
+    );
+    echo "PATH=$PATH:/home/dev_user/.local/bin/" >> ~/.bashrc
 elif [[ "${OS_NAME}" == "Darwin" ]]; then
 
     # Some problems with the git which is preinstalled on AWS virtual machines. Let's unlink it

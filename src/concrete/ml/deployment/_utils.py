@@ -7,7 +7,7 @@ from concrete import fhe
 
 def serialize_encrypted_values(
     *values_enc: Optional[fhe.Value],
-) -> Union[Optional[bytes], Optional[Tuple[bytes]]]:
+) -> Union[Optional[bytes], Tuple[Optional[bytes], ...]]:
     """Serialize encrypted values.
 
     If a value is None, None is returned.

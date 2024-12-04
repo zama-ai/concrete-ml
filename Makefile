@@ -1,9 +1,16 @@
 SHELL:=$(shell /usr/bin/env which bash)
 
+DEV_DOCKER_PYTHON?=py38
+ifeq ($(DEV_DOCKER_PYTHON),py312)
+UBUNTU_BASE=24.10
+else 
+UBUNTU_BASE=20.04
+endif 
+
 DEV_DOCKER_IMG:=concrete-ml-dev
 DEV_DOCKERFILE:=docker/Dockerfile.dev
-DEV_CONTAINER_VENV_VOLUME:=concrete-ml-venv
-DEV_CONTAINER_CACHE_VOLUME:=concrete-ml-cache
+DEV_CONTAINER_VENV_VOLUME:=concrete-ml-venv-$(DEV_DOCKER_PYTHON)
+DEV_CONTAINER_CACHE_VOLUME:=concrete-ml-cache-$(DEV_DOCKER_PYTHON)
 DOCKER_VENV_PATH:="$${HOME}"/dev_venv/
 SRC_DIR:=src
 TEST?=tests
@@ -207,7 +214,7 @@ spcc_internal: $(SPCC_DEPS)
 .PHONY: pytest_internal # Run pytest
 pytest_internal:
 	poetry run pytest --version
-	poetry run pytest $(TEST) \
+	MKL_NUM_THREADS=4 OMP_NUM_THREADS=4 poetry run pytest $(TEST) \
 	-svv \
 	--count=$(COUNT) \
 	--randomly-dont-reorganize \
@@ -342,12 +349,12 @@ mypy_ci:
 
 .PHONY: docker_build # Build dev docker
 docker_build:
-	BUILD_ARGS=; \
+	BUILD_ARGS="--build-arg UBUNTU_BASE=$(UBUNTU_BASE) ";\
 	if [[ $$(uname) == "Linux" ]]; then \
-		BUILD_ARGS="--build-arg BUILD_UID=$$(id -u) --build-arg BUILD_GID=$$(id -g)"; \
+		BUILD_ARGS+="--build-arg BUILD_UID=$$(id -u) --build-arg BUILD_GID=$$(id -g)"; \
 	fi; \
 	DOCKER_BUILDKIT=1 docker build $${BUILD_ARGS:+$$BUILD_ARGS} \
-	--pull -t $(DEV_DOCKER_IMG) -f $(DEV_DOCKERFILE) .
+	--pull -t $(DEV_DOCKER_IMG):$(DEV_DOCKER_PYTHON) -f $(DEV_DOCKERFILE) .
 
 .PHONY: docker_rebuild # Rebuild docker
 docker_rebuild: docker_clean_volumes
@@ -356,7 +363,7 @@ docker_rebuild: docker_clean_volumes
 		BUILD_ARGS="--build-arg BUILD_UID=$$(id -u) --build-arg BUILD_GID=$$(id -g)"; \
 	fi; \
 	DOCKER_BUILDKIT=1 docker build $${BUILD_ARGS:+$$BUILD_ARGS} \
-	--pull --no-cache -t $(DEV_DOCKER_IMG) -f $(DEV_DOCKERFILE) .
+	--pull --no-cache -t $(DEV_DOCKER_IMG):$(DEV_DOCKER_PYTHON) -f $(DEV_DOCKERFILE) .
 
 .PHONY: docker_start # Launch docker
 docker_start:
@@ -371,7 +378,7 @@ docker_start:
 	--volume /"$$(pwd)":/src \
 	--volume $(DEV_CONTAINER_VENV_VOLUME):/home/dev_user/dev_venv \
 	--volume $(DEV_CONTAINER_CACHE_VOLUME):/home/dev_user/.cache \
-	$(DEV_DOCKER_IMG) || rm -f "$${EV_FILE}"
+	$(DEV_DOCKER_IMG):$(DEV_DOCKER_PYTHON) || rm -f "$${EV_FILE}"
 
 .PHONY: docker_build_and_start # Docker build and start
 docker_build_and_start: docker_build docker_start
@@ -642,7 +649,7 @@ docker_publish_measurements: docker_rebuild
 	docker run --volume /"$$(pwd)":/src \
 	--volume $(DEV_CONTAINER_VENV_VOLUME):/home/dev_user/dev_venv \
 	--volume $(DEV_CONTAINER_CACHE_VOLUME):/home/dev_user/.cache \
-	$(DEV_DOCKER_IMG) \
+	$(DEV_DOCKER_IMG):$(DEV_DOCKER_PYTHON) \
 	/bin/bash ./script/progress_tracker_utils/benchmark_and_publish_findings_in_docker.sh \
 	"$${LAUNCH_COMMAND}"
 

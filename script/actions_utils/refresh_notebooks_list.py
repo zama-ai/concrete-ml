@@ -171,7 +171,7 @@ def main(file_to_update):
 
     # If the script was called for checking if the list has correctly been updated, call an assert
     # without updating the file
-    if args.check:
+    if args.check:  # pylint: disable=possibly-used-before-assignment
         with open(file_to_update, "r", encoding="utf-8") as file:
             oldlines = file.readlines()
 

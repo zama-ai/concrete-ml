@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional, Tuple, Union
 import numpy as np
 import pandas
 import py_progress_tracker as progress
+import sklearn
 from common import (
     BENCHMARK_CONFIGURATION,
     GLMS_STRING_TO_CLASS,
@@ -27,6 +28,10 @@ from sklearn.preprocessing import (
     KBinsDiscretizer,
     OneHotEncoder,
     StandardScaler,
+)
+
+sklearn_sparse_arg = (
+    {"sparse": False} if "1.1." in sklearn.__version__ else {"sparse_output": False}
 )
 
 
@@ -102,7 +107,7 @@ def get_preprocessor() -> ColumnTransformer:
             ("log_scaled_numeric", log_scale_transformer, ["Density"]),
             (
                 "onehot_categorical",
-                OneHotEncoder(sparse=False),
+                OneHotEncoder(**sklearn_sparse_arg),
                 ["VehBrand", "VehPower", "VehGas", "Region", "Area"],
             ),
         ],

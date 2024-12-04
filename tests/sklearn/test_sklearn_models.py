@@ -36,6 +36,7 @@ from typing import Any, Dict, List
 import numpy
 import pandas
 import pytest
+import sklearn
 import torch
 from sklearn.decomposition import PCA
 from sklearn.exceptions import ConvergenceWarning, UndefinedMetricWarning
@@ -2251,7 +2252,17 @@ def test_error_raise_unsupported_pandas_values(model_class, bad_value, expected_
 def test_initialization_variables_and_defaults_match(
     model_class, parameters, load_data, is_weekly_option
 ):
-    """Test CML models init parameters and default values vs scikit-learn models."""
+    """Test CML models init parameters and default values vs scikit-learn models.
+
+    Concrete ML currently implements sklearn 1.4 API so skip this test of the
+    sklearn version differs.
+    """
+    if "1.1." in sklearn.__version__:
+        pytest.skip(
+            "Concrete ML currently implements sklearn 1.4 API"
+            f" skipping this test on version {sklearn.__version__}"
+        )
+
     n_bits = get_n_bits_non_correctness(model_class)
 
     model_name = get_model_name(model_class)
@@ -2318,6 +2329,9 @@ def test_initialization_variables_and_defaults_match(
             sklearn_params_defaults[param] == cml_params_defaults[param]
             # Some parameter can be nan which can't be compared using equality
             or (is_nan(sklearn_params_defaults[param]) and is_nan(cml_params_defaults[param]))
+            # Some parameters can default to 'warn' in sklearn in order to issue a FutureWraning
+            # but the actual default is not 'warn', the actula one is given in the docstring
+            or sklearn_params_defaults[param] == "warn"
         )
     }
 

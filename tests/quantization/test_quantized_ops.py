@@ -130,8 +130,7 @@ def quantized_op_implements_analytical_calibration(op_instance):
 
     # Can only be called on ops that do not overload the calibrate_analytical_output function
     assert (
-        type(op_instance.calibrate_analytical_output)  # pylint: disable=unidiomatic-typecheck
-        != QuantizedMixingOp.calibrate_analytical_output
+        op_instance.calibrate_analytical_output is not QuantizedMixingOp.calibrate_analytical_output
     )
 
     with pytest.raises(AssertionError, match=".*calibrate_analytical_output.*"):
@@ -913,9 +912,9 @@ def test_quantized_avg_pool(params, n_bits, is_signed, check_r2_score, check_flo
 
     # Compute the torch average pool
     bceil_mode = bool(ceil_mode)
-    torch_res = torch.nn.functional.avg_pool2d(
+    torch_res = torch.nn.functional.avg_pool2d(  # pylint: disable=not-callable
         tx_pad, kernel_shape, strides, 0, bceil_mode
-    ).numpy()  # pylint: disable=not-callable
+    ).numpy()
     check_float_array_equal(torch_res, expected_result)
 
     # Compute the quantized result

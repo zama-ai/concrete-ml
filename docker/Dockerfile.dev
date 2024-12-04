@@ -1,4 +1,5 @@
-FROM ubuntu:20.04
+ARG UBUNTU_BASE=20.04
+FROM ubuntu:${UBUNTU_BASE}
 
 ENV TZ=Europe/Paris
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
@@ -6,10 +7,6 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # Replace default archive.ubuntu.com with fr mirror
 # original archive showed performance issues and is farther away
 RUN sed -i 's|^deb http://archive|deb http://fr.archive|g' /etc/apt/sources.list
-
-COPY ./script/make_utils/setup_os_deps.sh ./setup_os_deps.sh
-COPY ./script/make_utils/detect_docker.sh ./detect_docker.sh
-RUN ./setup_os_deps.sh --linux-install-python && rm ./setup_os_deps.sh && rm ./detect_docker.sh
 
 ENV SRC_DIR=/src
 
@@ -19,15 +16,20 @@ ARG BUILD_UID=1000
 
 # Get sudo and vim for our future user
 RUN apt-get update && \
-    apt-get install --no-install-recommends -y sudo vim && \
+    apt-get install --no-install-recommends -y sudo vim adduser && \
     rm -rf /var/lib/apt/lists/*
+
+# For ubuntu>23 the ubuntu user will exist and use uid/gid=1000
+# we need to remove this user if it exists
+RUN userdel -f -r ubuntu; exit 0
 
 # From https://dev.to/emmanuelnk/using-sudo-without-password-prompt-as-non-root-docker-user-52bg
 # Create dev_user and add it to relevant groups
 # Create /src and make the dev user own it
 # Ensure sudo group users are not asked for a password when using
 # sudo command by ammending sudoers file
-RUN groupadd -g "${BUILD_GID}" dev_user && \
+
+RUN groupadd -f -g "${BUILD_GID}" dev_user && \
     adduser --disabled-password \
     --uid "${BUILD_UID}" --gid "${BUILD_GID}" --shell /bin/bash --gecos "" dev_user && \
     usermod -aG sudo dev_user && \
@@ -35,8 +37,16 @@ RUN groupadd -g "${BUILD_GID}" dev_user && \
     chown dev_user "${SRC_DIR}" && \
     echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
+RUN groupadd docker && usermod -aG docker dev_user
+
 # Now switch to the newly created user
 USER dev_user
+
+RUN cd /home/dev_user
+
+COPY ./script/make_utils/setup_os_deps.sh ./setup_os_deps.sh
+COPY ./script/make_utils/detect_docker.sh ./detect_docker.sh
+RUN ./setup_os_deps.sh --linux-install-python && sudo rm ./setup_os_deps.sh && sudo rm ./detect_docker.sh
 
 RUN echo "source ~/dev_venv/bin/activate" >> ~/.bashrc && \
     echo "if [[ \"\$?\" != \"0\" ]]; then" >> ~/.bashrc && \
