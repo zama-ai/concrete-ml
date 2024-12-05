@@ -99,7 +99,7 @@ env:
 jobs:
   commit-checks:
     name: Commit Checks
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     outputs:
       commits_ok: ${{ steps.commit-conformance.outcome == 'success' }}
     steps:
@@ -156,7 +156,7 @@ jobs:
     needs: [commit-checks]
     # We skip the CI in cases of pushing to internal main (because all pushes to main internal are now from the bot)
     if: ${{ !( github.repository != 'zama-ai/concrete-ml' && github.event_name == 'push' && github.ref == 'refs/heads/main' ) }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 5
     outputs:
       linux-matrix: ${{ steps.set-matrix.outputs.linux-matrix }}
@@ -295,7 +295,7 @@ jobs:
   start-runner-linux:
     needs: [commit-checks, matrix-preparation]
     name: Start EC2 runner (Linux)
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 15
     outputs:
       label-38: ${{ steps.start-ec2-runner-38.outputs.label }}
@@ -1025,7 +1025,7 @@ jobs:
   linux-build-status:
     name: Build Status (Linux)
     needs: [build-linux]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 2
     if: success() || failure()
     steps:
@@ -1045,7 +1045,7 @@ jobs:
   stop-runner-linux:
     name: Stop EC2 runner (Linux)
     needs: [build-linux, start-runner-linux]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 2
     if: ${{ always() && (needs.start-runner-linux.result != 'skipped') }}
     steps:
@@ -1186,7 +1186,7 @@ jobs:
 
   decide-slack-report:
     name: Decide Slack report
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     outputs:
       send_slack_report: ${{ steps.set-decision.outputs.send_slack_report }}
     steps:
@@ -1211,7 +1211,7 @@ jobs:
   # if the job should be run or not in an previous job and store it in its output
   slack-report:
     name: Slack report
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: |
       always()
       && needs.matrix-preparation.result != 'skipped'
@@ -1310,7 +1310,7 @@ jobs:
 
   stop-ec2-failure-slack-alert:
     name: Stop EC2 failure Slack alert
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: |
       always() 
       && needs.matrix-preparation.result != 'skipped' 
