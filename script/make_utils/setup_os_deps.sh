@@ -145,7 +145,7 @@ if [[ "${OS_NAME}" == "Linux" ]]; then
     (pipx install poetry && pipx ensurepath) || \
     (\
         python3 -m pip install --no-cache-dir --upgrade pip && \
-        python3 -m pip install --no-cache-dir --ignore-installed poetry==1.7.1 \
+        python3 -m pip install --no-cache-dir --ignore-installed poetry==1.8.4 \
     );
     echo "PATH=$PATH:/home/dev_user/.local/bin/" >> ~/.bashrc
 elif [[ "${OS_NAME}" == "Darwin" ]]; then
@@ -157,7 +157,7 @@ elif [[ "${OS_NAME}" == "Darwin" ]]; then
 
     brew install curl git git-lfs gitleaks graphviz jq make pandoc shellcheck openssl libomp actionlint unzip gh rsync
     python3 -m pip install -U pip
-    python3 -m pip install poetry==1.7.1
+    python3 -m pip install poetry==1.8.4
 
     echo "Make is currently installed as gmake"
     echo 'If you need to use it as "make", you can add a "gnubin" directory to your PATH from your bashrc like:'
