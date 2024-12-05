@@ -33,7 +33,7 @@ on:
         default: "3.8"
 
       manual_call:
-        description: "Do not uncheck this"
+        description: "Do not uncheck this!"
         type: boolean
         required: false
         default: true
