@@ -146,7 +146,7 @@ class _GeneralizedLinearRegressor(SklearnLinearRegressorMixin):
         params.pop("n_bits", None)
         # Remove sklearn 1.4 parameter when using sklearn 1.1
         if "1.1." in sklearn.__version__:
-            params.pop("solver", None)
+            params.pop("solver", None)  # pragma: no cover
 
         return params
 

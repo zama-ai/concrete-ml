@@ -89,6 +89,25 @@ linux_install_github_cli () {
     ${SUDO_BIN:+$SUDO_BIN} dpkg -i /home/dev_user/gh_${GH_CLI_VERSION}_linux_amd64.deb
 }
 
+linux_install_cmake () {
+    ${SUDO_BIN:+$SUDO_BIN} apt-get update
+    ${SUDO_BIN:+$SUDO_BIN} apt-get -y install ca-certificates gpg wget
+    test -f /usr/share/doc/kitware-archive-keyring/copyright ||
+    wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | \
+        gpg --dearmor - | \
+        ${SUDO_BIN:+$SUDO_BIN} tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null
+    echo 'deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ focal main' | \
+        ${SUDO_BIN:+$SUDO_BIN} tee /etc/apt/sources.list.d/kitware.list >/dev/null
+    ${SUDO_BIN:+$SUDO_BIN} apt-get update
+    test -f /usr/share/doc/kitware-archive-keyring/copyright || \
+        ${SUDO_BIN:+$SUDO_BIN} rm /usr/share/keyrings/kitware-archive-keyring.gpg
+    ${SUDO_BIN:+$SUDO_BIN} apt-get install -y  kitware-archive-keyring
+    echo 'deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ focal-rc main' | \
+        ${SUDO_BIN:+$SUDO_BIN} tee -a /etc/apt/sources.list.d/kitware.list >/dev/null
+    ${SUDO_BIN:+$SUDO_BIN} apt-get update
+    ${SUDO_BIN:+$SUDO_BIN} apt-get -y install cmake    
+}
+
 OS_NAME=$(uname)
 
 if [[ "${OS_NAME}" == "Linux" ]]; then
@@ -126,26 +145,28 @@ if [[ "${OS_NAME}" == "Linux" ]]; then
         jq \
         make \
         rsync \
-        cmake \
         unzip \
         pandoc \
         openssl \
         shellcheck \
+        libssl-dev \
         texlive-latex-base texlive-latex-extra texlive-fonts-recommended texlive-xetex lmodern \
         wget pipx &&
         ${CLEAR_APT_LISTS:+$CLEAR_APT_LISTS} \
         linux_install_gitleaks && \
         linux_install_actionlint && \
-        linux_install_github_cli"
+        linux_install_github_cli && \
+        linux_install_cmake"
     fi
     eval "${SETUP_CMD}"
+
 
     # Install poetry, either with pipx for ubuntu >= 23
     # or through regular pip for older ubuntu
     (pipx install poetry && pipx ensurepath) || \
     (\
         python3 -m pip install --no-cache-dir --upgrade pip && \
-        python3 -m pip install --no-cache-dir --ignore-installed poetry==1.7.1 \
+        python3 -m pip install --no-cache-dir --ignore-installed poetry==1.8.4 \
     );
     echo "PATH=$PATH:/home/dev_user/.local/bin/" >> ~/.bashrc
 elif [[ "${OS_NAME}" == "Darwin" ]]; then
@@ -157,7 +178,7 @@ elif [[ "${OS_NAME}" == "Darwin" ]]; then
 
     brew install curl git git-lfs gitleaks graphviz jq make pandoc shellcheck openssl libomp actionlint unzip gh rsync
     python3 -m pip install -U pip
-    python3 -m pip install poetry==1.7.1
+    python3 -m pip install poetry==1.8.4
 
     echo "Make is currently installed as gmake"
     echo 'If you need to use it as "make", you can add a "gnubin" directory to your PATH from your bashrc like:'

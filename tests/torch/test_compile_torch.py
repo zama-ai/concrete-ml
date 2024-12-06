@@ -863,7 +863,6 @@ def test_pretrained_mnist_qat(
     quantized_numpy_module = compile_onnx_model(
         onnx_model,
         inputset,
-        import_qat=True,
         configuration=default_configuration,
         n_bits=n_bits,
         verbose=verbose,

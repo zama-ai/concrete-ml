@@ -1591,7 +1591,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         params.pop("n_bits", None)
         if "1.1." in sklearn.__version__:
-            params.pop("monotonic_cst", None)
+            params.pop("monotonic_cst", None)  # pragma: no cover
 
         return params
 
