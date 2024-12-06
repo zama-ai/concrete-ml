@@ -90,17 +90,17 @@ linux_install_github_cli () {
 }
 
 linux_install_cmake () {
-    OLD_DIR=$(pwd)
-    cd /tmp || return
-    wget https://github.com/Kitware/CMake/releases/download/v3.31.2/cmake-3.31.2.tar.gz
-    tar xzf cmake-3.31.2.tar.gz
-    cd cmake-3.31.2 || return
-    ./bootstrap 
-    make -j8
-    sudo make install 
-    cd ../ || return
-    rm -rf cmake-3.31.2
-    cd "${OLD_DIR}" || return
+    sudo apt-get update
+    sudo apt-get -y install ca-certificates gpg wget
+    test -f /usr/share/doc/kitware-archive-keyring/copyright ||
+    wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null
+    echo 'deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ focal main' | sudo tee /etc/apt/sources.list.d/kitware.list >/dev/null
+    sudo apt-get update
+    test -f /usr/share/doc/kitware-archive-keyring/copyright || sudo rm /usr/share/keyrings/kitware-archive-keyring.gpg
+    sudo apt-get install -y  kitware-archive-keyring
+    echo 'deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ focal-rc main' | sudo tee -a /etc/apt/sources.list.d/kitware.list >/dev/null
+    sudo apt-get update
+    sudo apt-get -y install cmake    
 }
 
 OS_NAME=$(uname)
