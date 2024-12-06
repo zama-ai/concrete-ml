@@ -90,17 +90,22 @@ linux_install_github_cli () {
 }
 
 linux_install_cmake () {
-    sudo apt-get update
-    sudo apt-get -y install ca-certificates gpg wget
+    ${SUDO_BIN:+$SUDO_BIN} apt-get update
+    ${SUDO_BIN:+$SUDO_BIN} apt-get -y install ca-certificates gpg wget
     test -f /usr/share/doc/kitware-archive-keyring/copyright ||
-    wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null
-    echo 'deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ focal main' | sudo tee /etc/apt/sources.list.d/kitware.list >/dev/null
-    sudo apt-get update
-    test -f /usr/share/doc/kitware-archive-keyring/copyright || sudo rm /usr/share/keyrings/kitware-archive-keyring.gpg
-    sudo apt-get install -y  kitware-archive-keyring
-    echo 'deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ focal-rc main' | sudo tee -a /etc/apt/sources.list.d/kitware.list >/dev/null
-    sudo apt-get update
-    sudo apt-get -y install cmake    
+    wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | \
+        gpg --dearmor - | \
+        ${SUDO_BIN:+$SUDO_BIN} tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null
+    echo 'deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ focal main' | \
+        ${SUDO_BIN:+$SUDO_BIN} tee /etc/apt/sources.list.d/kitware.list >/dev/null
+    ${SUDO_BIN:+$SUDO_BIN} apt-get update
+    test -f /usr/share/doc/kitware-archive-keyring/copyright || \
+        ${SUDO_BIN:+$SUDO_BIN} rm /usr/share/keyrings/kitware-archive-keyring.gpg
+    ${SUDO_BIN:+$SUDO_BIN} apt-get install -y  kitware-archive-keyring
+    echo 'deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ focal-rc main' | \
+        ${SUDO_BIN:+$SUDO_BIN} tee -a /etc/apt/sources.list.d/kitware.list >/dev/null
+    ${SUDO_BIN:+$SUDO_BIN} apt-get update
+    ${SUDO_BIN:+$SUDO_BIN} apt-get -y install cmake    
 }
 
 OS_NAME=$(uname)
