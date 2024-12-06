@@ -89,6 +89,20 @@ linux_install_github_cli () {
     ${SUDO_BIN:+$SUDO_BIN} dpkg -i /home/dev_user/gh_${GH_CLI_VERSION}_linux_amd64.deb
 }
 
+linux_install_cmake () {
+    export OLD_DIR=$(pwd)
+    cd /tmp
+    wget https://github.com/Kitware/CMake/releases/download/v3.31.2/cmake-3.31.2.tar.gz
+    tar xzf cmake-3.31.2.tar.gz
+    cd cmake-3.31.2 || return
+    ./bootstrap 
+    make -j8
+    sudo make install 
+    cd ../
+    rm -rf cmake-3.31.2
+    cd "${OLD_DIR}"
+}
+
 OS_NAME=$(uname)
 
 if [[ "${OS_NAME}" == "Linux" ]]; then
@@ -126,27 +140,21 @@ if [[ "${OS_NAME}" == "Linux" ]]; then
         jq \
         make \
         rsync \
-        cmake \
         unzip \
         pandoc \
         openssl \
         shellcheck \
+        libssl-dev \
         texlive-latex-base texlive-latex-extra texlive-fonts-recommended texlive-xetex lmodern \
         wget pipx &&
         ${CLEAR_APT_LISTS:+$CLEAR_APT_LISTS} \
         linux_install_gitleaks && \
         linux_install_actionlint && \
-        linux_install_github_cli"
+        linux_install_github_cli && \
+        linux_install_cmake"
     fi
     eval "${SETUP_CMD}"
 
-    wget https://github.com/Kitware/CMake/releases/download/v3.31.2/cmake-3.31.2.tar.gz
-    tar xzvf cmake-3.31.2.tar.gz
-    cd cmake-3.31.2
-    ./bootstrap
-    make -j$(nproc)
-    sudo make install
-    cd ../
 
     # Install poetry, either with pipx for ubuntu >= 23
     # or through regular pip for older ubuntu
