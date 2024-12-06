@@ -140,6 +140,14 @@ if [[ "${OS_NAME}" == "Linux" ]]; then
     fi
     eval "${SETUP_CMD}"
 
+    wget https://github.com/Kitware/CMake/releases/download/v3.31.2/cmake-3.31.2.tar.gz
+    tar xzvf cmake-3.31.2.tar.gz
+    cd cmake-3.31.2
+    ./bootstrap
+    make -j$(nproc)
+    sudo make install
+    cd ../
+
     # Install poetry, either with pipx for ubuntu >= 23
     # or through regular pip for older ubuntu
     (pipx install poetry && pipx ensurepath) || \

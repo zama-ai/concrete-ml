@@ -61,7 +61,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install poetry==1.7.1
+          python -m pip install poetry==1.8.4
           make setup_env
 
       # Make sure that the workflow has been triggered from a release branch if this is a patch
