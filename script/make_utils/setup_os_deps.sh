@@ -90,17 +90,17 @@ linux_install_github_cli () {
 }
 
 linux_install_cmake () {
-    export OLD_DIR=$(pwd)
-    cd /tmp
+    OLD_DIR=$(pwd)
+    cd /tmp || return
     wget https://github.com/Kitware/CMake/releases/download/v3.31.2/cmake-3.31.2.tar.gz
     tar xzf cmake-3.31.2.tar.gz
     cd cmake-3.31.2 || return
     ./bootstrap 
     make -j8
     sudo make install 
-    cd ../
+    cd ../ || return
     rm -rf cmake-3.31.2
-    cd "${OLD_DIR}"
+    cd "${OLD_DIR}" || return
 }
 
 OS_NAME=$(uname)
