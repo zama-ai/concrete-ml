@@ -4,7 +4,7 @@ This page explains Concrete ML linear models for both classification and regress
 
 ## Supported models for encrypted inference
 
-The following models are supported for training on clear data and predicting on encrypted data. Their API is similar the one of [scikit-learn](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.linear_model). These models are also compatible with some of scikit-learn's main workflows, such as `Pipeline()` and `GridSearch()`.
+The following models are supported for training on clear data and predicting on encrypted data. Their API is similar to the one of [scikit-learn](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.linear_model). These models are also compatible with some of scikit-learn's main workflows, such as `Pipeline()` and `GridSearch()`.
 
 |                                             Concrete ML                                              |                                                                         scikit-learn                                                                         |
 | :--------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------: |
@@ -28,7 +28,7 @@ In addition to predicting on encrypted data, the following models  support train
 
 ## Quantization parameters
 
-The `n_bits` parameter controls the bit-width of the inputs and weights of the linear models. Linear models do not use table lookups and thus alllows weight and inputs to be high precision integers.
+The `n_bits` parameter controls the bit-width of the inputs and weights of the linear models. Linear models do not use table lookups and thus allows weight and inputs to be high precision integers.
 
 For models with input dimensions up to `300`, the parameter `n_bits` can be set to `8` or more. When the input dimensions are larger, `n_bits` must be reduced to `6-7`. In many cases, quantized models can preserve all performance metrics compared to the non-quantized float models from scikit-learn when `n_bits` is down to `6`. You should validate accuracy on held-out test sets and adjust `n_bits` accordingly.
 
@@ -127,5 +127,5 @@ y_pred_fhe = cml_model.predict(X_test, fhe="execute")
 {% hint style="success" %}
 **Zama 5-Question Developer Survey**
 
-We want to hear from you! Take 1 minute to share your thoughts and helping us enhance our documentation and libraries. **👉** [**Click here**](https://www.zama.ai/developer-survey) to participate.
+We want to hear from you! Take 1 minute to share your thoughts and help us enhance our documentation and libraries. **👉** [**Click here**](https://www.zama.ai/developer-survey) to participate.
 {% endhint %}
