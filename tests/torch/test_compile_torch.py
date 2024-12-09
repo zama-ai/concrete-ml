@@ -1,16 +1,13 @@
 """Tests for the torch to numpy module."""
 
 # pylint: disable=too-many-lines
-import io
 import tempfile
-import zipfile
 from functools import partial
 from inspect import signature
 from pathlib import Path
 
 import numpy
 import onnx
-import onnxruntime as ort
 import pytest
 import torch
 import torch.quantization
