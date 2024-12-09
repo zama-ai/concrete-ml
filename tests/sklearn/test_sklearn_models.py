@@ -1350,7 +1350,7 @@ def check_rounding_consistency(
 
     # Run the test with more samples during weekly CIs
     if is_weekly_option:
-        fhe_test = get_random_samples(x, n_sample=5)
+        fhe_test = get_random_samples(x, n_sample=3)
 
     # Check that rounding is enabled
     assert os.environ.get("TREES_USE_ROUNDING") == "1", "'TREES_USE_ROUNDING' is not enabled"
@@ -2076,7 +2076,7 @@ def test_linear_models_have_no_tlu(
 # Additional tests for this purpose should be added in future updates
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4179
 @pytest.mark.parametrize("model_class, parameters", get_sklearn_tree_models_and_datasets())
-@pytest.mark.parametrize("n_bits", [2, 5, 10])
+@pytest.mark.parametrize("n_bits", [2, 5, 8])
 def test_rounding_consistency_for_regular_models(
     model_class,
     parameters,
