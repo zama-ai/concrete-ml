@@ -65,6 +65,17 @@ class LoraTraining(torch.nn.Module):
     def __init__(self, model, n_layers_to_skip_for_backprop=1, loss_fn=None):
         super().__init__()
 
+        # Check if model accepts labels when no loss_fn is provided
+        if loss_fn is None:
+            from inspect import signature
+
+            forward_sig = signature(model.forward)
+            if "labels" not in forward_sig.parameters:
+                raise ValueError(
+                    "When no loss_fn is provided, the model's forward method"
+                    "must accept a 'labels' parameter"
+                )
+
         # Assert that the model contains LoRA layers
         self.assert_has_lora_layers(model)
 
@@ -239,7 +250,7 @@ class LoraTrainer:
     def __init__(
         self,
         model,
-        optimizer=None,
+        optimizer,
         loss_fn=None,
         lr_scheduler=None,
         training_args=None,
@@ -251,7 +262,7 @@ class LoraTrainer:
         self.gradient_accumulation_steps = self.training_args.get("gradient_accumulation_steps", 1)
         self.max_grad_norm = self.training_args.get("max_grad_norm", None)
 
-        # Create the LoRA training module
+        # Create the LoraTraining module
         self.lora_training_module = LoraTraining(
             model, n_layers_to_skip_for_backprop=n_layers_to_skip_for_backprop, loss_fn=loss_fn
         )
