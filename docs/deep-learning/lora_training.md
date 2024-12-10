@@ -88,15 +88,6 @@ parameters:
 
 ```python
 lora_training = LoraTraining(peft_model)
-
-
-# Update training parameters, including loss function
-lora_training.update_training_parameters(
-    optimizer=optim.Adam(filter(lambda p: p.requires_grad, peft_model.parameters()), lr=0.01),
-    loss_fn=nn.CrossEntropyLoss(),
-    training_args={"gradient_accumulation_steps": 1},
-)
-
 ```
 
 ### 3. Compile a hybrid FHE model for the LORA adapted PyTorch model
