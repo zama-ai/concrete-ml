@@ -29,9 +29,8 @@ class DummyLoRAModel(nn.Module):
         self.linear1 = nn.Linear(10, 20)
         self.linear2 = nn.Linear(20, 10)
 
-    def forward(self, x, **kwargs):
+    def forward(self, x, labels=None):
         """Forward pass."""
-        labels = kwargs.get("labels", None)
         logits = self.linear2(torch.relu(self.linear1(x)))
         if labels is not None:
             loss = nn.functional.mse_loss(logits, labels)
@@ -180,9 +179,8 @@ def test_forward_without_loss_fn_model_returns_loss_as_attribute():
             self.linear1 = nn.Linear(10, 20)
             self.linear2 = nn.Linear(20, 10)
 
-        def forward(self, x, **kwargs):
+        def forward(self, x, labels=None):
             """Forward pass."""
-            labels = kwargs.get("labels", None)
             logits = self.linear2(torch.relu(self.linear1(x)))
 
             class OutputObject:
@@ -295,7 +293,8 @@ def test_lora_trainer_train_with_lr_scheduler():
 def test_lora_trainer_save_and_clear_private_info():
     """Test LoraTrainer save_and_clear_private_info."""
     model = DummyLoRAModel()
-    lora_trainer = LoraTrainer(model)
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+    lora_trainer = LoraTrainer(model, optimizer=optimizer, loss_fn=nn.MSELoss())
     lora_trainer.hybrid_model.save_and_clear_private_info = MagicMock()
     lora_trainer.save_and_clear_private_info("path/to/model")
     lora_trainer.hybrid_model.save_and_clear_private_info.assert_called_once_with("path/to/model")
@@ -578,3 +577,25 @@ def test_get_remote_names_with_lora_in_name():
     remote_names = get_remote_names(model)
     assert "lora_linear" not in remote_names
     assert "linear" in remote_names
+
+
+def test_lora_training_init_validates_model_signature():
+    """Test LoraTraining initialization validates model's forward signature."""
+
+    class ModelWithoutLabels(nn.Module):
+        """Model without labels parameter in forward."""
+
+        def __init__(self):
+            super().__init__()
+            self.lora_a = nn.Parameter(torch.randn(10, 10))
+            self.linear = nn.Linear(10, 10)
+
+        def forward(self, x):  # No labels parameter
+            """Forward pass without labels parameter."""
+            return {"logits": self.linear(x)}
+
+    model = ModelWithoutLabels()
+
+    with pytest.raises(ValueError) as exc_info:
+        LoraTraining(model, loss_fn=None)  # No loss_fn provided
+    assert "must accept a 'labels' parameter" in str(exc_info.value)
