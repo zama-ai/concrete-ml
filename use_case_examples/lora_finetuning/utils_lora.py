@@ -6,6 +6,33 @@ import random
 import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
+from transformers.generation.stopping_criteria import (  # Add this line
+    StoppingCriteria,
+    StoppingCriteriaList,
+)
+
+
+class NewlineStopping(StoppingCriteria):
+    def __init__(self, tokenizer):
+        self.tokenizer = tokenizer
+        # Get all token IDs that represent newline characters
+        self.newline_tokens = set(
+            [
+                self.tokenizer.encode("\n")[0],
+                self.tokenizer.encode("\r")[0] if len(self.tokenizer.encode("\r")) > 0 else None,
+                (
+                    self.tokenizer.encode("\r\n")[0]
+                    if len(self.tokenizer.encode("\r\n")) > 0
+                    else None
+                ),
+            ]
+        )
+        self.newline_tokens.discard(None)
+
+    def __call__(self, input_ids, scores, **kwargs):
+        # Check if the last generated token is a newline
+        last_token = input_ids[0][-1].item()
+        return last_token in self.newline_tokens
 
 
 def generate_and_print(prompt, model, tokenizer, seed=None, max_new_tokens=30):
@@ -54,8 +81,11 @@ def generate_and_print(prompt, model, tokenizer, seed=None, max_new_tokens=30):
     if generated_text.startswith(prompt):
         generated_text = generated_text[len(prompt) :].strip()
 
-    # Print the user prompt and the generated text separated by a newline
-    print(f"{prompt}\n{generated_text}")
+    # Only keep text up to the first newline
+    generated_text = generated_text.split("\n")[0]
+
+    # Print the prompt and generated text on the same line
+    print(f"{prompt} {generated_text}")
 
 
 def print_weights_and_size(model, print_detail=False):
