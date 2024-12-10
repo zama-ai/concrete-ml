@@ -28,6 +28,7 @@ on:
         - KNearestNeighbors \n
         - LinearRegression \n
         - LinearSVR \n
+        - LLamaFineTuning \n
         - LogisticRegression \n
         - LogisticRegressionTraining \n
         - LoraMLP \n
@@ -76,6 +77,7 @@ env:
   KNearestNeighbors: "docs/advanced_examples/KNearestNeighbors.ipynb" 
   LinearRegression: "docs/advanced_examples/LinearRegression.ipynb" 
   LinearSVR: "docs/advanced_examples/LinearSVR.ipynb" 
+  LLamaFineTuning: "use_case_examples/lora_finetuning/LLamaFineTuning.ipynb" 
   LogisticRegression: "docs/advanced_examples/LogisticRegression.ipynb" 
   LogisticRegressionTraining: "docs/advanced_examples/LogisticRegressionTraining.ipynb" 
   LoraMLP: "docs/advanced_examples/LoraMLP.ipynb" 

@@ -8,3 +8,6 @@ run_example: one
 
 one:
 	@$(TIME_NB) GPT2FineTuneHybrid.ipynb
+
+two:
+	@$(TIME_NB) LlamaFineTuning.ipynb
