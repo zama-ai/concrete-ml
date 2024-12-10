@@ -317,7 +317,7 @@ class LoraTrainer:
                         for item in batch
                     )
                 else:
-                    # If it's a single non-tensor item, wrap it in a tuple
+                    # If it is a single non-tensor item, wrap it in a tuple
                     batch = (batch,)
 
                 # Forward pass through the hybrid model
