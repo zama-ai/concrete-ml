@@ -67,7 +67,7 @@ lora_config = LoraConfig(
 
 peft_model = get_peft_model(model, lora_config)
 
-# Generate a second dataset for demonstration purposes
+# Generate a second data-set for demonstration purposes
 X_task2, y_task2 = make_circles(n_samples=32, noise=0.2, factor=0.5)
 train_loader_task2 = DataLoader(
     TensorDataset(torch.Tensor(X_task2), torch.LongTensor(y_task2)),
