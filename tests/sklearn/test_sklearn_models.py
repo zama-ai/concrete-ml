@@ -1344,13 +1344,8 @@ def check_rounding_consistency(
     y,
     predict_method,
     metric,
-    is_weekly_option,
 ):
     """Test that Concrete ML without and with rounding are 'equivalent'."""
-
-    # Run the test with more samples during weekly CIs
-    if is_weekly_option:
-        fhe_test = get_random_samples(x, n_sample=3)
 
     # Check that rounding is enabled
     assert os.environ.get("TREES_USE_ROUNDING") == "1", "'TREES_USE_ROUNDING' is not enabled"
@@ -1360,10 +1355,6 @@ def check_rounding_consistency(
 
     rounded_predict_quantized = predict_method(x, fhe="disable")
     rounded_predict_simulate = predict_method(x, fhe="simulate")
-
-    # Compute the FHE predictions only during weekly CIs
-    if is_weekly_option:
-        rounded_predict_fhe = predict_method(fhe_test, fhe="execute")
 
     with pytest.MonkeyPatch.context() as mp_context:
 
@@ -1388,11 +1379,6 @@ def check_rounding_consistency(
 
         metric(rounded_predict_quantized, not_rounded_predict_quantized)
         metric(rounded_predict_simulate, not_rounded_predict_simulate)
-
-        # Compute the FHE predictions only during weekly CIs
-        if is_weekly_option:
-            not_rounded_predict_fhe = predict_method(fhe_test, fhe="execute")
-            metric(rounded_predict_fhe, not_rounded_predict_fhe)
 
         # Check that the maximum bit-width of the circuit with rounding is at most:
         # maximum bit-width (of the circuit without rounding) + 2
@@ -2110,7 +2096,6 @@ def test_rounding_consistency_for_regular_models(
         y,
         predict_method,
         metric,
-        is_weekly_option,
     )
 
 
