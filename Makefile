@@ -31,7 +31,8 @@ else # Assume Linux
     TOTAL_CPUS := $(shell nproc)
 endif
 PYTEST_CORES := $(shell if [ `expr $(TOTAL_CPUS) / 4` -lt 4 ]; then expr $(TOTAL_CPUS) / 4; else echo 4; fi)
-FHE_NUMPY_CORES := $(shell expr \( $(TOTAL_CPUS) - $(PYTEST_CORES) \) / $(PYTEST_CORES) )
+# Calculate cores per pytest worker: total_cores / pytest_cores
+FHE_NUMPY_CORES := $(shell expr $(TOTAL_CPUS) / $(PYTEST_CORES))
 
 # At the end of the command, we currently need to force an 'import skorch' in Python in order to 
 # avoid an obscure bug that led to all pytest commands to fail when installing dependencies with 
