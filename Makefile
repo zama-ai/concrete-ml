@@ -31,7 +31,7 @@ else # Assume Linux
     TOTAL_CPUS := $(shell nproc)
 endif
 PYTEST_CORES := $(shell if [ `expr $(TOTAL_CPUS) / 4` -lt 4 ]; then expr $(TOTAL_CPUS) / 4; else echo 4; fi)
-FHE_NUMPY_CORES := $(shell expr $(TOTAL_CPUS) - $(PYTEST_CORES))
+FHE_NUMPY_CORES := $(shell expr \( $(TOTAL_CPUS) - $(PYTEST_CORES) \) / $(PYTEST_CORES) )
 
 # At the end of the command, we currently need to force an 'import skorch' in Python in order to 
 # avoid an obscure bug that led to all pytest commands to fail when installing dependencies with 
@@ -224,7 +224,12 @@ spcc_internal: $(SPCC_DEPS)
 .PHONY: pytest_internal # Run pytest
 pytest_internal:
 	poetry run pytest --version
-	MKL_NUM_THREADS=$(FHE_NUMPY_CORES) OMP_NUM_THREADS=$(FHE_NUMPY_CORES) poetry run pytest $(TEST) \
+	MKL_NUM_THREADS=$(FHE_NUMPY_CORES) \
+	OMP_NUM_THREADS=$(FHE_NUMPY_CORES) \
+	OPENBLAS_NUM_THREADS=$(FHE_NUMPY_CORES) \
+	VECLIB_MAXIMUM_THREADS=$(FHE_NUMPY_CORES) \
+	NUMEXPR_NUM_THREADS=$(FHE_NUMPY_CORES) \
+	poetry run pytest $(TEST) \
 	-svv \
 	--count=$(COUNT) \
 	--randomly-dont-reorganize \
@@ -241,8 +246,12 @@ pytest_internal:
 pytest_internal_parallel:
 	@echo "Total CPUs: $(TOTAL_CPUS)"
 	@echo "Assigning $(PYTEST_CORES) cores to pytest"
-	@echo "Leaving $(FHE_NUMPY_CORES) cores for FHE/Numpy (OMP_NUM_THREADS and MKL_NUM_THREADS)"
-	MKL_NUM_THREADS=$(FHE_NUMPY_CORES) OMP_NUM_THREADS=$(FHE_NUMPY_CORES) \
+	@echo "Leaving $(FHE_NUMPY_CORES) cores per pytest worker for FHE/Numpy/sklearn"
+	MKL_NUM_THREADS=$(FHE_NUMPY_CORES) \
+	OMP_NUM_THREADS=$(FHE_NUMPY_CORES) \
+	OPENBLAS_NUM_THREADS=$(FHE_NUMPY_CORES) \
+	VECLIB_MAXIMUM_THREADS=$(FHE_NUMPY_CORES) \
+	NUMEXPR_NUM_THREADS=$(FHE_NUMPY_CORES) \
 	"$(MAKE)" pytest_internal PYTEST_OPTIONS="-n $(PYTEST_CORES) --durations=10 ${PYTEST_OPTIONS}"
 
 # --global-coverage-infos-json=global-coverage-infos.json is to dump the coverage report in the file 
