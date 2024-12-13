@@ -23,6 +23,16 @@ POETRY_VERSION:=1.8.4
 APIDOCS_OUTPUT?="./docs/references/api"
 OPEN_PR="true"
 
+# Check the total number of CPU cores and use min(4, TOTAL_CPUS/4) for pytest
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin) # macOS
+    TOTAL_CPUS := $(shell sysctl -n hw.ncpu)
+else # Assume Linux
+    TOTAL_CPUS := $(shell nproc)
+endif
+PYTEST_CORES := $(shell if [ `expr $(TOTAL_CPUS) / 4` -lt 4 ]; then expr $(TOTAL_CPUS) / 4; else echo 4; fi)
+FHE_NUMPY_CORES := $(shell expr $(TOTAL_CPUS) - $(PYTEST_CORES))
+
 # At the end of the command, we currently need to force an 'import skorch' in Python in order to 
 # avoid an obscure bug that led to all pytest commands to fail when installing dependencies with 
 # Poetry >= 1.3. It is however not very clear how this import fixes the issue, as the bug was 
@@ -214,7 +224,7 @@ spcc_internal: $(SPCC_DEPS)
 .PHONY: pytest_internal # Run pytest
 pytest_internal:
 	poetry run pytest --version
-	MKL_NUM_THREADS=4 OMP_NUM_THREADS=4 poetry run pytest $(TEST) \
+	MKL_NUM_THREADS=$(FHE_NUMPY_CORES) OMP_NUM_THREADS=$(FHE_NUMPY_CORES) poetry run pytest $(TEST) \
 	-svv \
 	--count=$(COUNT) \
 	--randomly-dont-reorganize \
@@ -229,7 +239,11 @@ pytest_internal:
 # --durations=10 is to show the 10 slowest tests
 .PHONY: pytest_internal_parallel # Run pytest with multiple CPUs
 pytest_internal_parallel:
-	"$(MAKE)" pytest_internal PYTEST_OPTIONS="-n $(N_CPU) --durations=10 ${PYTEST_OPTIONS}"
+	@echo "Total CPUs: $(TOTAL_CPUS)"
+	@echo "Assigning $(PYTEST_CORES) cores to pytest"
+	@echo "Leaving $(FHE_NUMPY_CORES) cores for FHE/Numpy (OMP_NUM_THREADS and MKL_NUM_THREADS)"
+	MKL_NUM_THREADS=$(FHE_NUMPY_CORES) OMP_NUM_THREADS=$(FHE_NUMPY_CORES) \
+	"$(MAKE)" pytest_internal PYTEST_OPTIONS="-n $(PYTEST_CORES) --durations=10 ${PYTEST_OPTIONS}"
 
 # --global-coverage-infos-json=global-coverage-infos.json is to dump the coverage report in the file 
 # --cov PATH is the directory PATH to consider for coverage. Default to SRC_DIR=src
