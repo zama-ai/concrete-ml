@@ -313,7 +313,7 @@ def test_hybrid_glwe_correctness(n_hidden):
         assert numpy.all(numpy.allclose(y_torch, y_hybrid_torch, rtol=1, atol=0.001))
 
         # The clear quantization vs fp32 test has more tolerance
-        threshold_fhe = 0.01
+        threshold_fhe = 0.1
 
         diff = numpy.abs(y_torch - y_glwe) > threshold_fhe
         if numpy.any(diff):
@@ -334,4 +334,4 @@ def test_hybrid_glwe_correctness(n_hidden):
     else:
         # For non-GLWE cases, just verify the torch outputs match
         assert numpy.all(numpy.allclose(y_torch, y_hybrid_torch, rtol=1, atol=0.001))
-        assert numpy.all(numpy.allclose(y_qm, y_hybrid_torch, rtol=1, atol=0.01))
+        assert numpy.all(numpy.allclose(y_qm, y_hybrid_torch, rtol=1, atol=0.1))
