@@ -87,10 +87,16 @@ class LoraTraining(torch.nn.Module):
         self.loss_scaling_factor = 1.0
 
     def set_loss_scaling_factor(self, loss_scaling_factor: float):
-        """Set the loss scaling factor for gradient accumulation.
+        """Set a scaling factor for the loss to account for gradient accumulation.
+
+        This ensures that gradients are correctly averaged over multiple
+        mini-batches when performing gradient accumulation, preventing them
+        from being scaled up by the number of accumulation steps.
 
         Args:
-            loss_scaling_factor (float): The factor to scale the loss by.
+            loss_scaling_factor (float): The number of gradient accumulation steps.
+                                        The loss will be divided by this factor
+                                        before backpropagation.
         """
         self.loss_scaling_factor = loss_scaling_factor
 
@@ -130,7 +136,7 @@ class LoraTraining(torch.nn.Module):
             model (nn.Module): The model to replace layers in.
             n_layers_to_skip_for_backprop (int): Number of initial linear layers to keep as standard
                 layers. Since the first layer doesn't need backpropagation (no previous layer to
-                update), we typically skip 1 layer. Defaults to 1.
+                update), we typically skip 1 layer.
         """
 
         def _replace(module: nn.Module):

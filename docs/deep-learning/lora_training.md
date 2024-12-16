@@ -1,6 +1,6 @@
 # Encrypted fine-tuning
 
-This document explains how to fine-tune neural-network models and large language-models(LLMs) on private data.
+This document explains how to fine-tune neural-network models and large language-models (LLMs) on private data.
 
 Small models can be fine-tuned using a single-client/single-server setup. For larger models (such as GPT-2 and above), consider using distributed computation across multiple worker nodes to perform training on encrypted data for optimal latency.
 
@@ -14,7 +14,7 @@ Concrete ML supports LoRA, a parameter-efficient fine-tuning (PEFT) approach, in
 
 In this setup, Concrete ML outsources the computationally intensive parts of forward and backward passes for large models to one or more remote servers. The training client machine only handles the LoRA-adapter forward/backward passes, loss computation, and adapter weight updates. Since the LoRA adapters are small, this additional computation on the client side is minimal. For large LLMs, over 99% of the model's weights can remain outsourced.
 
-The main benefit of hybrid-model LORA training is outsourcing the computation of linear layers, which are typically large in LLMs. These layers require substantial hardware for inference and gradient computation. By securely outsourcing this work, Concrete ML removes the memory bottleneck that previously limited such operations.
+The main benefit of hybrid-model LoRA training is outsourcing the computation of linear layers, which are typically large in LLMs. These layers require substantial hardware for inference and gradient computation. By securely outsourcing this work, Concrete ML removes the memory bottleneck that previously limited such operations.
 
 ## Usage
 
@@ -22,7 +22,7 @@ Concrete ML integrates with the [`peft` package](https://huggingface.co/docs/pef
 
 ### 1. Apply the `peft` LoRA layers
 
-The `LoraConfig` class from the `peft` package contains the various LORA parameters. You can specify which layers have LORA adapters through the `target_modules` argument.
+The `LoraConfig` class from the `peft` package contains the various LoRA parameters. You can specify which layers have LoRA adapters through the `target_modules` argument.
 For a detailed reference of the various configuration options, refer to the
 [`LoraConfig`](https://huggingface.co/docs/peft/package_reference/lora#peft.LoraConfig)
 documentation.
@@ -76,7 +76,7 @@ train_loader_task2 = DataLoader(
 )
 ```
 
-### 2. Convert the LORA model to use custom Concrete ML layers
+### 2. Convert the LoRA model to use custom Concrete ML layers
 
 Next, we need to integrate the LoRA-adapted `peft_model` into the Concrete ML hybrid FHE training framework. This is done using the `LoraTrainer` class, which handles the logic of encrypting outsourced computations, running the forward and backward passes, and updating the LoRA adapter weights.
 
@@ -104,7 +104,7 @@ lora_trainer = LoraTrainer(
 )
 ```
 
-### 3. Compile a hybrid FHE model for the LORA adapted PyTorch model
+### 3. Compile a hybrid FHE model for the LoRA adapted PyTorch model
 
 Before training in FHE, we need to compile the model. Compilation calibrates and converts the outsourced linear layers to their FHE equivalents. The compile method uses representative data for this step.
 
@@ -138,7 +138,7 @@ lora_trainer.train(train_loader_task2, fhe="execute")
 
 ### Inference
 
-Once fine-tuned, the LORA hybrid FHE model can perform inference only, through the
+Once fine-tuned, the LoRA hybrid FHE model can perform inference only, through the
 `peft_model` attribute of the hybrid FHE model.
 
 <!--pytest-codeblocks:skip-->
@@ -147,9 +147,9 @@ Once fine-tuned, the LORA hybrid FHE model can perform inference only, through t
 peft_model(x)
 ```
 
-### Toggle LORA layers
+### Toggle LoRA layers
 
-To compare to the original model, you can disable the LORA weights to use the original model for inference.
+To compare to the original model, you can disable the LoRA weights to use the original model for inference.
 
 <!--pytest-codeblocks:skip-->
 
@@ -157,6 +157,6 @@ To compare to the original model, you can disable the LORA weights to use the or
 peft_model.disable_adapter_layers()
 peft_model(x)
 
-# Re-enable the LORA weights
+# Re-enable the LoRA weights
 peft_model.enable_adapter_layers()
 ```
