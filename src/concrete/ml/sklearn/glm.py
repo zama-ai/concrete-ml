@@ -83,7 +83,7 @@ class _GeneralizedLinearRegressor(SklearnLinearRegressorMixin):
 
         metadata: Dict[str, Any] = {}
 
-        # Concrete-ML
+        # Concrete ML
         metadata["n_bits"] = self.n_bits
         metadata["sklearn_model"] = self.sklearn_model
         metadata["_is_fitted"] = self._is_fitted
@@ -113,7 +113,7 @@ class _GeneralizedLinearRegressor(SklearnLinearRegressorMixin):
         # Instantiate the model
         obj = cls(n_bits=metadata["n_bits"])
 
-        # Concrete-ML
+        # Concrete ML
         obj.n_bits = metadata["n_bits"]
         obj.sklearn_model = metadata["sklearn_model"]
         obj.onnx_model_ = metadata["onnx_model_"]
@@ -327,7 +327,7 @@ class TweedieRegressor(_GeneralizedLinearRegressor):
 
         metadata: Dict[str, Any] = {}
 
-        # Concrete-ML
+        # Concrete ML
         metadata["n_bits"] = self.n_bits
         metadata["sklearn_model"] = self.sklearn_model
         metadata["_is_fitted"] = self._is_fitted
@@ -358,7 +358,7 @@ class TweedieRegressor(_GeneralizedLinearRegressor):
         # Instantiate the model
         obj = cls(n_bits=metadata["n_bits"])
 
-        # Concrete-ML
+        # Concrete ML
         obj.sklearn_model = metadata["sklearn_model"]
         obj.onnx_model_ = metadata["onnx_model_"]
         obj._is_fitted = metadata["_is_fitted"]

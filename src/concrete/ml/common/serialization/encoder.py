@@ -68,7 +68,7 @@ class ConcreteEncoder(JSONEncoder):
     as a numpy array's dtype are also properly serialized. If an object has an unexpected type or
     is not serializable, an error is thrown.
 
-    The ConcreteEncoder is only meant to encode Concrete-ML's built-in models and therefore only
+    The ConcreteEncoder is only meant to encode Concrete ML's built-in models and therefore only
     supports the necessary types. For example, torch.Tensor objects are not serializable using this
     encoder as built-in models only use numpy arrays. However, the list of supported types might
     expand in future releases if new models are added and need new types.

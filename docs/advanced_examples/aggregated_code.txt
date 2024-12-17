@@ -1428,7 +1428,7 @@ svm_sklearn.fit(X_train, y_train)
 # plot the boundary
 plot_decision_boundary(svm_sklearn, X_test, y_test)
 
-# Perform the same steps with the Concrete-ML LinearSVC implementation
+# Perform the same steps with the Concrete ML LinearSVC implementation
 svm_concrete = ConcreteLinearSVC(max_iter=100, n_bits=8)
 svm_concrete.fit(X_train, y_train)
 # plot the boundary
@@ -1544,7 +1544,7 @@ def get_sklearn_plot_config(mse_score=None):
 
 
 def get_concrete_plot_config(mse_score=None):
-    label = "Concrete-ML"
+    label = "Concrete ML"
     if mse_score is not None:
         label += f", {'$MSE$'}={mse_score:.4f}"
     return {"c": "orange", "linewidth": 2.5, "label": label}
@@ -1671,7 +1671,7 @@ time_begin = time.time()
 y_pred_sklearn = sklearn_rgs.predict(X_test)
 print(f"Execution time: {(time.time() - time_begin) / len(X_test):.4f} seconds per sample")
 
-# Now predict using clear quantized Concrete-ML model on testing set
+# Now predict using clear quantized Concrete ML model on testing set
 time_begin = time.time()
 y_preds_quantized = concrete_rgs.predict(X_test)
 print(f"Execution time: {(time.time() - time_begin) / len(X_test):.4f} seconds per sample")
@@ -4567,7 +4567,7 @@ def make_regressor_comparison(title, regressors, **kwargs):
             # Instantiate the model
             model = regressor()
 
-            # Train the model and retrieve both the Concrete-ML model and its equivalent one from
+            # Train the model and retrieve both the Concrete ML model and its equivalent one from
             # scikit-learn
             # If the model is a NeuralNetClassifier, instantiate a scikit-learn MLPClassifier
             # separately in order to be able to be able to compare the results with a float model
@@ -4606,7 +4606,7 @@ def make_regressor_comparison(title, regressors, **kwargs):
             time_end = time.time()
             print(f"Key generation time: {time_end - time_begin:.2f} seconds")
 
-            # Compute the predictions in FHE using the Concrete-ML model
+            # Compute the predictions in FHE using the Concrete ML model
             time_begin = time.time()
             concrete_y_pred = concrete_model.predict(X_poly_test[:1], fhe="execute")
             time_end = time.time()
@@ -4633,7 +4633,7 @@ def make_regressor_comparison(title, regressors, **kwargs):
                 bitwidth = circuit.graph.maximum_integer_bit_width()
 
             # Plot the predictions
-            ax.plot(X_test, concrete_y_pred, c="blue", linewidth=2.5, label="Concrete-ML")
+            ax.plot(X_test, concrete_y_pred, c="blue", linewidth=2.5, label="Concrete ML")
 
             # Plot the predictions
             ax.plot(X_test, sklearn_y_pred, c="red", linewidth=2.5, label="scikit-learn")
@@ -4641,7 +4641,7 @@ def make_regressor_comparison(title, regressors, **kwargs):
             ax.text(
                 0.5,
                 0.80,
-                f"Concrete-ML R2: {concrete_score:.2f}\n scikit-learn R2: {sklearn_score:.2f}\n",
+                f"Concrete ML R2: {concrete_score:.2f}\n scikit-learn R2: {sklearn_score:.2f}\n",
                 transform=ax.transAxes,
                 fontsize=12,
                 va="top",
