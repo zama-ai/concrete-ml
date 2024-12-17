@@ -125,12 +125,9 @@ training_args = TrainingArguments(
     warmup_steps=10,
     weight_decay=0.01,
     prediction_loss_only=True,
-    logging_steps=50,
     # evaluation_strategy is handled by LoraTrainer, not HuggingFace Trainer
     report_to="none",
 )
-
-
 # Define a causal LM loss function
 def causal_lm_loss(logits, labels, ignore_index=-100):
     shift_logits = logits[..., :-1, :].contiguous()
