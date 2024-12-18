@@ -3,6 +3,7 @@
 import json
 
 import numpy
+import torch
 
 from ..common.utils import HybridFHEMode, to_tuple
 from .quantized_module import QuantizedModule
@@ -55,8 +56,8 @@ class GLWELinearLayerExecutor:
         )
 
     def forward(
-        self, x: numpy.ndarray, q_module: QuantizedModule, fhe: HybridFHEMode
-    ) -> numpy.ndarray:
+        self, x: torch.Tensor, q_module: QuantizedModule, fhe: HybridFHEMode
+    ) -> torch.Tensor:
         """Perform the inference of this linear layer.
 
         Args:
@@ -91,23 +92,23 @@ class GLWELinearLayerExecutor:
         assert weight_bias[0].quantizer.quant_params.zero_point == 0
 
         # Retrieve quantized weights
-        q_weight = weight_bias[0].qvalues
+        q_weight = weight_bias[0].values
+        assert(isinstance(q_weight, numpy.ndarray))
+        assert(q_weight.dtype == numpy.float32)
 
         q_weight = numpy.transpose(q_weight) if transpose_inputs2 else q_weight
 
-        q_x = q_module.quantize_input(x)
-        assert q_x is not None
-        assert isinstance(q_x, numpy.ndarray)
-
-        q_x = numpy.transpose(q_x) if transpose_inputs1 else q_x
+        q_x = q_module.quantize_input(x, dtype=numpy.float32 if fhe == HybridFHEMode.DISABLE else None)
+        q_x = torch.transpose(q_x) if transpose_inputs1 else q_x
 
         if fhe == HybridFHEMode.DISABLE:
             # There is no need to add the bias to the de-quantized values
             # as the bias is already included in the output quantizer
             # zero-point, in the analytical calibration
-            q_x = q_x.astype(numpy.float32)
-            q_weight = q_weight.astype(numpy.float32)
-            y = q_module.dequantize_output(*to_tuple(numpy.matmul(q_x, q_weight)))
+
+            q_w = torch.from_numpy(q_weight).to(q_x.device)
+            mm = torch.matmul(q_x, q_w)
+            y = q_module.dequantize_output(*to_tuple(mm))
         else:
             # Need to slice the last GLWE (this will be improved in later cml-extensions)
             num_valid_glwe_values_in_last_ciphertext = (
@@ -162,7 +163,6 @@ class GLWELinearLayerExecutor:
             if return_2d:
                 y = numpy.squeeze(y)
 
-        # Only single outputs are supported
-        assert isinstance(y, numpy.ndarray)
+            y = y.astype(numpy.float32)
 
         return y
