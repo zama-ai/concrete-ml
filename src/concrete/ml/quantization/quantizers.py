@@ -7,6 +7,7 @@ from copy import deepcopy
 from typing import Any, Dict, Optional, TextIO, Union, get_type_hints
 
 import numpy
+import torch
 from concrete.fhe.tracing.tracer import Tracer
 
 from ..common.debugging import assert_true
@@ -671,7 +672,7 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
         """
         dump(self, file)
 
-    def quant(self, values: numpy.ndarray) -> numpy.ndarray:
+    def quant(self, values: Union[numpy.ndarray, torch.Tensor], dtype=numpy.int64) -> numpy.ndarray:
         """Quantize values.
 
         Args:
@@ -686,10 +687,17 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
         assert self.offset is not None
         assert self.scale is not None
 
-        if QUANT_ROUND_LIKE_ROUND_PBS:
-            qvalues = numpy.floor(values / self.scale + self.zero_point + 0.5)  # pragma: no cover
+        assert dtype in (numpy.int64, numpy.int32, numpy.float32, numpy.float64)
+
+        delta = 0.5 if QUANT_ROUND_LIKE_ROUND_PBS else 0
+        if isinstance(values, numpy.ndarray):
+            round_func = numpy.floor if QUANT_ROUND_LIKE_ROUND_PBS else numpy.rint
+            clip_func = numpy.clip
         else:
-            qvalues = numpy.rint(values / self.scale + self.zero_point)
+            round_func = torch.floor if QUANT_ROUND_LIKE_ROUND_PBS else torch.round
+            clip_func = torch.clip
+            
+        qvalues = round_func(values / self.scale + self.zero_point + delta)
 
         # Clipping must be performed for PTQ and for precomputed (for now only Brevitas) QAT
         # (where quantizer parameters are available in ONNX layers).
@@ -705,11 +713,15 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
             if self.is_narrow:
                 min_value += 1
 
-            qvalues = qvalues.clip(min_value, 2 ** (self.n_bits) - 1 - self.offset)
+            qvalues = clip_func(qvalues, min_value, 2 ** (self.n_bits) - 1 - self.offset)
 
-        return qvalues.astype(numpy.int64)
+        # Only cast for numpy usage for Concrete circuits
+        if isinstance(values, numpy.ndarray):
+            qvalues = qvalues.astype(dtype)
 
-    def dequant(self, qvalues: numpy.ndarray) -> Union[float, numpy.ndarray, Tracer]:
+        return qvalues
+
+    def dequant(self, qvalues: Union[numpy.ndarray, torch.Tensor]) -> Union[float, numpy.ndarray, torch.Tensor, Tracer]:
         """De-quantize values.
 
         Args:
@@ -731,9 +743,13 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
             + ((" " + str(self.scale.dtype)) if isinstance(self.scale, numpy.ndarray) else ""),
         )
 
-        values = self.scale * (qvalues - numpy.asarray(self.zero_point, dtype=numpy.float64))
+        prepared_zp = numpy.asarray(self.zero_point, dtype=numpy.float64)
+        if isinstance(qvalues, torch.Tensor):
+            prepared_zp = torch.from_numpy(prepared_zp).float().to(qvalues.device)
 
-        assert isinstance(values, (float, numpy.ndarray, Tracer)), f"{values=}, {type(values)=}"
+        values = self.scale * (qvalues - prepared_zp)
+
+        assert isinstance(values, (float, numpy.ndarray, torch.Tensor, Tracer)), f"{values=}, {type(values)=}"
         return values
 
 

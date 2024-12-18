@@ -247,16 +247,15 @@ class RemoteModule(nn.Module):
 
             if self.executor:
                 # Delegate to the optimized GLWE executor
-                y = torch.Tensor(
-                    self.executor.forward(
-                        x.detach().numpy(), self.private_q_module, self.fhe_local_mode
+                y = self.executor.forward(
+                        x.detach(), self.private_q_module, self.fhe_local_mode
                     )
-                )
             else:
+                device = x.device
                 # Delegate to the quantized module for all fhe modes
                 y = torch.Tensor(
-                    self.private_q_module.forward(x.detach().numpy(), fhe=self.fhe_local_mode.value)
-                )
+                    self.private_q_module.forward(x.cpu().detach().numpy(), fhe=self.fhe_local_mode.value)
+                ).to(device)
 
         elif self.fhe_local_mode == HybridFHEMode.CALIBRATE:
             # Calling torch + gathering calibration data
@@ -568,7 +567,9 @@ class HybridFHEModel:
 
         self.configuration = configuration
 
-        for name in self.module_names:
+        from tqdm import tqdm
+
+        for name in tqdm(self.module_names):
             remote_module = self._get_module_by_name(self.model, name)
             assert isinstance(remote_module, RemoteModule)
 
@@ -596,6 +597,13 @@ class HybridFHEModel:
                         n_bits=n_bits,
                         rounding_threshold_bits=rounding_threshold_bits,
                     )
+
+                    vals = self.private_q_modules[name].quant_layers_dict.values()
+                    _, q_op = next(iter(vals))
+                    const_inp = q_op.constant_inputs[1] # Get the weights, the bias is in [2]
+                    const_inp.values = const_inp.qvalues.astype(numpy.float32)
+
+                    self.private_q_modules[name]._onnx_model = None
                 else:
                     self.private_q_modules[name] = compile_torch_model(
                         self.private_modules[name],
@@ -607,6 +615,8 @@ class HybridFHEModel:
                     )
 
             self.remote_modules[name].private_q_module = self.private_q_modules[name]
+
+            remote_module.calibration_data = None
 
     def _save_fhe_circuit(self, path: Path, via_mlir=False):
         """Private method that saves the FHE circuits.

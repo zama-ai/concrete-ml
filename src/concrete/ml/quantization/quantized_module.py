@@ -8,6 +8,7 @@ from typing import Any, Dict, Generator, Iterable, List, Optional, Sequence, Tex
 
 import numpy
 import onnx
+import torch
 from concrete.fhe.compilation.artifacts import DebugArtifacts
 from concrete.fhe.compilation.circuit import Circuit
 from concrete.fhe.compilation.compiler import Compiler
@@ -702,7 +703,7 @@ class QuantizedModule:
         return q_results
 
     def quantize_input(
-        self, *x: Optional[numpy.ndarray]
+        self, *x: Optional[Union[numpy.ndarray, torch.Tensor]], dtype=numpy.int64
     ) -> Union[numpy.ndarray, Tuple[Optional[numpy.ndarray], ...]]:
         """Take the inputs in fp32 and quantize it using the learned quantization parameters.
 
@@ -729,7 +730,7 @@ class QuantizedModule:
         # cannot be None
         q_x = tuple(
             (
-                self.input_quantizers[idx].quant(x[idx])  # type: ignore[arg-type]
+                self.input_quantizers[idx].quant(x[idx], dtype)  # type: ignore[arg-type]
                 if x[idx] is not None
                 else None
             )
@@ -738,7 +739,7 @@ class QuantizedModule:
 
         # Make sure all inputs are quantized to int64
         assert all_values_are_of_dtype(
-            *q_x, dtypes="int64", allow_none=True
+            *q_x, dtypes=numpy.dtype(dtype).name, allow_none=True
         ), "Inputs were not quantized to int64"
 
         if len(q_x) == 1:
@@ -749,8 +750,8 @@ class QuantizedModule:
         return q_x
 
     def dequantize_output(
-        self, *q_y_preds: numpy.ndarray
-    ) -> Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]:
+        self, *q_y_preds: Union[numpy.ndarray, torch.Tensor]
+    ) -> Union[Union[numpy.ndarray, torch.Tensor], Tuple[Union[numpy.ndarray, torch.Tensor], ...]]:
         """Take the last layer q_out and use its de-quant function.
 
         Args:
@@ -767,10 +768,13 @@ class QuantizedModule:
         )
 
         y_preds = tuple(
-            numpy.array(output_quantizer.dequant(q_y_pred))
+            output_quantizer.dequant(q_y_pred)
             for q_y_pred, output_quantizer in zip(q_y_preds, self.output_quantizers)
         )
 
+        if not isinstance(q_y_preds[0], torch.Tensor):
+            y_preds = tuple(map(numpy.array, y_preds))
+            
         if len(y_preds) == 1:
             return y_preds[0]
 
