@@ -1,0 +1,5248 @@
+
+
+# Code from: ./ClientServer.ipynb
+--------------------------------------------------------------------------------
+
+import platform
+import time
+from shutil import copyfile
+from tempfile import TemporaryDirectory
+
+import numpy
+from sklearn.datasets import load_breast_cancer
+
+from concrete.ml.deployment import FHEModelClient, FHEModelDev, FHEModelServer
+from concrete.ml.sklearn import XGBClassifier
+
+class OnDiskNetwork:
+    """Simulate a network on disk."""
+
+    def __init__(self):
+        # Create 3 temporary folder for server, client and dev with tempfile
+        self.server_dir = TemporaryDirectory()  # pylint: disable=consider-using-with
+        self.client_dir = TemporaryDirectory()  # pylint: disable=consider-using-with
+        self.dev_dir = TemporaryDirectory()  # pylint: disable=consider-using-with
+
+    def client_send_evaluation_key_to_server(self, serialized_evaluation_keys):
+        """Send the public key to the server."""
+        with open(self.server_dir.name + "/serialized_evaluation_keys.ekl", "wb") as f:
+            f.write(serialized_evaluation_keys)
+
+    def client_send_input_to_server_for_prediction(self, encrypted_input):
+        """Send the input to the server and execute on the server in FHE."""
+        with open(self.server_dir.name + "/serialized_evaluation_keys.ekl", "rb") as f:
+            serialized_evaluation_keys = f.read()
+        time_begin = time.time()
+        encrypted_prediction = FHEModelServer(self.server_dir.name).run(
+            encrypted_input, serialized_evaluation_keys
+        )
+        time_end = time.time()
+        with open(self.server_dir.name + "/encrypted_prediction.enc", "wb") as f:
+            f.write(encrypted_prediction)
+        return time_end - time_begin
+
+    def dev_send_model_to_server(self):
+        """Send the model to the server."""
+        copyfile(self.dev_dir.name + "/server.zip", self.server_dir.name + "/server.zip")
+
+    def server_send_encrypted_prediction_to_client(self):
+        """Send the encrypted prediction to the client."""
+        with open(self.server_dir.name + "/encrypted_prediction.enc", "rb") as f:
+            encrypted_prediction = f.read()
+        return encrypted_prediction
+
+    def dev_send_clientspecs_and_modelspecs_to_client(self):
+        """Send the clientspecs and evaluation key to the client."""
+        copyfile(self.dev_dir.name + "/client.zip", self.client_dir.name + "/client.zip")
+
+    def cleanup(self):
+        """Clean up the temporary folders."""
+        self.server_dir.cleanup()
+        self.client_dir.cleanup()
+        self.dev_dir.cleanup()
+
+from concrete.compiler import check_gpu_available
+
+# Let's first get some data and train a model.
+X, y = load_breast_cancer(return_X_y=True)
+
+# Split X into X_model_owner and X_client
+X_model_owner, X_client = X[:-10], X[-10:]
+y_model_owner, y_client = y[:-10], y[-10:]
+
+# Some issues on macOS, if too many estimators
+n_estimators = 10
+if platform.system() == "Darwin":
+    n_estimators = 9
+
+
+use_gpu_if_available = False
+device = "cuda" if use_gpu_if_available and check_gpu_available() else "cpu"
+
+# Train the model and compile it
+model_dev = XGBClassifier(n_bits=2, n_estimators=n_estimators, max_depth=3)
+model_dev.fit(X_model_owner, y_model_owner)
+model_dev.compile(X_model_owner, device=device)
+
+print("Model trained and compiled.")
+
+# Let's instantiate the network
+network = OnDiskNetwork()
+
+# Now that the model has been trained we want to save it to send it to a server
+fhemodel_dev = FHEModelDev(network.dev_dir.name, model_dev)
+fhemodel_dev.save()
+
+# Print all files in the temporary directory along with their sizes in KB
+!ls -lh $network.dev_dir.name
+
+# Let's send the model to the server
+network.dev_send_model_to_server()
+!ls -lh $network.server_dir.name
+
+# Let's send the clientspecs and evaluation key to the client
+network.dev_send_clientspecs_and_modelspecs_to_client()
+!ls -lh $network.client_dir.name
+
+# Let's create the client and load the model
+fhemodel_client = FHEModelClient(network.client_dir.name, key_dir=network.client_dir.name)
+
+# The client first need to create the private and evaluation keys.
+serialized_evaluation_keys = fhemodel_client.get_serialized_evaluation_keys()
+
+# Evaluation keys can be quite large files but only have to be shared once with the server.
+
+# Check the size of the evaluation keys (in MB)
+print(f"Evaluation keys size: {len(serialized_evaluation_keys) / (10**6):.2f} MB")
+
+# Let's send this evaluation key to the server (this has to be done only once)
+network.client_send_evaluation_key_to_server(serialized_evaluation_keys)
+
+# Now we have everything for the client to interact with the server
+
+# We create a loop to send the input to the server and receive the encrypted prediction
+decrypted_predictions = []
+execution_time = []
+for i in range(X_client.shape[0]):
+    clear_input = X_client[[i], :]
+    encrypted_input = fhemodel_client.quantize_encrypt_serialize(clear_input)
+    execution_time += [network.client_send_input_to_server_for_prediction(encrypted_input)]
+    encrypted_prediction = network.server_send_encrypted_prediction_to_client()
+    decrypted_prediction = fhemodel_client.deserialize_decrypt_dequantize(encrypted_prediction)[0]
+    decrypted_predictions.append(decrypted_prediction)
+
+# Check MB size with sys of the encrypted data vs clear data
+print(
+    f"Encrypted data is "
+    f"{len(encrypted_input)/clear_input.nbytes:.2f}"
+    " times larger than the clear data"
+)
+
+# Show execution time
+print(f"The average execution time is {numpy.mean(execution_time):.2f} seconds per sample.")
+
+# Let's check the results and compare them against the clear model
+clear_prediction_classes = model_dev.predict_proba(X_client).argmax(axis=1)
+decrypted_predictions_classes = numpy.array(decrypted_predictions).argmax(axis=1)
+accuracy = (clear_prediction_classes == decrypted_predictions_classes).mean()
+print(f"Accuracy between FHE prediction and clear model is: {accuracy*100:.0f}%")
+
+
+
+# Code from: ./FullyConnectedNeuralNetworkOnMNIST.ipynb
+--------------------------------------------------------------------------------
+
+import time
+
+import matplotlib.pyplot as plt
+import numpy as np
+from concrete.compiler import check_gpu_available
+from joblib import Memory
+from sklearn.datasets import fetch_openml
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
+from torch import nn
+
+from concrete.ml.sklearn import NeuralNetClassifier
+
+use_gpu_if_available = False
+device = "cuda" if use_gpu_if_available and check_gpu_available() else "cpu"
+
+# scikit-learn's fetch_openml method doesn't handle local cache:
+# https://github.com/scikit-learn/scikit-learn/issues/18783#issuecomment-723471498
+# This is a workaround that prevents downloading the data every time the notebook is ran
+memory = Memory("./data/MNIST")
+fetch_openml_cached = memory.cache(fetch_openml)
+
+# Fetch the MNIST data-set, with inputs already flattened
+mnist_dataset = fetch_openml_cached("mnist_784")
+
+# Define max, mean and std values for the MNIST data-set
+max_value = 255
+mean = 0.1307
+std = 0.3081
+
+# Normalize the training data
+data = (mnist_dataset.data) / max_value
+data = ((data - mean) / std).round(decimals=4)
+
+# Concrete ML's NNs do not support: category, str, object types
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2990
+target = mnist_dataset.target.astype("int")
+
+test_size = 10000
+x_train, x_test, y_train, y_test = train_test_split(
+    data, target, test_size=test_size, random_state=0
+)
+
+def plot_samples(data, targets, n_samples=5, title="Train target"):
+    # MNIST images are originally of shape 28x28 with grayscale values
+    samples_to_plot = np.array(data)[:n_samples].reshape((n_samples, 28, 28))
+
+    fig = plt.figure(figsize=(30, 30))
+
+    for i in range(n_samples):
+        subplot = fig.add_subplot(1, n_samples, i + 1)
+        subplot.set_title(f"{title}: {np.array(targets)[i]}", fontsize=15)
+        subplot.imshow(samples_to_plot[i], cmap="gray", interpolation="nearest")
+
+plot_samples(x_train, y_train)
+
+params = {
+    "module__n_layers": 2,
+    "module__n_w_bits": 4,
+    "module__n_a_bits": 4,
+    "module__n_hidden_neurons_multiplier": 0.5,
+    "module__activation_function": nn.ReLU,
+    "max_epochs": 7,
+}
+
+model = NeuralNetClassifier(**params)
+
+model.fit(X=x_train, y=y_train);
+
+y_preds_clear = model.predict(x_test, fhe="disable")
+
+print(f"The test accuracy of the clear model is {accuracy_score(y_test, y_preds_clear):.2f}")
+
+# Reduce the input-set's length to make the compilation time faster
+# The input-set should be large enough to be representative of the input data
+inputset = x_train.head(1000)
+simulated_fhe_circuit = model.compile(inputset, device=device)
+
+# Print the circuit's maximum bit-width reached during compilation
+print(f"Circuit of {simulated_fhe_circuit.graph.maximum_integer_bit_width()}-bits (FHE simulation)")
+
+# Evaluate the model using simulation
+y_preds_simulated = model.predict(x_test, fhe="simulate")
+
+print(
+    "The test accuracy (with FHE simulation) of the FHE model is "
+    f"{accuracy_score(y_test, y_preds_simulated):.2f}"
+)
+
+# Print the circuit's maximum bit-width reached during compilation
+print(f"FHE circuit of {model.fhe_circuit.graph.maximum_integer_bit_width()}-bits")
+
+time_begin = time.time()
+model.fhe_circuit.client.keygen(force=True)
+print(f"Key generation time: {time.time() - time_begin:.2f} seconds")
+
+# Reduce the test set
+n_samples = 3
+x_test_sample = x_test.head(n_samples)
+y_test_sample = y_test.head(n_samples)
+
+# Execute the predictions using FHE simulation on a few samples
+simulated_fhe_predictions = model.predict(x_test_sample, fhe="simulate")
+
+time_begin = time.time()
+fhe_predictions = model.predict(x_test_sample, fhe="execute")
+seconds_per_sample = (time.time() - time_begin) / len(x_test_sample)
+print(f"Execution time in FHE: {seconds_per_sample:.2f} seconds per sample\n")
+
+print("Expected values:", y_test_sample.tolist())
+print("Simulated prediction values:", simulated_fhe_predictions)
+print("FHE prediction values:", fhe_predictions)
+
+
+
+# Code from: ./KNearestNeighbors.ipynb
+--------------------------------------------------------------------------------
+
+import time
+
+import pandas as pd
+from sklearn.datasets import make_classification
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
+
+from concrete.ml.sklearn import KNeighborsClassifier as ConcreteKNeighborsClassifier
+
+X, y = make_classification(
+    n_samples=15, n_features=3, n_informative=3, n_redundant=0, n_classes=2, n_clusters_per_class=1
+)
+# Split the data-set into a train and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=42)
+
+n_neighbors = 3
+
+concrete_knn = ConcreteKNeighborsClassifier(n_bits=3, n_neighbors=n_neighbors)
+
+# Fit both the Concrete ML and its equivalent float estimator on clear data
+concrete_knn, sklearn_model = concrete_knn.fit_benchmark(X_train, y_train)
+
+time_begin = time.time()
+circuit = concrete_knn.compile(X)
+print(f"Compilation time: {time.time() - time_begin:.2f} seconds")
+
+print(f"Maximum bit-width reached in the circuit: {circuit.graph.maximum_integer_bit_width()}")
+
+# For circuits exceeding 8-bits, the key generation process might take up to an hour
+time_begin = time.time()
+circuit.client.keygen()
+print(f"Key generation time: {time.time() - time_begin:.2f} seconds")
+
+# a- Clear inference
+pred_cml_clear = concrete_knn.predict(X_test, fhe="disable")
+score_cml_clear = accuracy_score(y_test, pred_cml_clear)
+
+# b- FHE simulation inference
+pred_cml_simulate = concrete_knn.predict(X_test, fhe="simulate")
+score_cml_simulate = accuracy_score(y_test, pred_cml_simulate)
+
+# c- FHE inference
+time_begin = time.time()
+pred_cml_fhe = concrete_knn.predict(X_test, fhe="execute")
+print(f"FHE inference execution time: {(time.time() - time_begin) / len(X_test):.2f}s per sample")
+score_cml_fhe = accuracy_score(y_test, pred_cml_fhe)
+
+# scikit-learn inference
+predict_sklearn = sklearn_model.predict(X_test)
+score_sklearn = accuracy_score(y_test, predict_sklearn)
+
+print(f"Sckit-learn accuracy: {score_sklearn:.2%}")
+print(f"Concrete ML (clear) accuracy: {score_cml_clear:.2%}")
+print(f"Concrete ML (FHE simulation) accuracy: {score_cml_simulate:.2%}")
+print(f"Concrete ML FHE accuracy: {score_cml_fhe:.2%}")
+
+# Retieve topk labels for the scikit-learn model
+distance, topk_args = sklearn_model.kneighbors(X_test)
+topk_labels_sk = y_train[topk_args]
+
+# Retieve topk labels for the concrete model
+# `get_topk_labels` method is like `predict` method, but instead of returning the most common labels
+#  it provides the top K labels.
+topk_labels_cml = concrete_knn.get_topk_labels(X_test, fhe="simulate")
+
+def highlight_diff(row):
+    """Custom style function to highlight mismatched predictions."""
+    return [
+        (
+            "background-color: yellow"
+            if row["Majority vote (Concrete ML)"] != row["Majority vote (scikit-learn)"]
+            else ""
+        )
+    ] * len(row)
+
+
+df = pd.DataFrame(
+    {
+        "Distance": distance[:, 0],
+        f"Top{n_neighbors} (scikit-learn)": [list(row) for row in topk_labels_sk],
+        "Majority vote (scikit-learn)": predict_sklearn,
+        f"Top{n_neighbors} (Concrete ML)": [list(row) for row in topk_labels_cml],
+        "Majority vote (Concrete ML)": pred_cml_simulate,
+        "Ground truth": y_test,
+    }
+)
+
+df.style.apply(highlight_diff, axis=1)
+
+
+
+# Code from: ./EncryptedPandas.ipynb
+--------------------------------------------------------------------------------
+
+import shutil
+import time
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
+import numpy
+import pandas
+
+from concrete.ml.pandas import ClientEngine, load_encrypted_dataframe
+from concrete.ml.pytest.utils import pandas_dataframe_are_equal
+
+numpy.random.seed(0)
+
+DATA_PATH = Path("data/encrypted_pandas")
+
+# pylint: disable=pointless-statement, consider-using-with
+
+CLIENT_1_DIR = DATA_PATH / "client_1"
+
+df_left = pandas.read_csv(CLIENT_1_DIR / "df_left.csv")
+
+df_left
+
+schema = {"index": {index_value: i + 1 for i, index_value in enumerate(df_left["index"].values)}}
+
+client_1_temp_dir = TemporaryDirectory(dir=str(CLIENT_1_DIR))
+client_1_temp_path = Path(client_1_temp_dir.name)
+
+# Define the directory where to store the serialized keys
+client_1_keys_path = client_1_temp_path / "keys"
+
+client_1 = ClientEngine(keys_path=client_1_keys_path)
+
+df_left_enc = client_1.encrypt_from_pandas(df_left, schema=schema)
+
+df_left_enc.get_schema()
+
+df_left_enc_path = client_1_temp_path / "df_left_enc"
+df_left_enc.save(df_left_enc_path)
+
+CLIENT_2_DIR = DATA_PATH / "client_2"
+
+df_right = pandas.read_csv(CLIENT_2_DIR / "df_right.csv")
+
+df_right
+
+client_2_temp_dir = TemporaryDirectory(dir=str(CLIENT_2_DIR))
+client_2_temp_path = Path(client_2_temp_dir.name)
+
+# Define the directory where to store the serialized keys
+client_2_keys_path = client_2_temp_path / "keys"
+
+# Copy the first user's keys
+shutil.copy2(client_1_keys_path, client_2_keys_path)
+
+client_2 = ClientEngine(keys_path=client_2_keys_path)
+
+df_right_enc = client_2.encrypt_from_pandas(df_right, schema=schema)
+
+df_right_enc
+
+df_right_enc_path = client_2_temp_path / "df_right_enc"
+df_right_enc.save(df_right_enc_path)
+
+df_left_enc = load_encrypted_dataframe(df_left_enc_path)
+df_right_enc = load_encrypted_dataframe(df_right_enc_path)
+
+start = time.time()
+df_joined_enc_server = df_left_enc.merge(df_right_enc, how="left", on="index")
+end = time.time() - start
+
+print(f"Total execution time: {end:.2f}s")
+
+df_joined_enc_server_path = client_1_temp_path / "df_joined_enc"
+
+df_joined_enc_server.save(df_joined_enc_server_path)
+
+df_joined_enc = load_encrypted_dataframe(df_joined_enc_server_path)
+
+df_joined_cml = client_1.decrypt_to_pandas(df_joined_enc)
+
+df_joined_cml
+
+df_joined_pandas = pandas.merge(df_left, df_right, how="left", on="index")
+
+df_joined_pandas
+
+df_are_equal = pandas_dataframe_are_equal(
+    df_joined_pandas, df_joined_cml, float_rtol=0.1, equal_nan=True
+)
+
+print("Concrete ML data-frame is equal to Pandas data-frame:", df_are_equal, "\n")
+
+# Clean the temporary directories and their content
+client_1_temp_dir.cleanup()
+client_2_temp_dir.cleanup()
+
+
+
+# Code from: ./XGBRegressor.ipynb
+--------------------------------------------------------------------------------
+
+# pylint: disable=too-many-lines,invalid-name
+import warnings
+
+# For warnings in xgboost.sklearn
+warnings.simplefilter(action="ignore", category=FutureWarning)
+
+import time
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+from sklearn import metrics, preprocessing
+from sklearn.datasets import fetch_openml
+from sklearn.model_selection import GridSearchCV, train_test_split
+from xgboost.sklearn import XGBRegressor as SklearnXGBRegressor
+
+from concrete.ml.sklearn import XGBRegressor as ConcreteXGBRegressor
+
+# Fetch the ames_housing data-set from openml using its data_id.
+df, y = fetch_openml(data_id=43926, return_X_y=True)
+
+# Add the target column to the other features.
+df.insert(0, y.name, y)
+print(f"Shape: {df.shape}")
+
+df.head(2)
+
+# Check the target distribution.
+sns.set(rc={"figure.figsize": (6, 3)})
+sns.distplot(y);
+
+# Pick the numerical features of our data-set.
+float_columns = df.select_dtypes(include=[np.number]).columns
+categorical_columns = df.select_dtypes(include="category").columns
+
+print(
+    f"{len(float_columns)} numerical features vs {len(categorical_columns)} categorical features."
+)
+
+df_encoded = df.copy()
+
+# Encode target labels with value between 0 and n_classes-1.
+le = preprocessing.LabelEncoder()
+# Convert the above categorical features into numeric type.
+df_encoded[categorical_columns] = df[categorical_columns].apply(le.fit_transform)
+
+# Before data transformation:
+df[categorical_columns].head(2)
+
+# After data transformation:
+df_encoded[categorical_columns].head(2)
+
+# Removing the target column from the dataframe.
+X = df_encoded.drop(columns=y.name, axis=1, inplace=False)
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.1, shuffle=True, random_state=24
+)
+
+# Common hyper-parameters for both scikit-learn and Concrete ML.
+n_estimators = 50
+max_depth = 4
+n_jobs = 1
+
+# 1. Instantiation of the model.
+xgboost_reg = SklearnXGBRegressor(n_estimators=n_estimators, max_depth=max_depth, n_jobs=n_jobs)
+
+# 2. Train the model.
+xgboost_reg.fit(X_train, y_train)
+
+# 3. XGBoost (fp32) predictions:
+y_preds_XGBoost = xgboost_reg.predict(X_test)
+
+# 4. Evaluation of the with r2_score metric.
+print(f"R2_score with XGBoost: {metrics.r2_score(y_test, y_preds_XGBoost):.2f}")
+
+# 1. Instantiation of the model, the only difference is the `n_bits` hyper-parameter.
+# We quantize the inputs and the weights using `n_bits` because FHE operates only over integers
+
+# n_bits is necessary for the XGBoost of Concrete ML.
+n_bits = 5
+
+concrete_reg = ConcreteXGBRegressor(
+    n_bits=n_bits, n_estimators=n_estimators, max_depth=max_depth, n_jobs=n_jobs
+)
+
+# 2. We train the concrete XGBoost model on clear data.
+concrete_reg.fit(X_train, y_train)
+
+# 3. Compilation:
+# The quantized model is compiled to an FHE equivalent. To do so, the compiler requires
+# an exhaustive set of data to mainly evaluate the maximum integer bit-width within the graph,
+# needed during the FHE computations.
+circuit = concrete_reg.compile(X_train)
+print(f"Generating a key for an {circuit.graph.maximum_integer_bit_width()}-bits circuit")
+
+# Key generation:
+# The compiler returns a circuit, which can then be used for the key generation.
+time_begin = time.time()
+circuit.client.keygen(force=False)
+print(f"Key generation time: {(time.time() - time_begin):.3f} sec")
+
+width = 0.2
+n_features = 5  # or X.shape[1] to get all importance scores of each attributes
+feature_names = X.columns
+
+# Retrieving the feature importances.
+concrete_feature_importances = concrete_reg.sklearn_model.feature_importances_
+xgboost_feature_importances = xgboost_reg.feature_importances_
+
+# Sorting the feature_importances_ according the XGBoost results.
+index_importances = [[i, fi] for i, fi in enumerate(xgboost_feature_importances)]
+index_importances_sorted = np.array(
+    sorted(index_importances, key=lambda key: key[1], reverse=True)
+)[:, 0]
+
+# Displaying the 5 highest feature importances.
+index_importances_sorted = list(map(int, index_importances_sorted))[:n_features]
+
+_, ax = plt.subplots(figsize=(10, 2))
+
+ax.barh(
+    range(n_features),
+    xgboost_feature_importances[index_importances_sorted],
+    width,
+    color="red",
+    label="XGBoost",
+)
+ax.barh(
+    np.arange(n_features) + width,
+    concrete_feature_importances[index_importances_sorted],
+    width,
+    color="green",
+    label="XGBoost - Concrete ML",
+)
+
+ax.set_title("Feature importances according to Concrete ML model and scikit-learn model", size=12)
+ax.set_yticks(range(n_features), feature_names[index_importances_sorted][:n_features])
+ax.set_xlabel("Feature importances")
+ax.set_ylabel("Features name")
+
+ax.legend(loc="best")
+plt.show()
+
+# 4.1 Inference on clear quantized data (fhe="disable"), the execution is very fast.
+y_preds_non_fhe = concrete_reg.predict(X_test, fhe="disable")
+
+def plot_predictions(y_true: np.array, y_preds: dict, colors: list) -> None:
+    # For a better visualization, we sort the predictions and the ground truth.
+    y_true = np.array(y_true)
+    idx = np.argsort(y_true)
+    y_true_sorted = y_true[idx]
+
+    for title, y_pred in y_preds.items():
+        y_preds[title] = y_pred[idx].flatten()
+
+    ncols, nrows = len(y_preds), 1
+
+    fig, axes = plt.subplots(nrows, ncols, figsize=(15, 5))
+
+    for i, ((title, y_pred), c) in enumerate(zip(y_preds.items(), colors)):
+        axes[i].scatter(np.arange(len(y_true_sorted)), y_true_sorted, c="r")
+        axes[i].scatter(np.arange(len(y_true_sorted)), y_pred, c=c, alpha=0.5)
+        axes[i].set_xlabel(title, labelpad=5)
+        axes[i].set_ylabel("Sale_Prices ($)")
+        # Hide x ticks, because it just refers to indexes.
+        axes[i].get_xaxis().set_ticks([])
+
+    # Set the spacing between subplots.
+    fig.tight_layout()
+
+plot_predictions(
+    y_test,
+    y_preds={"XGBoost": y_preds_XGBoost, "Quant. XGBoost": y_preds_non_fhe},
+    colors=["g", "b"],
+)
+
+print(f"R2_score with XGBoost: {metrics.r2_score(y_test, y_preds_XGBoost):.4f}")
+print(
+    f"R2_score in FHE simulation (not encrypted): {metrics.r2_score(y_test, y_preds_non_fhe):.4f}"
+)
+
+n_folds = 5
+param_grid = {
+    "n_bits": [2, 3, 4, 5, 6, 7],
+    "max_depth": [4],
+    "n_estimators": [10, 20, 50, 100],
+}
+
+grid_search_concrete = GridSearchCV(ConcreteXGBRegressor(), param_grid, cv=n_folds, n_jobs=1)
+grid_search_concrete.fit(X_train, y_train);
+
+results = pd.DataFrame(grid_search_concrete.cv_results_)
+
+print(f"Best score : {grid_search_concrete.best_score_:.3f}")
+print(f"Best params: {grid_search_concrete.best_params_}")
+
+def lineplot(df, yaxis, ylabel, title, group_keys: str = "param_n_estimators"):
+    params = [
+        {"color": "red", "linewidth": 1},
+        {"color": "green", "marker": "x", "markersize": 5, "linewidth": 1},
+        {"color": "magenta", "marker": "s", "markersize": 5, "dashes": (3, 20)},
+        {"color": "blue", "marker": "^", "markersize": 5, "dashes": (3, 10)},
+        {"color": "gold", "marker": "*", "markersize": 5, "dashes": (3, 40)},
+        {"color": "black", "linestyle": "dashed", "dashes": (3, 10)},
+    ]
+
+    plt.figure(figsize=(15, 4))
+
+    for (key, grp), param in zip(df.groupby([group_keys]), params):
+        plt.plot(grp["param_n_bits"], grp[yaxis], **param, label=f"estimators_{key}")
+
+    plt.title(title)
+    plt.ylabel(ylabel)
+    plt.xlabel("$n_{bits}$")
+    plt.legend(loc="best")
+    plt.ylim(0, 1)
+    plt.minorticks_on()
+    plt.show()
+
+lineplot(
+    df=results,
+    yaxis="mean_test_score",
+    ylabel="$r^2_{score}$",
+    title="$r^2_{score}$ given n_estimators and n_bits",
+)
+
+best_params_xgboost = {"n_estimators": 50, "n_bits": 5}
+
+# Train the concrete xgboost with the best combination of parameters.
+concrete_reg = ConcreteXGBRegressor(**best_params_xgboost, n_jobs=1)
+
+concrete_reg.fit(X_train, y_train)
+
+from concrete.compiler import check_gpu_available
+
+use_gpu_if_available = False
+device = "cuda" if use_gpu_if_available and check_gpu_available() else "cpu"
+
+# Compile the model using the training data.
+circuit = concrete_reg.compile(X_train, device=device)
+
+# Get the equivalent predictions in clear quantized data:
+y_preds_clear = concrete_reg.predict(X_test, fhe="disable")
+
+# Perform the inference in FHE (simulation):
+y_preds_simulated = concrete_reg.predict(X_test, fhe="simulate")
+
+plot_predictions(
+    y_test,
+    y_preds={
+        "XGBoost": y_preds_XGBoost,
+        "Concrete ML without FHE": y_preds_clear,
+        "Concrete ML with FHE (simulation)": y_preds_simulated,
+    },
+    colors=["g", "b", "m"],
+)
+
+# Test in FHE on a smaller test set
+FHE_SAMPLE = 20
+X_test_fhe = X_test[:FHE_SAMPLE]
+y_test_fhe = y_test[:FHE_SAMPLE]
+
+# Perform the inference in FHE:
+time_begin = time.time()
+y_preds_fhe = concrete_reg.predict(X_test_fhe, fhe="execute")
+print(f"FHE runtime per sample: {(time.time() - time_begin) / len(X_test_fhe):.2f} sec")
+
+# Evaluation
+
+r2_score_sklearn = metrics.r2_score(y_test, y_preds_XGBoost)
+r2_score_clear_concrete = metrics.r2_score(y_test, y_preds_clear)
+r2_score_simulated_concrete = metrics.r2_score(y_test, y_preds_simulated)
+r2_score_fhe_concrete = metrics.r2_score(y_test_fhe, y_preds_fhe)
+
+print(f"R2_score with XGBoost            : {r2_score_sklearn:.4f}")
+print(f"R2_score without FHE             : {r2_score_clear_concrete:.4f}")
+print(f"R2_score with FHE (simulation)   : {r2_score_simulated_concrete:.4f}")
+print(f"R2_score with FHE                : {r2_score_fhe_concrete:.4f}")
+
+
+
+# Code from: ./ExperimentPrivacyTreePaper.ipynb
+--------------------------------------------------------------------------------
+
+# Importing necessary libraries and modules
+
+import time
+
+import numpy as np
+from IPython.display import display
+from onnx import numpy_helper
+from sklearn.datasets import fetch_openml
+from sklearn.metrics import (
+    accuracy_score,
+    average_precision_score,
+    f1_score,
+    precision_score,
+    recall_score,
+)
+from sklearn.model_selection import RepeatedKFold
+from sklearn.preprocessing import LabelBinarizer, OrdinalEncoder
+
+from concrete.ml.sklearn import DecisionTreeClassifier, RandomForestClassifier, XGBClassifier
+
+
+def basic_preprocessing(df, target_column):
+    """
+    Convert categorical columns to their corresponding code values
+    and binarize the target column.
+
+    Parameters:
+        df (pandas.DataFrame): Input dataframe to preprocess.
+        target_column (str): Name of the target column to be binarized.
+
+    Returns:
+        pandas.DataFrame: Preprocessed dataframe.
+    """
+
+    for col in df.columns:
+        if df[col].dtype == "object":
+            df[col] = df[col].astype("category")
+            df[col] = df[col].cat.codes
+        elif df[col].dtype == "category":
+            df[col] = df[col].cat.codes
+    df[target_column] = LabelBinarizer().fit_transform(df[target_column])
+
+    return df
+
+# Set up dataset names and their respective IDs for fetching from OpenML
+dataset_names = {
+    "spambase": 44,
+    "wine": None,
+    "heart-h": 1565,
+    "wdbc": 1510,
+    "adult": None,
+    "steel": 1504,
+}
+
+datasets = {}
+
+
+def load_dataset(name, data_id=None):
+    """Load dataset from OpenML by name or by ID.
+
+    Args:
+        name (str): Name of the dataset.
+        data_id (int, optional): The ID of the dataset on OpenML.
+            If provided, the dataset is loaded by ID.
+
+    Returns:
+        X (np.array): Features of the dataset.
+        y (np.array): Target labels of the dataset.
+    """
+    if data_id is not None:
+        X, y = fetch_openml(data_id=data_id, as_frame=False, cache=True, return_X_y=True)
+    else:
+        X, y = fetch_openml(name=name, as_frame=False, cache=True, return_X_y=True)
+    return X, y
+
+
+for ds_name, ds_id in dataset_names.items():
+    print(f"Loading {ds_name}")
+
+    X, y = load_dataset(ds_name, ds_id)
+
+    # Remove rows with NaN values
+    not_nan_idx = np.where(~np.isnan(X).any(axis=1))
+    X = X[not_nan_idx]
+    y = y[not_nan_idx]
+
+    # Convert non-integer target labels to integers
+    if not y.dtype == np.int64:
+        encoder = OrdinalEncoder()
+        y = encoder.fit_transform(y.reshape(-1, 1)).astype(np.int32).squeeze()
+
+    datasets[ds_name] = {"X": X, "y": y}
+
+# Setting a random seed for reproducibility across all models and operations
+random_seed = 42
+
+# Models with their hyper-parameters
+model_hyperparameters = {
+    DecisionTreeClassifier: {"max_depth": 5, "random_state": random_seed},
+    XGBClassifier: {"max_depth": 3, "n_estimators": 50, "random_state": random_seed},
+    RandomForestClassifier: {"n_estimators": 50, "random_state": random_seed},
+}
+
+decision_tree_comparison_params = {
+    "spam": {"max_leaf_nodes": 58, "max_depth": 17},
+    "heart-h": {"max_leaf_nodes": 5, "max_depth": 3},
+    "steel": {"max_leaf_nodes": None, "max_depth": 5},
+    "wdbc": {"max_leaf_nodes": None, "max_depth": 10},
+}
+
+# List of bit-width used for quantization
+n_bits_list = list(range(1, 10))
+
+def analyze_gemm_computation(concrete_classifier):
+    """Analyze the GEMM (General Matrix Multiply) operations in the given ONNX model.
+
+    Args:
+        concrete_classifier (object): Classifier that contains an ONNX model representation.
+        x_train (np.array): Training dataset.
+
+    Returns:
+        tuple: Shapes of the matrices involved in GEMM operations.
+    """
+
+    # Extract weights and biases from the ONNX model graph
+    quant_params = {
+        onnx_init.name: numpy_helper.to_array(onnx_init)
+        for onnx_init in concrete_classifier.onnx_model.graph.initializer
+        if "weight" in onnx_init.name or "bias" in onnx_init.name
+    }
+
+    # Extract the shapes of matrices used in GEMM operations
+    matrix_shapes = []
+    for i in range(1, 4):
+        key = [key for key in quant_params.keys() if f"_{i}" in key and "weight" in key][0]
+        matrix_shapes.append(quant_params[key].shape)
+
+    return tuple(matrix_shapes)
+
+def benchmark_model(X, y, model, model_params, n_bits, rkf):
+    """Benchmark a given model and return its evaluation scores."""
+    scores = {
+        "precision": [],
+        "recall": [],
+        "accuracy": [],
+        "f1": [],
+        "average_precision": [],
+        "nodes": None,
+    }
+    scores_fp32 = {"precision": [], "recall": [], "accuracy": [], "f1": [], "average_precision": []}
+
+    metric_func_to_key = {
+        "precision_score": "precision",
+        "recall_score": "recall",
+        "f1_score": "f1",
+        "average_precision_score": "average_precision",
+    }
+
+    for train_index, test_index in rkf.split(X):
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+
+        concrete_model, sklearn_model = model(n_bits=n_bits, **model_params).fit_benchmark(
+            X_train, y_train
+        )
+
+        y_pred = concrete_model.predict(X_test)
+        if len(set(y_test)) == 2:
+            for metric_func in [precision_score, recall_score, average_precision_score, f1_score]:
+                scores_key = metric_func_to_key[metric_func.__name__]
+                scores[scores_key].append(metric_func(y_test, y_pred))
+        scores["accuracy"].append(accuracy_score(y_test, y_pred))
+
+        y_pred_fp32 = sklearn_model.predict(X_test)
+        if len(set(y_test)) == 2:
+            for metric_func in [precision_score, recall_score, average_precision_score, f1_score]:
+                scores_key = metric_func_to_key[metric_func.__name__]
+                scores_fp32[scores_key].append(metric_func(y_test, y_pred_fp32))
+        scores_fp32["accuracy"].append(accuracy_score(y_test, y_pred_fp32))
+
+        shapes = analyze_gemm_computation(concrete_model)
+        scores["nodes"] = shapes[0][0]
+
+    # Calculate inference time
+    concrete_model.compile(X_train)
+    concrete_model.fhe_circuit.keygen(force=False)
+
+    start = time.time()
+    concrete_model.predict(X_test[:1], fhe="execute")
+    end = time.time()
+    scores["inference_time"] = end - start
+
+    start = time.time()
+    concrete_model.predict(X_test[:1])
+    end = time.time()
+    scores_fp32["inference_time"] = end - start
+
+    return scores, scores_fp32
+
+
+n_bits = 6
+scores_global = {}
+
+rkf = RepeatedKFold(n_splits=5, n_repeats=3, random_state=0)
+
+for dataset_name, dataset_data in datasets.items():
+    X, y = dataset_data["X"].astype(np.float32), dataset_data["y"]
+    assert len(set(y)) >= 2
+    if y.dtype not in [np.int32, bool]:
+        print(f"Unexpected datatype for y in dataset {dataset_name}: {y.dtype}")
+
+    key_dataset = f"{dataset_name} (#features: {X.shape[1]})"
+    scores_global[key_dataset] = {}
+
+    for cls, model_params in model_hyperparameters.items():
+        scores, scores_fp32 = benchmark_model(X, y, cls, model_params, n_bits, rkf)
+
+        scores_global[key_dataset][cls.__name__ + "_concrete"] = scores
+        scores_global[key_dataset][cls.__name__ + "_fp32"] = scores_fp32
+
+        print(
+            f"{cls.__name__} on {key_dataset} -> Acc: {np.mean(scores['accuracy']):.4f}, "
+            f"Acc (fp32): {np.mean(scores_fp32['accuracy']):.4f}, "
+            f"FHE inference time: {scores['inference_time']:.2f}s"
+        )
+
+import math
+
+import pandas as pd
+
+df = pd.DataFrame.from_dict(
+    {(i, j): value for i, scores in scores_global.items() for j, value in scores.items()},
+    orient="index",
+)
+
+
+df["FHE/Clear ratio"] = (df["inference_time"] / df["inference_time"].shift(-1)).apply(
+    lambda x: "" if (x < 1) or (math.isnan(x)) else str(int(round(x, 0))) + "x"
+)
+
+
+def format_scores(val):
+    if isinstance(val, list):
+        if not val:
+            return "-"
+        return f"{np.mean(val) * 100:.1f}\\% ± {np.std(val) * 100:.1f}\\%"
+
+    if pd.isna(val):
+        return "-"
+
+    if isinstance(val, (float, int)):
+        # To ensure all floating point values are treated as percentages
+        return f"{val:.3f}"
+
+    if "x" in str(val):  # Ensure that val is treated as a string
+        return val
+
+    return "-"
+
+
+df = df.applymap(format_scores)
+
+# Renaming for display
+model_names = {
+    "DecisionTreeClassifier_concrete": "FHE-DT",
+    "DecisionTreeClassifier_fp32": "FP32-DT",
+    "XGBClassifier_concrete": "FHE-XGB",
+    "XGBClassifier_fp32": "FP32-XGB",
+    "RandomForestClassifier_concrete": "FHE-RF",
+    "RandomForestClassifier_fp32": "FP32-RF",
+}
+
+for original, renamed in model_names.items():
+    df.index = df.index.set_levels(df.index.levels[1].str.replace(original, renamed), level=1)
+
+df.columns = df.columns.str.replace("average_precision", "AP")
+
+# Reordering Columns
+columns_order = [col for col in df if col not in ["FHE/Clear ratio", "inference_time"]] + [
+    "inference_time",
+    "FHE/Clear ratio",
+]
+df = df[columns_order]
+
+# Drop and rename columns
+df.columns = df.columns.str.replace("inference_time", "Time (s)")
+df.drop(columns=["precision", "recall"], inplace=True)
+
+# Adjust LaTeX output
+latex_code = df.to_latex(multirow=True, escape=False, column_format="l|l|l|l|l|l|l|l")
+
+latex_code = latex_code.replace("#", "\\#")
+display(df)
+
+def evaluate_model(X, y, model, rkf):
+    """Evaluate a given model and return its scores."""
+    scores = {"precision": [], "recall": [], "accuracy": [], "f1": [], "average_precision": []}
+    scores_fp32 = {"precision": [], "recall": [], "accuracy": [], "f1": [], "average_precision": []}
+
+    metric_func_to_key = {
+        "precision_score": "precision",
+        "recall_score": "recall",
+        "f1_score": "f1",
+        "average_precision_score": "average_precision",
+    }
+
+    for train_index, test_index in rkf.split(X):
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+
+        concrete_model, sklearn_model = model.fit_benchmark(X_train, y_train)
+
+        for model_instance, score_dict in [(concrete_model, scores), (sklearn_model, scores_fp32)]:
+            y_pred = model_instance.predict(X_test)
+            for metric_func in [precision_score, recall_score, average_precision_score, f1_score]:
+                score_key = metric_func_to_key[metric_func.__name__]
+                score_dict[score_key].append(metric_func(y_test, y_pred))
+            score_dict["accuracy"].append(accuracy_score(y_test, y_pred))
+
+    return scores, scores_fp32
+
+
+rkf = RepeatedKFold(n_splits=5, n_repeats=3, random_state=0)
+X, y = datasets["spambase"]["X"].astype(np.float32), datasets["spambase"]["y"]
+assert len(set(y)) == 2
+if y.dtype not in [np.int32, bool]:
+    print(f"Unexpected datatype for y in dataset spambase: {y.dtype}")
+
+scores_global = {}
+
+for n_bits in n_bits_list:
+    scores_global[n_bits] = {}
+
+    for model_cls, params in model_hyperparameters.items():
+        model_instance = model_cls(n_bits=n_bits, **params)
+        scores, scores_fp32 = evaluate_model(X, y, model_instance, rkf)
+
+        model_name = model_cls.__name__
+        scores_global[n_bits][model_name + "_concrete"] = scores
+        scores_global[n_bits][model_name + "_fp32"] = scores_fp32
+
+        print(f"{model_name} with {n_bits}-bits:")
+        print("Average precision:", np.mean(scores["average_precision"]))
+        print("Average precision (fp32):", np.mean(scores_fp32["average_precision"]))
+
+import matplotlib.pyplot as plt
+from tqdm import tqdm
+
+
+def evaluate_model_on_error_rates(X_train, X_test, y_test, concrete_model, p_error_list):
+    """Evaluate the concrete model on different error rates and return accuracy and time taken."""
+    acc_scores = []
+    time_scores = []
+    real_p_error_list = []
+
+    for p_error in tqdm(p_error_list):
+        concrete_model.compile(X_train, p_error=p_error)
+        real_p_error_list.append(concrete_model.fhe_circuit.p_error)
+        concrete_model.fhe_circuit.keygen(force=False)
+
+        start_time = time.time()
+        y_pred = concrete_model.predict(X_test, fhe="execute")
+        end_time = time.time()
+
+        acc_scores.append(accuracy_score(y_pred, y_test))
+        time_scores.append(end_time - start_time)
+
+    return acc_scores, time_scores, real_p_error_list
+
+
+plt.rcParams.update({"font.size": 16})
+n_bits = 6
+p_error_list = [2e-40, 1e-6, 1e-5, 1e-4, 0.001, 0.005, 0.01, 0.05, 0.1, 0.3, 0.5, 0.7, 0.9, 0.95]
+X, y = datasets["spambase"]["X"].astype(np.float32), datasets["spambase"]["y"]
+
+clf = DecisionTreeClassifier(n_bits=n_bits, **model_hyperparameters[DecisionTreeClassifier])
+rkf = RepeatedKFold(n_splits=20, n_repeats=3, random_state=0)
+
+for train_index, test_index in rkf.split(X):
+    X_train, X_test = X[train_index], X[test_index]
+    y_train, y_test = y[train_index], y[test_index]
+
+    concrete_model, _ = clf.fit_benchmark(X_train, y_train)
+
+    # Calculating num_nodes using analyze_gemm_computation function
+    shapes = analyze_gemm_computation(concrete_model)
+    num_nodes = shapes[0][0]
+
+    acc_scores, time_p_error, real_p_error_list = evaluate_model_on_error_rates(
+        X_train, X_test, y_test, concrete_model, p_error_list
+    )
+    break
+
+def plot_metrics_vs_error_rates(
+    metric_values, model_name, num_nodes, xlabel, ylabel, filename, red_line_value
+):
+    """Plot the metrics against error rates."""
+    plt.figure()
+    plt.plot(
+        [real_p_error_list[0], real_p_error_list[-1]],
+        [red_line_value, red_line_value],
+        color="red",
+        linewidth=2,
+        label="p_error=2E-40",
+    )
+    plt.plot(real_p_error_list, metric_values, color="blue", linewidth=2, marker="x")
+    plt.grid(True)
+    plt.legend()
+    plt.title(f"{model_name} {num_nodes} nodes")
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.semilogx()
+    plt.xticks(10.0 ** np.arange(-6, 1))
+    plt.savefig(filename, bbox_inches="tight", dpi=300)
+    plt.show()
+
+
+# Plotting accuracy vs error rates
+plot_metrics_vs_error_rates(
+    acc_scores,
+    "DecisionTreeClassifier",
+    num_nodes,
+    "$p_{error}$",
+    "Metric",
+    "DecisionTreeClassifier" + "acc_p_error.eps",
+    0.91,
+)
+
+# Plotting execution time per data point vs error rates
+plot_metrics_vs_error_rates(
+    np.asarray(time_p_error) / X_test.shape[0],
+    "DecisionTreeClassifier",
+    num_nodes,
+    "$p_{error}$",
+    "Execution time",
+    "DecisionTreeClassifier" + "speed_p_error.eps",
+    1.807,
+)
+
+# Plot the metrics vs n_bits for each model
+plt.rcParams.update({"font.size": 16})
+for cls in model_hyperparameters:
+    plt.figure()
+
+    f1_scores = []
+    f1_scores_fp32 = []
+
+    average_precision_scores = []
+    average_precision_scores_fp32 = []
+
+    for n_bits in n_bits_list:
+        average_precision_scores.append(
+            np.mean(scores_global[n_bits][cls.__name__ + "_concrete"]["average_precision"])
+        )
+        average_precision_scores_fp32.append(
+            np.mean(scores_global[n_bits][cls.__name__ + "_fp32"]["average_precision"])
+        )
+
+        f1_scores.append(np.mean(scores_global[n_bits][cls.__name__ + "_concrete"]["f1"]))
+        f1_scores_fp32.append(np.mean(scores_global[n_bits][cls.__name__ + "_fp32"]["f1"]))
+
+    # plt.legend()
+    ap_relative = np.array(average_precision_scores) / average_precision_scores_fp32
+    f1_relative = np.array(f1_scores) / f1_scores_fp32
+    print(f"ap relative: {ap_relative}, f1_relative: {f1_relative}")
+    plt.plot(
+        n_bits_list,
+        average_precision_scores,
+        label="concrete_average_precision",
+        color="blue",
+        linewidth=2,
+    )
+    plt.plot(
+        n_bits_list,
+        average_precision_scores_fp32,
+        label="fp32_average_precision",
+        color="blue",
+        linewidth=2,
+        linestyle="dashed",
+    )
+
+    plt.plot(n_bits_list, f1_scores, label="concrete_f1", linewidth=2, color="red")
+    plt.plot(
+        n_bits_list, f1_scores_fp32, label="fp32_f1", color="red", linewidth=2, linestyle="dashed"
+    )
+
+    plt.grid(True)
+    plt.xlim([1, 9])
+    plt.ylim([0, 1])
+    plt.xticks(np.arange(1, 10))
+    plt.legend()
+
+    plt.title(cls.__name__)
+    plt.xlabel("Bitwidth")
+    plt.ylabel("Metric")
+    # Save the figure
+    plt.savefig(cls.__name__ + ".eps", bbox_inches="tight", dpi=300)
+
+    plt.show()
+
+def predict_with_fhe(clf, X_sample):
+    """Predict using FHE and return elapsed time."""
+    print("Compiling and keygen...")
+    clf.compile(X_sample[:100])
+    clf.fhe_circuit.keygen(force=False)
+
+    print("Predict in FHE")
+    start_time = time.time()
+    _ = clf.predict(X_sample[:1], fhe="execute")
+    end_time = time.time()
+
+    return end_time - start_time
+
+
+def analyze_and_store(clf, X_sample, nodes_dict, scores_dict):
+    """Analyze the model and store results."""
+    elapsed_time = predict_with_fhe(clf, X_sample)
+
+    model_name = clf.__class__.__name__
+    if model_name not in nodes_dict:
+        nodes_dict[model_name] = []
+        scores_dict[model_name] = []
+
+    scores_dict[model_name].append(elapsed_time)
+
+    shapes = analyze_gemm_computation(clf)
+    nodes_dict[model_name].append(shapes[0][0])
+
+    print(clf.n_bits)
+    print(scores_dict[model_name][-1])
+    print(nodes_dict[model_name][-1])
+
+
+X, y = datasets["spambase"]["X"], datasets["spambase"]["y"]
+nodes_dict = {}
+scores_dict = {}
+
+for model_name, hyperparameters in model_hyperparameters.items():
+    for n_bits in n_bits_list:
+        clf = model_name(n_bits=n_bits, **hyperparameters)
+        clf.fit(X, y)
+
+        if n_bits < 9:
+            analyze_and_store(clf, X, nodes_dict, scores_dict)
+
+def plot_fhe_inference_time(n_bits_list, scores, model_hyperparameters):
+    """Plot the FHE inference time against bitwidth for each model."""
+
+    # Calculate average inference time per node for each bitwidth
+    n_bits_timings = np.zeros((8,))
+    for model in model_hyperparameters:
+        for idx, n_bits in enumerate(n_bits_list):
+            if n_bits < 9:
+                n_bits_timings[idx] += (
+                    scores[model.__name__][idx] / nodes_dict[model.__name__][idx] * 1000
+                )
+    n_bits_timings /= len(model_hyperparameters)
+
+    # Plot setup
+    plt.figure(figsize=(10, 6))
+    plt.rcParams.update({"font.size": 16})
+
+    plt.plot(
+        range(1, 9),
+        n_bits_timings,
+        label="FHE Inference Time",
+        color="blue",
+        linewidth=2,
+        marker="o",
+    )
+
+    plt.xlabel("Bitwidth")
+    plt.ylabel("Time (ms)")
+    plt.grid(True, which="both")
+    plt.semilogy()
+    plt.ylim([0, 1000])
+    plt.xlim([0.5, 8.5])
+    plt.xticks(np.arange(1, 9))
+    plt.title("FHE Execution vs Precision", pad=10)
+
+    plt.savefig("fhe_inference_time.eps", bbox_inches="tight", dpi=300)
+    plt.show()
+
+
+plot_fhe_inference_time(n_bits_list, scores_dict, model_hyperparameters)
+
+
+
+# Code from: ./SVMClassifier.ipynb
+--------------------------------------------------------------------------------
+
+# display visualizations and plots in the notebook itself
+%matplotlib inline
+
+# import numpy and matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from sklearn.decomposition import PCA
+from sklearn.metrics import accuracy_score, f1_score, make_scorer
+from sklearn.model_selection import GridSearchCV, train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import LinearSVC as SklearnLinearSVC
+
+# import the concrete-ml LinearSVC implementation
+from concrete.ml.sklearn.svm import LinearSVC as ConcreteLinearSVC
+
+def plot_decision_boundary(
+    clf,
+    X,
+    y,
+    title="LinearSVC Decision Boundary",
+    xlabel="First Principal Component",
+    ylabel="Second Principal Component",
+):
+    # Perform PCA to reduce the dimensionality to 2
+    pca = PCA(n_components=2)
+    X_pca = pca.fit_transform(X)
+
+    # Create the mesh grid
+    x_min, x_max = X_pca[:, 0].min() - 1, X_pca[:, 0].max() + 1
+    y_min, y_max = X_pca[:, 1].min() - 1, X_pca[:, 1].max() + 1
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.02), np.arange(y_min, y_max, 0.02))
+
+    # Transform the mesh grid points back to the original feature space
+    mesh_points = pca.inverse_transform(np.c_[xx.ravel(), yy.ravel()])
+
+    # Make predictions using the classifier
+    Z = clf.predict(mesh_points)
+    Z = Z.reshape(xx.shape)
+
+    # Plot the decision boundary
+    _, ax = plt.subplots()
+    ax.contourf(xx, yy, Z, alpha=0.8)
+    ax.scatter(X_pca[:, 0], X_pca[:, 1], c=y, edgecolors="k", marker="o", s=50)
+
+    # Calculate the accuracy
+    accuracy = accuracy_score(y, clf.predict(X))
+
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(f"{title} (Accuracy: {accuracy:.4f})")
+    plt.show()
+
+# Get the data
+df = pd.read_csv(
+    "https://gist.githubusercontent.com/robinstraub/72f1cb27829dba85f49f68210979f561/"
+    "raw/b9982ae654967028f6f4010bd235d850d38fe25b/pulsar-star-dataset.csv"
+)
+df.head()
+
+# Extract the features and labels
+X = df.drop(columns=["target_class"])
+y = df["target_class"]
+
+# Replace N/A values with the mean of the respective feature
+X.fillna(X.mean(), inplace=True)
+
+# Split the data into train and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Scale the data
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# Convert the floating labels to integer labels for both train and test sets
+y_train = y_train.astype(int)
+y_test = y_test.astype(int)
+
+# Train a model with scikit-learn LinearSVC, perform prediction and compute the accuracy
+svm_sklearn = SklearnLinearSVC(max_iter=100)
+svm_sklearn.fit(X_train, y_train)
+# plot the boundary
+plot_decision_boundary(svm_sklearn, X_test, y_test)
+
+# Perform the same steps with the Concrete ML LinearSVC implementation
+svm_concrete = ConcreteLinearSVC(max_iter=100, n_bits=8)
+svm_concrete.fit(X_train, y_train)
+# plot the boundary
+plot_decision_boundary(svm_concrete, X_test, y_test)
+
+# A circuit needs to be compiled to enable FHE execution
+circuit = svm_concrete.compile(X_train)
+# Now that a circuit is compiled, the svm_concrete can predict value with FHE
+y_pred = svm_concrete.predict(X_test, fhe="execute")
+accuracy = accuracy_score(y_test, y_pred)
+# print the accuracy
+print(f"FHE Accuracy: {accuracy:.4f} (bit-width: {circuit.graph.maximum_integer_bit_width()})")
+
+# setup and train a scikit-learn LinearSVC model, just as before
+svm_sklearn = SklearnLinearSVC()
+svm_sklearn.fit(X_train, y_train)
+# predict some test data and measure the model accuracy
+y_pred_sklearn = svm_sklearn.predict(X_test)
+accuracy_sklearn = accuracy_score(y_test, y_pred_sklearn)
+
+print(f"Scikit-learn Accuracy: {accuracy_sklearn:.4f}")
+
+svm = ConcreteLinearSVC()
+
+# Define the parameter grid for the grid search
+param_grid = param_grid = [
+    {
+        "C": np.logspace(-3, 3, 7),
+        "n_bits": range(2, 17),
+        "penalty": ["l1", "l2"],
+        "dual": [False, True],
+    },
+]
+
+# Use the F1 score as the metric to optimize, as it provides a
+# balanced trade-off between precision and recall
+scorer = make_scorer(f1_score, average="weighted")
+
+# Set up the grid search with the custom scoring function
+grid_search = GridSearchCV(svm, param_grid, scoring=scorer, cv=5, n_jobs=1)
+
+# Fit the grid search to the data
+grid_search.fit(X_train, y_train)
+
+# Convert the grid search results into a pandas DataFrame
+results_df = pd.DataFrame(grid_search.cv_results_)
+
+# Define a custom function to highlight a specific row based on n_bits value
+
+
+def highlight_row(row, n_bits_value=3, color="green"):
+    return [
+        f"background-color: {color}" if row["param_n_bits"] == n_bits_value else "" for _ in row
+    ]
+
+
+# Find the best hyperparameter combination for each n_bits value
+best_results = results_df.loc[results_df.groupby("param_n_bits")["mean_test_score"].idxmax()]
+best_results = best_results[
+    ["param_n_bits", "param_C", "param_penalty", "param_dual", "mean_test_score"]
+]
+best_results.reset_index(drop=True, inplace=True)
+
+# Display the best results DataFrame
+best_results.style.apply(highlight_row, n_bits_value=3, axis=1).hide()
+
+svm_concrete = ConcreteLinearSVC(n_bits=3, C=1, dual=False, penalty="l1")
+svm_concrete.fit(X_train, y_train)
+
+# compile the model
+circuit = svm_concrete.compile(X_train)
+
+# the model can now be executed with FHE
+y_pred = svm_concrete.predict(X_test, fhe="simulate")
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Accuracy with FHE simulation: {accuracy:.4f}")
+
+# predict the test set to verify the compiled model accuracy
+y_pred = svm_concrete.predict(X_test, fhe="execute")
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Accuracy with FHE execution: {accuracy:.4f}")
+
+
+
+# Code from: ./LinearSVR.ipynb
+--------------------------------------------------------------------------------
+
+import time
+
+import numpy as np
+import pandas as pd
+from sklearn.datasets import load_diabetes
+from sklearn.metrics import make_scorer, mean_squared_error
+from sklearn.model_selection import GridSearchCV, KFold, train_test_split
+from sklearn.svm import LinearSVR as SklearnLinearSVR
+
+from concrete.ml.sklearn.svm import LinearSVR as ConcreteLinearSVR
+
+%matplotlib inline
+
+import matplotlib.pyplot as plt
+from IPython.display import display
+
+train_plot_config = {"c": "black", "marker": "D", "s": 15, "label": "Train data"}
+test_plot_config = {"c": "red", "marker": "x", "s": 15, "label": "Test data"}
+
+
+def get_sklearn_plot_config(mse_score=None):
+    label = "scikit-learn"
+    if mse_score is not None:
+        label += f", {'$MSE$'}={mse_score:.4f}"
+    return {"c": "blue", "linewidth": 2.5, "label": label}
+
+
+def get_concrete_plot_config(mse_score=None):
+    label = "Concrete ML"
+    if mse_score is not None:
+        label += f", {'$MSE$'}={mse_score:.4f}"
+    return {"c": "orange", "linewidth": 2.5, "label": label}
+
+# Load the diabetes data-set
+X, y = load_diabetes(return_X_y=True)
+# Use only one feature for educational purpose
+X = X[:, np.newaxis, 2]
+
+# We split the data-set into a training and a testing set
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=23)
+
+# We sort the test set for a better visualization
+sorted_indexes = np.argsort(np.squeeze(X_test))
+X_test = X_test[sorted_indexes, :]
+y_test = y_test[sorted_indexes]
+
+plt.ioff()
+
+plt.clf()
+fig, ax = plt.subplots(1, figsize=(10, 5))
+fig.patch.set_facecolor("white")
+ax.scatter(X_train, y_train, **train_plot_config)
+ax.scatter(X_test, y_test, **test_plot_config)
+ax.legend()
+display(fig)
+
+grid_scorer = make_scorer(mean_squared_error, greater_is_better=False)
+
+param_grid = {
+    "epsilon": [0.0, 1.0, 10.0, 20.0],
+    "C": [0.1, 100.0, 10000.0, 100000.0],
+}
+
+sklearn_rgs = SklearnLinearSVR()
+kfold_cv = KFold(n_splits=5, shuffle=True, random_state=13)
+
+gs_sklearn = GridSearchCV(
+    sklearn_rgs,
+    param_grid,
+    cv=kfold_cv,
+    scoring=grid_scorer,
+    verbose=1,
+).fit(X_train, y_train)
+
+param_grid = {
+    "n_bits": [6, 8, 12],
+    "epsilon": [0.0, 1.0, 10.0, 20.0],
+    "C": [0.1, 100.0, 10000.0, 100000.0],
+}
+
+concrete_rgs = ConcreteLinearSVR()
+
+gs_concrete = GridSearchCV(
+    concrete_rgs,
+    param_grid,
+    cv=kfold_cv,
+    scoring=grid_scorer,
+    verbose=1,
+).fit(X_train, y_train)
+
+plt.ioff()
+
+results_df = pd.DataFrame(gs_concrete.cv_results_)
+
+fig, ax = plt.subplots(1, figsize=(12, 8))
+(l1,) = ax.plot(
+    np.arange(16), -results_df.loc[results_df["param_n_bits"] == 6, "mean_test_score"], "-o"
+)
+(l2,) = ax.plot(
+    np.arange(16), -results_df.loc[results_df["param_n_bits"] == 8, "mean_test_score"], "-o"
+)
+(l3,) = ax.plot(
+    np.arange(16), -results_df.loc[results_df["param_n_bits"] == 12, "mean_test_score"], "-o"
+)
+ax.legend((l1, l2, l3), ("n_bits = 6", "n_bits = 8", "n_bits = 12"), loc="upper right", shadow=True)
+ax.set_xlabel("Different models with fixed values of C and epsilon")
+ax.set_ylabel("Mean MSE accros CV folds")
+ax.set_title("Impact of `n_bits` on Cross Validation performances")
+display(fig)
+
+# Print mean time fit and std time fit for both models
+print(
+    f"Mean time fit sklearn: {np.mean(gs_sklearn.cv_results_['mean_fit_time']):.3f}s,"
+    f" std time fit sklearn: {np.std(gs_sklearn.cv_results_['mean_fit_time']):.3f}s"
+)
+print(
+    f"Mean time fit concrete: {np.mean(gs_concrete.cv_results_['mean_fit_time']):.3f}s,"
+    f"std time fit concrete: {np.std(gs_concrete.cv_results_['mean_fit_time']):.3f}s"
+)
+
+# Print best score for both models
+print(f"Best MSE score sklearn: {-gs_sklearn.best_score_:.2f}")
+print(f"Best MSE score concrete: {-gs_concrete.best_score_:.2f}")
+
+# Get best hyperparameters out of gs_concrete
+best_params_concrete = gs_concrete.best_params_
+print(f"Best parameters for Concrete: {best_params_concrete}")
+best_params_sklearn = gs_sklearn.best_params_
+print(f"Best parameters for Sklearn: {best_params_sklearn}")
+
+# Train concrete and sklearn LinearSVR with best hyper parameters
+concrete_rgs = ConcreteLinearSVR(**best_params_concrete)
+
+concrete_rgs, sklearn_rgs = concrete_rgs.fit_benchmark(X_train, y_train)
+
+# Compile the model using the training data
+circuit = concrete_rgs.compile(X_train)
+
+# Generate the key
+print(f"Generating a key for an {circuit.graph.maximum_integer_bit_width()}-bit circuit")
+
+time_begin = time.time()
+circuit.client.keygen(force=False)
+print(f"Key generation time: {time.time() - time_begin:.2f} seconds")
+
+# Now predict using the FHE-quantized model on the testing set
+time_begin = time.time()
+y_pred_fhe = concrete_rgs.predict(X_test, fhe="execute")
+print(f"Execution time: {(time.time() - time_begin) / len(X_test):.4f} seconds per sample")
+
+# Now predict using the Sklearn model on the testing set
+time_begin = time.time()
+y_pred_sklearn = sklearn_rgs.predict(X_test)
+print(f"Execution time: {(time.time() - time_begin) / len(X_test):.4f} seconds per sample")
+
+# Now predict using clear quantized Concrete ML model on testing set
+time_begin = time.time()
+y_preds_quantized = concrete_rgs.predict(X_test)
+print(f"Execution time: {(time.time() - time_begin) / len(X_test):.4f} seconds per sample")
+
+# Print all MSE a string to explain
+
+mse_sklearn = mean_squared_error(y_test, y_pred_sklearn)
+mse_clear = mean_squared_error(y_test, y_preds_quantized)
+mse_fhe = mean_squared_error(y_test, y_pred_fhe)
+
+print(
+    f"Clear FP32 sklearn model MSE: {mse_sklearn:.3f}\n"
+    f"Clear quantized model MSE: {mse_clear:.3f}\n"
+    f"FHE model MSE: {mse_fhe:.3f}"
+)
+
+# Measure the error of the FHE-quantized model with respect to quantized clear Concrete ML model
+concrete_score_difference = abs(mse_fhe - mse_clear) * 100 / mse_clear
+print(
+    "\nRelative difference between Concrete-ml (quantized clear) and Concrete-ml (FHE) scores:",
+    f"{concrete_score_difference:.2f}%",
+)
+
+
+# Measure the error of the FHE quantized model with respect to the sklearn float model
+score_difference = abs(mse_fhe - mse_sklearn) * 100 / mse_sklearn
+print(
+    "Relative difference between scikit-learn (clear) and Concrete-ml (FHE) scores:",
+    f"{score_difference:.2f}%",
+)
+
+# We densify the space representation of the original X,
+# to better visualize the resulting step function in the following figure
+x_space = np.linspace(X_test.min(), X_test.max(), num=300)
+x_space = x_space[:, np.newaxis]
+y_pred_q_space = concrete_rgs.predict(x_space)
+
+plt.ioff()
+
+plt.clf()
+fig, ax = plt.subplots(1, figsize=(12, 8))
+fig.patch.set_facecolor("white")
+ax.scatter(X_train, y_train, **train_plot_config)
+ax.scatter(X_test, y_test, **test_plot_config)
+ax.plot(X_test, y_pred_sklearn, **get_sklearn_plot_config(mse_sklearn))
+ax.plot(x_space, y_pred_q_space, **get_concrete_plot_config(mse_clear))
+ax.legend()
+display(fig)
+
+
+
+# Code from: ./LogisticRegressionTraining.ipynb
+--------------------------------------------------------------------------------
+
+%matplotlib inline
+# Import dataset libraries and util functions
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
+import matplotlib.pyplot as plt
+import numpy as np
+from concrete.compiler import check_gpu_available
+from matplotlib.colors import ListedColormap
+from matplotlib.lines import Line2D
+from sklearn import datasets
+from sklearn.linear_model import SGDClassifier as SklearnSGDClassifier
+from sklearn.metrics import accuracy_score
+from sklearn.preprocessing import MinMaxScaler
+
+from concrete import fhe
+from concrete.ml.deployment import FHEModelClient, FHEModelDev, FHEModelServer
+from concrete.ml.sklearn import SGDClassifier
+
+use_gpu_if_available = False
+device = "cuda" if use_gpu_if_available and check_gpu_available() else "cpu"
+
+
+def plot_decision_boundary(
+    X, y, clf=None, weights=None, bias=None, title="Decision Boundary", accuracy=None
+):
+    # Create a mesh to plot the decision boundaries
+    x_min, x_max = X[:, 0].min() - 0.1, X[:, 0].max() + 0.1
+    y_min, y_max = X[:, 1].min() - 0.1, X[:, 1].max() + 0.1
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.01), np.arange(y_min, y_max, 0.01))
+
+    if clf is not None:
+        # Predictions to get the decision boundary
+        Z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
+        Z = Z.reshape(xx.shape)
+        learned_weights = (
+            f"Learned weights: "
+            f"{clf.coef_[0][0]:.3f}, "
+            f"{clf.coef_[0][1]:.3f}, "
+            f"{clf.intercept_.reshape((-1,))[0]:.3f}"
+        )
+    elif weights is not None and bias is not None:
+        # Compute the linear model for the mesh grid
+        linear_model = np.dot(np.c_[xx.ravel(), yy.ravel()], weights[0]) + bias[0]
+        Z = np.round(1 / (1 + np.exp(-linear_model)))
+        Z = Z.reshape(xx.shape)
+        learned_weights = ""
+    else:
+        raise ValueError("Either 'clf' or both 'weights' and 'bias' must be provided.")
+
+    # Define red and blue color map
+    cm_bright = ListedColormap(["#FF0000", "#0000FF"])
+
+    # Plotting the results
+    plt.figure(figsize=(10, 6))
+    plt.contourf(xx, yy, Z, alpha=0.3, cmap=cm_bright)
+    plt.scatter(X[:, 0], X[:, 1], c=y, edgecolor="k", cmap=cm_bright)
+    plt.title(f"{title} (Accuracy: {accuracy})\n {learned_weights}")
+    plt.xlabel("Feature 1")
+    plt.ylabel("Feature 2")
+
+    # Create a custom legend
+    legend_elements = [
+        Line2D(
+            [0],
+            [0],
+            marker="o",
+            color="w",
+            label="Class 0",
+            markerfacecolor="#FF0000",
+            markersize=10,
+        ),
+        Line2D(
+            [0],
+            [0],
+            marker="o",
+            color="w",
+            label="Class 1",
+            markerfacecolor="#0000FF",
+            markersize=10,
+        ),
+    ]
+    plt.legend(handles=legend_elements, loc="upper right")
+
+    plt.show()
+
+
+# Load the Iris dataset
+X_full, y_full = datasets.load_iris(return_X_y=True)
+X_full = MinMaxScaler(feature_range=[-1, 1]).fit_transform(X_full)
+
+# Select petal length and petal width for visualization
+X = X_full[:, 2:4]  # Petal length and petal width
+
+# Filter the dataset for binary classification (Versicolor and Virginica)
+# These correspond to target labels 1 and 2 in the Iris dataset
+binary_filter = (y_full == 1) | (y_full == 2)
+X_binary = X[binary_filter]
+X_full_binary = X_full[binary_filter]
+y_binary = y_full[binary_filter] - 1
+
+# Train an SGDClassifier on the binary dataset
+N_ITERATIONS = 15
+RANDOM_STATE = 42
+
+np.random.seed(RANDOM_STATE)
+
+model_binary_sklearn = SklearnSGDClassifier(random_state=RANDOM_STATE, max_iter=N_ITERATIONS)
+
+model_binary_sklearn.fit(X_binary, y_binary)
+
+y_pred_binary_sklearn = model_binary_sklearn.predict(X_binary)
+
+accuracy_binary_sklearn = accuracy_score(y_binary, y_pred_binary_sklearn)
+
+plot_decision_boundary(
+    X_binary,
+    y_binary,
+    clf=model_binary_sklearn,
+    accuracy=accuracy_binary_sklearn,
+    title="Scikit-Learn decision boundary",
+)
+
+parameters_range = (-1.0, 1.0)
+
+model_binary_fhe = SGDClassifier(
+    random_state=RANDOM_STATE,
+    max_iter=N_ITERATIONS,
+    fit_encrypted=True,
+    parameters_range=parameters_range,
+    verbose=True,
+)
+
+# Fit on encrypted data
+model_binary_fhe.fit(X_binary, y_binary, fhe="execute", device=device)
+
+# The weights are decrypted at the end of the `fit` call. Use the clear weights here
+# to evaluate accuracy on clear data
+y_pred_binary = model_binary_fhe.predict(X_binary)
+
+model_binary_fhe.compile(X_binary)
+
+# Evaluate the decrypted weights on encrypted data
+y_pred_binary_fhe = model_binary_fhe.predict(X_binary, fhe="execute")
+
+# Check that the same result is obtained when applying
+# the decrypted model on clear data and on encrypted data
+# Linear classifiers are 100% correct on encrypted data compared to execution on clear data
+assert np.all(y_pred_binary == y_pred_binary_fhe)
+
+accuracy_binary_fhe = accuracy_score(y_binary, y_pred_binary_fhe)
+
+plot_decision_boundary(
+    X_binary,
+    y_binary,
+    clf=model_binary_fhe,
+    accuracy=accuracy_binary_fhe,
+    title="Concrete ML (training on encrypted data with FHE) decision boundary",
+)
+
+from sklearn.model_selection import train_test_split
+
+X, y = datasets.load_breast_cancer(return_X_y=True)
+x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.3, stratify=y)
+
+scaler = MinMaxScaler(feature_range=[-1, 1])
+x_train = scaler.fit_transform(x_train)
+x_test = scaler.transform(x_test)
+
+rng = np.random.default_rng(RANDOM_STATE)
+perm = rng.permutation(x_train.shape[0])
+
+x_train = x_train[perm, ::]
+y_train = y_train[perm]
+
+parameters_range = (-1.0, 1.0)
+
+model_sklearn = SklearnSGDClassifier(
+    random_state=RANDOM_STATE,
+    max_iter=N_ITERATIONS,
+)
+
+model_sklearn.fit(x_train, y_train)
+
+y_pred_sklearn = model_sklearn.predict(x_test)
+
+accuracy_sklearn = accuracy_score(y_test, y_pred_sklearn)
+
+print(f"Sklearn clear accuracy: {accuracy_sklearn*100:.2f}%")
+
+model_concrete = SGDClassifier(
+    random_state=RANDOM_STATE,
+    max_iter=N_ITERATIONS,
+    fit_encrypted=True,
+    parameters_range=parameters_range,
+)
+
+# Train with simulation on the full dataset
+model_concrete.fit(x_train, y_train, fhe="simulate")
+
+model_concrete.compile(x_train)
+
+# Measure accuracy on the test set using simulation
+y_pred_fhe = model_concrete.predict(x_test, fhe="simulate")
+
+accuracy_fhe = accuracy_score(y_test, y_pred_fhe)
+print(f"Full encrypted fit (simulated) accuracy: {accuracy_fhe*100:.2f}%")
+
+# To measure accuracy after every batch initialize the SGDClassifier with warm_start=True
+# which keeps the weights obtained with previous batches
+
+model_concrete_partial = SGDClassifier(
+    random_state=RANDOM_STATE,
+    max_iter=N_ITERATIONS,
+    fit_encrypted=True,
+    parameters_range=parameters_range,
+    warm_start=True,
+)
+
+batch_size = model_concrete_partial.batch_size
+
+classes = np.unique(y_train)
+
+# Go through the training batches
+accuracy_scores = []
+for idx in range(x_train.shape[0] // batch_size):
+    batch_range = range(idx * batch_size, (idx + 1) * batch_size)
+    x_batch = x_train[batch_range, ::]
+    y_batch = y_train[batch_range]
+
+    # Fit on a single batch with partial_fit
+    # Provide the list of all expected classes for the first iteration, as done in scikit-learn
+    if idx == 0:
+        model_concrete_partial.partial_fit(x_batch, y_batch, classes=classes, fhe="simulate")
+    else:
+        model_concrete_partial.partial_fit(x_batch, y_batch, fhe="simulate")
+
+    model_concrete_partial.compile(x_train)
+
+    # Measure accuracy of the model with FHE simulation
+    y_pred_partial_fhe = model_concrete_partial.predict(x_test, fhe="simulate")
+
+    accuracy_partial = accuracy_score(y_test, y_pred_partial_fhe)
+    accuracy_scores.append(accuracy_partial)
+
+# Plot the evolution of accuracy throughout the training process
+fig = plt.figure()
+plt.plot(accuracy_scores)
+plt.title(f"Accuracy evolution on breast-cancer. Final accuracy {accuracy_scores[-1]*100:.2f}%")
+plt.xlabel("Batch number")
+plt.ylabel("Accuracy")
+plt.grid(True)
+plt.show()
+
+# Initialize the model with parameters
+parameters_range = (-1.0, 1.0)
+batch_size = 8
+
+sgd_clf_binary_fhe = SGDClassifier(
+    random_state=RANDOM_STATE,
+    max_iter=N_ITERATIONS,
+    fit_encrypted=True,
+    parameters_range=parameters_range,
+)
+
+# Generate the min and max values for X_binary and y_binary
+x_min, x_max = X_binary.min(axis=0), X_binary.max(axis=0)
+y_min, y_max = y_binary.min(), y_binary.max()
+
+# Create a dataset with the min and max values for each feature, repeated to fill the batch size
+x_compile_set = np.vstack([x_min, x_max] * (batch_size // 2))
+
+# Create a dataset with the min and max values for y, repeated to fill the batch size
+y_compile_set = np.array([y_min, y_max] * (batch_size // 2))
+
+# Fit the model with the created dataset to compile it for production
+# This step ensures the model knows the number of features, targets and features distribution
+
+
+device = "cuda" if check_gpu_available() else "cpu"
+sgd_clf_binary_fhe.fit(x_compile_set, y_compile_set, fhe="disable", device=device)
+
+# Define the directory where to save the deployment files
+DEPLOYMENT_PATH = Path("fhe_training")
+DEPLOYMENT_PATH.mkdir(exist_ok=True)
+
+deployment_dir = TemporaryDirectory(dir=str(DEPLOYMENT_PATH))  # pylint: disable=consider-using-with
+deployment_path = Path(deployment_dir.name)
+
+# Save the training FHE circuit for production
+fhe_dev = FHEModelDev(deployment_path, sgd_clf_binary_fhe)
+fhe_dev.save(mode="training")
+
+# On the client side, load the circuit.zip with the information to create
+# - the key
+# - the pre and post processing functions
+
+fhe_client = FHEModelClient(deployment_path)
+fhe_client.load()
+serialized_evaluation_keys = fhe_client.get_serialized_evaluation_keys()
+
+# On the server side, we load the server.zip which contain the training model
+fhe_server = FHEModelServer(deployment_path)
+fhe_server.load()
+
+# Define utils function to evaluate the model
+
+
+def model_inference(weights, bias, X):
+    # Compute the linear model
+    linear_model = np.dot(X, weights[0]) + bias[0]
+
+    # Apply the sigmoid function
+    sigmoid = 1 / (1 + np.exp(-linear_model))
+
+    # Compute the prediction
+    prediction = np.round(sigmoid)
+
+    return prediction
+
+
+def compute_model_accuracy(weights, bias, X, y):
+    # Compute the prediction
+    prediction = model_inference(weights, bias, X).squeeze()
+
+    # Compute the accuracy
+    return np.mean(prediction == y)
+
+batch_size = sgd_clf_binary_fhe.batch_size
+
+# Shuffle X_binary and y_binary
+perm = np.random.permutation(X_binary.shape[0])
+X_binary = X_binary[perm, ::]
+y_binary = y_binary[perm]
+
+# Initialize the weight and bias randomly
+# They are going to be updated using FHE training.
+weights = np.random.rand(1, X_binary.shape[1], 1)
+bias = np.random.rand(1, 1, 1)
+
+# Plot the decision boundaries before starting
+plot_decision_boundary(
+    X_binary,
+    y_binary,
+    weights=weights,
+    bias=bias,
+    title="Decision Boundary before training",
+    accuracy=compute_model_accuracy(weights, bias, X_binary, y_binary),
+)
+
+
+def quantize_encrypt_serialize_batches(fhe_client, x, y, weights, bias, batch_size):
+    x_batches_enc, y_batches_enc = [], []
+
+    for i in range(0, x.shape[0], batch_size):
+
+        # Avoid the last batch if it's not a multiple of 'batch_size'
+        if i + batch_size < x.shape[0]:
+            batch_range = range(i, i + batch_size)
+        else:
+            break
+
+        # Make the data X (1, batch_size, n_features) and y (1, batch_size, n_targets=1)
+        x_batch = np.expand_dims(x[batch_range, :], 0)
+        y_batch = np.expand_dims(y[batch_range], (0, 2))
+
+        # Encrypt the batch
+        x_batch_enc, y_batch_enc, _, _ = fhe_client.quantize_encrypt_serialize(
+            x_batch, y_batch, None, None
+        )
+
+        x_batches_enc.append(x_batch_enc)
+        y_batches_enc.append(y_batch_enc)
+
+    _, _, weights_enc, bias_enc = fhe_client.quantize_encrypt_serialize(None, None, weights, bias)
+
+    return x_batches_enc, y_batches_enc, weights_enc, bias_enc
+
+
+def server_run(fhe_server, x_batches_enc, y_batches_enc, weights_enc, bias_enc, evaluation_keys):
+
+    weights_enc = fhe.Value.deserialize(weights_enc)
+    bias_enc = fhe.Value.deserialize(bias_enc)
+
+    evaluation_keys = fhe.EvaluationKeys.deserialize(evaluation_keys)
+
+    # Run the circuit on the server n times, n being the number of batches sent by the user
+    for x_batch, y_batch in zip(x_batches_enc, y_batches_enc):
+        x_batch = fhe.Value.deserialize(x_batch)
+        y_batch = fhe.Value.deserialize(y_batch)
+
+        weights_enc, bias_enc = fhe_server.run(
+            (x_batch, y_batch, weights_enc, bias_enc), evaluation_keys
+        )
+
+    weights_enc = weights_enc.serialize()
+    bias_enc = bias_enc.serialize()
+
+    return weights_enc, bias_enc
+
+
+def train_fhe_client_server(
+    x,
+    y,
+    batch_size,
+    fhe_client,
+    fhe_server,
+    serialized_evaluation_keys,
+    weights,
+    bias,
+    n_epochs=1,
+):
+    acc_history = []
+
+    for epoch in range(n_epochs):
+        # Shuffle x and y
+        perm = np.random.permutation(x.shape[0])
+        x = x[perm, ::]
+        y = y[perm]
+
+        # Quantize, encrypt and serialize the batched inputs as well as the weight and bias values
+        x_batches_enc, y_batches_enc, weights_enc, bias_enc = quantize_encrypt_serialize_batches(
+            fhe_client, x, y, weights, bias, batch_size
+        )
+
+        # Iterate the circuit over the batches on the server
+        fitted_weights_enc, fitted_bias_enc = server_run(
+            fhe_server,
+            x_batches_enc,
+            y_batches_enc,
+            weights_enc,
+            bias_enc,
+            serialized_evaluation_keys,
+        )
+
+        # Back on the client, deserialize, decrypt and de-quantize the fitted weight and bias values
+        weights, bias = fhe_client.deserialize_decrypt_dequantize(
+            fitted_weights_enc, fitted_bias_enc
+        )
+
+        # Compute, store and print the epoch's accuracy
+        accuracy_score = compute_model_accuracy(weights, bias, x, y)
+        acc_history.append(accuracy_score)
+
+        print(f"Epoch {epoch + 1}/{n_epochs} completed. Accuracy: {acc_history[-1]}")
+
+    return weights, bias, acc_history
+
+
+weights, bias, acc_history = train_fhe_client_server(
+    X_binary,
+    y_binary,
+    batch_size,
+    fhe_client,
+    fhe_server,
+    serialized_evaluation_keys,
+    weights,
+    bias,
+)
+
+# Plot the decision final model boundary
+plot_decision_boundary(
+    X_binary,
+    y_binary,
+    weights=weights,
+    bias=bias,
+    title="Decision Boundary after training",
+    accuracy=acc_history[-1],
+)
+
+# Let's rotate the dataset 90 degrees and see
+# if the model can learn the new dataset
+
+# Define the 90-degree rotation matrix
+rotation_matrix = np.array([[0, -1], [1, 0]])
+
+# Apply the rotation matrix to X_binary
+X_binary_pivoted = X_binary @ rotation_matrix
+
+# Plot before training
+plot_decision_boundary(
+    X_binary_pivoted,
+    y_binary,
+    weights=weights,
+    bias=bias,
+    title="Pivoted Dataset",
+    accuracy=compute_model_accuracy(weights, bias, X_binary_pivoted, y_binary),
+)
+
+# Train the model again with the pivoted dataset
+weights_pivoted, bias_pivoted, acc_history_pivoted = train_fhe_client_server(
+    X_binary_pivoted,
+    y_binary,
+    batch_size,
+    fhe_client,
+    fhe_server,
+    serialized_evaluation_keys,
+    weights,
+    bias,
+    n_epochs=2,
+)
+
+# Plot the decision boundary for the pivoted dataset
+plot_decision_boundary(
+    X_binary_pivoted,
+    y_binary,
+    weights=weights_pivoted,
+    bias=bias_pivoted,
+    title="Decision Boundary after training on pivoted dataset",
+    accuracy=acc_history_pivoted[-1],
+)
+
+# Clean the temporary directories and their content
+deployment_dir.cleanup()
+
+
+
+# Code from: ./QuantizationAwareTraining.ipynb
+--------------------------------------------------------------------------------
+
+import time
+
+import matplotlib.pyplot as plt
+import numpy
+import torch
+from sklearn.model_selection import train_test_split
+from torch import nn
+from torch.utils.data import DataLoader, TensorDataset
+from tqdm.auto import tqdm
+
+from concrete.ml.quantization.quantized_module import QuantizedModule
+from concrete.ml.torch.compile import compile_brevitas_qat_model
+
+IN_FEAT = 2
+OUT_FEAT = 2
+N_SIDE = 100
+N_EXAMPLE_TOTAL = N_SIDE * N_SIDE
+N_TEST = 500
+CLUSTERS = 3
+
+# Generate the grid points and put them in a 2 column list of X,Y coordinates
+xx, yy = numpy.meshgrid(numpy.linspace(0, 1, N_SIDE), numpy.linspace(0, 1, N_SIDE))
+X = numpy.c_[numpy.ravel(xx), numpy.ravel(yy)]
+
+# Generate the labels, using the XOR function to produce the checkerboard
+y = (numpy.rint(xx * CLUSTERS).astype(numpy.int64) % 2) ^ (
+    (numpy.rint(yy * CLUSTERS).astype(numpy.int64) % 2)
+)
+y = y.ravel()
+
+# Add some noise to the data
+X += numpy.random.randn(X.shape[0], X.shape[1]) * 0.01
+
+# Plot the data
+plt.scatter(X[:, 0], X[:, 1], c=y)
+plt.title("Original dataset")
+plt.show()
+
+# And, finally, split it into train/test sets
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=N_TEST / N_EXAMPLE_TOTAL, random_state=42
+)
+
+# pylint: disable-next=too-many-arguments
+def train(
+    torch_model,
+    X_train,
+    X_test,
+    y_train,
+    y_test,
+    criterion,
+    optimizer,
+    epochs=10,
+    batch_size=1,
+    shuffle=True,
+    device="cpu",
+):
+    X_train = torch.tensor(X_train).float()
+    X_test = torch.tensor(X_test).float()
+    y_train = torch.tensor(y_train)
+
+    train_loader = DataLoader(
+        TensorDataset(X_train, y_train), batch_size=batch_size, shuffle=shuffle
+    )
+    torch_model.train()
+    for epoch in range(epochs):
+        total_loss = []
+        y_pred_all = []
+        y_true_all = []
+
+        for batch_index, (X_batch, y_batch) in enumerate(train_loader):
+            # Forward pass
+            X_batch = X_batch.to(device)
+            y_batch = y_batch.to(device)
+            y_pred = torch_model(X_batch)
+            y_pred_all.append(y_pred.argmax(1).detach().cpu().numpy())
+            y_true_all.append(y_batch.detach().cpu().numpy())
+
+            # Compute loss
+            loss = criterion(y_pred, y_batch)
+            if torch.isnan(loss):
+                print("y_pred", y_pred)
+                print("y_batch", y_batch)
+                raise ValueError(f"Loss diverged at step: {batch_index}")
+
+            # Backward pass
+            optimizer.zero_grad()
+            loss.backward()
+
+            # Update weights
+            optimizer.step()
+
+            total_loss.append(loss.cpu().item())
+
+        # Print epoch number, loss and accuracy
+        y_pred_all = numpy.concatenate(y_pred_all)
+        y_true_all = numpy.concatenate(y_true_all)
+        accuracy = numpy.mean(y_pred_all == y_true_all)
+        print(
+            f"Epoch: {epoch:02} | Loss: {numpy.mean(total_loss):.4f} |"
+            f" Train Accuracy: {100*accuracy:.2f}%"
+        )
+
+    # Compute test accuracy once training is done
+    torch_model.eval()
+    fp32_pred = torch_model(X_test.to(device)).cpu().argmax(1).float().detach().numpy()
+    accuracy = numpy.mean(fp32_pred == y_test)
+    print(f"\nTest Accuracy Fp32: {accuracy*100:.2f}%")
+
+    return accuracy
+
+def test_in_fhe(quantized_numpy_module, X_test, y_test, simulate=True):
+    if not simulate:
+        print("Generating key")
+        start_key = time.time()
+        quantized_numpy_module.fhe_circuit.keygen()
+        end_key = time.time()
+        print(f"Key generation finished in {end_key - start_key:.2f} seconds")
+
+    fhe_mode = "simulate" if simulate else "execute"
+
+    start_infer = time.time()
+    predictions = quantized_numpy_module.forward(X_test, fhe=fhe_mode).argmax(1)
+    end_infer = time.time()
+
+    if not simulate:
+        print(
+            f"Inferences finished in {end_infer - start_infer:.2f} seconds "
+            f"({(end_infer - start_infer)/len(X_test):.2f} seconds/sample)"
+        )
+
+    # Compute accuracy
+    accuracy = numpy.mean(predictions == y_test) * 100
+    print(
+        "FHE " + ("(simulation) " * simulate) + f"accuracy: {accuracy:.2f}% on "
+        f"{len(X_test)} examples."
+    )
+    return predictions
+
+import brevitas.nn as qnn
+from brevitas.core.bit_width import BitWidthImplType
+from brevitas.core.quant import QuantType
+from brevitas.core.restrict_val import FloatToIntImplType, RestrictValueType
+from brevitas.core.scaling import ScalingImplType
+from brevitas.core.zero_point import ZeroZeroPoint
+from brevitas.inject import ExtendedInjector
+from brevitas.quant.solver import ActQuantSolver, WeightQuantSolver
+from dependencies import value
+from torch.nn.utils import prune
+
+
+# More details on injectors at
+# https://github.com/Xilinx/brevitas/blob/master/ARCHITECTURE.md#injectors-and-quantizers
+class CommonQuant(ExtendedInjector):
+    bit_width_impl_type = BitWidthImplType.CONST
+    scaling_impl_type = ScalingImplType.CONST
+    restrict_scaling_type = RestrictValueType.FP
+    zero_point_impl = ZeroZeroPoint
+    float_to_int_impl_type = FloatToIntImplType.ROUND
+    scaling_per_output_channel = False
+    narrow_range = True
+    signed = True
+
+    @value
+    def quant_type(bit_width):  # pylint: disable=no-self-argument
+        if bit_width is None:
+            return QuantType.FP
+        if bit_width == 1:
+            return QuantType.BINARY
+        return QuantType.INT
+
+
+class CommonWeightQuant(CommonQuant, WeightQuantSolver):  # pylint: disable=too-many-ancestors
+    scaling_const = 1.0
+    signed = True
+
+
+class CommonActQuant(CommonQuant, ActQuantSolver):  # pylint: disable=too-many-ancestors
+    min_val = -1.0
+    max_val = 1.0
+
+class QATPrunedSimpleNet(nn.Module):
+    def __init__(self, n_hidden, qlinear_args, qidentity_args):
+        super().__init__()
+
+        self.pruned_layers = set()
+
+        self.quant_inp = qnn.QuantIdentity(**qidentity_args)
+
+        self.fc1 = qnn.QuantLinear(IN_FEAT, n_hidden, **qlinear_args)
+
+        self.relu1 = qnn.QuantReLU(bit_width=qidentity_args["bit_width"])
+
+        self.fc2 = qnn.QuantLinear(n_hidden, n_hidden, **qlinear_args)
+
+        self.relu2 = qnn.QuantReLU(bit_width=qidentity_args["bit_width"])
+
+        self.fc3 = qnn.QuantLinear(n_hidden, OUT_FEAT, **qlinear_args)
+
+        for m in self.modules():
+            if isinstance(m, qnn.QuantLinear):
+                torch.nn.init.uniform_(m.weight.data, -1, 1)
+
+    def forward(self, x):
+        x = self.quant_inp(x)
+        x = self.relu1(self.fc1(x))
+        x = self.relu2(self.fc2(x))
+        x = self.fc3(x)
+        return x
+
+    def prune(self, max_non_zero):
+        # Linear layer weight has dimensions NumOutputs x NumInputs
+        for name, layer in self.named_modules():
+            if isinstance(layer, qnn.QuantLinear):
+                num_zero_weights = (layer.weight.shape[1] - max_non_zero) * layer.weight.shape[0]
+                if num_zero_weights <= 0:
+                    continue
+                print(f"Pruning layer {name} factor {num_zero_weights}")
+                prune.l1_unstructured(layer, "weight", amount=num_zero_weights)
+                self.pruned_layers.add(name)
+
+    def unprune(self):
+        for name, layer in self.named_modules():
+            if name in self.pruned_layers:
+                prune.remove(layer, "weight")
+                self.pruned_layers.remove(name)
+
+# Add MPS (for macOS with Apple Silicon or AMD GPUs) support when error is fixed. For now, we
+# observe a decrease in torch's top1 accuracy when using MPS devices
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3953
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+# Define our loss function
+criterion = nn.CrossEntropyLoss()
+
+# Define the batch size
+batch_size = 1
+n_epochs = 7
+n_hidden = 100
+
+# We use 100 neurons with only 20 that will be active. Having many neurons
+# out of which we chose the best ones increases the robustness of training
+# while keeping the accumulator size low
+torch_model = QATPrunedSimpleNet(
+    n_hidden=n_hidden,
+    qlinear_args={
+        "weight_bit_width": 3,
+        "weight_quant": CommonWeightQuant,
+        "bias": True,
+        "bias_quant": None,
+        "narrow_range": True,
+    },
+    qidentity_args={"bit_width": 3, "act_quant": CommonActQuant},
+)
+torch_model.prune(20)
+
+torch_model = torch_model.to(device)
+optimizer = torch.optim.AdamW(torch_model.parameters(), lr=0.001)
+accuracy = train(
+    torch_model,
+    X_train,
+    X_test,
+    y_train,
+    y_test,
+    criterion,
+    optimizer,
+    epochs=n_epochs,
+    batch_size=batch_size,
+    device=device,
+)
+torch_model.unprune()
+
+torch_model.eval()
+# pylint: disable=not-callable
+fp32_pred = (
+    torch_model(torch.tensor(X_test).float().to(device)).cpu().argmax(1).float().detach().numpy()
+)
+
+# pylint: enable=not-callable
+
+plt.scatter(X_test[:, 0], X_test[:, 1], c=y_test.astype(numpy.float64))
+plt.title("Original test set")
+plt.show()
+
+plt.scatter(X_test[:, 0], X_test[:, 1], c=fp32_pred)
+plt.title("Torch: Predictions on test set")
+plt.show()
+
+# We need to unprune the model before compiling
+torch_model.unprune()
+
+# Move torch_model to CPU
+torch_model = torch_model.cpu()
+
+# Compile the model using a representative input-set
+quantized_numpy_module = compile_brevitas_qat_model(torch_model, X_train)
+
+prediction_simulated = test_in_fhe(quantized_numpy_module, X_test, y_test, simulate=True)
+
+# Reduce the test set for faster running time
+FHE_SAMPLE = 10
+
+prediction_fhe = test_in_fhe(
+    quantized_numpy_module, X_test[:FHE_SAMPLE], y_test[:FHE_SAMPLE], simulate=False
+)
+
+class TorchSKLearnWrapper:
+    def __init__(self, torch_model):
+        self.torch_model = torch_model
+        self.fitted = True
+
+    def fit(self):
+        return self
+
+    @staticmethod
+    def __sklearn_is_fitted__():
+        return True
+
+    def predict(self, X):
+        self.torch_model.eval()
+        y_pred = self.torch_model(torch.tensor(X).float()).argmax(1).float().detach().numpy()
+        return y_pred
+
+    def predict_proba(self, X):
+        self.torch_model.eval()
+        y_pred = self.torch_model(torch.tensor(X).float())[:, 1].float().detach().numpy()
+        return y_pred
+
+class ConcreteSKLearnWrapper:
+    def __init__(self, quantized_module: QuantizedModule):
+        self.quantized_module = quantized_module
+        self.fitted = True
+
+    def fit(self):
+        return self
+
+    @staticmethod
+    def __sklearn_is_fitted__():
+        return True
+
+    def predict(self, X, progress_bar=False):
+        predictions = numpy.zeros((X.shape[0],))
+        for idx, x in enumerate(tqdm(X, disable=not progress_bar)):
+            predictions[idx] = self.quantized_module.forward(
+                numpy.expand_dims(x, 0), fhe="simulate"
+            ).argmax(axis=1)
+        return predictions
+
+    def predict_proba(self, X, progress_bar=False):
+        predictions = numpy.zeros(shape=(X.shape[0], 2))
+        for idx, x in enumerate(tqdm(X, disable=not progress_bar)):
+            predictions[idx] = self.quantized_module.forward(
+                numpy.expand_dims(x, 0), fhe="simulate"
+            )[0]
+        return predictions
+
+plt.scatter(X_test[:, 0], X_test[:, 1], c=prediction_simulated)
+plt.title("Concrete ML predictions on test set")
+plt.show()
+
+epsilon = 0.1
+base = 5
+max_value = 1 + epsilon
+min_value = 0 - epsilon
+grid_resolution = 100
+fig, axs = plt.subplots(figsize=(base * 3, base), ncols=3)
+for ax in axs:
+    ax.set_xlim([min_value, max_value])
+    ax.set_ylim([min_value, max_value])
+
+xx0, xx1 = numpy.meshgrid(
+    numpy.linspace(min_value, max_value, grid_resolution),
+    numpy.linspace(min_value, max_value, grid_resolution),
+)
+
+X_grid = numpy.c_[xx0.ravel(), xx1.ravel()]
+y_pred_torch = TorchSKLearnWrapper(torch_model).predict(X_grid)
+y_pred_concrete = ConcreteSKLearnWrapper(quantized_numpy_module).predict(X_grid)
+
+axs[1].contourf(xx0, xx1, y_pred_torch.reshape(xx0.shape))
+axs[2].contourf(xx0, xx1, y_pred_concrete.reshape(xx0.shape))
+
+axs[0].scatter(X_test[:, 0], X_test[:, 1], c=prediction_simulated, marker="x")
+axs[0].set_title("Ground truth")
+axs[1].set_title("Float32 predictions")
+axs[2].set_title("Concrete ML predictions")
+plt.show()
+
+
+
+# Code from: ./PoissonRegression.ipynb
+--------------------------------------------------------------------------------
+
+import time
+
+import numpy as np
+import sklearn
+from sklearn.datasets import fetch_openml
+from sklearn.linear_model import PoissonRegressor as SklearnPoissonRegressor
+from sklearn.metrics import mean_poisson_deviance
+from sklearn.model_selection import train_test_split
+
+from concrete.ml.sklearn import PoissonRegressor as ConcretePoissonRegressor
+
+%matplotlib inline
+
+import matplotlib.pyplot as plt
+from IPython.display import display
+
+df, _ = fetch_openml(
+    data_id=41214, as_frame=True, cache=True, data_home="~/.cache/sklearn", return_X_y=True
+)
+df = df.head(50000)
+
+df["Frequency"] = df["ClaimNb"] / df["Exposure"]
+
+plt.ioff()
+fig, ax = plt.subplots(1, 2, figsize=(15, 7))
+fig.patch.set_facecolor("white")
+ax[0].set_title("Frequency of claims vs. Driver Age")
+ax[0].set_xlabel("Driver Age")
+ax[0].set_ylabel("Frequency of claims")
+ax[0].scatter(df["DrivAge"], df["Frequency"], marker="o", color="#ffb700")
+ax[1].set_title("Histogram of Frequency of claims")
+ax[1].set_xlabel("Frequency of claims")
+ax[1].set_ylabel("Count")
+df["Frequency"].hist(bins=30, log=True, ax=ax[1], color="black")
+display(fig)
+
+df_train, df_test = train_test_split(df, test_size=0.2, random_state=0)
+
+train_data = df_train["DrivAge"].values.reshape(-1, 1).astype(np.float64)
+test_data = np.sort(df_test["DrivAge"].values).reshape(-1, 1).astype(np.float64)
+
+sklearn_pr = SklearnPoissonRegressor(max_iter=300)
+sklearn_pr.fit(train_data, df_train["Frequency"], sample_weight=df_train["Exposure"]);
+
+sklearn_predictions = sklearn_pr.predict(test_data)
+
+plt.clf()
+fig, ax = plt.subplots(1, figsize=(12, 8))
+fig.patch.set_facecolor("white")
+ax.plot(test_data, sklearn_predictions, color="black", label="Float clear trend line")
+ax.scatter(df_test["DrivAge"], df_test["Frequency"], marker="o", color="#ffb700")
+ax.set_xlabel("Driver Age")
+ax.set_ylim(0, 10)
+ax.set_title("Regression with sklearn")
+ax.set_ylabel("Frequency of claims")
+ax.legend(loc="upper right")
+display(fig)
+
+concrete_pr = ConcretePoissonRegressor(n_bits=8)
+concrete_pr.fit(train_data, df_train["Frequency"], sample_weight=df_train["Exposure"])
+
+concrete_predictions = concrete_pr.predict(test_data)
+
+y_true = df_test["Frequency"]
+sample_weight = df_test["Exposure"]
+
+sklearn_score = mean_poisson_deviance(y_true, sklearn_predictions, sample_weight=sample_weight)
+concrete_score = mean_poisson_deviance(y_true, concrete_predictions, sample_weight=sample_weight)
+
+print(f"mean Poisson deviance (scikit-learn): {sklearn_score:.4f}")
+print(f"mean Poisson deviance (Concrete ML): {concrete_score:.4f}")
+
+plt.clf()
+fig, ax = plt.subplots(1, figsize=(12, 8))
+fig.patch.set_facecolor("white")
+
+# Plot the scikit-learn in clear model's main trend line
+ax.plot(
+    test_data,
+    sklearn_predictions,
+    color="black",
+    label=f"scikit-learn float, d={sklearn_score:.3f}",
+)
+
+# Plot the Concrete quantized in clear model's main trend line
+ax.plot(
+    test_data,
+    concrete_predictions,
+    color="red",
+    label=f"Concrete ML quantized, d={concrete_score:.3f}",
+)
+
+# Plot the test data
+ax.scatter(df_test["DrivAge"], df_test["Frequency"], marker="o", color="gray", label="Test data")
+
+# Parametrize the main figure
+ax.set_xlabel("Driver Age")
+ax.set_ylim(0, 10)
+ax.set_title("Poisson Regression, float in clear and quantized in clear trend lines")
+ax.set_ylabel("Frequency of claims")
+ax.legend(loc="upper left")
+ax.grid()
+
+
+# Set a zoomed-in figure
+axins = ax.inset_axes([0.5, 0.5, 0.47, 0.47])
+
+# Plot the scikit-learn in clear model's zoomed trend line
+axins.plot(
+    test_data,
+    sklearn_predictions,
+    color="black",
+)
+
+# Plot the Concrete quantized in clear model's zoomed trend line
+axins.plot(
+    test_data,
+    concrete_predictions,
+    color="red",
+)
+
+# Parametrize the zoomed figure
+x1, x2, y1, y2 = 60, 65, 0.3, 0.7
+axins.set_xlim(x1, x2)
+axins.set_ylim(y1, y2)
+axins.grid()
+ax.indicate_inset_zoom(axins, edgecolor="black")
+
+display(fig)
+
+fhe_circuit = concrete_pr.compile(train_data)
+
+print(f"Generating a key for an {fhe_circuit.graph.maximum_integer_bit_width()}-bit circuit")
+
+time_begin = time.time()
+fhe_circuit.client.keygen(force=False)
+print(f"Key generation time: {time.time() - time_begin:.4f} seconds")
+
+time_begin = time.time()
+concrete_predictions_fhe = concrete_pr.predict(test_data, fhe="execute")
+print(f"Execution time: {(time.time() - time_begin) / len(test_data):.4f} seconds per sample")
+
+concrete_fhe_score = mean_poisson_deviance(
+    y_true, concrete_predictions_fhe, sample_weight=sample_weight
+)
+
+print(f"mean Poisson deviance (Concrete FHE): {concrete_fhe_score:.4f}")
+
+plt.clf()
+fig, ax = plt.subplots(1, figsize=(12, 8))
+fig.patch.set_facecolor("white")
+
+# Plot the scikit-learn in clear model's main trend line
+ax.plot(
+    test_data,
+    sklearn_predictions,
+    color="black",
+    label=f"scikit-learn float, d={sklearn_score:.3f}",
+)
+
+# Plot the Concrete quantized in clear model's main trend line
+ax.plot(
+    test_data,
+    concrete_predictions,
+    color="red",
+    label=f"Concrete ML quantized, d={concrete_score:.3f}",
+)
+
+# Plot the Concrete FHE model's main trend line
+ax.plot(
+    test_data,
+    concrete_predictions_fhe,
+    color="blue",
+    label=f"Concrete ML FHE, d={concrete_fhe_score:.3f}",
+)
+
+# Plot the test data
+ax.scatter(df_test["DrivAge"], df_test["Frequency"], marker="o", color="gray", label="Test data")
+
+# Parametrize the main figure
+ax.set_xlabel("Driver Age")
+ax.set_ylim(0, 10)
+ax.set_title("Poisson Regression, float in clear, quantized in clear and FHE trend lines")
+ax.set_ylabel("Frequency of claims")
+ax.legend(loc="upper left")
+ax.grid()
+
+# Set a zoomed-in figure
+axins = ax.inset_axes([0.5, 0.5, 0.47, 0.47])
+
+# Plot the scikit-learn in clear model's zoomed trend line
+axins.plot(
+    test_data,
+    sklearn_predictions,
+    color="black",
+)
+
+# Plot the Concrete FHE model's zoomed trend line
+axins.plot(
+    test_data,
+    concrete_predictions,
+    color="red",
+)
+
+# Plot the Concrete FHE model's zoomed trend line
+axins.plot(
+    test_data,
+    concrete_predictions_fhe,
+    color="blue",
+)
+
+# Parametrize the zoomed figure
+x1, x2, y1, y2 = 60, 65, 0.3, 0.7
+axins.set_xlim(x1, x2)
+axins.set_ylim(y1, y2)
+axins.grid()
+ax.indicate_inset_zoom(axins, edgecolor="black")
+
+display(fig)
+
+import warnings
+
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline, make_pipeline
+from sklearn.preprocessing import (
+    FunctionTransformer,
+    KBinsDiscretizer,
+    OneHotEncoder,
+    StandardScaler,
+)
+
+warnings.filterwarnings("ignore")
+
+sklearn_sparse_arg = (
+    {"sparse": False} if "1.1." in sklearn.__version__ else {"sparse_output": False}
+)
+
+log_scale_transformer = make_pipeline(FunctionTransformer(np.log, validate=False), StandardScaler())
+
+linear_model_preprocessor = ColumnTransformer(
+    [
+        ("passthrough_numeric", "passthrough", ["BonusMalus"]),
+        ("binned_numeric", KBinsDiscretizer(n_bins=10), ["VehAge", "DrivAge"]),
+        ("log_scaled_numeric", log_scale_transformer, ["Density"]),
+        (
+            "onehot_categorical",
+            OneHotEncoder(**sklearn_sparse_arg),
+            ["VehBrand", "VehPower", "VehGas", "Region", "Area"],
+        ),
+    ],
+    remainder="drop",
+)
+
+sklearn_pr = Pipeline(
+    [
+        ("preprocessor", linear_model_preprocessor),
+        ("regressor", SklearnPoissonRegressor()),
+    ]
+)
+
+n_bits = 16
+concrete_pr = Pipeline(
+    [
+        ("preprocessor", linear_model_preprocessor),
+        ("regressor", ConcretePoissonRegressor(n_bits=n_bits)),
+    ]
+)
+
+sklearn_pr.fit(df_train, df_train["Frequency"], regressor__sample_weight=df_train["Exposure"])
+
+concrete_pr.fit(df_train, df_train["Frequency"], regressor__sample_weight=df_train["Exposure"]);
+
+def score_estimator(estimator, df_test, fhe="disable"):
+    """Score an estimator on the test set."""
+
+    if fhe == "execute":
+        time_begin = time.time()
+        y_pred = estimator.predict(df_test, fhe="execute")
+        print(
+            f"FHE execution time: {(time.time() - time_begin) / len(df_test):.4f} "
+            "seconds per sample\n"
+        )
+
+    else:
+        y_pred = estimator.predict(df_test)
+
+    y_pred = np.squeeze(y_pred)
+    y_true = df_test["Frequency"]
+    sample_weight = df_test["Exposure"]
+
+    # Ignore non-positive predictions, as they are invalid for the Tweedie deviance (except if
+    # power is equal to 0, making the model equivalent to a Linear Regression). We want to
+    # issue a warning if for some reason (e.g., low quantization, user error), the regressor
+    # predictions are negative.
+
+    # Find all strictly positive values
+    mask = y_pred > 0
+
+    # If any non-positive values are found, issue a warning
+    if (~mask).any():
+        n_masked, n_samples = (~mask).sum(), mask.shape[0]
+        print(
+            "WARNING: Estimator yields invalid, non-positive predictions "
+            f"for {n_masked} samples out of {n_samples}. These predictions "
+            "are ignored when computing the Poisson deviance."
+        )
+
+    return mean_poisson_deviance(y_true[mask], y_pred[mask], sample_weight=sample_weight[mask])
+
+sklearn_score = score_estimator(sklearn_pr, df_test)
+concrete_score = score_estimator(concrete_pr, df_test)
+
+print(f"scikit-learn (clear) deviance score: {sklearn_score:.4f}")
+print(f"Concrete'ML (FHE) deviance score: {concrete_score:.4f}")
+
+# Measure the error of the FHE quantized model with respect to the clear scikit-learn
+# float model
+score_difference = abs(concrete_score - sklearn_score) * 100 / sklearn_score
+print(
+    "Relative difference between scikit-learn (clear) and Concrete-ml (FHE) scores:",
+    f"{score_difference:.2f}%\n",
+)
+
+n_bits_values = list(range(2, 20))
+concrete_deviance_scores = []
+for n_bits in n_bits_values:
+    concrete_regressor = Pipeline(
+        [
+            ("preprocessor", linear_model_preprocessor),
+            ("regressor", ConcretePoissonRegressor(n_bits=n_bits)),
+        ]
+    )
+    concrete_regressor.fit(
+        df_train, df_train["Frequency"], regressor__sample_weight=df_train["Exposure"]
+    )
+    concrete_deviance_scores.append(score_estimator(concrete_regressor, df_test))
+
+plt.clf()
+fig, ax = plt.subplots(1, figsize=(12, 8))
+fig.patch.set_facecolor("white")
+ax.hlines(y=sklearn_score, xmax=2, xmin=19, color="r", label="scikit-learn")
+ax.plot(n_bits_values, concrete_deviance_scores, label="Concrete ML")
+ax.set_xlabel("Number of bits")
+ax.set_ylabel("Poisson deviance")
+ax.set_xticks(n_bits_values)
+ax.set_xticklabels([str(k) for k in n_bits_values])
+ax.grid()
+ax.legend(loc="upper right")
+display(fig)
+
+n_bits = 11
+
+poisson_regressor_fhe = Pipeline(
+    [
+        ("preprocessor", linear_model_preprocessor),
+        ("regressor", ConcretePoissonRegressor(n_bits=n_bits)),
+    ]
+)
+poisson_regressor_fhe.fit(
+    df_train, df_train["Frequency"], regressor__sample_weight=df_train["Exposure"]
+);
+
+# Compile needs some preprocessed data in order to run.
+df_test_processed = poisson_regressor_fhe["preprocessor"].transform(df_test)
+
+# pylint: disable-next=no-member
+fhe_circuit = poisson_regressor_fhe["regressor"].compile(df_test_processed)
+
+print(f"Generating a key for an {fhe_circuit.graph.maximum_integer_bit_width()}-bit circuit")
+
+time_begin = time.time()
+fhe_circuit.client.keygen(force=False)
+print(f"Key generation time: {time.time() - time_begin:.4f} seconds")
+
+# Reducing the test set from 10000 to 1000 for faster FHE execution
+df_test = df_test[:1000]
+
+concrete_score_fhe = score_estimator(poisson_regressor_fhe, df_test, fhe="execute")
+
+print(f"scikit-learn (clear) deviance score: {score_estimator(sklearn_pr, df_test):.4f}")
+print(f"Concrete ML (FHE) deviance score: {concrete_score_fhe:.4f}")
+
+# Measure the error of the FHE quantized model with respect to the clear scikit-learn
+# float model
+score_difference = abs(concrete_score - sklearn_score) * 100 / sklearn_score
+print(
+    "Relative difference between scikit-learn (clear) and Concrete-ml (FHE) scores:",
+    f"{score_difference:.2f}%\n",
+)
+
+
+
+# Code from: ./XGBClassifier.ipynb
+--------------------------------------------------------------------------------
+
+import warnings
+
+warnings.simplefilter(action="ignore", category=FutureWarning)
+
+import time
+
+import matplotlib.pyplot as plt
+import numpy
+from concrete.compiler import check_gpu_available
+from matplotlib.colors import ListedColormap
+from sklearn.datasets import fetch_openml, make_circles
+from sklearn.metrics import accuracy_score, make_scorer, matthews_corrcoef
+from sklearn.model_selection import GridSearchCV, train_test_split
+from xgboost.sklearn import XGBClassifier as SklearnXGBClassifier
+
+from concrete.ml.sklearn import XGBClassifier as ConcreteXGBClassifier
+
+use_gpu_if_available = False
+device = "cuda" if use_gpu_if_available and check_gpu_available() else "cpu"
+
+%matplotlib inline
+
+X, y = make_circles(n_samples=1000, noise=0.1, factor=0.6, random_state=0)
+
+# Define the figure size and color
+plt.figure(figsize=(10, 6))
+cm_bright = ListedColormap(["#FF0000", "#FFFFFF", "#0000FF"])
+
+plt.scatter(X[:, 0], X[:, 1], c=y, s=10, cmap=cm_bright)
+plt.show()
+
+# Define the parameters used for initialization
+n_estimators = 50
+max_depth = 4
+n_bits = 6
+
+# Define the parameters used for training
+fit_extra_param = {"eval_metric": "logloss"}
+
+sklearn_model = SklearnXGBClassifier(n_estimators=n_estimators, max_depth=max_depth)
+sklearn_model.fit(X, y, **fit_extra_param);
+
+concrete_model = ConcreteXGBClassifier(
+    n_bits=n_bits, n_estimators=n_estimators, max_depth=max_depth
+)
+concrete_model.fit(X, y);
+
+def plot_contour(model, X, y, title=""):
+    """Plot the contour lines given a model and a data-set."""
+    # Create a grid will lots of point to plot the contour of the decision function
+    x_min, x_max = X[:, 0].min() - 0.1, X[:, 0].max() + 0.1
+    y_min, y_max = X[:, 1].min() - 0.1, X[:, 1].max() + 0.1
+    grid_x, grid_y = numpy.meshgrid(
+        numpy.arange(x_min, x_max, 0.1), numpy.arange(y_min, y_max, 0.1)
+    )
+
+    # Predict the function value on the grid. For the Concrete ML model, this inference is done in
+    # the clear, which is expected to exactly match the FHE inference.
+    grid_z = model.predict_proba(numpy.c_[grid_x.ravel(), grid_y.ravel()])[:, 1]
+
+    grid_z = grid_z.reshape(grid_x.shape)
+
+    # Define the plot size
+    plt.figure(figsize=(10, 6))
+
+    # Plot the contour and training examples
+    plt.contourf(grid_x, grid_y, grid_z, cmap=cm_bright, alpha=0.2)
+    plt.scatter(X[:, 0], X[:, 1], c=y, s=1, cmap=cm_bright)
+    plt.title(title)
+    plt.show()
+
+plot_contour(sklearn_model, X, y, title="Scikit-Learn XGBoost Classifier")
+
+plot_contour(concrete_model, X, y, title="Concrete ML XGBoost Classifier")
+
+# Load the data-set
+X, y = fetch_openml(name="diabetes", as_frame=False, cache=True, return_X_y=True)
+
+# Replace (binary) target values by integers
+y[y == "tested_positive"] = 1
+y[y == "tested_negative"] = 0
+y = y.astype(numpy.int64)
+
+# Create scorer with the MCC metric
+grid_scorer = make_scorer(matthews_corrcoef, greater_is_better=True)
+
+# Define the number of estimators to consider for the following gridsearch
+n_estimators = [1, 5, 10, 20] + [20 * i for i in range(2, 11)] + [50 * i for i in range(5, 11)]
+
+param_grid = {
+    "max_depth": [2],
+    "n_estimators": n_estimators,
+}
+
+sklearn_grid_search = GridSearchCV(
+    SklearnXGBClassifier(),
+    param_grid,
+    cv=5,
+    scoring=grid_scorer,
+    error_score="raise",
+    verbose=1,
+)
+
+sklearn_grid_search.fit(X, y, **fit_extra_param);
+
+param_grid = {
+    "n_bits": [6],
+    "max_depth": [2],
+    "n_estimators": n_estimators,
+}
+
+concrete_grid_search = GridSearchCV(
+    ConcreteXGBClassifier(),
+    param_grid,
+    cv=5,
+    scoring=grid_scorer,
+    error_score="raise",
+    verbose=1,
+)
+
+concrete_grid_search.fit(X, y);
+
+# Print the best MCC score for both models
+print(f"Best MCC score for Scikit-Learn: {sklearn_grid_search.best_score_:.2f}")
+print(f"Best MCC score Concrete ML: {concrete_grid_search.best_score_:.2f}")
+
+# Define the figure size
+plt.figure(figsize=(10, 6))
+
+# Plot the mean_test_score of both model along the n_estimators hyper parameter
+plt.plot(
+    concrete_grid_search.cv_results_["param_n_estimators"],
+    concrete_grid_search.cv_results_["mean_test_score"],
+    label="Concrete ML",
+)
+plt.plot(
+    sklearn_grid_search.cv_results_["param_n_estimators"],
+    sklearn_grid_search.cv_results_["mean_test_score"],
+    label="Scikit-Learn",
+)
+plt.xlabel("n_estimators")
+plt.ylabel("MCC")
+plt.legend()
+plt.show()
+
+best_params_sklearn = sklearn_grid_search.best_params_
+print(f"Best parameters found for the Scikit-Learn model: {best_params_sklearn}")
+
+best_params_concrete = concrete_grid_search.best_params_
+print(f"Best parameters found for the Concrete ML model: {best_params_concrete}")
+
+# Define the Concrete ML and Scikit-Learn models
+concrete_model = ConcreteXGBClassifier(**best_params_concrete)
+sklearn_model = SklearnXGBClassifier(**best_params_sklearn)
+
+# Split the data into a train and test set
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+
+# Fit both models
+concrete_model.fit(X_train, y_train, **fit_extra_param)
+sklearn_model.fit(X_train, y_train, **fit_extra_param);
+
+# Compile the Concrete ML model using the training data
+circuit = concrete_model.compile(X_train, device=device)
+
+print(f"Generating a key for an {circuit.graph.maximum_integer_bit_width()}-bits circuit")
+
+# Generate the key
+time_begin = time.time()
+circuit.client.keygen(force=False)
+print(f"Key generation time: {time.time() - time_begin:.2f} seconds")
+
+# Compute the predictions using the Scikit-Learn model
+y_pred_sklearn = sklearn_model.predict(X_test)
+
+# Compute the predictions using the Concrete ML model with FHE simulation
+y_pred_simulated = concrete_model.predict(X_test, fhe="simulate")
+
+print("Accuracy scores:")
+print(
+    f"- Scikit-Learn (clear floating points): {accuracy_score(y_test, y_pred_sklearn)*100:.2f}%\n"
+    f"- Concrete ML (clear quantized): {accuracy_score(y_test, y_pred_simulated)*100:.2f}\n"
+)
+
+N_SAMPLE_FHE = 10
+
+# Pick N_SAMPLE_FHE random samples from the test set
+idx_test = numpy.random.choice(X_test.shape[0], N_SAMPLE_FHE, replace=False)
+X_test_fhe = X_test[idx_test]
+y_test_fhe = y_test[idx_test]
+
+# Compute the predictions using the Concrete ML (quantized) model in the clear
+y_preds_clear = concrete_model.predict(X_test_fhe)
+
+# Compute the predictions using the Concrete ML model in FHE
+time_begin = time.time()
+y_preds_fhe = concrete_model.predict(X_test_fhe, fhe="execute")
+print(f"FHE execution time: {(time.time() - time_begin) / len(X_test_fhe):.2f} seconds per sample")
+
+# Compare the clear quantized inference vs FHE inference
+print(
+    f"{(y_preds_fhe == y_preds_clear).sum()}/{N_SAMPLE_FHE} "
+    "FHE predictions match the clear quantized predictions"
+)
+
+
+
+# Code from: ./GLMComparison.ipynb
+--------------------------------------------------------------------------------
+
+# Source : https://scikit-learn.org/stable/auto_examples/linear_model/plot_tweedie_regression_insurance_claims.html # noqa # pylint: disable=line-too-long
+
+# Authors: Christian Lorentzen <lorentzen.ch@gmail.com>
+#          Roman Yurchak <rth.yurchak@gmail.com>
+#          Olivier Grisel <olivier.grisel@ensta.org>
+# Modified to integrate Concrete ML functions by Zama
+# License: BSD 3 clause
+
+import sys
+import time
+from collections import defaultdict
+from timeit import default_timer as timer
+
+import numpy as np
+import sklearn
+from sklearn.compose import ColumnTransformer
+from sklearn.datasets import fetch_openml
+from sklearn.linear_model import GammaRegressor as SklearnGammaRegressor
+from sklearn.linear_model import PoissonRegressor as SklearnPoissonRegressor
+from sklearn.linear_model import TweedieRegressor as SklearnTweedieRegressor
+from sklearn.metrics import mean_gamma_deviance, mean_poisson_deviance, mean_tweedie_deviance
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import (
+    FunctionTransformer,
+    KBinsDiscretizer,
+    OneHotEncoder,
+    StandardScaler,
+)
+
+from concrete.ml.sklearn import GammaRegressor as ConcreteGammaRegressor
+from concrete.ml.sklearn import PoissonRegressor as ConcretePoissonRegressor
+from concrete.ml.sklearn import TweedieRegressor as ConcreteTweedieRegressor
+
+%matplotlib inline
+
+import matplotlib.pyplot as plt
+from IPython.display import display
+
+# Getting the original data-set containing the risk features
+# Link: https://www.openml.org/d/41214
+risks_data, _ = fetch_openml(
+    data_id=41214, as_frame=True, cache=True, data_home="~/.cache/sklearn", return_X_y=True
+)
+
+# Getting the data set containing claims amount
+# Link: https://www.openml.org/d/41215
+claims_data, _ = fetch_openml(
+    data_id=41215, as_frame=True, cache=True, data_home="~/.cache/sklearn", return_X_y=True
+)
+
+# Set IDpol as index
+risks_data["IDpol"] = risks_data["IDpol"].astype(int)
+risks_data.set_index("IDpol", inplace=True)
+
+# Grouping claims mounts together if they are associated with the same policy
+claims_data = claims_data.groupby("IDpol").sum()
+
+# Merging the two sets over policy IDs
+data = risks_data.join(claims_data, how="left")
+
+# Only keeping the first 100 000 for faster running time
+data = data.head(100000)
+
+# Filtering out unknown claim amounts
+data["ClaimAmount"].fillna(0, inplace=True)
+
+# Filtering out claims with zero amount, as the severity (gamma) model
+# requires strictly positive target values
+data.loc[(data["ClaimAmount"] == 0) & (data["ClaimNb"] >= 1), "ClaimNb"] = 0
+
+# Removing unreasonable outliers
+data["ClaimNb"] = data["ClaimNb"].clip(upper=4)
+data["Exposure"] = data["Exposure"].clip(upper=1)
+data["ClaimAmount"] = data["ClaimAmount"].clip(upper=200000)
+
+sklearn_sparse_arg = (
+    {"sparse": False} if "1.1." in sklearn.__version__ else {"sparse_output": False}
+)
+log_scale_transformer = make_pipeline(FunctionTransformer(np.log, validate=False), StandardScaler())
+
+linear_model_preprocessor = ColumnTransformer(
+    [
+        ("passthrough_numeric", "passthrough", ["BonusMalus"]),
+        ("binned_numeric", KBinsDiscretizer(n_bins=10), ["VehAge", "DrivAge"]),
+        ("log_scaled_numeric", log_scale_transformer, ["Density"]),
+        (
+            "onehot_categorical",
+            OneHotEncoder(**sklearn_sparse_arg),
+            ["VehBrand", "VehPower", "VehGas", "Region", "Area"],
+        ),
+    ],
+    remainder="drop",
+)
+
+x = linear_model_preprocessor.fit_transform(data)
+
+# Creating target values for Poisson
+data["Frequency"] = data["ClaimNb"] / data["Exposure"]
+
+# Creating target values for Gamma
+data["AvgClaimAmount"] = data["ClaimAmount"] / np.fmax(data["ClaimNb"], 1)
+
+# Creating target values for Tweedie
+# Insurances companies are interested in modeling the Pure Premium, that is the expected total
+# claim amount per unit of exposure for each policyholder in their portfolio
+data["PurePremium"] = data["ClaimAmount"] / data["Exposure"]
+
+plt.ioff()
+fig, ax = plt.subplots(1, 3, figsize=(15, 7))
+
+# Set the figure's main parameters
+fig.patch.set_facecolor("white")
+fig.suptitle("Different target values distribution")
+fig.supylabel("Count")
+
+# Frequency of claims distribution
+ax[0].set_title("Poisson")
+ax[0].set_xlabel("Frequency of claims")
+data["Frequency"].hist(bins=30, log=True, ax=ax[0], color="black")
+
+# Average amount of claims distribution
+ax[1].set_title("Gamma")
+ax[1].set_xlabel("Average amount of claims")
+data["AvgClaimAmount"].hist(bins=30, log=True, ax=ax[1], color="blue")
+
+# PurePrenium distribution
+ax[2].set_title("Tweedie")
+ax[2].set_xlabel("PurePrenium")
+data["PurePremium"].hist(bins=30, log=True, ax=ax[2], color="red")
+
+display(fig)
+
+train_data, test_data, x_train_data, x_test_data = train_test_split(
+    data,
+    x,
+    test_size=0.2,
+    random_state=0,
+)
+_, test_data, _, x_test_data = train_test_split(
+    test_data,
+    x_test_data,
+    test_size=50,
+    random_state=0,
+)
+
+gamma_mask_train = train_data["ClaimAmount"] > 0
+gamma_mask_test = test_data["ClaimAmount"] > 0
+
+
+parameters_glms = {
+    "Poisson": {
+        "sklearn": SklearnPoissonRegressor,
+        "concrete": ConcretePoissonRegressor,
+        "init_parameters": {
+            "alpha": 1e-3,
+            "max_iter": 400,
+        },
+        "fit_parameters": {
+            "X": x_train_data,
+            "y": train_data["Frequency"],
+            "sample_weight": train_data["Exposure"],
+        },
+        "x_test": x_test_data,
+        "score_parameters": {
+            "y_true": test_data["Frequency"],
+            "sample_weight": test_data["Exposure"],
+        },
+        "deviance": mean_poisson_deviance,
+    },
+    "Gamma": {
+        "sklearn": SklearnGammaRegressor,
+        "concrete": ConcreteGammaRegressor,
+        "init_parameters": {
+            "alpha": 10.0,
+            "max_iter": 300,
+        },
+        "fit_parameters": {
+            "X": x_train_data[gamma_mask_train],
+            "y": train_data[gamma_mask_train]["AvgClaimAmount"],
+            "sample_weight": train_data[gamma_mask_train]["ClaimNb"],
+        },
+        "x_test": x_test_data[gamma_mask_test],
+        "score_parameters": {
+            "y_true": test_data[gamma_mask_test]["AvgClaimAmount"],
+            "sample_weight": test_data[gamma_mask_test]["ClaimNb"],
+        },
+        "deviance": mean_gamma_deviance,
+    },
+    "Tweedie": {
+        "sklearn": SklearnTweedieRegressor,
+        "concrete": ConcreteTweedieRegressor,
+        "init_parameters": {
+            "power": 1.9,
+            "alpha": 0.1,
+            "max_iter": 10000,
+        },
+        "fit_parameters": {
+            "X": x_train_data,
+            "y": train_data["PurePremium"],
+            "sample_weight": train_data["Exposure"],
+        },
+        "x_test": x_test_data,
+        "score_parameters": {
+            "y_true": test_data["PurePremium"],
+            "sample_weight": test_data["Exposure"],
+            "power": 1.9,
+        },
+        "deviance": mean_tweedie_deviance,
+    },
+}
+
+def compare_regressors(n_bits, fhe="simulate"):
+    # pylint: disable=too-many-locals
+    scores = defaultdict(list)
+    predictions = defaultdict(list)
+
+    for glm, parameters_glm in parameters_glms.items():
+        # Retrieve the regressors
+        sklearn_class = parameters_glm["sklearn"]
+        concrete_class = parameters_glm["concrete"]
+
+        # Instantiate the models
+        init_parameters = parameters_glm["init_parameters"]
+        sklearn_glm = sklearn_class(**init_parameters)
+        concrete_glm = concrete_class(n_bits=n_bits, **init_parameters)
+
+        # Fit the models
+        fit_parameters = parameters_glm["fit_parameters"]
+        sklearn_glm.fit(**fit_parameters)
+        concrete_glm.fit(**fit_parameters)
+
+        x_train_subset = fit_parameters["X"][:100]
+        # Compile the Concrete ML model if it needs to be executed in FHE
+        if fhe in ["execute", "simulate"]:
+            circuit = concrete_glm.compile(x_train_subset)
+
+            # Generate the key
+            print(
+                "Generating a key for an "
+                f"{circuit.graph.maximum_integer_bit_width()}-bit circuit"
+            )
+            sys.stdout.flush()
+
+            time_begin = time.time()
+            circuit.client.keygen(force=False)
+            print(f"Key generation time: {time.time() - time_begin:.4f} seconds")
+
+        # Compute the predictions using sklearn (floating points, in the clear)
+        x_test = parameters_glm["x_test"]
+        sklearn_predictions = sklearn_glm.predict(x_test)
+
+        # Compute the predictions using Concrete ML (quantized, in the clear)
+        concrete_q_predictions = concrete_glm.predict(x_test)
+
+        # Compute the predictions using Concrete ML (in FHE)
+        start = timer()
+        concrete_predictions = concrete_glm.predict(
+            x_test,
+            fhe=fhe,
+        )
+        end = timer()
+        run_time = end - start
+
+        # Compute the deviance scores
+        mean_deviance = parameters_glm["deviance"]
+        score_parameters = parameters_glm["score_parameters"]
+        sklearn_score = mean_deviance(y_pred=sklearn_predictions, **score_parameters)
+        concrete_q_score = mean_deviance(y_pred=concrete_q_predictions, **score_parameters)
+        concrete_score = mean_deviance(y_pred=concrete_predictions, **score_parameters)
+
+        # Print the deviance scores
+        fhe_message = "in FHE" if fhe == "execute" else "in clear"
+        print(f"Mean {glm} deviance (scikit-learn): {sklearn_score:.4f}")
+        print(f"Mean {glm} deviance (Concrete ML, quantized): {concrete_q_score:.4f}")
+        print(
+            f"Mean {glm} deviance (Concrete ML {fhe_message}, "
+            f"with {run_time / len(x_test):.4f} seconds "
+            f"per inference): {concrete_score:.4f}"
+        )
+
+        # Measure the error of the FHE quantized model with respect to the clear scikit-learn
+        # float model
+        score_difference = abs(concrete_score - sklearn_score) * 100 / sklearn_score
+        print(
+            "Relative difference between scikit-learn (clear) and Concrete-ml (FHE) scores:",
+            f"{score_difference:.2f}%\n",
+        )
+
+        # Store the results
+        scores["sklearn"].append(sklearn_score)
+        scores["concrete"].append(concrete_score)
+        predictions["sklearn"].append(sklearn_predictions)
+        predictions["concrete"].append(concrete_predictions)
+
+    return scores, predictions
+
+n_bits = 11
+fhe = "execute"
+
+scores, predictions = compare_regressors(n_bits, fhe=fhe)
+
+
+
+# Code from: ./ClassifierComparison.ipynb
+--------------------------------------------------------------------------------
+
+# Source:
+#   https://scikit-learn.org/stable/auto_examples/classification/plot_classifier_comparison.html
+
+# Code source: Gaël Varoquaux
+#              Andreas Müller
+# Modified for documentation by Jaques Grobler
+# Modified to integrate Concrete ML functions by Zama
+# License: BSD 3 clause
+
+import warnings
+
+warnings.simplefilter(action="ignore", category=FutureWarning)
+
+from functools import partial
+
+import torch
+
+from concrete.ml.sklearn import (
+    DecisionTreeClassifier,
+    LinearSVC,
+    LogisticRegression,
+    NeuralNetClassifier,
+    RandomForestClassifier,
+    XGBClassifier,
+)
+
+# The simulation mode allows to measure the impact of FHE execution on accuracy
+# without paying the cost of FHE computations.
+# However, data is not encrypted when using the simulation: the model performs inference
+# on clear data.
+%run utils/classifier_comparison_utils.py
+
+params_neural_net = {
+    "module__n_w_bits": 2,
+    "module__n_a_bits": 4,
+    "module__n_accum_bits": 32,
+    "module__n_hidden_neurons_multiplier": 6,
+    "module__n_layers": 2,  # 1 hidden layer
+    "module__activation_function": torch.nn.ReLU,
+    "max_epochs": 400,
+    "verbose": 0,
+    "lr": 0.001,
+}
+
+neural_network_classifiers = [
+    (
+        partial(NeuralNetClassifier, batch_size=32, **params_neural_net),
+        "Neural Net",
+    ),
+]
+
+# pylint: disable-next=undefined-variable
+make_classifier_comparison("NN Classifiers", neural_network_classifiers, 0.5, simulate=True)  # noqa
+
+linear_classifiers = [
+    (partial(LinearSVC, C=0.025), "Linear SVC"),
+    (LogisticRegression, "Logistic Regression"),
+]
+
+# pylint: disable-next=undefined-variable
+make_classifier_comparison("Linear Classifiers", linear_classifiers, 0, simulate=True, h=1)  # noqa
+
+tree_classifiers = [
+    (partial(DecisionTreeClassifier, max_depth=5), "Decision Tree"),
+    (partial(RandomForestClassifier, max_depth=4, n_estimators=5), "Random Forest"),
+    (partial(XGBClassifier, n_jobs=1, max_depth=4, n_estimators=5), "XGB"),
+]
+
+# pylint: disable-next=undefined-variable
+make_classifier_comparison(  # noqa
+    "Tree-Based Classifiers", tree_classifiers, 0.5, simulate=True, h=0.1
+)
+
+
+
+# Code from: ./LogisticRegression.ipynb
+--------------------------------------------------------------------------------
+
+import time
+
+import numpy as np
+from sklearn.datasets import make_classification
+from sklearn.linear_model import LogisticRegression as SklearnLogisticRegression
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
+
+from concrete.ml.sklearn import LogisticRegression as ConcreteLogisticRegression
+
+%matplotlib inline
+
+import matplotlib.pyplot as plt
+from IPython.display import display
+
+X, y = make_classification(
+    n_samples=200,
+    n_features=2,
+    n_redundant=0,
+    n_informative=2,
+    random_state=2,
+    n_clusters_per_class=1,
+)
+
+rng = np.random.RandomState(2)
+X += 2 * rng.uniform(size=X.shape)
+
+b_min = np.min(X, axis=0)
+b_max = np.max(X, axis=0)
+
+x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=42)
+
+x_test_grid, y_test_grid = np.meshgrid(
+    np.linspace(b_min[0], b_max[0], 30), np.linspace(b_min[1], b_max[1], 30)
+)
+x_grid_test = np.vstack([x_test_grid.ravel(), y_test_grid.ravel()]).transpose()
+
+sklearn_logr = SklearnLogisticRegression()
+sklearn_logr.fit(x_train, y_train)
+y_pred_test = sklearn_logr.predict(x_test)
+
+# Compute the scikit-learn classifier's probabilities on the domain
+y_score_grid = sklearn_logr.predict_proba(x_grid_test)[:, 1]
+
+plt.ioff()
+plt.clf()
+fig, ax = plt.subplots(1, figsize=(12, 8))
+fig.patch.set_facecolor("white")
+ax.contourf(x_test_grid, y_test_grid, y_score_grid.reshape(x_test_grid.shape), cmap="coolwarm")
+CS1 = ax.contour(
+    x_test_grid,
+    y_test_grid,
+    y_score_grid.reshape(x_test_grid.shape),
+    levels=[0.5],
+    linewidths=2,
+)
+CS1.collections[0].set_label("Sklearn decision boundary")
+ax.scatter(x_train[:, 0], x_train[:, 1], c=y_train, marker="D", cmap="jet", label="Train data")
+ax.scatter(x_test[:, 0], x_test[:, 1], c=y_test, marker="x", cmap="jet", label="Test data")
+ax.legend(loc="upper right")
+display(fig)
+
+concrete_logr = ConcreteLogisticRegression(n_bits=8)
+concrete_logr.fit(x_train, y_train);
+
+# Predict on the test set
+y_proba_q = concrete_logr.predict_proba(x_test)[:, 1]
+y_pred_q = concrete_logr.predict(x_test)
+
+# Compute the probabilities on the whole domain in order to be able to plot the contours
+y_proba_q_grid = concrete_logr.predict_proba(x_grid_test)[:, 1]
+y_pred_q_grid = concrete_logr.predict(x_grid_test)
+
+fhe_circuit = concrete_logr.compile(x_train)
+
+print(f"Generating a key for an {fhe_circuit.graph.maximum_integer_bit_width()}-bit circuit")
+
+time_begin = time.time()
+fhe_circuit.client.keygen(force=False)
+print(f"Key generation time: {time.time() - time_begin:.4f} seconds")
+
+time_begin = time.time()
+y_pred_fhe = concrete_logr.predict(x_test, fhe="execute")
+print(f"Execution time: {(time.time() - time_begin) / len(x_test):.4f} seconds per sample")
+
+sklearn_accuracy = accuracy_score(y_test, y_pred_test)
+quantized_accuracy = accuracy_score(y_test, y_pred_q)
+fhe_accuracy = accuracy_score(y_test, y_pred_fhe)
+
+print(f"Sklearn accuracy: {sklearn_accuracy:.4f}")
+print(f"Quantized Clear Accuracy: {quantized_accuracy:.4f}")
+print(f"FHE Accuracy: {fhe_accuracy:.4f}")
+
+# Measure the error of the FHE quantized model with respect to the clear quantized model
+concrete_score_difference = abs(fhe_accuracy - quantized_accuracy)
+print(
+    "\nRelative difference between Concrete-ml (quantized clear) and Concrete-ml (FHE) scores:",
+    f"{concrete_score_difference:.2f}%",
+)
+
+# Measure the error of the FHE quantized model with respect to the clear scikit-learn float model
+score_difference = abs(fhe_accuracy - sklearn_accuracy)
+print(
+    "Relative difference between scikit-learn (clear) and Concrete-ml (FHE) scores:",
+    f"{score_difference:.2f}%",
+)
+
+plt.clf()
+fig, ax = plt.subplots(1, figsize=(12, 8))
+fig.patch.set_facecolor("white")
+ax.contourf(x_test_grid, y_test_grid, y_proba_q_grid.reshape(x_test_grid.shape), cmap="coolwarm")
+CS1 = ax.contour(
+    x_test_grid,
+    y_test_grid,
+    y_proba_q_grid.reshape(x_test_grid.shape),
+    levels=[0.5],
+    linewidths=2,
+)
+ax.scatter(x_train[:, 0], x_train[:, 1], c=y_train, cmap="jet", marker="D")
+ax.scatter(x_test[:, 0], x_test[:, 1], c=y_pred_q, cmap="jet", marker="x")
+CS2 = ax.contour(
+    x_test_grid,
+    y_test_grid,
+    y_score_grid.reshape(x_test_grid.shape),
+    levels=[0.5],
+    linewidths=2,
+    linestyles="dashed",
+    cmap="hot",
+)
+ax.clabel(CS1, CS1.levels, inline=True, fontsize=10)
+ax.clabel(CS2, CS2.levels, inline=True, fontsize=10)
+CS1.collections[0].set_label(f"FHE decision boundary, acc={fhe_accuracy:.2f}")
+CS2.collections[0].set_label(f"Sklearn decision boundary, acc={sklearn_accuracy:.2f}")
+ax.legend(loc="upper right")
+display(fig)
+
+from utils.scaling_comparison_utils import plot_data
+
+scaler = MinMaxScaler((-1, 1))
+x_train_scaled = scaler.fit_transform(x_train)
+x_test_scaled = scaler.transform(x_test)
+
+scaler = StandardScaler()
+x_train_normalized = scaler.fit_transform(x_train)
+x_test_normalized = scaler.transform(x_test)
+
+x_train_unscaled = x_train_scaled.copy()
+x_train_unscaled[:, 0] *= 100
+
+x_test_unscaled = x_test_scaled.copy()
+x_test_unscaled[:, 0] *= 100
+
+x_train_shifted = x_train_scaled.copy()
+x_train_shifted[:, 0] += 100
+
+x_test_shifted = x_test_scaled.copy()
+x_test_shifted[:, 0] += 100
+
+n_bits = 12
+random_state = 0
+
+fig, axes = plt.subplots(ncols=2, nrows=5, figsize=(8 * 3, 8 * 4))
+models = [ConcreteLogisticRegression(n_bits=n_bits, random_state=random_state) for _ in range(5)]
+features_trains = [x_train, x_train_scaled, x_train_normalized, x_train_unscaled, x_train_shifted]
+targets_trains = [y_train, y_train, y_train, y_train, y_train]
+features_tests = [x_test, x_test_scaled, x_test_normalized, x_test_unscaled, x_test_shifted]
+targets_tests = [y_test, y_test, y_test, y_test, y_test]
+names = ["unchanged", "min-max-transformed", "normalized", "unscaled", "shifted"]
+
+for ax, model, features_train, targets_train, features_test, targets_test, name in zip(
+    axes,
+    models,
+    features_trains,
+    targets_trains,
+    features_tests,
+    targets_tests,
+    names,
+):
+    plot_data(ax, features_train, targets_train, features_test, targets_test, model, name, h=1)
+display(fig)
+
+
+
+# Code from: ./LoraMLP.ipynb
+--------------------------------------------------------------------------------
+
+import shutil
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
+from peft import LoraConfig, get_peft_model
+from sklearn.datasets import make_circles, make_moons
+from torch import nn, optim
+from torch.utils.data import DataLoader, TensorDataset
+
+from concrete.ml.torch.lora import LoraTrainer
+
+# Set random seed for reproducibility
+SEED = 42
+np.random.seed(SEED)
+torch.manual_seed(SEED)
+
+# Task 1: Two interleaving half circles (make_moons)
+X_task1, y_task1 = make_moons(n_samples=500, noise=0.1)
+# Task 2: Two concentric circles
+X_task2, y_task2 = make_circles(n_samples=500, noise=0.2, factor=0.5)
+
+
+def plot_datasets_and_boundaries(X_task1, y_task1, X_task2, y_task2, model=None, titles=None):
+    _, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+
+    if titles is None:
+        titles = ["Task 1 Dataset", "Task 2 Dataset"]
+
+    for ax, X, y, title in zip([ax1, ax2], [X_task1, X_task2], [y_task1, y_task2], titles):
+        ax.scatter(X[:, 0], X[:, 1], c=y, cmap="viridis", edgecolor="k")
+        ax.set_title(title)
+
+        if model is not None:
+            x_min, x_max = X[:, 0].min() - 0.5, X[:, 0].max() + 0.5
+            y_min, y_max = X[:, 1].min() - 0.5, X[:, 1].max() + 0.5
+            h = 0.1  # step size in the mesh
+            xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
+            grid = torch.FloatTensor(np.c_[xx.ravel(), yy.ravel()])
+
+            with torch.no_grad():
+                Z = model(grid)
+                probabilities = torch.softmax(Z, dim=1)
+                Z = probabilities[:, 1].numpy().reshape(xx.shape)
+
+            ax.contourf(xx, yy, Z, cmap="viridis", alpha=0.3)
+
+    plt.tight_layout()
+    plt.show()
+
+
+# Plot datasets
+plot_datasets_and_boundaries(X_task1, y_task1, X_task2, y_task2)
+
+# Convert datasets to PyTorch tensors
+X_task1 = torch.FloatTensor(X_task1)
+y_task1 = torch.LongTensor(y_task1)
+X_task2 = torch.FloatTensor(X_task2)
+y_task2 = torch.LongTensor(y_task2)
+
+# Create DataLoaders
+batch_size = 32
+train_loader_task1 = DataLoader(
+    TensorDataset(X_task1, y_task1), batch_size=batch_size, shuffle=True
+)
+train_loader_task2 = DataLoader(
+    TensorDataset(X_task2, y_task2), batch_size=batch_size, shuffle=True
+)
+
+# Define an MLP model without LoRA layers
+
+
+class SimpleMLP(nn.Module):
+    """Simple MLP model without LoRA layers."""
+
+    def __init__(self, input_size=2, hidden_size=128, num_classes=2):
+        super().__init__()
+        self.fc1 = nn.Linear(input_size, hidden_size)
+        self.relu = nn.ReLU()
+        self.fc2 = nn.Linear(hidden_size, num_classes)
+
+    def forward(self, x):
+        """Forward pass of the MLP."""
+        out = self.fc1(x)
+        out = self.relu(out)
+        out = self.fc2(out)
+        return out
+
+
+# Instantiate the model
+model = SimpleMLP()
+
+# Training loop for Task 1
+
+
+def train_model(model, train_loader, num_epochs=100):
+    """Train the model.
+
+    Args:
+        model (nn.Module): The model to train.
+        train_loader (DataLoader): DataLoader for training data.
+        num_epochs (int): Number of epochs to train.
+    """
+    device = torch.device("cpu")
+    model.to(device)
+    model.train()
+
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=0.01)
+
+    for epoch in range(num_epochs):
+        total_loss = 0
+        for x_batch, y_batch in train_loader:
+            x_batch = x_batch.to(device)
+            y_batch = y_batch.to(device)
+
+            optimizer.zero_grad()
+            outputs = model(x_batch)
+            loss = criterion(outputs, y_batch)
+            loss.backward()
+            optimizer.step()
+
+            total_loss += loss.item()
+
+        # Print loss every 20 epochs
+        if (epoch + 1) % 20 == 0:
+            print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {total_loss/len(train_loader):.4f}")
+
+
+# Train the model on Task 1
+print("Training on Task 1 without LoRA:")
+train_model(model, train_loader_task1, num_epochs=20)
+
+# Plot datasets with decision boundaries
+plot_datasets_and_boundaries(
+    X_task1.numpy(),
+    y_task1.numpy(),
+    X_task2.numpy(),
+    y_task2.numpy(),
+    model=model,
+    titles=["Task 1 after Training", "Task 2 after Training"],
+)
+
+# Apply LoRA to the model using peft
+lora_config = LoraConfig(
+    r=1, lora_alpha=1, lora_dropout=0.01, target_modules=["fc1", "fc2"], bias="none"
+)
+
+peft_model = get_peft_model(model, lora_config)
+
+# Update training parameters, including loss function
+optimizer = optim.Adam(filter(lambda p: p.requires_grad, peft_model.parameters()), lr=0.01)
+loss_fn = nn.CrossEntropyLoss()
+training_args = {"gradient_accumulation_steps": 1}
+
+# Set up LoRA training
+lora_trainer = LoraTrainer(
+    peft_model, optimizer=optimizer, loss_fn=loss_fn, training_args=training_args
+)
+
+# Prepare input data for calibration
+batch_size_per_task = batch_size // 2
+inputset = (
+    torch.cat([X_task1[:batch_size_per_task], X_task2[:batch_size_per_task]]),
+    torch.cat([y_task1[:batch_size_per_task], y_task2[:batch_size_per_task]]),
+)
+
+# Compile the model
+lora_trainer.compile(inputset, n_bits=8)
+
+# Fine-tune the model on Task 2 using LoRA
+lora_trainer.train(train_loader_task2, num_epochs=10, fhe="execute")
+
+# Enable LoRA adapters (already enabled by default)
+peft_model.enable_adapter_layers()
+
+# Plot datasets with decision boundaries after fine-tuning
+plot_datasets_and_boundaries(
+    X_task1.numpy(),
+    y_task1.numpy(),
+    X_task2.numpy(),
+    y_task2.numpy(),
+    model=peft_model,
+    titles=["Task 1 after Fine-tuning", "Task 2 after Fine-tuning"],
+)
+
+# Disable LoRA adapters
+peft_model.disable_adapter_layers()
+
+# Plot datasets with decision boundaries after fine-tuning
+plot_datasets_and_boundaries(
+    X_task1.numpy(),
+    y_task1.numpy(),
+    X_task2.numpy(),
+    y_task2.numpy(),
+    model=peft_model,
+    titles=["Task 1 after Fine-tuning", "Task 2 after Fine-tuning"],
+)
+
+# Enable LoRA adapters (already enabled by default)
+peft_model.enable_adapter_layers()
+
+# Print trainable (lora) parameters
+peft_model.print_trainable_parameters()
+
+# Save the model and remove all layers that will be done on the server
+path = Path("lora_mlp")
+
+if path.is_dir() and any(path.iterdir()):
+    shutil.rmtree(path)
+
+lora_trainer.save_and_clear_private_info(path)
+
+# At this point, the hybrid_model only contains the trainable parameters of the LoRA layers.
+peft_model.print_trainable_parameters()
+
+
+
+# Code from: ./ImportingFromScikitLearn.ipynb
+--------------------------------------------------------------------------------
+
+from functools import partial
+
+# The simulation mode allows to measure the impact of FHE execution on accuracy
+# without paying the cost of FHE computations.
+# However, data is not encrypted when using the simulation: the model performs inference
+# on clear data.
+
+
+def make_classifier_comparison_from_sklearn(*args, **kwargs):
+    return args, kwargs
+
+
+%run utils/classifier_comparison_utils.py
+
+from concrete.ml.sklearn import (
+    DecisionTreeClassifier,
+    LinearSVC,
+    LogisticRegression,
+    RandomForestClassifier,
+    XGBClassifier,
+)
+
+%%time
+
+linear_classifiers = [
+    (partial(LinearSVC, C=0.025), "Linear SVC"),
+    (LogisticRegression, "Logistic Regression"),
+]
+
+# pylint: disable-next=undefined-variable
+make_classifier_comparison_from_sklearn(
+    "Linear Classifiers", linear_classifiers, 0, simulate=True, h=1
+)  # noqa
+
+%%time
+
+tree_classifiers = [
+    (partial(DecisionTreeClassifier, max_depth=5), "Decision Tree"),
+    (partial(RandomForestClassifier, max_depth=4, n_estimators=5), "Random Forest"),
+    (partial(XGBClassifier, n_jobs=1, max_depth=4, n_estimators=5), "XGB"),
+]
+
+# pylint: disable-next=undefined-variable
+make_classifier_comparison_from_sklearn(  # noqa
+    "Tree-Based Classifiers", tree_classifiers, 0.5, simulate=True, h=0.1
+)
+
+
+
+# Code from: ./DecisionTreeRegressor.ipynb
+--------------------------------------------------------------------------------
+
+import sys
+import time
+
+import numpy
+from sklearn.datasets import fetch_california_housing
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_absolute_error
+from sklearn.model_selection import train_test_split
+from sklearn.utils import resample
+
+import concrete.ml
+from concrete.ml.sklearn import DecisionTreeRegressor as ConcreteDecisionTreeRegressor
+
+print(f"Using ConcreteML version {concrete.ml.version.__version__}")
+print(f"With Python version {sys.version}")
+
+features_all, target_all = fetch_california_housing(return_X_y=True)
+features, target = resample(features_all, target_all, replace=True, n_samples=6000, random_state=42)
+
+# Split data in train-test groups
+x_train, x_test, y_train, y_test = train_test_split(
+    features,
+    target,
+    test_size=0.15,
+    random_state=42,
+)
+
+%matplotlib inline
+import matplotlib.pyplot as plt
+
+plt.hist(target, bins=15, density=True)
+plt.show()
+
+# Utility functions
+
+
+def print_as_dollars(x):
+    """Prints the value * 100'000$"""
+    return f"{x * 10**5:.2f}$"
+
+
+def print_compare_to_baseline(x, baseline_error):
+    """Prints percentage improvement over baseline"""
+    return f"{(x - baseline_error) / baseline_error * 100 :.2f}% of baseline"
+
+
+mean_error = mean_absolute_error(y_test, numpy.repeat([numpy.median(y_test)], y_test.shape))
+print(f"Mean Absolute Overall Error : {print_as_dollars(mean_error)}")
+
+canary = LinearRegression()
+canary.fit(x_train[:, :1], y_train)
+baseline_error = mean_absolute_error(canary.predict(x_test[:, :1]), y_test)
+print(f"Baseline Mean Error : {print_as_dollars(baseline_error)}")
+
+default_model = ConcreteDecisionTreeRegressor(criterion="absolute_error", n_bits=6, random_state=42)
+
+begin = time.time()
+default_model.fit(x_train, y_train)
+print(f"Training on {x_train.shape[0]} samples in {(time.time() - begin):.4f} seconds")
+
+default_error = mean_absolute_error(default_model.predict(x_test), y_test)
+print(
+    f"Default Model Mean Error: {print_as_dollars(default_error)},"
+    f"{print_compare_to_baseline(default_error, baseline_error)}"
+)
+
+# Find best hyper parameters with cross validation
+from sklearn.model_selection import GridSearchCV
+
+# List of hyper parameters to tune
+param_grid = {
+    "criterion": ["absolute_error"],
+    "random_state": [42],
+    "max_depth": [10],
+    "n_bits": [6, 7],
+    "max_features": [2, 5],
+    "min_samples_leaf": [2, 5],
+    "min_samples_split": [2, 10],
+}
+
+grid_search = GridSearchCV(
+    ConcreteDecisionTreeRegressor(),
+    param_grid,
+    cv=3,
+    scoring="neg_mean_absolute_error",
+    error_score="raise",
+    n_jobs=1,
+)
+
+gs_results = grid_search.fit(x_train, y_train)
+print("Best hyper parameters:", gs_results.best_params_)
+print(f"Min lost: {print_as_dollars(-gs_results.best_score_)}")
+
+# We fix all parameters as the best ones, except for n_bits.
+best = gs_results.best_params_
+cv_errors = [
+    {"n_bits": params["n_bits"], "score": score}
+    for params, score in zip(
+        gs_results.cv_results_["params"], gs_results.cv_results_["mean_test_score"]
+    )
+    if (params["max_depth"] == best["max_depth"])
+    and (params["max_features"] == best["max_features"])  # noqa: W503
+    and (params["min_samples_leaf"] == best["min_samples_leaf"])  # noqa: W503
+    and (params["min_samples_split"] == best["min_samples_split"])  # noqa: W503
+]
+for el in cv_errors:
+    print(f"Error for n_bits={el['n_bits']} is {print_as_dollars(-el['score'])}")
+
+# Build the model with best hyper parameters
+model = ConcreteDecisionTreeRegressor(
+    max_depth=gs_results.best_params_["max_depth"],
+    max_features=gs_results.best_params_["max_features"],
+    min_samples_leaf=gs_results.best_params_["min_samples_leaf"],
+    min_samples_split=gs_results.best_params_["min_samples_split"],
+    n_bits=6,
+    random_state=42,
+)
+
+model, sklearn_model = model.fit_benchmark(x_train, y_train)
+
+# Compute average precision on test
+y_pred_concrete = model.predict(x_test)
+y_pred_sklearn = sklearn_model.predict(x_test)
+concrete_average_precision = mean_absolute_error(y_test, y_pred_concrete)
+sklearn_average_precision = mean_absolute_error(y_test, y_pred_sklearn)
+print(
+    f"Sklearn  Mean Error: {print_as_dollars(sklearn_average_precision)},"
+    f"{print_compare_to_baseline(sklearn_average_precision, baseline_error)}"
+)
+print(
+    f"Concrete Mean Error: {print_as_dollars(concrete_average_precision)},"
+    f"{print_compare_to_baseline(concrete_average_precision, baseline_error)}"
+)
+
+from concrete.compiler import check_gpu_available
+
+use_gpu_if_available = False
+device = "cuda" if use_gpu_if_available and check_gpu_available() else "cpu"
+
+x_train_subset = x_train[:500]
+
+begin = time.time()
+circuit = model.compile(x_train_subset, device=device)
+print(f"Compiled with {len(x_train_subset)} samples in {(time.time() - begin):.4f} seconds")
+
+print(f"Generating a key for an {circuit.graph.maximum_integer_bit_width()}-bit circuit")
+time_begin = time.time()
+circuit.client.keygen(force=False)
+print(f"Key generation time: {time.time() - time_begin:.2f} seconds")
+
+FHE_SAMPLES = 3
+x_test_small = x_test[:FHE_SAMPLES]
+y_pred = y_test[:FHE_SAMPLES]
+
+# Predict in FHE for a few examples
+time_begin = time.time()
+y_pred_fhe = model.predict(x_test_small, fhe="execute")
+print(f"Execution time: {(time.time() - time_begin) / FHE_SAMPLES:.2f} seconds per sample")
+
+# Check prediction FHE vs sklearn
+print("Cipher estimates:")
+print(f"{', '.join(f'{print_as_dollars(x)}' for x in y_pred_fhe)}")
+print("Plain estimates:")
+print(f"{', '.join(f'{print_as_dollars(x)}' for x in y_pred)}")
+print("Differences:")
+print(f"{', '.join(f'{print_as_dollars(x)}' for x in (y_pred_fhe - y_pred))}")
+
+# Concatenate all the steps in one function of n_bits
+
+
+def evaluate(n_bits):
+    model = ConcreteDecisionTreeRegressor(
+        max_depth=gs_results.best_params_["max_depth"],
+        max_features=gs_results.best_params_["max_features"],
+        min_samples_leaf=gs_results.best_params_["min_samples_leaf"],
+        min_samples_split=gs_results.best_params_["min_samples_split"],
+        n_bits=n_bits,
+        random_state=42,
+    )
+
+    model, sklearn_model = model.fit_benchmark(x_train, y_train)
+
+    y_pred_concrete = model.predict(x_test)
+    y_pred_sklearn = sklearn_model.predict(x_test)
+
+    concrete_average_precision = mean_absolute_error(y_test, y_pred_concrete)
+    sklearn_average_precision = mean_absolute_error(y_test, y_pred_sklearn)
+
+    print(
+        f"Sklearn  Mean Error: {print_as_dollars(sklearn_average_precision)},"
+        f"{print_compare_to_baseline(sklearn_average_precision, baseline_error)}"
+    )
+    print(
+        f"Concrete Mean Error: {print_as_dollars(concrete_average_precision)},"
+        f"{print_compare_to_baseline(concrete_average_precision, baseline_error)}"
+    )
+
+    x_train_subset = x_train[:500]
+    begin = time.time()
+    circuit = model.compile(x_train_subset)
+    print(
+        f"Circuit compiled with {len(x_train_subset)} samples in {(time.time() - begin):.4f} "
+        "seconds"
+    )
+    print(f"Generating a key for an {circuit.graph.maximum_integer_bit_width()}-bit circuit")
+
+    time_begin = time.time()
+    circuit.client.keygen(force=False)
+    print(f"Key generation time: {time.time() - time_begin:.2f} seconds")
+
+    time_begin = time.time()
+    model.predict(x_test_small, fhe="execute")
+    print(f"Execution time: {(time.time() - time_begin) / FHE_SAMPLES:.2f} seconds per sample")
+
+
+for n_bits in [6, 7]:
+    header = f"N_BITS = {n_bits}"
+    print(header)
+    print("-" * len(header))
+    evaluate(n_bits)
+    print()
+
+
+
+# Code from: ./DecisionTreeClassifier.ipynb
+--------------------------------------------------------------------------------
+
+import time
+
+import numpy
+from sklearn.datasets import fetch_openml
+from sklearn.model_selection import train_test_split
+
+features, classes = fetch_openml(data_id=44, as_frame=False, cache=True, return_X_y=True)
+classes = classes.astype(numpy.int64)
+
+x_train, x_test, y_train, y_test = train_test_split(
+    features,
+    classes,
+    test_size=0.15,
+    random_state=42,
+)
+
+# Find best hyper parameters with cross validation
+from sklearn.model_selection import GridSearchCV
+
+from concrete.ml.sklearn import DecisionTreeClassifier as ConcreteDecisionTreeClassifier
+
+# List of hyper parameters to tune
+param_grid = {
+    "max_features": [None, "auto", "sqrt", "log2"],
+    "min_samples_leaf": [1, 10, 100],
+    "min_samples_split": [2, 10, 100],
+    "max_depth": [None, 2, 4, 6, 8],
+}
+
+grid_search = GridSearchCV(
+    ConcreteDecisionTreeClassifier(),
+    param_grid,
+    cv=10,
+    scoring="average_precision",
+    error_score="raise",
+    n_jobs=1,
+)
+
+gs_results = grid_search.fit(x_train, y_train)
+print("Best hyper parameters:", gs_results.best_params_)
+print("Best score:", gs_results.best_score_)
+
+# Build the model with best hyper parameters
+model = ConcreteDecisionTreeClassifier(
+    max_features=gs_results.best_params_["max_features"],
+    min_samples_leaf=gs_results.best_params_["min_samples_leaf"],
+    min_samples_split=gs_results.best_params_["min_samples_split"],
+    max_depth=gs_results.best_params_["max_depth"],
+    n_bits=6,
+)
+
+model, sklearn_model = model.fit_benchmark(x_train, y_train)
+
+# Compute average precision on test
+from sklearn.metrics import average_precision_score
+
+# pylint: disable=no-member
+y_pred_concrete = model.predict_proba(x_test)[:, 1]
+y_pred_sklearn = sklearn_model.predict_proba(x_test)[:, 1]
+concrete_average_precision = average_precision_score(y_test, y_pred_concrete)
+sklearn_average_precision = average_precision_score(y_test, y_pred_sklearn)
+print(f"Sklearn average precision score: {sklearn_average_precision:0.2f}")
+print(f"Concrete average precision score: {concrete_average_precision:0.2f}")
+
+# Show the confusion matrix on x_test
+from sklearn.metrics import confusion_matrix
+
+y_pred = model.predict(x_test)
+true_negative, false_positive, false_negative, true_positive = confusion_matrix(
+    y_test, y_pred, normalize="true"
+).ravel()
+
+num_samples = len(y_test)
+num_spam = sum(y_test)
+
+print(f"Number of test samples: {num_samples}")
+print(f"Number of spams in test samples: {num_spam}")
+
+print(f"True Negative (legit mail well classified) rate: {true_negative}")
+print(f"False Positive (legit mail classified as spam) rate: {false_positive}")
+print(f"False Negative (spam mail classified as legit) rate: {false_negative}")
+print(f"True Positive (spam well classified) rate: {true_positive}")
+
+from concrete.compiler import check_gpu_available
+
+use_gpu_if_available = False
+device = "cuda" if use_gpu_if_available and check_gpu_available() else "cpu"
+
+# We first compile the model with some data, here the training set
+circuit = model.compile(x_train, device=device)
+
+print(f"Generating a key for an {circuit.graph.maximum_integer_bit_width()}-bit circuit")
+
+time_begin = time.time()
+circuit.client.keygen(force=False)
+print(f"Key generation time: {time.time() - time_begin:.2f} seconds")
+
+# Reduce the sample size for a faster total execution time
+FHE_SAMPLES = 10
+x_test = x_test[:FHE_SAMPLES]
+y_pred = y_pred[:FHE_SAMPLES]
+y_reference = y_test[:FHE_SAMPLES]
+
+# Predict in FHE for a few examples
+time_begin = time.time()
+y_pred_fhe = model.predict(x_test, fhe="execute")
+print(f"Execution time: {(time.time() - time_begin) / len(x_test):.2f} seconds per sample")
+
+# Check prediction FHE vs sklearn
+print(f"Ground truth:       {y_reference}")
+print(f"Prediction sklearn: {y_pred}")
+print(f"Prediction FHE:     {y_pred_fhe}")
+
+print(
+    f"{numpy.sum(y_pred_fhe == y_pred)}/"
+    "10 predictions are similar between the FHE model and the clear sklearn model."
+)
+
+
+
+# Code from: ./RegressorComparison.ipynb
+--------------------------------------------------------------------------------
+
+import warnings
+
+warnings.simplefilter(action="ignore", category=FutureWarning)
+
+
+import time
+from functools import partial
+
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
+from sklearn.metrics import r2_score
+from sklearn.model_selection import train_test_split
+from sklearn.neural_network import MLPRegressor
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import PolynomialFeatures, StandardScaler
+
+from concrete.ml.sklearn import (
+    DecisionTreeRegressor,
+    LinearRegression,
+    LinearSVR,
+    NeuralNetRegressor,
+    RandomForestRegressor,
+    XGBRegressor,
+)
+
+%matplotlib inline
+
+rng = np.random.RandomState(42)
+
+def make_regression_data(
+    n_samples=200,
+    n_features=1,
+    bias=0.0,
+    noise_scale=1.0,
+    loc=0.0,
+    scale=1.0,
+    polynomial_exp=1,
+    target_scale=1.0,
+    feature_scale=1.0,
+):
+    """
+    Generates a dataset for regression models.
+    """
+    X = rng.randn(n_samples, n_features)
+    # To avoid to have to big numbers on polynomial datasets
+    if polynomial_exp > 1:
+        feature_scale = 1
+    X = feature_scale * np.sort(X, 0)
+    scale = scale * polynomial_exp
+    noise = noise_scale * rng.normal(loc=loc, scale=scale, size=n_samples)
+    y = X.ravel() ** polynomial_exp + bias + noise
+    y *= target_scale
+    return X, y
+
+# pylint: disable=too-many-locals,too-many-statements
+
+
+def make_regressor_comparison(title, regressors, **kwargs):
+    print(title)
+
+    # Create subplots where each column represents a polynomial degree
+    subplot_col = kwargs.get("polynomial_exp", 1)
+    fig, axs = plt.subplots(len(regressors), subplot_col, figsize=(15, 8), sharex=False)
+
+    # Create data-sets for each polynomial degree
+    for i in range(subplot_col):
+        kwargs_copy = kwargs.copy()
+        kwargs_copy["polynomial_exp"] = i + 1
+        X, y = make_regression_data(**kwargs_copy)
+
+        # Split the data into training and test sets
+        # Use 15 percent (30 points for a data-set of 200 points) for prediction
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+        sort_test_index = np.argsort(X_test.ravel())
+        X_test = X_test[sort_test_index, :]
+        y_test = y_test[sort_test_index]
+
+        # Feature preprocessing
+        # Linear models require polynomial features to be applied before training
+        # to fit a non-linear model and other models perform better with this transoformation
+        pipe = Pipeline(
+            [
+                ("poly", PolynomialFeatures(i + 1)),
+                ("scaler", StandardScaler()),
+            ]
+        )
+
+        X_poly_train = pipe.fit_transform(X_train)
+        X_poly_test = pipe.transform(X_test)
+
+        # Iterate over the given regressors
+        for j, (regressor, model_name) in enumerate(regressors):
+            print(f"Evaluation of {model_name}")
+            if np.ndim(axs) > 1:
+                axs[0, i].set_title(f"Polynomial degree {i + 1}")
+                ax = axs[j, i]
+            else:
+                try:
+                    axs[i].set_title(f"Polynomial degree {i + 1}")
+                    ax = axs[i]
+                except IndexError:
+                    ax = axs
+                    ax.set_title(f"Polynomial degree {i + 1}")
+
+            # Plot the training points
+            ax.scatter(
+                X_train,
+                y_train,
+                edgecolors="k",
+                label="Train data",
+            )
+
+            # Plot the testing points
+            ax.scatter(
+                X_test,
+                y_test,
+                marker="D",
+                alpha=0.6,
+                edgecolors="k",
+                label="Test data",
+            )
+
+            # Instantiate the model
+            model = regressor()
+
+            # Train the model and retrieve both the Concrete ML model and its equivalent one from
+            # scikit-learn
+            # If the model is a NeuralNetClassifier, instantiate a scikit-learn MLPClassifier
+            # separately in order to be able to be able to compare the results with a float model
+            # that doesn't use QAT
+            if model.__class__ == NeuralNetRegressor:
+
+                sklearn_model = MLPRegressor(
+                    alpha=1,
+                    activation="identity",
+                    max_iter=1000,
+                    hidden_layer_sizes=(25,),
+                    learning_rate_init=0.005,
+                )
+                sklearn_model.fit(X_poly_train, y_train)
+
+                # When we apply PolynomialFeatures the input dim is equal to degree of polynome + 1
+                model.module__input_dim = i + 2
+                concrete_model = model.fit(X_poly_train, y_train.reshape(-1, 1))
+
+            else:
+
+                concrete_model, sklearn_model = model.fit_benchmark(X_poly_train, y_train)
+
+            # Compute the predictions in clear using the scikit-learn model
+            sklearn_y_pred = sklearn_model.predict(X_poly_test)
+
+            # Compile the Contrete-ML model
+            circuit = concrete_model.compile(X_poly_train)
+
+            print(
+                "Generating a key for a " f"{circuit.graph.maximum_integer_bit_width()}-bit circuit"
+            )
+
+            time_begin = time.time()
+            circuit.client.keygen(force=False)
+            time_end = time.time()
+            print(f"Key generation time: {time_end - time_begin:.2f} seconds")
+
+            # Compute the predictions in FHE using the Concrete ML model
+            time_begin = time.time()
+            concrete_y_pred = concrete_model.predict(X_poly_test[:1], fhe="execute")
+            time_end = time.time()
+
+            print(f"Execution time: {(time_end - time_begin):.2f} " "seconds per sample in FHE")
+
+            # Compute predictions for all test examples with the simulate mode
+            concrete_y_pred = concrete_model.predict(X_poly_test, fhe="simulate")
+
+            # Measure the R2 score
+            sklearn_score = r2_score(sklearn_y_pred, y_test)
+            concrete_score = r2_score(concrete_y_pred, y_test)
+
+            is_a_tree_based_model = concrete_model.__class__ in [
+                DecisionTreeRegressor,
+                RandomForestRegressor,
+                XGBRegressor,
+            ]
+
+            # If the model is not a tree-based model, retrieve the maximum integer bitwidth
+            # reached within its circuit.
+            bitwidth = None
+            if not is_a_tree_based_model:
+                bitwidth = circuit.graph.maximum_integer_bit_width()
+
+            # Plot the predictions
+            ax.plot(X_test, concrete_y_pred, c="blue", linewidth=2.5, label="Concrete ML")
+
+            # Plot the predictions
+            ax.plot(X_test, sklearn_y_pred, c="red", linewidth=2.5, label="scikit-learn")
+
+            ax.text(
+                0.5,
+                0.80,
+                f"Concrete ML R2: {concrete_score:.2f}\n scikit-learn R2: {sklearn_score:.2f}\n",
+                transform=ax.transAxes,
+                fontsize=12,
+                va="top",
+                ha="right",
+            )
+            if bitwidth:
+                ax.text(
+                    0.75,
+                    0.1,
+                    f"bitwidth={bitwidth}",
+                    transform=ax.transAxes,
+                    fontsize=12,
+                    va="bottom",
+                    ha="left",
+                )
+            handles, labels = ax.get_legend_handles_labels()
+            fig.legend(handles, labels, loc="upper left")
+
+            scaler = 0.5
+            if len(regressors) == 3:
+                scaler = 0.3
+            fig.text(
+                -0.05, 0.75 - j * scaler, f"{model_name}", ha="center", va="bottom", fontsize=14
+            )
+
+    plt.tight_layout(pad=1.2)
+    plt.show()
+
+params_neural_net = {
+    "module__n_w_bits": 6,
+    "module__n_a_bits": 8,
+    "module__n_accum_bits": 16,
+    "module__n_hidden_neurons_multiplier": 10,
+    "module__n_layers": 2,  # 1 hidden layer
+    "module__activation_function": torch.nn.Identity,
+    "max_epochs": 400,
+    "verbose": 0,
+    "lr": 0.1,
+}
+
+
+neural_network_regressor = [
+    (
+        partial(NeuralNetRegressor, batch_size=32, **params_neural_net),
+        "Neural Net",
+    ),
+]
+make_regressor_comparison(
+    "NN Regressors",
+    neural_network_regressor,
+    n_samples=250,
+    polynomial_exp=3,
+    bias=20,
+    scale=0.25,
+    target_scale=1,
+    feature_scale=10,
+)
+
+np.random.seed(42)
+linear_regressor = [
+    (partial(LinearSVR, n_bits={"op_inputs": 5, "op_weights": 2}, C=0.5), "Linear SVR"),
+    (partial(LinearRegression, n_bits={"op_inputs": 5, "op_weights": 2}), "Linear Regression"),
+]
+make_regressor_comparison(
+    "linear",
+    linear_regressor,
+    polynomial_exp=3,
+    bias=20,
+    scale=0.25,
+    target_scale=1,
+    feature_scale=10,
+)
+
+tree_regressors = [
+    (partial(DecisionTreeRegressor, n_bits=5, max_depth=5), "Decision Tree"),
+    (partial(RandomForestRegressor, n_bits=5), "RandomForestRegressor"),
+    (
+        partial(XGBRegressor, n_bits=6, n_estimators=50, max_depth=3, gamma=1, learning_rate=0.3),
+        "XGB",
+    ),
+]
+
+make_regressor_comparison(
+    "Tree-Based Regressors",
+    tree_regressors,
+    n_samples=300,
+    polynomial_exp=3,
+    bias=20,
+    scale=0.25,
+    target_scale=1,
+    feature_scale=10,
+)
+
+
+
+# Code from: ./FullyConnectedNeuralNetwork.ipynb
+--------------------------------------------------------------------------------
+
+import time
+
+import numpy as np
+from matplotlib import pyplot as plt
+from sklearn.datasets import load_iris
+from sklearn.decomposition import PCA
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
+from torch import nn
+from tqdm import tqdm
+
+from concrete.ml.sklearn import NeuralNetClassifier
+
+# Get iris data-set
+
+X, y = load_iris(return_X_y=True)
+
+# Split into train and test
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+
+# Scikit-Learn and Concrete ML neural networks only handle float32 input values
+X_train, X_test = X_train.astype("float32"), X_test.astype("float32")
+
+params = {
+    "module__n_layers": 3,
+    "module__activation_function": nn.ReLU,
+    "max_epochs": 1000,
+    "verbose": 0,
+}
+model = NeuralNetClassifier(**params)
+
+model, sklearn_model = model.fit_benchmark(X=X_train, y=y_train)
+
+# Evaluate the sklearn model, which needs to specifically be of type float32
+y_pred_sklearn = sklearn_model.predict(X_test)
+
+sklearn_accuracy = accuracy_score(y_test, y_pred_sklearn) * 100
+print(f"The test accuracy of the trained scikit-learn model is {sklearn_accuracy:.2f}%")
+
+# Evaluate the Concrete ML model in the clear
+y_pred_simulated = model.predict(X_test)
+
+simulated_accuracy = accuracy_score(y_test, y_pred_simulated) * 100
+print(f"The test accuracy of the trained Concrete ML simulated model is {simulated_accuracy:.2f}%")
+
+# Compile the model to have before
+fhe_circuit = model.compile(X_train)
+
+print("Generating a key for a " f"{fhe_circuit.graph.maximum_integer_bit_width()}-bit circuit")
+
+time_begin = time.time()
+fhe_circuit.client.keygen(force=True)
+print(f"Key generation time: {time.time() - time_begin:.2f} seconds")
+
+fhe_predictions = []
+time_begin = time.time()
+for x in tqdm(X_test):
+    y_ = model.predict(np.array([x]), fhe="execute")[0]
+    fhe_predictions.append(y_)
+
+print(f"Execution time: {(time.time() - time_begin) / len(X_test):.2f} seconds per sample")
+
+fhe_accuracy = accuracy_score(y_test, fhe_predictions) * 100
+
+print(f"Test accuracy using the sklearn model: {sklearn_accuracy:.2f}%")
+print(f"Test accuracy using the Concrete ML simulated model: {simulated_accuracy:.2f}%")
+print(f"Test accuracy using the Concrete ML FHE model: {fhe_accuracy:.2f}%")
+
+# Create a 2D grid in order to visualize predictions and contours for both models
+pca = PCA(n_components=2, random_state=np.random.randint(0, 2**15))
+X_test_2d = pca.fit_transform(X_test)
+
+b_min = np.min(X_test_2d, axis=0)
+b_max = np.max(X_test_2d, axis=0)
+
+grid_dims = tuple(
+    np.linspace(b_min[i], b_max[i], 512, dtype=X_test.dtype) for i in range(X_test_2d.shape[1])
+)
+ndgrid_tuple = np.meshgrid(*grid_dims)
+grid_2d = np.vstack([g.ravel() for g in ndgrid_tuple]).transpose()
+
+grid_test = pca.inverse_transform(grid_2d)
+
+# Evaluate the predicted classes using the sklearn model
+grid_pred_sklearn = sklearn_model.predict_proba(grid_test)
+pred_sklearn_classes = np.argmax(grid_pred_sklearn, axis=1)
+
+# Evaluate the predicted classes using the Concrete ML simulated model
+# Pylint is disabled because it does not seem to be able to understand that `model` is a
+# NeuralClassifier instance and support the predict_proba method. This may be solved by removing
+# Skorch and Sklearn inheritance
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3373
+grid_pred_fhe = model.predict_proba(grid_test)  # pylint: disable=no-member
+pred_fhe_classes = np.argmax(grid_pred_fhe, axis=1)
+
+%matplotlib inline
+
+cmap = "autumn"
+
+classes_to_plot = [
+    (pred_sklearn_classes, "Clear Inference (Sklearn)", sklearn_accuracy),
+    (pred_fhe_classes, "FHE Inference (Concrete ML)", simulated_accuracy),
+]
+
+fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+
+for i, (classes, title, accuracy) in enumerate(classes_to_plot):
+    ax = axes[i]
+
+    # Plot contours based on the predicted classes
+    ax.contourf(
+        ndgrid_tuple[0],
+        ndgrid_tuple[1],
+        classes.reshape(ndgrid_tuple[0].shape),
+        cmap=cmap,
+        label="ookko",
+    )
+
+    # Set the title and legend text
+    ax.set_title(title)
+    ax.text(1.6, 1, f"accuracy: {accuracy:.2f}", size=12)
+
+    # Plot the test data as a scatter with marker borders
+    ax.scatter(X_test_2d[:, 0], X_test_2d[:, 1], c=y_test, s=50, edgecolors="k", cmap=cmap)
+
+fig.suptitle("Decision boundaries", size=15)
+plt.show()
+
+
+
+# Code from: ./LinearRegression.ipynb
+--------------------------------------------------------------------------------
+
+import time
+
+import numpy as np
+from sklearn.datasets import make_regression
+from sklearn.linear_model import LinearRegression as SklearnLinearRegression
+from sklearn.metrics import r2_score
+from sklearn.model_selection import train_test_split
+
+from concrete.ml.sklearn import LinearRegression as ConcreteLinearRegression
+
+%matplotlib inline
+
+import matplotlib.pyplot as plt
+from IPython.display import display
+
+train_plot_config = {"c": "black", "marker": "D", "s": 15, "label": "Train data"}
+test_plot_config = {"c": "red", "marker": "x", "s": 15, "label": "Test data"}
+
+
+def get_sklearn_plot_config(r2_score=None):
+    label = "Scikit-Learn"
+    if r2_score is not None:
+        label += f", {'$R^2$'}={r2_score:.4f}"
+    return {"c": "blue", "linewidth": 2.5, "label": label}
+
+
+def get_concrete_plot_config(r2_score=None):
+    label = "Concrete ML"
+    if r2_score is not None:
+        label += f", {'$R^2$'}={r2_score:.4f}"
+    return {"c": "orange", "linewidth": 2.5, "label": label}
+
+# pylint: disable=unbalanced-tuple-unpacking
+X, y = make_regression(
+    n_samples=200, n_features=1, n_targets=1, bias=5.0, noise=30.0, random_state=42
+)
+# pylint: enable=unbalanced-tuple-unpacking
+
+# We split the data-set into a training and a testing set
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=42)
+
+# We sort the test set for a better visualization
+sorted_indexes = np.argsort(np.squeeze(X_test))
+X_test = X_test[sorted_indexes, :]
+y_test = y_test[sorted_indexes]
+
+plt.ioff()
+
+plt.clf()
+fig, ax = plt.subplots(1, figsize=(10, 5))
+fig.patch.set_facecolor("white")
+ax.scatter(X_train, y_train, **train_plot_config)
+ax.scatter(X_test, y_test, **test_plot_config)
+ax.legend()
+display(fig)
+
+sklearn_lr = SklearnLinearRegression()
+sklearn_lr.fit(X_train, y_train)
+y_pred = sklearn_lr.predict(X_test)
+
+# Compute the R2 scores
+sklearn_r2_score = r2_score(y_test, y_pred)
+
+plt.ioff()
+plt.clf()
+
+fig, ax = plt.subplots(1, figsize=(10, 5))
+fig.patch.set_facecolor("white")
+ax.scatter(X_train, y_train, **train_plot_config)
+ax.scatter(X_test, y_test, **test_plot_config)
+ax.plot(X_test, y_pred, **get_sklearn_plot_config(sklearn_r2_score))
+ax.legend()
+display(fig)
+
+# We quantize the inputs using 8-bits
+concrete_lr = ConcreteLinearRegression(n_bits=8)
+
+# We train the concrete linear regression model on clear data
+concrete_lr.fit(X_train, y_train)
+
+# We densify the space representation of the original X,
+# to better visualize the resulting step function in the following figure
+x_space = np.linspace(X_test.min(), X_test.max(), num=300)
+x_space = x_space[:, np.newaxis]
+y_pred_q_space = concrete_lr.predict(x_space)
+
+# Now, we can test our Concrete ML model on the clear test data
+y_pred_q = concrete_lr.predict(X_test)
+
+# Compute the R2 scores
+quantized_r2_score = r2_score(y_test, y_pred_q)
+
+plt.ioff()
+
+plt.clf()
+fig, ax = plt.subplots(1, figsize=(12, 8))
+fig.patch.set_facecolor("white")
+ax.scatter(X_train, y_train, **train_plot_config)
+ax.scatter(X_test, y_test, **test_plot_config)
+ax.plot(X_test, y_pred, **get_sklearn_plot_config(sklearn_r2_score))
+ax.plot(x_space, y_pred_q_space, **get_concrete_plot_config(quantized_r2_score))
+ax.legend()
+display(fig)
+
+fhe_circuit = concrete_lr.compile(X_train)
+
+print(f"Generating a key for a {fhe_circuit.graph.maximum_integer_bit_width()}-bit circuit")
+
+time_begin = time.time()
+fhe_circuit.client.keygen(force=False)
+print(f"Key generation time: {time.time() - time_begin:.4f} seconds")
+
+time_begin = time.time()
+y_pred_fhe = concrete_lr.predict(X_test, fhe="execute")
+print(f"Execution time: {(time.time() - time_begin) / len(X_test):.4f} seconds per sample")
+
+# Measure the FHE R2 score
+fhe_r2_score = r2_score(y_test, y_pred_fhe)
+
+print("R^2 scores:")
+print(f"scikit-learn (clear): {sklearn_r2_score:.4f}")
+print(f"Concrete ML (quantized): {quantized_r2_score:.4f}")
+print(f"Concrete ML (FHE): {fhe_r2_score:.4f}")
+
+# Measure the error of the FHE quantized model with respect to the clear scikit-learn float model
+concrete_score_difference = abs(fhe_r2_score - quantized_r2_score) * 100 / quantized_r2_score
+print(
+    "\nRelative score difference for Concrete ML (quantized clear) vs. Concrete ML (FHE):",
+    f"{concrete_score_difference:.2f}%",
+)
+
+# Measure the error of the FHE quantized model with respect to the clear float model
+score_difference = abs(fhe_r2_score - sklearn_r2_score) * 100 / sklearn_r2_score
+print(
+    "Relative score difference for scikit-learn (clear) vs. Concrete ML (FHE) scores:",
+    f"{score_difference:.2f}%",
+)
+
+# For better visualization
+y_pred_q_space = concrete_lr.predict(x_space)
+
+plt.clf()
+fig, ax = plt.subplots(1, figsize=(12, 8))
+fig.patch.set_facecolor("white")
+ax.scatter(X_train, y_train, **train_plot_config)
+ax.scatter(X_test, y_test, **test_plot_config)
+ax.plot(X_test, y_pred, **get_sklearn_plot_config(sklearn_r2_score))
+ax.plot(x_space, y_pred_q_space, **get_concrete_plot_config(fhe_r2_score))
+ax.legend()
+
+display(fig)
+
+
+
+# Code from: ./ConvolutionalNeuralNetwork.ipynb
+--------------------------------------------------------------------------------
+
+import time
+
+import numpy as np
+import torch
+import torch.utils
+from concrete.compiler import check_gpu_available
+from sklearn.datasets import load_digits
+from sklearn.model_selection import train_test_split
+from torch import nn
+from torch.utils.data import DataLoader, TensorDataset
+from tqdm import tqdm
+
+from concrete.ml.torch.compile import compile_torch_model
+
+# And some helpers for visualization.
+
+%matplotlib inline
+
+import matplotlib.pyplot as plt
+
+X, y = load_digits(return_X_y=True)
+
+# The sklearn Digits data-set, though it contains digit images, keeps these images in vectors
+# so we need to reshape them to 2D first. The images are 8x8 px in size and monochrome
+X = np.expand_dims(X.reshape((-1, 8, 8)), 1)
+
+nplot = 4
+fig, ax = plt.subplots(nplot, nplot, figsize=(6, 6))
+for i in range(0, nplot):
+    for j in range(0, nplot):
+        ax[i, j].imshow(X[i * nplot + j, ::].squeeze())
+plt.show()
+
+x_train, x_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.25, shuffle=True, random_state=42
+)
+
+class TinyCNN(nn.Module):
+    """A very small CNN to classify the sklearn digits data-set."""
+
+    def __init__(self, n_classes) -> None:
+        """Construct the CNN with a configurable number of classes."""
+        super().__init__()
+
+        # This network has a total complexity of 1216 MAC
+        self.conv1 = nn.Conv2d(1, 8, 3, stride=1, padding=0)
+        self.conv2 = nn.Conv2d(8, 16, 3, stride=2, padding=0)
+        self.conv3 = nn.Conv2d(16, 32, 2, stride=1, padding=0)
+        self.fc1 = nn.Linear(32, n_classes)
+
+    def forward(self, x):
+        """Run inference on the tiny CNN, apply the decision layer on the reshaped conv output."""
+        x = self.conv1(x)
+        x = torch.relu(x)
+        x = self.conv2(x)
+        x = torch.relu(x)
+        x = self.conv3(x)
+        x = torch.relu(x)
+        x = x.flatten(1)
+        x = self.fc1(x)
+        return x
+
+torch.manual_seed(42)
+
+
+def train_one_epoch(net, optimizer, train_loader):
+    # Cross Entropy loss for classification when not using a softmax layer in the network
+    loss = nn.CrossEntropyLoss()
+
+    net.train()
+    avg_loss = 0
+    for data, target in train_loader:
+        optimizer.zero_grad()
+        output = net(data)
+        loss_net = loss(output, target.long())
+        loss_net.backward()
+        optimizer.step()
+        avg_loss += loss_net.item()
+
+    return avg_loss / len(train_loader)
+
+
+# Create the tiny CNN with 10 output classes
+N_EPOCHS = 150
+
+# Create a train data loader
+train_dataset = TensorDataset(torch.Tensor(x_train), torch.Tensor(y_train))
+train_dataloader = DataLoader(train_dataset, batch_size=64)
+
+# Create a test data loader to supply batches for network evaluation (test)
+test_dataset = TensorDataset(torch.Tensor(x_test), torch.Tensor(y_test))
+test_dataloader = DataLoader(test_dataset)
+
+# Train the network with Adam, output the test set accuracy every epoch
+net = TinyCNN(10)
+losses_bits = []
+optimizer = torch.optim.Adam(net.parameters())
+for _ in tqdm(range(N_EPOCHS), desc="Training"):
+    losses_bits.append(train_one_epoch(net, optimizer, train_dataloader))
+
+fig = plt.figure(figsize=(8, 4))
+plt.plot(losses_bits)
+plt.ylabel("Cross Entropy Loss")
+plt.xlabel("Epoch")
+plt.title("Training set loss during training")
+plt.grid(True)
+plt.show()
+
+def test_torch(net, test_loader):
+    """Test the network: measure accuracy on the test set."""
+
+    # Freeze normalization layers
+    net.eval()
+
+    all_y_pred = np.zeros((len(test_loader)), dtype=np.int64)
+    all_targets = np.zeros((len(test_loader)), dtype=np.int64)
+
+    # Iterate over the batches
+    idx = 0
+    for data, target in test_loader:
+        # Accumulate the ground truth labels
+        endidx = idx + target.shape[0]
+        all_targets[idx:endidx] = target.numpy()
+
+        # Run forward and get the predicted class id
+        output = net(data).argmax(1).detach().numpy()
+        all_y_pred[idx:endidx] = output
+
+        idx += target.shape[0]
+
+    # Print out the accuracy as a percentage
+    n_correct = np.sum(all_targets == all_y_pred)
+    print(
+        f"Test accuracy for fp32 weights and activations: "
+        f"{n_correct / len(test_loader) * 100:.2f}%"
+    )
+
+
+test_torch(net, test_dataloader)
+
+def test_with_concrete(quantized_module, test_loader, use_sim):
+    """Test a neural network that is quantized and compiled with Concrete ML."""
+
+    # Casting the inputs into int64 is recommended
+    all_y_pred = np.zeros((len(test_loader)), dtype=np.int64)
+    all_targets = np.zeros((len(test_loader)), dtype=np.int64)
+
+    # Iterate over the test batches and accumulate predictions and ground truth labels in a vector
+    idx = 0
+    for data, target in tqdm(test_loader):
+        data = data.numpy()
+        target = target.numpy()
+
+        fhe_mode = "simulate" if use_sim else "execute"
+
+        # Quantize the inputs and cast to appropriate data type
+        y_pred = quantized_module.forward(data, fhe=fhe_mode)
+
+        endidx = idx + target.shape[0]
+
+        # Accumulate the ground truth labels
+        all_targets[idx:endidx] = target
+
+        # Get the predicted class id and accumulate the predictions
+        y_pred = np.argmax(y_pred, axis=1)
+        all_y_pred[idx:endidx] = y_pred
+
+        # Update the index
+        idx += target.shape[0]
+
+    # Compute and report results
+    n_correct = np.sum(all_targets == all_y_pred)
+
+    return n_correct / len(test_loader)
+
+n_bits = 6
+
+use_gpu_if_available = False
+device = "cuda" if use_gpu_if_available and check_gpu_available() else "cpu"
+
+q_module = compile_torch_model(net, x_train, rounding_threshold_bits=6, p_error=0.1, device=device)
+
+start_time = time.time()
+accs = test_with_concrete(
+    q_module,
+    test_dataloader,
+    use_sim=True,
+)
+sim_time = time.time() - start_time
+
+print(f"Simulated FHE execution for {n_bits} bit network accuracy: {accs:.2f}%")
+
+# Generate keys first
+t = time.time()
+q_module.fhe_circuit.keygen()
+print(f"Keygen time: {time.time()-t:.2f}s")
+
+# Run inference in FHE on a single encrypted example
+mini_test_dataset = TensorDataset(torch.Tensor(x_test[:100, :]), torch.Tensor(y_test[:100]))
+mini_test_dataloader = DataLoader(mini_test_dataset)
+
+t = time.time()
+accuracy_test = test_with_concrete(
+    q_module,
+    mini_test_dataloader,
+    use_sim=False,
+)
+elapsed_time = time.time() - t
+time_per_inference = elapsed_time / len(mini_test_dataset)
+accuracy_percentage = 100 * accuracy_test
+
+print(
+    f"Time per inference in FHE: {time_per_inference:.2f} "
+    f"with {accuracy_percentage:.2f}% accuracy"
+)
+

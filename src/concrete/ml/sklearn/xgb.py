@@ -137,7 +137,7 @@ class XGBClassifier(BaseTreeClassifierMixin):
     def dump_dict(self) -> Dict[str, Any]:
         metadata: Dict[str, Any] = {}
 
-        # Concrete-ML
+        # Concrete ML
         metadata["n_bits"] = self.n_bits
         metadata["sklearn_model"] = self.sklearn_model
         metadata["_is_fitted"] = self._is_fitted
@@ -208,7 +208,7 @@ class XGBClassifier(BaseTreeClassifierMixin):
         # Instantiate the model
         obj = XGBClassifier(n_bits=metadata["n_bits"])
 
-        # Concrete-ML
+        # Concrete ML
         obj.sklearn_model = metadata["sklearn_model"]
         obj._is_fitted = metadata["_is_fitted"]
         obj._is_compiled = metadata["_is_compiled"]
@@ -417,7 +417,7 @@ class XGBRegressor(BaseTreeRegressorMixin):
     def dump_dict(self) -> Dict[str, Any]:
         metadata: Dict[str, Any] = {}
 
-        # Concrete-ML
+        # Concrete ML
         metadata["n_bits"] = self.n_bits
         metadata["sklearn_model"] = self.sklearn_model
         metadata["_is_fitted"] = self._is_fitted
@@ -487,7 +487,7 @@ class XGBRegressor(BaseTreeRegressorMixin):
         # Instantiate the model
         obj = XGBRegressor(n_bits=metadata["n_bits"])
 
-        # Concrete-ML
+        # Concrete ML
         obj.sklearn_model = metadata["sklearn_model"]
         obj._is_fitted = metadata["_is_fitted"]
         obj._is_compiled = metadata["_is_compiled"]

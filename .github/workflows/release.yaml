@@ -288,7 +288,7 @@ jobs:
           tags: true
 
   # This action creates docker and pypi images directly on the AWS EC2 instance
-  # The 'PRIVATE_RELEASE_IMAGE_BASE' variable is kept here in case Concrete-ML starts to publish
+  # The 'PRIVATE_RELEASE_IMAGE_BASE' variable is kept here in case Concrete ML starts to publish
   # private nightly releases one day. Currently, release candidates and actual releases are all
   # done through the 'PUBLIC_RELEASE_IMAGE_BASE' image. The private image is also used to list all
   # tags easily
@@ -471,7 +471,7 @@ jobs:
           echo "" >> "${SECRETS_FILE}"
           echo "SECRETS_FILE=${SECRETS_FILE}" >> "$GITHUB_ENV"
 
-      - name: Build Docker Concrete-ML Image
+      - name: Build Docker Concrete ML Image
         if: ${{ success() && !cancelled() }}
         uses: docker/build-push-action@48aba3b46d1b1fec4febb7c5d0c644b249a11355
         with:
