@@ -29,7 +29,7 @@ from .compile import (
     compile_torch_model,
     has_any_qnn_layers,
 )
-from .lora import BackwardModuleLinear, ForwardModuleLinear
+from .hybrid_backprop_linear import BackwardModuleLinear, ForwardModuleLinear
 
 
 def tuple_to_underscore_str(tup: Tuple) -> str:
@@ -389,7 +389,6 @@ class HybridFHEModel:
 
     def _replace_modules(self):
         """Replace the private modules in the model with remote layers."""
-
         self._has_only_large_linear_layers = True
         for module_name in self.module_names:
             # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3858
@@ -682,7 +681,9 @@ class HybridFHEModel:
 
         # Save the model with a specific filename
         model_path = path / "model.pth"
-        torch.save(self.model, model_path.resolve())
+        # Save the model state dict due to a Brevitas issue
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4572
+        torch.save(self.model.state_dict(), model_path.resolve())
 
         # Save the FHE circuit in the same directory
         self._save_fhe_circuit(path, via_mlir=via_mlir)

@@ -23,7 +23,7 @@ Let's use following conventions for the docs. If a new convention needs to be de
 1. google is a verb ("you can google" but not "you can Google") : but try to avoid this
 1. Programs:
    - Jupyter
-   - Concrete ML (no Concrete-ML)
+   - Concrete ML (no Concrete ML)
    - pytest except when title where it is capitalized
    - Python
    - torch (for the code) and PyTorch (for the product)

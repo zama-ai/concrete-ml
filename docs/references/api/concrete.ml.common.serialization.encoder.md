@@ -45,7 +45,7 @@ Non-native types are serialized manually and dumped in a custom dict format that
 
 The name should be unique for each type, as it is used in the ConcreteDecoder class to detect the initial type and apply the proper load method to the serialized object. The serialized value is the value that was serialized manually in a native type. Additional arguments such as a numpy array's dtype are also properly serialized. If an object has an unexpected type or is not serializable, an error is thrown.
 
-The ConcreteEncoder is only meant to encode Concrete-ML's built-in models and therefore only supports the necessary types. For example, torch.Tensor objects are not serializable using this encoder as built-in models only use numpy arrays. However, the list of supported types might expand in future releases if new models are added and need new types.
+The ConcreteEncoder is only meant to encode Concrete ML's built-in models and therefore only supports the necessary types. For example, torch.Tensor objects are not serializable using this encoder as built-in models only use numpy arrays. However, the list of supported types might expand in future releases if new models are added and need new types.
 
 ______________________________________________________________________
 
