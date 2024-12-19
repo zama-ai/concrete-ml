@@ -81,7 +81,7 @@ jobs:
           echo "::add-mask::${{ secrets.INTERNAL_REPO_URL }}"
 
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@f26b8d611b2e695158fb0a6980834f0612f65ef8
         with:
           lfs: true
           ref: ${{ github.event.inputs.git-ref }}
@@ -120,7 +120,7 @@ jobs:
 
       - name: Alternative Concrete Python Branch Checkout
         if: github.event.inputs.alternative-cp-branch != 'none'
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@f26b8d611b2e695158fb0a6980834f0612f65ef8
         with:
           path: concrete
           repository: zama-ai/concrete
