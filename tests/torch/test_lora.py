@@ -459,7 +459,7 @@ def test_lora_training_forward_with_loss_fn_and_attention_mask():
 
     x = torch.randn(5, 10)
     y = torch.randn(5, 10)
-    attention_mask = torch.randn(5, 10)
+    attention_mask = torch.randint(0, 2, (5, 10))
 
     # Call forward with (input_ids, labels, attention_mask)
     loss, _ = lora_training((x, y, attention_mask))
@@ -495,7 +495,7 @@ def test_lora_training_forward_with_additional_inputs():
     lora_training = LoraTraining(model)
     x = torch.randn(5, 10)
     y = torch.randn(5, 10)
-    attention_mask = torch.randn(5, 10)
+    attention_mask = torch.randint(0, 2, (5, 10))
 
     loss, _ = lora_training((x, y, attention_mask))
     assert isinstance(loss, torch.Tensor)
