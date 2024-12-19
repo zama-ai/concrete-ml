@@ -431,31 +431,73 @@ def test_forward_backward_module():
     assert grad_input.shape == x.shape
 
 
-def test_lora_training_forward_with_additional_inputs():
-    """Test LoraTraining forward with additional inputs."""
+def test_lora_training_forward_with_loss_fn_and_attention_mask():
+    """Test LoraTraining forward using a custom loss_fn and attention_mask."""
 
-    class ModelWithAdditionalInputs(nn.Module):
-        """Model with additional inputs for testing."""
+    class ModelWithAttention(nn.Module):
+        """Model that supports attention_mask for testing."""
 
         def __init__(self):
             super().__init__()
             self.lora_a = nn.Parameter(torch.randn(10, 10))
             self.linear = nn.Linear(10, 10)
 
-        def forward(self, x, extra_input, labels=None):
-            """Forward pass with additional inputs."""
-            logits = self.linear(x + extra_input)
+        def forward(self, x, attention_mask=None):
+            """Forward pass."""
+            if attention_mask is not None:
+                return {"logits": self.linear(x + attention_mask)}
+            return {"logits": self.linear(x)}
+
+    # Define a simple loss function
+    def simple_loss_fn(logits, labels):
+        return nn.MSELoss()(logits, labels)
+
+    model = ModelWithAttention()
+
+    # Instantiate LoraTraining with a custom loss_fn
+    lora_training = LoraTraining(model, loss_fn=simple_loss_fn)
+
+    x = torch.randn(5, 10)
+    y = torch.randn(5, 10)
+    attention_mask = torch.randn(5, 10)
+
+    # Call forward with (input_ids, labels, attention_mask)
+    loss, _ = lora_training((x, y, attention_mask))
+    assert isinstance(loss, torch.Tensor)
+
+
+def test_lora_training_forward_with_additional_inputs():
+    """Test LoraTraining forward with additional inputs."""
+
+    class ModelWithAttention(nn.Module):
+        """Model with attention input for testing."""
+
+        def __init__(self):
+            super().__init__()
+            self.lora_a = nn.Parameter(torch.randn(10, 10))
+            self.linear = nn.Linear(10, 10)
+
+        def forward(self, x, attention_mask=None, labels=None):
+            """Forward pass with an attention mask."""
+            # Just treat the attention_mask as an extra input
+            # and add it to x before passing through linear.
+            if attention_mask is not None:
+                logits = self.linear(x + attention_mask)
+            else:
+                logits = self.linear(x)
+
             if labels is not None:
                 loss = nn.functional.mse_loss(logits, labels)
                 return {"loss": loss}
             return {"logits": logits}
 
-    model = ModelWithAdditionalInputs()
+    model = ModelWithAttention()
     lora_training = LoraTraining(model)
     x = torch.randn(5, 10)
     y = torch.randn(5, 10)
-    extra_input = torch.randn(5, 10)
-    loss, _ = lora_training((x, extra_input, y))
+    attention_mask = torch.randn(5, 10)
+
+    loss, _ = lora_training((x, y, attention_mask))
     assert isinstance(loss, torch.Tensor)
 
 

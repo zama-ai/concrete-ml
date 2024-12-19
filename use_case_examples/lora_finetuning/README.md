@@ -6,13 +6,12 @@ This use case demonstrates how to fine-tune language models (GPT-2 and LLaMA) us
 
 Fine-tuning large language models typically requires access to sensitive data, which can raise privacy concerns. By leveraging FHE, we can perform computations on encrypted foundation model weights, ensuring that the data remain private throughout the training process. The LoRA weights are kept in clear on the client side.
 
-
 ## Key Features
 
 - **LoRA Fine-Tuning**: Fine-tune language models by adapting low-rank weights
 - **Hybrid Model**: Combine encrypted foundation model weights with clear LoRA weights for optimal performance
 - **Low Memory Requirements**: Minimal client-side memory needed for LoRA weights
-- **Multiple Approaches**: 
+- **Multiple Approaches**:
   - Custom training implementation for GPT-2
   - Simplified API-based approach for LLaMA using the `LoraTrainer`
 
@@ -34,12 +33,14 @@ pip install -r requirements.txt
 
 The repository includes two example notebooks:
 
-1. **GPT2FineTuneHybrid.ipynb**: 
+1. **GPT2FineTuneHybrid.ipynb**:
+
    - Uses a custom training implementation
    - Fine-tunes GPT-2 on a small Q&A data-set about FHE
    - Shows low-level control over the training process
 
-2. **LLamaFineTuning.ipynb**:
+1. **LLamaFineTuning.ipynb**:
+
    - Uses Concrete ML's `LoraTrainer` API for simplified implementation
    - Fine-tunes LLaMA on Concrete ML code examples
    - Shows how to use the high-level API for encrypted fine-tuning
@@ -47,6 +48,7 @@ The repository includes two example notebooks:
 ### Prepare the data-set
 
 Each notebook includes its own data-set:
+
 - GPT-2 uses a small Q&A data-set about FHE in `data_finetune/what_is_fhe.txt`
 - LLaMA uses Concrete ML code examples in `data_finetune/data-set.jsonl`
 
@@ -67,8 +69,8 @@ In a deployment or production scenario, the model can be fine-tuned as follows:
 
 ## Results
 
-
 ### GPT-2 Results
+
 After fine-tuning, the model's weights are distributed between the client and server as follows:
 
 - Total weights removed from the server: 68.24%

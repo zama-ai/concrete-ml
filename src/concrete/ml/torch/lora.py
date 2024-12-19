@@ -195,17 +195,29 @@ class LoraTraining(torch.nn.Module):
             ValueError: If the model does not return a loss and no loss function is provided.
         """
         assert (
-            len(inputs) >= 2
+            len(inputs) >= 2 and len(inputs) <= 3
         ), "Expected at least two inputs in the tuple: inputs (x) and targets (y)"
 
-        # FIXME:
-        # Remove when hybrid model supports multiple inputs modules
-        # Unpack model inputs and labels
-        *model_inputs, y = inputs
+        # Unpack depending on how many inputs we have
+        if len(inputs) == 2:
+            input_ids, labels = inputs
+            attention_mask = None
+        else:
+            input_ids, labels, attention_mask = inputs
+
+            # Validate attention mask
+            assert torch.all(
+                torch.logical_or(attention_mask == 0, attention_mask == 1)
+            ), "Invalid attention mask provided. Attention mask should only contain 0s and 1s."
 
         if self.loss_fn is None:
             # Pass inputs and labels to the model
-            outputs = self.inference_model(*model_inputs, labels=y)
+            if attention_mask is not None:
+                outputs = self.inference_model(
+                    input_ids, labels=labels, attention_mask=attention_mask
+                )
+            else:
+                outputs = self.inference_model(input_ids, labels=labels)
 
             # Check if outputs is a dict and retrieve the loss
             if isinstance(outputs, dict):
@@ -219,10 +231,16 @@ class LoraTraining(torch.nn.Module):
                 )
         else:
             # Forward pass without labels; compute loss manually
-            outputs = self.inference_model(*model_inputs)
-            if isinstance(outputs, dict) and "logits" in outputs:
-                outputs = outputs["logits"]
-            loss = self.loss_fn(outputs, y)
+            if attention_mask is not None:
+                logits = self.inference_model(input_ids, attention_mask=attention_mask)
+            else:
+                logits = self.inference_model(input_ids)
+
+            # If logits is a dict with 'logits' key, extract it
+            if isinstance(logits, dict) and "logits" in logits:
+                logits = logits["logits"]
+
+            loss = self.loss_fn(logits, labels)
 
         # Scale the loss for gradient accumulation
         scaled_loss = loss / self.loss_scaling_factor
