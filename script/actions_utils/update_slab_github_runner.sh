@@ -7,17 +7,23 @@
 # Define the release commit to replace
 RELEASE_COMMIT="11bd71901bbe5b1630ceea73d27597364c9af683"
 
-for file in $(find .github -type f \( -name "*.yml" -o -name "*.yaml" \)); do
-    echo "Processing: $file"
+find .github -type f \( -name "*.yml" -o -name "*.yaml" \) -print0 | while IFS= read -r -d '' file; do
 
-    # Extract lines containing "uses: zama-ai/slab-github-runner@"
-    echo "Before modifications:"
-    grep -nE "uses: zama-ai/slab-github-runner@" "$file"
+    # Check if the file contains the target string
+    if grep -q "uses: zama-ai/slab-github-runner@" "$file"; then
+        echo "Processing: $file"
 
-    # Replace the target line with the new commit, any comments will be deleted
-    sed -E -i "s|uses: zama-ai/slab-github-runner@.*|uses: zama-ai/slab-github-runner@$RELEASE_COMMIT|g" "$file"
+        # Extract lines containing "uses: zama-ai/slab-github-runner@" before modification
+        echo "Before modifications:"
+        grep -nE "uses: zama-ai/slab-github-runner@" "$file"
 
-    # Extract lines containing "uses: zama-ai/slab-github-runner@" after modification
-    echo "After modifications:"
-    grep -nE "uses: zama-ai/slab-github-runner@" "$file"
+        # Replace the target line with the new commit; any comments will be deleted
+        sed -E -i "s|uses: zama-ai/slab-github-runner@.*|uses: zama-ai/slab-github-runner@$RELEASE_COMMIT|g" "$file"
+
+        # Extract lines containing "uses: zama-ai/slab-github-runner@" after modification
+        echo "After modifications:"
+        grep -nE "uses: zama-ai/slab-github-runner@" "$file"
+
+        echo "-------------------------"
+    fi
 done
