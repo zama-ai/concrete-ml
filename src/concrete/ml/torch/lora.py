@@ -198,6 +198,7 @@ class LoraTraining(torch.nn.Module):
             len(inputs) >= 2 and len(inputs) <= 3
         ), "Expected at least two inputs in the tuple: inputs (x) and targets (y)"
 
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4682
         # Unpack depending on how many inputs we have
         if len(inputs) == 2:
             input_ids, labels = inputs

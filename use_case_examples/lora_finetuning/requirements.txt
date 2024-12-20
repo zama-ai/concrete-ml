@@ -4,6 +4,6 @@ peft==0.12.0
 Jinja2==3.1.4
 matplotlib==3.7.5
 datasets==3.1.0
-accelerate==1.2.0
+accelerate==1.0.1
 jupyter==1.1.1
 tqdm==4.67.1
