@@ -19,6 +19,8 @@ Fine-tuning large language models typically requires access to sensitive data, w
 
 ### Installation
 
+This project requires Python 3.9 or higher.
+
 Install the required packages:
 
 <!--pytest-codeblocks:skip-->
