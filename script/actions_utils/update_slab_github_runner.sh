@@ -5,7 +5,7 @@
 # Note: For security reasons, we prefer updating the commit instead of the tag.
 
 # Define the release commit to replace
-RELEASE_COMMIT="11bd71901bbe5b1630ceea73d27597364c9af683"
+RELEASE_COMMIT="79939325c3c429837c10d6041e4fd8589d328bac"  # v1.4.1
 
 find .github -type f \( -name "*.yml" -o -name "*.yaml" \) -print0 | while IFS= read -r -d '' file; do
 
