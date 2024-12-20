@@ -213,6 +213,10 @@ class RemoteModule(nn.Module):
             # towards client lazy loading with caching as done on the server.
             self.clients[shape] = (uid, client)
 
+    def _apply(self, fn, recurse=True):
+        """Prevent remote modules moving private debug weights to GPU."""
+        return self
+
     def forward(self, x: torch.Tensor) -> Union[torch.Tensor, QuantTensor]:
         """Forward pass of the remote module.
 
@@ -247,14 +251,14 @@ class RemoteModule(nn.Module):
 
             if self.executor:
                 # Delegate to the optimized GLWE executor
-                y = self.executor.forward(
-                        x.detach(), self.private_q_module, self.fhe_local_mode
-                    )
+                y = self.executor.forward(x.detach(), self.private_q_module, self.fhe_local_mode)
             else:
                 device = x.device
                 # Delegate to the quantized module for all fhe modes
                 y = torch.Tensor(
-                    self.private_q_module.forward(x.cpu().detach().numpy(), fhe=self.fhe_local_mode.value)
+                    self.private_q_module.forward(
+                        x.cpu().detach().numpy(), fhe=self.fhe_local_mode.value
+                    )
                 ).to(device)
 
         elif self.fhe_local_mode == HybridFHEMode.CALIBRATE:
@@ -596,14 +600,14 @@ class HybridFHEModel:
                         calibration_data_tensor,
                         n_bits=n_bits,
                         rounding_threshold_bits=rounding_threshold_bits,
+                        keep_onnx=False,
                     )
 
                     vals = self.private_q_modules[name].quant_layers_dict.values()
                     _, q_op = next(iter(vals))
-                    const_inp = q_op.constant_inputs[1] # Get the weights, the bias is in [2]
+                    const_inp = q_op.constant_inputs[1]  # Get the weights, the bias is in [2]
                     const_inp.values = const_inp.qvalues.astype(numpy.float32)
-
-                    self.private_q_modules[name]._onnx_model = None
+                    const_inp.qvalues = const_inp.qvalues.astype(numpy.int16)
                 else:
                     self.private_q_modules[name] = compile_torch_model(
                         self.private_modules[name],

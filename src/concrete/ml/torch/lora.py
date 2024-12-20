@@ -323,8 +323,8 @@ class LoraTrainer:
             num_epochs (int): Number of epochs to train.
             fhe (str): FHE mode ('disable', 'simulate', 'execute' or 'torch').
         """
-        device = torch.device("cpu")
-        self.lora_training_module.to(device)
+        device = torch.device("cuda")
+        #        self.lora_training_module.to(device)
         self.lora_training_module.inference_model.train()
 
         # Set the loss scaling factor for gradient accumulation

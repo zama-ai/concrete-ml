@@ -730,7 +730,9 @@ class ONNXConverter:
                 node_results[output_name] = node_output[0]
                 constants.add(output_name)
 
-    def quantize_module(self, *calibration_data: numpy.ndarray) -> QuantizedModule:
+    def quantize_module(
+        self, *calibration_data: numpy.ndarray, keep_onnx: Optional[bool] = True
+    ) -> QuantizedModule:
         """Quantize numpy module.
 
         Following https://arxiv.org/abs/1712.05877 guidelines.
@@ -760,7 +762,7 @@ class ONNXConverter:
                 graph_output.name for graph_output in self.numpy_model.onnx_model.graph.output
             ),
             quant_layers_dict=self.quant_ops_dict,
-            onnx_model=self.numpy_model.onnx_model,
+            onnx_model=self.numpy_model.onnx_model if keep_onnx else None,
             onnx_preprocessing=self.numpy_model.onnx_preprocessing,
         )
 

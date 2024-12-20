@@ -703,7 +703,7 @@ class QuantizedModule:
         return q_results
 
     def quantize_input(
-        self, *x: Optional[Union[numpy.ndarray, torch.Tensor]], dtype=numpy.int64
+        self, *x: Optional[Union[numpy.ndarray]], dtype=numpy.int64
     ) -> Union[numpy.ndarray, Tuple[Optional[numpy.ndarray], ...]]:
         """Take the inputs in fp32 and quantize it using the learned quantization parameters.
 
@@ -750,8 +750,8 @@ class QuantizedModule:
         return q_x
 
     def dequantize_output(
-        self, *q_y_preds: Union[numpy.ndarray, torch.Tensor]
-    ) -> Union[Union[numpy.ndarray, torch.Tensor], Tuple[Union[numpy.ndarray, torch.Tensor], ...]]:
+        self, *q_y_preds: Union[numpy.ndarray]
+    ) -> Union[Union[numpy.ndarray], Tuple[Union[numpy.ndarray], ...]]:
         """Take the last layer q_out and use its de-quant function.
 
         Args:
@@ -772,9 +772,8 @@ class QuantizedModule:
             for q_y_pred, output_quantizer in zip(q_y_preds, self.output_quantizers)
         )
 
-        if not isinstance(q_y_preds[0], torch.Tensor):
-            y_preds = tuple(map(numpy.array, y_preds))
-            
+        y_preds = tuple(map(numpy.array, y_preds))
+
         if len(y_preds) == 1:
             return y_preds[0]
 

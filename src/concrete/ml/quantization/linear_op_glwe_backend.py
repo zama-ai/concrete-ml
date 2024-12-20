@@ -93,19 +93,20 @@ class GLWELinearLayerExecutor:
 
         # Retrieve quantized weights
         q_weight = weight_bias[0].values
-        assert(isinstance(q_weight, numpy.ndarray))
-        assert(q_weight.dtype == numpy.float32)
+        assert isinstance(q_weight, numpy.ndarray)
+        assert q_weight.dtype == numpy.float32
 
         q_weight = numpy.transpose(q_weight) if transpose_inputs2 else q_weight
 
-        q_x = q_module.quantize_input(x, dtype=numpy.float32 if fhe == HybridFHEMode.DISABLE else None)
+        q_x = q_module.quantize_input(
+            x, dtype=numpy.float32 if fhe == HybridFHEMode.DISABLE else None
+        )
         q_x = torch.transpose(q_x) if transpose_inputs1 else q_x
 
         if fhe == HybridFHEMode.DISABLE:
             # There is no need to add the bias to the de-quantized values
             # as the bias is already included in the output quantizer
             # zero-point, in the analytical calibration
-
             q_w = torch.from_numpy(q_weight).to(q_x.device)
             mm = torch.matmul(q_x, q_w)
             y = q_module.dequantize_output(*to_tuple(mm))
