@@ -689,12 +689,10 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
 
         assert dtype in (numpy.int64, numpy.int32, numpy.float32, numpy.float64)
 
-        delta = 0.5 if QUANT_ROUND_LIKE_ROUND_PBS else 0
-
-        round_func = numpy.floor if QUANT_ROUND_LIKE_ROUND_PBS else numpy.rint
-        clip_func = numpy.clip
-
-        qvalues = round_func(values / self.scale + self.zero_point + delta)
+        if QUANT_ROUND_LIKE_ROUND_PBS:
+            qvalues = numpy.floor(values / self.scale + self.zero_point + 0.5)  # pragma: no cover
+        else:
+            qvalues = numpy.rint(values / self.scale + self.zero_point)
 
         # Clipping must be performed for PTQ and for precomputed (for now only Brevitas) QAT
         # (where quantizer parameters are available in ONNX layers).
@@ -710,7 +708,7 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
             if self.is_narrow:
                 min_value += 1
 
-            qvalues = clip_func(qvalues, min_value, 2 ** (self.n_bits) - 1 - self.offset)
+            qvalues = qvalues.clip(min_value, 2 ** (self.n_bits) - 1 - self.offset)
 
         qvalues = qvalues.astype(dtype)
 
@@ -738,17 +736,18 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
             + ((" " + str(self.scale.dtype)) if isinstance(self.scale, numpy.ndarray) else ""),
         )
 
-        prepared_zp = numpy.asarray(self.zero_point, dtype=numpy.float64)
-        if isinstance(qvalues, torch.Tensor):
-            prepared_zp = torch.from_numpy(prepared_zp).float().to(qvalues.device)
+        values = self.scale * (qvalues - numpy.asarray(self.zero_point, dtype=numpy.float64))
 
-        values = self.scale * (qvalues - prepared_zp)
-
-        assert isinstance(values, (float, numpy.ndarray, torch.Tensor, Tracer)), f"{values=}, {type(values)=}"
+        assert isinstance(values, (float, numpy.ndarray, Tracer)), f"{values=}, {type(values)=}"
         return values
 
-class TorchUniformQuantizer(UniformQuantizer):
-    def quant(self, values: Union[numpy.ndarray], dtype=numpy.int64) -> numpy.ndarray:
+class TorchUniformQuantizer():
+    _numpy_quantizer: UniformQuantizer
+
+    def __init__(self, quantizer: UniformQuantizer):
+        self._numpy_quantizer = quantizer
+
+    def quant(self, values: torch.Tensor, dtype: Optional[torch.dtype] = None) -> torch.Tensor:
         """Quantize values.
 
         Args:
@@ -757,8 +756,22 @@ class TorchUniformQuantizer(UniformQuantizer):
         Returns:
             numpy.ndarray: Integer quantized values.
         """
+        qvalues = torch.round(values / self._numpy_quantizer.scale + self._numpy_quantizer.zero_point)
 
-    def dequant(self, qvalues: Union[numpy.ndarray]) -> Union[float, numpy.ndarray, Tracer]:
+        if not self._numpy_quantizer.no_clipping:
+            min_value = -self._numpy_quantizer.offset
+            if self._numpy_quantizer.is_narrow:
+                min_value += 1
+
+            qvalues = torch.clip(qvalues, min_value, 2 ** (self.n_bits) - 1 - self._numpy_quantizer.offset)
+
+        if dtype is not None:
+            qvalues = qvalues.type(dtype)
+
+        return qvalues
+
+
+    def dequant(self, qvalues: torch.Tensor) -> torch.Tensor:
         """De-quantize values.
 
         Args:
@@ -767,7 +780,9 @@ class TorchUniformQuantizer(UniformQuantizer):
         Returns:
             Union[numpy.ndarray, Tracer]: De-quantized float values.
         """
-        
+        values = self._numpy_quantizer.scale * (qvalues - self._numpy_quantizer.zero_point)
+        return values
+            
 class QuantizedArray:
     """Abstraction of quantized array.
 

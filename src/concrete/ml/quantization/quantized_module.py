@@ -703,7 +703,7 @@ class QuantizedModule:
         return q_results
 
     def quantize_input(
-        self, *x: Optional[Union[numpy.ndarray]], dtype=numpy.int64
+        self, *x: Optional[numpy.ndarray], dtype=numpy.int64
     ) -> Union[numpy.ndarray, Tuple[Optional[numpy.ndarray], ...]]:
         """Take the inputs in fp32 and quantize it using the learned quantization parameters.
 
@@ -750,8 +750,8 @@ class QuantizedModule:
         return q_x
 
     def dequantize_output(
-        self, *q_y_preds: Union[numpy.ndarray]
-    ) -> Union[Union[numpy.ndarray], Tuple[Union[numpy.ndarray], ...]]:
+        self, *q_y_preds: numpy.ndarray
+    ) -> Union[numpy.ndarray, Tuple[Union[numpy.ndarray], ...]]:
         """Take the last layer q_out and use its de-quant function.
 
         Args:
@@ -768,11 +768,9 @@ class QuantizedModule:
         )
 
         y_preds = tuple(
-            output_quantizer.dequant(q_y_pred)
+            numpy.array(output_quantizer.dequant(q_y_pred))
             for q_y_pred, output_quantizer in zip(q_y_preds, self.output_quantizers)
         )
-
-        y_preds = tuple(map(numpy.array, y_preds))
 
         if len(y_preds) == 1:
             return y_preds[0]

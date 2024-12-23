@@ -6,6 +6,7 @@ import numpy
 import torch
 
 from ..common.utils import HybridFHEMode, to_tuple
+from .quantizers import TorchUniformQuantizer
 from .quantized_module import QuantizedModule
 
 
@@ -98,8 +99,10 @@ class GLWELinearLayerExecutor:
 
         q_weight = numpy.transpose(q_weight) if transpose_inputs2 else q_weight
 
-        q_x = q_module.quantize_input(
-            x, dtype=numpy.float32 if fhe == HybridFHEMode.DISABLE else None
+        quantizer = TorchUniformQuantizer(q_module.input_quantizers[0])
+
+        q_x = quantizer.quant(
+            x, dtype=torch.float32 if fhe == HybridFHEMode.DISABLE else None
         )
         q_x = torch.transpose(q_x) if transpose_inputs1 else q_x
 
