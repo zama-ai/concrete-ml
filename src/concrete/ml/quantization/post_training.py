@@ -740,6 +740,8 @@ class ONNXConverter:
         Args:
             calibration_data (numpy.ndarray):  Data that will be used to compute the bounds,
                 scales and zero point values for every quantized object.
+            keep_onnx (bool): keep the onnx model inside the QuantizedModule. Set to False
+                to save memory. Keeping the onnx model is useful for debugging
 
         Returns:
             QuantizedModule: Quantized numpy module

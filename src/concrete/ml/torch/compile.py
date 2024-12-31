@@ -96,6 +96,8 @@ def build_quantized_module(
             and 'n_bits' ('auto' or int)
         reduce_sum_copy (bool): if the inputs of QuantizedReduceSum should be copied to avoid
             bit-width propagation
+        keep_onnx (bool): keep the onnx model inside the QuantizedModule. Set to False
+            to save memory. Keeping the onnx model is useful for debugging
 
     Returns:
         QuantizedModule: The resulting QuantizedModule.
@@ -133,7 +135,9 @@ def build_quantized_module(
     # only work over shape of (1, ., .). For example, some reshape have newshape hardcoded based
     # on the inputset we sent in the NumpyModule.
 
-    quantized_module = post_training_quant.quantize_module(*inputset_as_numpy_tuple, keep_onnx)
+    quantized_module = post_training_quant.quantize_module(
+        *inputset_as_numpy_tuple, keep_onnx=keep_onnx
+    )
 
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4127
     if reduce_sum_copy:

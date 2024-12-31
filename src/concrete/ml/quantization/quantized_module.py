@@ -8,7 +8,6 @@ from typing import Any, Dict, Generator, Iterable, List, Optional, Sequence, Tex
 
 import numpy
 import onnx
-import torch
 from concrete.fhe.compilation.artifacts import DebugArtifacts
 from concrete.fhe.compilation.circuit import Circuit
 from concrete.fhe.compilation.compiler import Compiler
@@ -703,12 +702,14 @@ class QuantizedModule:
         return q_results
 
     def quantize_input(
-        self, *x: Optional[numpy.ndarray], dtype=numpy.int64
+        self, *x: Optional[numpy.ndarray], dtype: numpy.typing.DTypeLike = numpy.int64
     ) -> Union[numpy.ndarray, Tuple[Optional[numpy.ndarray], ...]]:
         """Take the inputs in fp32 and quantize it using the learned quantization parameters.
 
         Args:
             x (Optional[numpy.ndarray]): Floating point x or None.
+            dtype (numpy.typing.DTypeLike): optional user-specified datatype for the output
+
 
         Returns:
             Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]: Quantized (numpy.int64) x, or None if

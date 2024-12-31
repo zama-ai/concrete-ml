@@ -117,7 +117,7 @@ class RemoteModule(nn.Module):
         super().__init__()
         self.private_module: Optional[nn.Module] = module
         self.server_remote_address: Optional[str] = server_remote_address
-        self.calibration_data: List = []
+        self.calibration_data: Optional[List] = []
         self.uid = str(uuid.uuid4())
         self.private_q_module: Optional[QuantizedModule] = None
         self.fhe_local_mode: HybridFHEMode = HybridFHEMode.CALIBRATE
@@ -214,7 +214,12 @@ class RemoteModule(nn.Module):
             self.clients[shape] = (uid, client)
 
     def _apply(self, fn, recurse=True):
-        """Prevent remote modules moving private debug weights to GPU."""
+        """Prevent remote modules moving private debug weights to GPU.
+
+        .. # noqa: DAR101
+        .. # noqa: DAR201
+
+        """
         return self
 
     def forward(self, x: torch.Tensor) -> Union[torch.Tensor, QuantTensor]:
@@ -264,6 +269,7 @@ class RemoteModule(nn.Module):
         elif self.fhe_local_mode == HybridFHEMode.CALIBRATE:
             # Calling torch + gathering calibration data
             assert self.private_module is not None
+            assert self.calibration_data is not None
             self.calibration_data.append(x.detach())
             y = self.private_module(x)
             assert isinstance(y, (QuantTensor, torch.Tensor))
@@ -577,6 +583,7 @@ class HybridFHEModel:
             remote_module = self._get_module_by_name(self.model, name)
             assert isinstance(remote_module, RemoteModule)
 
+            assert remote_module.calibration_data is not None
             calibration_data_tensor = torch.cat(remote_module.calibration_data, dim=0)
 
             if has_any_qnn_layers(self.private_modules[name]):

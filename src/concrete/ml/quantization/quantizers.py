@@ -7,6 +7,7 @@ from copy import deepcopy
 from typing import Any, Dict, Optional, TextIO, Union, get_type_hints
 
 import numpy
+import numpy.typing
 import torch
 from concrete.fhe.tracing.tracer import Tracer
 
@@ -672,11 +673,14 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
         """
         dump(self, file)
 
-    def quant(self, values: numpy.ndarray, dtype=numpy.int64) -> numpy.ndarray:
+    def quant(
+        self, values: numpy.ndarray, dtype: numpy.typing.DTypeLike = numpy.int64
+    ) -> numpy.ndarray:
         """Quantize values.
 
         Args:
             values (numpy.ndarray): float values to quantize
+            dtype (numpy.typing.DTypeLike): optional user-specified datatype for the output
 
         Returns:
             numpy.ndarray: Integer quantized values.
@@ -741,35 +745,48 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
         assert isinstance(values, (float, numpy.ndarray, Tracer)), f"{values=}, {type(values)=}"
         return values
 
-class TorchUniformQuantizer():
-    _numpy_quantizer: UniformQuantizer
+
+class TorchUniformQuantizer:
+    """Uniform quantizer with a PyTorch implementation.
+
+    Contains all information necessary for uniform quantization and provides
+    quantization/de-quantization functionality on torch tensors.
+
+    Args:
+        quantizer (UniformQuantizer): Underlying numpy quantizer containing all parameters
+    """
+
+    _np_quant: UniformQuantizer
 
     def __init__(self, quantizer: UniformQuantizer):
-        self._numpy_quantizer = quantizer
+        self._np_quant = quantizer
 
     def quant(self, values: torch.Tensor, dtype: Optional[torch.dtype] = None) -> torch.Tensor:
         """Quantize values.
 
         Args:
             values (numpy.ndarray): float values to quantize
+            dtype (Optional[torch.dtype]): optional user-specified datatype for the output
 
         Returns:
             numpy.ndarray: Integer quantized values.
         """
-        qvalues = torch.round(values / self._numpy_quantizer.scale + self._numpy_quantizer.zero_point)
+        qvalues = torch.round(values / self._np_quant.scale + self._np_quant.zero_point)
 
-        if not self._numpy_quantizer.no_clipping:
-            min_value = -self._numpy_quantizer.offset
-            if self._numpy_quantizer.is_narrow:
+        if not self._np_quant.no_clipping:
+            assert self._np_quant.offset is not None
+            min_value = -self._np_quant.offset
+            if self._np_quant.is_narrow:
                 min_value += 1
 
-            qvalues = torch.clip(qvalues, min_value, 2 ** (self.n_bits) - 1 - self._numpy_quantizer.offset)
+            qvalues = torch.clip(
+                qvalues, min_value, 2 ** (self._np_quant.n_bits) - 1 - self._np_quant.offset
+            )
 
         if dtype is not None:
             qvalues = qvalues.type(dtype)
 
         return qvalues
-
 
     def dequant(self, qvalues: torch.Tensor) -> torch.Tensor:
         """De-quantize values.
@@ -780,9 +797,10 @@ class TorchUniformQuantizer():
         Returns:
             Union[numpy.ndarray, Tracer]: De-quantized float values.
         """
-        values = self._numpy_quantizer.scale * (qvalues - self._numpy_quantizer.zero_point)
+        values = self._np_quant.scale * (qvalues - self._np_quant.zero_point)
         return values
-            
+
+
 class QuantizedArray:
     """Abstraction of quantized array.
 
@@ -1040,5 +1058,3 @@ class QuantizedArray:
             "De-quantized values must be float64 but got: " f"{type(self.values)=}",
         )
         return self.values
-
-    
