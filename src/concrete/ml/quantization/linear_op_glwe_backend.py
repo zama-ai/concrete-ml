@@ -56,6 +56,26 @@ class GLWELinearLayerExecutor:
             self.glwe_crypto_params
         )
 
+    def _forward_clear(
+        self,
+        x: torch.Tensor,
+        q_module: QuantizedModule,
+        transpose_inputs1: bool,
+        q_weight: numpy.ndarray,
+    ) -> torch.Tensor:
+        quantizer = TorchUniformQuantizer(q_module.input_quantizers[0])
+        out_quantizer = TorchUniformQuantizer(q_module.output_quantizers[0])
+
+        q_x_torch = quantizer.quant(x, dtype=torch.float32)
+        q_x_torch = torch.transpose(q_x_torch, 1, 0) if transpose_inputs1 else q_x_torch
+
+        # There is no need to add the bias to the de-quantized values
+        # as the bias is already included in the output quantizer
+        # zero-point, in the analytical calibration
+        q_w = torch.from_numpy(q_weight).to(q_x_torch.device)
+        mm = torch.matmul(q_x_torch, q_w)
+        return out_quantizer.dequant(mm)
+
     def forward(
         self, x: torch.Tensor, q_module: QuantizedModule, fhe: HybridFHEMode
     ) -> torch.Tensor:
@@ -100,20 +120,7 @@ class GLWELinearLayerExecutor:
         q_weight = numpy.transpose(q_weight) if transpose_inputs2 else q_weight
 
         if fhe == HybridFHEMode.DISABLE:
-            quantizer = TorchUniformQuantizer(q_module.input_quantizers[0])
-            out_quantizer = TorchUniformQuantizer(q_module.output_quantizers[0])
-
-            q_x_torch = quantizer.quant(
-                x, dtype=torch.float32 if fhe == HybridFHEMode.DISABLE else None
-            )
-            q_x_torch = torch.transpose(q_x_torch, 1, 0) if transpose_inputs1 else q_x_torch
-
-            # There is no need to add the bias to the de-quantized values
-            # as the bias is already included in the output quantizer
-            # zero-point, in the analytical calibration
-            q_w = torch.from_numpy(q_weight).to(q_x_torch.device)
-            mm = torch.matmul(q_x_torch, q_w)
-            return out_quantizer.dequant(mm)
+            return self._forward_clear(x, q_module, transpose_inputs1, q_weight)
 
         if self.private_key is None:
             self.keygen()

@@ -268,6 +268,26 @@ def test_lora_trainer_train():
     train_loader = DataLoader(dataset, batch_size=1)
     lora_trainer.train(train_loader, num_epochs=1, fhe="disable")
 
+    class DictDataset(Dataset):
+        """Dataset that contains data in Python dictionaries."""
+
+        def __init__(self, x, labels):
+            self.data = x
+            self.target = labels
+
+        def __getitem__(self, index):
+            x = self.data[index]
+            y = self.target[index]
+
+            return {"x": x, "labels": y}
+
+        def __len__(self):
+            return len(self.data)
+
+    dict_dataset = DictDataset(torch.randn(2, 5, 10), torch.randn(2, 5, 10))
+    train_loader = DataLoader(dict_dataset, batch_size=1)
+    lora_trainer.train(train_loader, num_epochs=1, fhe="disable")
+
 
 def test_lora_trainer_train_with_lr_scheduler():
     """Test LoraTrainer train with lr_scheduler."""
@@ -462,7 +482,7 @@ def test_lora_training_forward_with_loss_fn_and_attention_mask():
     attention_mask = torch.randint(0, 2, (5, 10))
 
     # Call forward with (input_ids, labels, attention_mask)
-    loss, _ = lora_training((x, y, attention_mask))
+    loss, _ = lora_training({"x": x, "labels": y, "attention_mask": attention_mask})
     assert isinstance(loss, torch.Tensor)
 
 
@@ -497,7 +517,7 @@ def test_lora_training_forward_with_additional_inputs():
     y = torch.randn(5, 10)
     attention_mask = torch.randint(0, 2, (5, 10))
 
-    loss, _ = lora_training((x, y, attention_mask))
+    loss, _ = lora_training({"x": x, "labels": y, "attention_mask": attention_mask})
     assert isinstance(loss, torch.Tensor)
 
 

@@ -1,6 +1,6 @@
 """This module contains classes for LoRA (Low-Rank Adaptation) FHE training and custom layers."""
 
-from typing import List, Tuple, Union
+from typing import Any, List, Tuple, Union
 
 import torch
 from torch import Tensor, nn
@@ -24,25 +24,34 @@ if TransformerConv1D is not None:
     LINEAR_LAYERS = LINEAR_LAYERS + (TransformerConv1D,)
 
 
-# pylint: disable=abstract-method
-# pylint: disable=arguments-differ
-
-
-def try_dict(obj):
-    """Try to convert the object to a dict.
+def grad_to(param, device: str) -> None:
+    """Move parameter gradient to device.
 
     Args:
-        obj: The object to convert to a dict.
-
-    Returns:
-        The object converted to a dict or None if the conversion fails.
+        param: torch parameter with gradient
+        device (str): target device for gradient
     """
-    if isinstance(obj, dict):
-        return obj
-    try:
-        return dict(obj)
-    except (TypeError, ValueError):
-        return None
+    if param._grad is not None:  # pylint: disable=protected-access
+        param._grad.data = param._grad.data.to(device)  # pylint: disable=protected-access
+
+
+def optimizer_to(optim, device):
+    """Move optimizer object to device.
+
+    Args:
+        optim: torch optimizer
+        device (str): target device for gradient
+    """
+    for param in optim.state.values():
+        # Not sure there are any global tensors in the state dict
+        if isinstance(param, torch.Tensor):
+            param.data = param.data.to(device)
+            grad_to(param, device)
+        elif isinstance(param, dict):
+            for subparam in param.values():
+                if isinstance(subparam, torch.Tensor):
+                    subparam.data = subparam.data.to(device)
+                    grad_to(subparam, device)
 
 
 class LoraTraining(torch.nn.Module):
@@ -197,47 +206,40 @@ class LoraTraining(torch.nn.Module):
         Raises:
             ValueError: If the model does not return a loss and no loss function is provided.
         """
-        assert (
-            len(inputs) >= 2 and len(inputs) <= 3
-        ), "Expected at least two inputs in the tuple: inputs (x) and targets (y)"
-
-        if isinstance(inputs, (dict, BatchEncoding)):
-            attention_mask = inputs.get("attention_mask", None)
-            labels = inputs.get("labels", None)
-        else:
-            # Unpack depending on how many inputs we have
-            if len(inputs) == 2:
-                _, labels = inputs
-                attention_mask = None
-            else:
-                assert len(inputs) == 3
-                _, labels, attention_mask = inputs
+        attention_mask, labels = self.process_inputs(inputs)
 
         # Validate attention mask
         assert attention_mask is None or torch.all(
             torch.logical_or(attention_mask == 0, attention_mask == 1)
         ), "Invalid attention mask provided. Attention mask should only contain 0s and 1s."
 
-        if self.loss_fn is None:
-            # Pass inputs and labels to the model
+        # Pass inputs and labels to the model
+        if isinstance(inputs, dict):
             outputs = self.inference_model(**inputs)
+        else:
+            outputs = self.inference_model(*inputs)
 
+        if self.loss_fn is None:
             # Check if outputs is a dict and retrieve the loss
-            if isinstance(outputs, dict):
-                loss = outputs.get("loss", None)
-            else:
-                loss = getattr(outputs, "loss", None)
+            loss = (
+                outputs.get("loss", None)
+                if isinstance(outputs, dict)
+                else getattr(outputs, "loss", None)
+            )
             if loss is None:
                 raise ValueError(
                     "The model did not return a loss.",
-                    "Ensure that 'labels' are correctly provided or provide a loss_fn.",
+                    (
+                        "Ensure that the 'labels' key is populated in the training data dict, "
+                        "or provide a loss_fn."
+                    ),
                 )
         else:
-            logits = self.inference_model(**inputs)
-
             # If logits is a dict with 'logits' key, extract it
-            if isinstance(logits, dict) and "logits" in logits:
-                logits = logits["logits"]
+            if isinstance(outputs, dict) and "logits" in outputs:
+                logits = outputs["logits"]
+            else:
+                logits = outputs
 
             loss = self.loss_fn(logits, labels)
 
@@ -251,6 +253,36 @@ class LoraTraining(torch.nn.Module):
 
         # Return the original (unscaled) loss for logging
         return loss.detach(), None
+
+    def process_inputs(self, inputs: Any) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Process training inputs such as labels and attention mask.
+
+        Args:
+            inputs: a dict, BatchEncoding or tuple containing training data
+
+        Returns:
+            res: tuple containing the attention mask and the labels
+        """
+
+        assert (
+            len(inputs) >= 2 and len(inputs) <= 3
+        ), "Expected at least two inputs in the tuple: inputs (x) and targets (y)"
+
+        if isinstance(inputs, (dict, BatchEncoding)):
+            attention_mask = inputs.get("attention_mask", None)
+            if self.loss_fn is None:
+                labels = inputs.get("labels", None)
+            else:
+                labels = inputs.pop("labels", None)
+        else:
+            # Unpack depending on how many inputs we have
+            if len(inputs) == 2:
+                _, labels = inputs
+                attention_mask = None
+            else:
+                assert len(inputs) == 3
+                _, labels, attention_mask = inputs
+        return attention_mask, labels
 
 
 class LoraTrainer:
@@ -287,7 +319,7 @@ class LoraTrainer:
 
         assert_true(
             training_args is None
-            or not "use_cpu" in training_args
+            or "use_cpu" not in training_args
             or training_args["use_cpu"] is True,
             (
                 "When specifying custom training_args for the LoraTrainer, you "
@@ -333,21 +365,9 @@ class LoraTrainer:
             train_loader (DataLoader): DataLoader for training data.
             num_epochs (int): Number of epochs to train.
             fhe (str): FHE mode ('disable', 'simulate', 'execute' or 'torch').
+            device (str): A device string that is compatible with PyTorch, used for
+                client-side computations.
         """
-
-        def optimizer_to(optim, device):
-            for param in optim.state.values():
-                # Not sure there are any global tensors in the state dict
-                if isinstance(param, torch.Tensor):
-                    param.data = param.data.to(device)
-                    if param._grad is not None:
-                        param._grad.data = param._grad.data.to(device)
-                elif isinstance(param, dict):
-                    for subparam in param.values():
-                        if isinstance(subparam, torch.Tensor):
-                            subparam.data = subparam.data.to(device)
-                            if subparam._grad is not None:
-                                subparam._grad.data = subparam._grad.data.to(device)
 
         self.hybrid_model.model.to(device)
         optimizer_to(self.optimizer, device)
@@ -364,7 +384,20 @@ class LoraTrainer:
             self.optimizer.zero_grad()  # Zero gradients at the start of the epoch
 
             for step, batch in enumerate(train_loader):
-                batch = batch.to(device)
+                if isinstance(batch, BatchEncoding):
+                    batch = batch.to(device)
+                elif isinstance(batch, dict):
+                    # Convert dict to tuple of values and move them to the device
+                    batch = {k: v.to(device) for k, v in batch.items()}
+                elif isinstance(batch, (tuple, list)):
+                    # Move tuple/list elements to the device
+                    batch = tuple(
+                        item.to(device) if isinstance(item, torch.Tensor) else item
+                        for item in batch
+                    )
+                else:
+                    # If it is a single non-tensor item, wrap it in a tuple
+                    batch = (batch,)
 
                 # Forward pass through the hybrid model
                 loss, _ = self.hybrid_model(batch, fhe=fhe)
