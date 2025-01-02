@@ -7,13 +7,16 @@ from torch import Tensor, nn
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+from ..common.utils import assert_true
 from .hybrid_backprop_linear import CustomLinear
 from .hybrid_model import HybridFHEModel
 
 try:
     from transformers import Conv1D as TransformerConv1D
+    from transformers.tokenization_utils_base import BatchEncoding
 except ImportError:  # pragma: no cover
     TransformerConv1D = None
+    BatchEncoding = None
 
 # Create a tuple of linear layer classes to check against
 LINEAR_LAYERS: tuple = (nn.Linear,)
@@ -198,26 +201,26 @@ class LoraTraining(torch.nn.Module):
             len(inputs) >= 2 and len(inputs) <= 3
         ), "Expected at least two inputs in the tuple: inputs (x) and targets (y)"
 
-        # Unpack depending on how many inputs we have
-        if len(inputs) == 2:
-            input_ids, labels = inputs
-            attention_mask = None
+        if isinstance(inputs, (dict, BatchEncoding)):
+            attention_mask = inputs.get("attention_mask", None)
+            labels = inputs.get("labels", None)
         else:
-            input_ids, labels, attention_mask = inputs
+            # Unpack depending on how many inputs we have
+            if len(inputs) == 2:
+                _, labels = inputs
+                attention_mask = None
+            else:
+                assert len(inputs) == 3
+                _, labels, attention_mask = inputs
 
-            # Validate attention mask
-            assert torch.all(
-                torch.logical_or(attention_mask == 0, attention_mask == 1)
-            ), "Invalid attention mask provided. Attention mask should only contain 0s and 1s."
+        # Validate attention mask
+        assert attention_mask is None or torch.all(
+            torch.logical_or(attention_mask == 0, attention_mask == 1)
+        ), "Invalid attention mask provided. Attention mask should only contain 0s and 1s."
 
         if self.loss_fn is None:
             # Pass inputs and labels to the model
-            if attention_mask is not None:
-                outputs = self.inference_model(
-                    input_ids, labels=labels, attention_mask=attention_mask
-                )
-            else:
-                outputs = self.inference_model(input_ids, labels=labels)
+            outputs = self.inference_model(**inputs)
 
             # Check if outputs is a dict and retrieve the loss
             if isinstance(outputs, dict):
@@ -230,11 +233,7 @@ class LoraTraining(torch.nn.Module):
                     "Ensure that 'labels' are correctly provided or provide a loss_fn.",
                 )
         else:
-            # Forward pass without labels; compute loss manually
-            if attention_mask is not None:
-                logits = self.inference_model(input_ids, attention_mask=attention_mask)
-            else:
-                logits = self.inference_model(input_ids)
+            logits = self.inference_model(**inputs)
 
             # If logits is a dict with 'logits' key, extract it
             if isinstance(logits, dict) and "logits" in logits:
@@ -286,6 +285,17 @@ class LoraTrainer:
         self.gradient_accumulation_steps = self.training_args.get("gradient_accumulation_steps", 1)
         self.max_grad_norm = self.training_args.get("max_grad_norm", None)
 
+        assert_true(
+            training_args is None
+            or not "use_cpu" in training_args
+            or training_args["use_cpu"] is True,
+            (
+                "When specifying custom training_args for the LoraTrainer, you "
+                "must set use_cpu=True. The Concrete ML LoraTrainer can be "
+                "executed on GPU by setting device='cuda' in the `train` call"
+            ),
+        )
+
         # Create the LoraTraining module
         self.lora_training_module = LoraTraining(
             model, n_layers_to_skip_for_backprop=n_layers_to_skip_for_backprop, loss_fn=loss_fn
@@ -315,6 +325,7 @@ class LoraTrainer:
         train_loader: DataLoader,
         num_epochs: int = 10,
         fhe: str = "simulate",
+        device: str = "cpu",
     ):
         """Train the model using the hybrid FHE model.
 
@@ -323,8 +334,24 @@ class LoraTrainer:
             num_epochs (int): Number of epochs to train.
             fhe (str): FHE mode ('disable', 'simulate', 'execute' or 'torch').
         """
-        device = torch.device("cuda")
-        #        self.lora_training_module.to(device)
+
+        def optimizer_to(optim, device):
+            for param in optim.state.values():
+                # Not sure there are any global tensors in the state dict
+                if isinstance(param, torch.Tensor):
+                    param.data = param.data.to(device)
+                    if param._grad is not None:
+                        param._grad.data = param._grad.data.to(device)
+                elif isinstance(param, dict):
+                    for subparam in param.values():
+                        if isinstance(subparam, torch.Tensor):
+                            subparam.data = subparam.data.to(device)
+                            if subparam._grad is not None:
+                                subparam._grad.data = subparam._grad.data.to(device)
+
+        self.hybrid_model.model.to(device)
+        optimizer_to(self.optimizer, device)
+
         self.lora_training_module.inference_model.train()
 
         # Set the loss scaling factor for gradient accumulation
@@ -337,23 +364,7 @@ class LoraTrainer:
             self.optimizer.zero_grad()  # Zero gradients at the start of the epoch
 
             for step, batch in enumerate(train_loader):
-
-                # Convert the batch to a tuple of inputs on the device.
-                if batch_dict := try_dict(batch):
-                    batch = batch_dict
-                    # Convert dict to tuple of values and move them to the device
-                    batch = tuple(
-                        v.to(device) if isinstance(v, torch.Tensor) else v for v in batch.values()
-                    )
-                elif isinstance(batch, (tuple, list)):
-                    # Move tuple/list elements to the device
-                    batch = tuple(
-                        item.to(device) if isinstance(item, torch.Tensor) else item
-                        for item in batch
-                    )
-                else:
-                    # If it is a single non-tensor item, wrap it in a tuple
-                    batch = (batch,)
+                batch = batch.to(device)
 
                 # Forward pass through the hybrid model
                 loss, _ = self.hybrid_model(batch, fhe=fhe)

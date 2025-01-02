@@ -115,7 +115,11 @@ class GLWELinearLayerExecutor:
             mm = torch.matmul(q_x_torch, q_w)
             return out_quantizer.dequant(mm)
 
-        q_x = q_module.quantize_input(x.numpy())
+        if self.private_key is None:
+            self.keygen()
+
+        x_device = x.device
+        q_x = q_module.quantize_input(x.cpu().numpy())
         assert q_x is not None
         assert isinstance(q_x, numpy.ndarray)
 
@@ -176,4 +180,4 @@ class GLWELinearLayerExecutor:
         if return_2d:
             y = numpy.squeeze(y)
 
-        return torch.Tensor(y.astype(numpy.float32))
+        return torch.Tensor(y.astype(numpy.float32)).to(x_device)
