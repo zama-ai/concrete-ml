@@ -104,7 +104,7 @@ jobs:
           lfs: true
 
       - name: Build docker env for Python 3.12
-        run:
+        run: |
           groupadd -f dev_user 
           adduser --disabled-password --shell /bin/bash --gecos "" dev_user 
           usermod -aG sudo dev_user
