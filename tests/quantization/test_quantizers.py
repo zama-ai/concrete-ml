@@ -212,16 +212,26 @@ def test_serialization():
     "is_signed, is_symmetric",
     [pytest.param(True, True), pytest.param(True, False), pytest.param(False, False)],
 )
+@pytest.mark.parametrize(
+    "per_channel",
+    [True, False],
+)
 @pytest.mark.parametrize("values", [pytest.param(numpy.random.randn(2000))])
 def test_torch_quant_dequant(
     values,
     n_bits,
     is_signed,
     is_symmetric,
+    per_channel,
 ):
     """Test the quant and de-quant function."""
 
     quant_array = QuantizedArray(n_bits, values, is_signed=is_signed, is_symmetric=is_symmetric)
+    if per_channel:
+        quant_array.quantizer.zero_point = (
+            numpy.random.randn(2000) + quant_array.quantizer.zero_point
+        )
+
     qvalues_np = quant_array.quant()
 
     torch_quant = TorchUniformQuantizer(quant_array.quantizer)

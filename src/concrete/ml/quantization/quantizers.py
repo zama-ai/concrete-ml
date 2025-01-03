@@ -797,7 +797,8 @@ class TorchUniformQuantizer:
         Returns:
             Union[numpy.ndarray, Tracer]: De-quantized float values.
         """
-        zp_tensor = torch.Tensor(self._np_quant.zero_point).type(qvalues.dtype).to(qvalues.device)
+        zp_tensor = torch.tensor(self._np_quant.zero_point).type(qvalues.dtype).to(qvalues.device)
+
         values = self._np_quant.scale * (qvalues - zp_tensor)
         return values
 

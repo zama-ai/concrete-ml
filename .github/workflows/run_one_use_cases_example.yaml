@@ -103,10 +103,14 @@ jobs:
         with:
           lfs: true
 
+      - name: Build docker env for Python 3.12
+        run:
+          DEV_DOCKER_PYTHON=py312 make docker_build
+
       - name: Run One Use Case Example Script
         run: |
           USE_CASE=${{ github.event.inputs.use_case }}
-          make run_one_use_case_example USE_CASE=$USE_CASE
+          DEV_DOCKER_PYTHON=py312 USE_CASE=$USE_CASE make run_one_use_case_example
 
       # Pull the latest changes if there are some
       - name: Pull latest changes

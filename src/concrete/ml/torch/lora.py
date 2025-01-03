@@ -44,14 +44,12 @@ def optimizer_to(optim, device):
     """
     for param in optim.state.values():
         # Not sure there are any global tensors in the state dict
-        if isinstance(param, torch.Tensor):
-            param.data = param.data.to(device)
-            grad_to(param, device)
-        elif isinstance(param, dict):
-            for subparam in param.values():
-                if isinstance(subparam, torch.Tensor):
-                    subparam.data = subparam.data.to(device)
-                    grad_to(subparam, device)
+        params_to_move = [param] if isinstance(param, torch.Tensor) else list(param.values())
+
+        for subparam in params_to_move:
+            if isinstance(subparam, torch.Tensor):
+                subparam.data = subparam.data.to(device)
+                grad_to(subparam, device)
 
 
 class LoraTraining(torch.nn.Module):
@@ -214,7 +212,7 @@ class LoraTraining(torch.nn.Module):
         ), "Invalid attention mask provided. Attention mask should only contain 0s and 1s."
 
         # Pass inputs and labels to the model
-        if isinstance(inputs, dict):
+        if isinstance(inputs, (dict, BatchEncoding)):
             outputs = self.inference_model(**inputs)
         else:
             outputs = self.inference_model(*inputs)
@@ -236,7 +234,18 @@ class LoraTraining(torch.nn.Module):
                 )
         else:
             # If logits is a dict with 'logits' key, extract it
-            if isinstance(outputs, dict) and "logits" in outputs:
+            assert_true(
+                isinstance(outputs, torch.Tensor)
+                or (isinstance(outputs, dict) and "logits" in outputs),
+                (
+                    "When a loss function is "
+                    "specified in the LoraTrainer constructor, the "
+                    "LORA module to be trained must return either a Tensor or a  "
+                    "dictionary containing the key `logits` with a Tensor value"
+                ),
+            )
+
+            if isinstance(outputs, dict):
                 logits = outputs["logits"]
             else:
                 logits = outputs
@@ -264,10 +273,6 @@ class LoraTraining(torch.nn.Module):
             res: tuple containing the attention mask and the labels
         """
 
-        assert (
-            len(inputs) >= 2 and len(inputs) <= 3
-        ), "Expected at least two inputs in the tuple: inputs (x) and targets (y)"
-
         if isinstance(inputs, (dict, BatchEncoding)):
             attention_mask = inputs.get("attention_mask", None)
             if self.loss_fn is None:
@@ -275,6 +280,12 @@ class LoraTraining(torch.nn.Module):
             else:
                 labels = inputs.pop("labels", None)
         else:
+
+            assert isinstance(inputs, Tuple)
+            assert (
+                len(inputs) >= 2 and len(inputs) <= 3
+            ), "Expected at least two inputs in the tuple: inputs (x) and targets (y)"
+
             # Unpack depending on how many inputs we have
             if len(inputs) == 2:
                 _, labels = inputs

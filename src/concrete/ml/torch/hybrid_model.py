@@ -579,7 +579,7 @@ class HybridFHEModel:
 
         from tqdm import tqdm
 
-        for name in tqdm(self.module_names):
+        for name in tqdm(self.module_names, desc="Compiling FHE layers"):
             remote_module = self._get_module_by_name(self.model, name)
             assert isinstance(remote_module, RemoteModule)
 
