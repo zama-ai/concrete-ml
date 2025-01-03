@@ -678,6 +678,7 @@ def test_lora_training_init_validates_model_signature():
 
 def test_lora_train_mlp():
     """Test that a MLP can be lora trained using FHE."""
+
     class SimpleMLP(nn.Module):
         """Simple MLP model without LoRA layers."""
 
@@ -687,7 +688,7 @@ def test_lora_train_mlp():
             self.relu = nn.ReLU()
             self.fc2 = nn.Linear(hidden_size, num_classes)
 
-        def forward(self, x, labels=None):
+        def forward(self, x, labels=None): # pylint: disable=unused-argument
             """Forward pass of the MLP."""
             out = self.fc1(x)
             out = self.relu(out)
