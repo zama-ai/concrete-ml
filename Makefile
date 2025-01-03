@@ -808,17 +808,7 @@ clean_sklearn_cache:
 
 .PHONY: run_one_use_case_example # Run one use-case example (USE_CASE, e.g. hybrid_model)
 run_one_use_case_example:
-	docker run --rm -it \
-	-p 8888:8888 \
-	--env DISPLAY=host.docker.internal:0 \
-	--env USE_CASE=$(USE_CASE) \
-	--env BASH_ENV=/home/dev_user/.bashrc \
-	$${PIP_INDEX_URL:+--env "PIP_INDEX_URL=$${PIP_INDEX_URL}"} \
-	--volume /"$$(pwd)":/src \
-	--volume $(DEV_CONTAINER_VENV_VOLUME):/home/dev_user/dev_venv \
-	--volume $(DEV_CONTAINER_CACHE_VOLUME):/home/dev_user/.cache \
-	$(DEV_DOCKER_IMG):$(DEV_DOCKER_PYTHON) \
-	/bin/bash -l -c "source ~/dev_venv/bin/activate && ./script/make_utils/run_use_case_examples.sh"
+	USE_CASE=$(USE_CASE) ./script/make_utils/run_use_case_examples.sh
 
 .PHONY: run_all_use_case_examples # Run all use-case examples
 run_all_use_case_examples:

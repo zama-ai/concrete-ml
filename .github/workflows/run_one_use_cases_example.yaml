@@ -96,22 +96,17 @@ jobs:
             $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
           apt-get update
           apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
-          apt-get install -y python3-venv make git git-lfs binutils
+          apt-get install -y python3-venv make git git-lfs binutils python3-pip
 
       - name: Checkout Code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           lfs: true
 
-      - name: Build docker env for Python 3.12
-        run: |
-          su dev_user
-          DEV_DOCKER_PYTHON=py312 make docker_build
-
       - name: Run One Use Case Example Script
         run: |
           USE_CASE=${{ github.event.inputs.use_case }}
-          DEV_DOCKER_PYTHON=py312 USE_CASE=$USE_CASE make run_one_use_case_example
+          make run_one_use_case_example USE_CASE=$USE_CASE
 
       # Pull the latest changes if there are some
       - name: Pull latest changes
