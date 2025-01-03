@@ -105,9 +105,6 @@ jobs:
 
       - name: Build docker env for Python 3.12
         run: |
-          groupadd -f dev_user 
-          adduser --disabled-password --shell /bin/bash --gecos "" dev_user 
-          usermod -aG sudo dev_user
           su dev_user
           DEV_DOCKER_PYTHON=py312 make docker_build
 
