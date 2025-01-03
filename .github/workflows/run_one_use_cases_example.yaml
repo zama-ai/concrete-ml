@@ -70,7 +70,7 @@ jobs:
     needs: [start-runner-linux]
     runs-on: ${{ needs.start-runner-linux.outputs.label-38 }}
     container:
-      image: ubuntu:20.04
+      image: ubuntu:22.04
     defaults:
       run:
         shell: bash
