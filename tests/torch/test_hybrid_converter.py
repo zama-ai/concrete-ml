@@ -120,10 +120,7 @@ def run_hybrid_llm_test(
         temp_dir_path = Path(temp_dir)
 
         if not has_pbs and glwe_backend_installed:
-            with pytest.raises(
-                NotImplementedError, match="GLWE backend deployment is not yet supported"
-            ):
-                hybrid_model.save_and_clear_private_info(temp_dir_path)
+            hybrid_model.save_and_clear_private_info(temp_dir_path)
         else:
             # If transformers is not installed, skip the saving test
             if not transformers_installed:

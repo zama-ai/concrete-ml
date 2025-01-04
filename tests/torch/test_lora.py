@@ -232,7 +232,7 @@ def test_forward_with_less_than_two_inputs():
     x = torch.randn(5, 10)
     with pytest.raises(AssertionError) as exc_info:
         lora_training((x,))
-    assert "Expected at least two inputs" in str(exc_info.value)
+    assert "must have two elements" in str(exc_info.value)
 
 
 def test_toggle_calibrate():

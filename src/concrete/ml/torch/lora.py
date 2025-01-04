@@ -282,17 +282,16 @@ class LoraTraining(torch.nn.Module):
         else:
 
             assert isinstance(inputs, tuple)
-            assert (
-                len(inputs) >= 2 and len(inputs) <= 3
-            ), "Expected at least two inputs in the tuple: inputs (x) and targets (y)"
+            assert len(inputs) == 2, (
+                "Tuple inputs to LoraTraining must have two elements (data, labels). "
+                "Attention masks are not yet supported with tuples, use a dictionary input"
+            )
 
             # Unpack depending on how many inputs we have
-            if len(inputs) == 2:
-                _, labels = inputs
-                attention_mask = None
-            else:
-                assert len(inputs) == 3
-                _, labels, attention_mask = inputs
+            assert len(inputs) == 2
+            _, labels = inputs
+            attention_mask = None
+
         return attention_mask, labels
 
 
@@ -398,15 +397,13 @@ class LoraTrainer:
                 if isinstance(batch, (UserDict, dict)):
                     # Convert dict to tuple of values and move them to the device
                     batch = {k: v.to(device) for k, v in batch.items()}
-                elif isinstance(batch, (tuple, list)):
+                else:
+                    assert isinstance(batch, (tuple, list))
                     # Move tuple/list elements to the device
                     batch = tuple(
                         item.to(device) if isinstance(item, torch.Tensor) else item
                         for item in batch
                     )
-                else:
-                    # If it is a single non-tensor item, wrap it in a tuple
-                    batch = (batch,)
 
                 # Forward pass through the hybrid model
                 loss, _ = self.hybrid_model(batch, fhe=fhe)
