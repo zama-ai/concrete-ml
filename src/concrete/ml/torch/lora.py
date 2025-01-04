@@ -1,5 +1,6 @@
 """This module contains classes for LoRA (Low-Rank Adaptation) FHE training and custom layers."""
 
+from collections import UserDict
 from typing import Any, List, Tuple, Union
 
 import torch
@@ -13,10 +14,8 @@ from .hybrid_model import HybridFHEModel
 
 try:
     from transformers import Conv1D as TransformerConv1D
-    from transformers.tokenization_utils_base import BatchEncoding
 except ImportError:  # pragma: no cover
     TransformerConv1D = None
-    BatchEncoding = None
 
 # Create a tuple of linear layer classes to check against
 LINEAR_LAYERS: tuple = (nn.Linear,)
@@ -24,6 +23,7 @@ if TransformerConv1D is not None:
     LINEAR_LAYERS = LINEAR_LAYERS + (TransformerConv1D,)
 
 
+# pylint: disable=protected-access
 def grad_to(param, device: str) -> None:
     """Move parameter gradient to device.
 
@@ -31,8 +31,8 @@ def grad_to(param, device: str) -> None:
         param: torch parameter with gradient
         device (str): target device for gradient
     """
-    if param._grad is not None:  # pylint: disable=protected-access
-        param._grad.data = param._grad.data.to(device)  # pylint: disable=protected-access
+    if param._grad is not None:
+        param._grad.data = param._grad.data.to(device)  # pragma: no cover
 
 
 def optimizer_to(optim, device):
@@ -212,7 +212,7 @@ class LoraTraining(torch.nn.Module):
         ), "Invalid attention mask provided. Attention mask should only contain 0s and 1s."
 
         # Pass inputs and labels to the model
-        if isinstance(inputs, (dict, BatchEncoding)):
+        if isinstance(inputs, (dict, UserDict)):
             outputs = self.inference_model(**inputs)
         else:
             outputs = self.inference_model(*inputs)
@@ -273,7 +273,7 @@ class LoraTraining(torch.nn.Module):
             res: tuple containing the attention mask and the labels
         """
 
-        if isinstance(inputs, (dict, BatchEncoding)):
+        if isinstance(inputs, (dict, UserDict)):
             attention_mask = inputs.get("attention_mask", None)
             if self.loss_fn is None:
                 labels = inputs.get("labels", None)
@@ -281,7 +281,7 @@ class LoraTraining(torch.nn.Module):
                 labels = inputs.pop("labels", None)
         else:
 
-            assert isinstance(inputs, Tuple)
+            assert isinstance(inputs, tuple)
             assert (
                 len(inputs) >= 2 and len(inputs) <= 3
             ), "Expected at least two inputs in the tuple: inputs (x) and targets (y)"
@@ -395,9 +395,7 @@ class LoraTrainer:
             self.optimizer.zero_grad()  # Zero gradients at the start of the epoch
 
             for step, batch in enumerate(train_loader):
-                if isinstance(batch, BatchEncoding):
-                    batch = batch.to(device)
-                elif isinstance(batch, dict):
+                if isinstance(batch, (UserDict, dict)):
                     # Convert dict to tuple of values and move them to the device
                     batch = {k: v.to(device) for k, v in batch.items()}
                 elif isinstance(batch, (tuple, list)):

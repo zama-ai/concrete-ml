@@ -122,8 +122,7 @@ class GLWELinearLayerExecutor:
         if fhe == HybridFHEMode.DISABLE:
             return self._forward_clear(x, q_module, transpose_inputs1, q_weight)
 
-        if self.private_key is None:
-            self.keygen()
+        assert self.private_key is not None
 
         x_device = x.device
         q_x = q_module.quantize_input(x.cpu().numpy())

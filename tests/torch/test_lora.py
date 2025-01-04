@@ -2,6 +2,7 @@
 
 # pylint: disable=redefined-outer-name
 
+from collections import UserDict
 from unittest.mock import MagicMock
 
 import pytest
@@ -576,6 +577,13 @@ def test_lora_trainer_train_with_various_batch_types(has_loss):
     train_loader_dict: DataLoader = DataLoader(DictDataset(dataset_dict), batch_size=1)
     lora_trainer.compile({"x": torch.randn(1, 5, 10), "labels": torch.randn(1, 5, 10)}, n_bits=8)
     lora_trainer.train(train_loader_dict, num_epochs=1)
+
+    # Test with UserDict batch
+    dataset_user_dict = [
+        UserDict({"x": torch.randn(5, 10), "labels": torch.randn(5, 10)}) for _ in range(2)
+    ]
+    train_loader_udict: DataLoader = DataLoader(DictDataset(dataset_user_dict), batch_size=1)
+    lora_trainer.train(train_loader_udict, num_epochs=1)
 
     if not has_loss:
         # Test with list/tuple batch

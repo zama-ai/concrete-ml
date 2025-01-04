@@ -226,7 +226,9 @@ def test_torch_quant_dequant(
 ):
     """Test the quant and de-quant function."""
 
-    quant_array = QuantizedArray(n_bits, values, is_signed=is_signed, is_symmetric=is_symmetric)
+    quant_array = QuantizedArray(
+        n_bits, values, is_signed=is_signed, is_symmetric=is_symmetric, is_narrow=is_symmetric
+    )
     if per_channel:
         quant_array.quantizer.zero_point = (
             numpy.random.randn(2000) + quant_array.quantizer.zero_point

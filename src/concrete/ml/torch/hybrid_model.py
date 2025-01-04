@@ -642,22 +642,23 @@ class HybridFHEModel:
         for module_name in self.module_names:
             onnx_model = self.private_q_modules[module_name].onnx_model
 
-            # mypy
-            assert onnx_model is not None
-            input_shapes = [
-                tuple(elt.dim_value for elt in onnx_input.type.tensor_type.shape.dim)
-                for onnx_input in onnx_model.graph.input
-            ]
+            if onnx_model is not None:
+                input_shapes = [
+                    tuple(elt.dim_value for elt in onnx_input.type.tensor_type.shape.dim)
+                    for onnx_input in onnx_model.graph.input
+                ]
 
-            assert len(input_shapes) == 1, "Multi-input circuits not supported yet"
-            model_module_path = model_path.resolve() / module_name
-            model_module_path.mkdir(exist_ok=True)
-            model_module_shape_path = model_module_path / tuple_to_underscore_str(input_shapes[0])
-            model_dev = FHEModelDev(
-                str(model_module_shape_path.resolve()),
-                self.private_q_modules[module_name],
-            )
-            model_dev.save(via_mlir=via_mlir)
+                assert len(input_shapes) == 1, "Multi-input circuits not supported yet"
+                model_module_path = model_path.resolve() / module_name
+                model_module_path.mkdir(exist_ok=True)
+                model_module_shape_path = model_module_path / tuple_to_underscore_str(
+                    input_shapes[0]
+                )
+                model_dev = FHEModelDev(
+                    str(model_module_shape_path.resolve()),
+                    self.private_q_modules[module_name],
+                )
+                model_dev.save(via_mlir=via_mlir)
 
     def save_and_clear_private_info(self, path: Path, via_mlir=True):
         """Save the PyTorch model to the provided path and also saves the corresponding FHE circuit.
@@ -666,15 +667,7 @@ class HybridFHEModel:
             path (Path): The directory where the model and the FHE circuit will be saved.
             via_mlir (bool): if fhe circuits should be serialized using via_mlir option
                 useful for cross-platform (compile on one architecture and run on another)
-
-        Raises:
-            NotImplementedError: GLWE backend deployment is not yet supported
         """
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4672
-        # GLWE backend deployment is not yet supported
-        if self.executor is not None:
-            raise NotImplementedError("GLWE backend deployment is not yet supported")
-
         path = Path(path)
         path.mkdir(parents=True, exist_ok=True)
 
