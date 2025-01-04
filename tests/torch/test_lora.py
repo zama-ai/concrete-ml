@@ -41,6 +41,25 @@ class DummyLoRAModel(nn.Module):
         return {"logits": logits}
 
 
+class DummyGLWELoRAModel(nn.Module):
+    """Dummy LoRA model for testing."""
+
+    def __init__(self):
+        super().__init__()
+        # Simulate LoRA layers by including 'lora_a' attribute
+        self.lora_a = nn.Parameter(torch.randn(512, 512))
+        self.linear1 = nn.Linear(512, 512)
+        self.linear2 = nn.Linear(512, 512)
+
+    def forward(self, x, labels=None):
+        """Forward pass."""
+        logits = self.linear2(torch.relu(self.linear1(x)))
+        if labels is not None:
+            loss = nn.functional.mse_loss(logits, labels)
+            return {"loss": loss}
+        return {"logits": logits}
+
+
 class DummyLoRAModelNoLoss(nn.Module):
     """Dummy LoRA model without loss function for testing."""
 
@@ -543,11 +562,6 @@ def test_lora_trainer_train_with_various_batch_types(has_loss):
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
     lora_trainer = LoraTrainer(model, optimizer=optimizer, loss_fn=loss_fn)
 
-    # Mock the hybrid_model's __call__ method
-    #    lora_trainer.hybrid_model = MagicMock(
-    #        return_value=(torch.tensor(1.0, requires_grad=True), None)
-    #    )
-
     class DictDataset(Dataset):
         """Dataset with dict items."""
 
@@ -590,6 +604,19 @@ def test_lora_trainer_train_with_various_batch_types(has_loss):
         dataset_list = [(torch.randn(5, 10), torch.randn(5, 10)) for _ in range(2)]
         train_loader_list: DataLoader = DataLoader(ListDataset(dataset_list), batch_size=1)
         lora_trainer.train(train_loader_list, num_epochs=1)
+
+
+def test_lora_trainer_inference_keygen():
+    """Test LoraTrainer on a large model and infer with FHE."""
+    model = DummyGLWELoRAModel()
+    loss_fn = None  # nn.functional.mse_loss
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+    lora_trainer = LoraTrainer(model, optimizer=optimizer, loss_fn=loss_fn)
+
+    # Test with list/tuple batch
+    dataset_list = [(torch.randn(5, 512), torch.randn(5, 512)) for _ in range(2)]
+    lora_trainer.compile((dataset_list[0][0], dataset_list[0][1]))
+    lora_trainer.hybrid_model((dataset_list[0][0], dataset_list[0][1]), fhe="execute")
 
 
 def test_lora_move_optimizer():
