@@ -70,7 +70,7 @@ jobs:
     needs: [start-runner-linux]
     runs-on: ${{ needs.start-runner-linux.outputs.label-38 }}
     container:
-      image: ubuntu:20.04
+      image: ubuntu:22.04
     defaults:
       run:
         shell: bash
@@ -96,7 +96,7 @@ jobs:
             $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
           apt-get update
           apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
-          apt-get install -y python3-venv make git git-lfs binutils
+          apt-get install -y python3-venv make git git-lfs binutils python3-pip
 
       - name: Checkout Code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2

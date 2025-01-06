@@ -2,6 +2,7 @@
 
 import numpy
 import pytest
+import torch
 
 from concrete.ml.pytest.utils import check_serialization
 from concrete.ml.quantization.quantizers import (
@@ -9,6 +10,7 @@ from concrete.ml.quantization.quantizers import (
     MinMaxQuantizationStats,
     QuantizationOptions,
     QuantizedArray,
+    TorchUniformQuantizer,
     UniformQuantizationParameters,
     UniformQuantizer,
 )
@@ -200,3 +202,47 @@ def test_serialization():
     )
 
     check_serialization(quantized_array, QuantizedArray)
+
+
+@pytest.mark.parametrize(
+    "n_bits",
+    [32, 28, 20, 16, 8, 4],
+)
+@pytest.mark.parametrize(
+    "is_signed, is_symmetric",
+    [pytest.param(True, True), pytest.param(True, False), pytest.param(False, False)],
+)
+@pytest.mark.parametrize(
+    "per_channel",
+    [True, False],
+)
+@pytest.mark.parametrize("values", [pytest.param(numpy.random.randn(2000))])
+def test_torch_quant_dequant(
+    values,
+    n_bits,
+    is_signed,
+    is_symmetric,
+    per_channel,
+):
+    """Test the quant and de-quant function."""
+
+    quant_array = QuantizedArray(
+        n_bits, values, is_signed=is_signed, is_symmetric=is_symmetric, is_narrow=is_symmetric
+    )
+    if per_channel:
+        quant_array.quantizer.zero_point = (
+            numpy.random.randn(2000) + quant_array.quantizer.zero_point
+        )
+
+    qvalues_np = quant_array.quant()
+
+    torch_quant = TorchUniformQuantizer(quant_array.quantizer)
+
+    qvalues_torch = torch_quant.quant(torch.DoubleTensor(values))
+
+    assert numpy.all(qvalues_torch.long().numpy() == qvalues_np)
+
+    dequant_np = quant_array.quantizer.dequant(qvalues_np)
+    dequant_torch = torch_quant.dequant(qvalues_torch)
+
+    assert numpy.allclose(dequant_np, dequant_torch.numpy(), atol=0.0001)

@@ -46,7 +46,7 @@ class SimpleMLP(nn.Module):
         self.relu = nn.ReLU()
         self.fc2 = nn.Linear(hidden_size, num_classes)
 
-    def forward(self, x):
+    def forward(self, x, labels=None):
         """Forward pass of the MLP."""
         out = self.fc1(x)
         out = self.relu(out)

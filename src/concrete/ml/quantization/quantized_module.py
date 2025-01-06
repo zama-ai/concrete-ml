@@ -702,12 +702,14 @@ class QuantizedModule:
         return q_results
 
     def quantize_input(
-        self, *x: Optional[numpy.ndarray]
+        self, *x: Optional[numpy.ndarray], dtype: numpy.typing.DTypeLike = numpy.int64
     ) -> Union[numpy.ndarray, Tuple[Optional[numpy.ndarray], ...]]:
         """Take the inputs in fp32 and quantize it using the learned quantization parameters.
 
         Args:
             x (Optional[numpy.ndarray]): Floating point x or None.
+            dtype (numpy.typing.DTypeLike): optional user-specified datatype for the output
+
 
         Returns:
             Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]: Quantized (numpy.int64) x, or None if
@@ -729,7 +731,7 @@ class QuantizedModule:
         # cannot be None
         q_x = tuple(
             (
-                self.input_quantizers[idx].quant(x[idx])  # type: ignore[arg-type]
+                self.input_quantizers[idx].quant(x[idx], dtype)  # type: ignore[arg-type]
                 if x[idx] is not None
                 else None
             )
@@ -738,7 +740,7 @@ class QuantizedModule:
 
         # Make sure all inputs are quantized to int64
         assert all_values_are_of_dtype(
-            *q_x, dtypes="int64", allow_none=True
+            *q_x, dtypes=numpy.dtype(dtype).name, allow_none=True
         ), "Inputs were not quantized to int64"
 
         if len(q_x) == 1:
@@ -750,7 +752,7 @@ class QuantizedModule:
 
     def dequantize_output(
         self, *q_y_preds: numpy.ndarray
-    ) -> Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]:
+    ) -> Union[numpy.ndarray, Tuple[Union[numpy.ndarray], ...]]:
         """Take the last layer q_out and use its de-quant function.
 
         Args:

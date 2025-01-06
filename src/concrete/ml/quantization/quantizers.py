@@ -7,6 +7,8 @@ from copy import deepcopy
 from typing import Any, Dict, Optional, TextIO, Union, get_type_hints
 
 import numpy
+import numpy.typing
+import torch
 from concrete.fhe.tracing.tracer import Tracer
 
 from ..common.debugging import assert_true
@@ -671,11 +673,14 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
         """
         dump(self, file)
 
-    def quant(self, values: numpy.ndarray) -> numpy.ndarray:
+    def quant(
+        self, values: numpy.ndarray, dtype: numpy.typing.DTypeLike = numpy.int64
+    ) -> numpy.ndarray:
         """Quantize values.
 
         Args:
             values (numpy.ndarray): float values to quantize
+            dtype (numpy.typing.DTypeLike): optional user-specified datatype for the output
 
         Returns:
             numpy.ndarray: Integer quantized values.
@@ -685,6 +690,8 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
         assert self.zero_point is not None
         assert self.offset is not None
         assert self.scale is not None
+
+        assert dtype in (numpy.int64, numpy.int32, numpy.float32, numpy.float64)
 
         if QUANT_ROUND_LIKE_ROUND_PBS:
             qvalues = numpy.floor(values / self.scale + self.zero_point + 0.5)  # pragma: no cover
@@ -707,7 +714,9 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
 
             qvalues = qvalues.clip(min_value, 2 ** (self.n_bits) - 1 - self.offset)
 
-        return qvalues.astype(numpy.int64)
+        qvalues = qvalues.astype(dtype)
+
+        return qvalues
 
     def dequant(self, qvalues: numpy.ndarray) -> Union[float, numpy.ndarray, Tracer]:
         """De-quantize values.
@@ -734,6 +743,63 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
         values = self.scale * (qvalues - numpy.asarray(self.zero_point, dtype=numpy.float64))
 
         assert isinstance(values, (float, numpy.ndarray, Tracer)), f"{values=}, {type(values)=}"
+        return values
+
+
+class TorchUniformQuantizer:
+    """Uniform quantizer with a PyTorch implementation.
+
+    Contains all information necessary for uniform quantization and provides
+    quantization/de-quantization functionality on torch tensors.
+
+    Args:
+        quantizer (UniformQuantizer): Underlying numpy quantizer containing all parameters
+    """
+
+    _np_quant: UniformQuantizer
+
+    def __init__(self, quantizer: UniformQuantizer):
+        self._np_quant = quantizer
+
+    def quant(self, values: torch.Tensor, dtype: Optional[torch.dtype] = None) -> torch.Tensor:
+        """Quantize values.
+
+        Args:
+            values (numpy.ndarray): float values to quantize
+            dtype (Optional[torch.dtype]): optional user-specified datatype for the output
+
+        Returns:
+            numpy.ndarray: Integer quantized values.
+        """
+        qvalues = torch.round(values / self._np_quant.scale + self._np_quant.zero_point)
+
+        if not self._np_quant.no_clipping:
+            assert self._np_quant.offset is not None
+            min_value = -self._np_quant.offset
+            if self._np_quant.is_narrow:
+                min_value += 1
+
+            qvalues = torch.clip(
+                qvalues, min_value, 2 ** (self._np_quant.n_bits) - 1 - self._np_quant.offset
+            )
+
+        if dtype is not None:
+            qvalues = qvalues.type(dtype)
+
+        return qvalues
+
+    def dequant(self, qvalues: torch.Tensor) -> torch.Tensor:
+        """De-quantize values.
+
+        Args:
+            qvalues (numpy.ndarray): integer values to de-quantize
+
+        Returns:
+            Union[numpy.ndarray, Tracer]: De-quantized float values.
+        """
+        zp_tensor = torch.tensor(self._np_quant.zero_point).type(qvalues.dtype).to(qvalues.device)
+
+        values = self._np_quant.scale * (qvalues - zp_tensor)
         return values
 
 

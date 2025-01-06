@@ -2,10 +2,13 @@
 
 # pylint: disable=redefined-outer-name
 
+from collections import UserDict
 from unittest.mock import MagicMock
 
 import pytest
 import torch
+from peft import LoraConfig, get_peft_model
+from sklearn.datasets import make_circles
 from torch import nn
 from torch.utils.data import DataLoader, Dataset, TensorDataset
 
@@ -14,7 +17,7 @@ from concrete.ml.torch.hybrid_backprop_linear import (
     CustomLinear,
     ForwardModuleLinear,
 )
-from concrete.ml.torch.lora import LoraTrainer, LoraTraining, get_remote_names
+from concrete.ml.torch.lora import LoraTrainer, LoraTraining, get_remote_names, optimizer_to
 
 # Dummy models and datasets for testing
 
@@ -28,6 +31,25 @@ class DummyLoRAModel(nn.Module):
         self.lora_a = nn.Parameter(torch.randn(10, 10))
         self.linear1 = nn.Linear(10, 20)
         self.linear2 = nn.Linear(20, 10)
+
+    def forward(self, x, labels=None):
+        """Forward pass."""
+        logits = self.linear2(torch.relu(self.linear1(x)))
+        if labels is not None:
+            loss = nn.functional.mse_loss(logits, labels)
+            return {"loss": loss}
+        return {"logits": logits}
+
+
+class DummyGLWELoRAModel(nn.Module):
+    """Dummy LoRA model for testing."""
+
+    def __init__(self):
+        super().__init__()
+        # Simulate LoRA layers by including 'lora_a' attribute
+        self.lora_a = nn.Parameter(torch.randn(512, 512))
+        self.linear1 = nn.Linear(512, 512)
+        self.linear2 = nn.Linear(512, 512)
 
     def forward(self, x, labels=None):
         """Forward pass."""
@@ -153,8 +175,8 @@ def test_forward_with_loss_fn():
     lora_training = LoraTraining(model, loss_fn=loss_fn)
     x = torch.randn(5, 10)
     y = torch.randn(5, 10)
-    loss, _ = lora_training((x, y))
-    assert isinstance(loss, torch.Tensor)
+    with pytest.raises(AssertionError, match=".*must return either a Tensor.*dictionary.*"):
+        lora_training((x, y))
 
 
 def test_forward_without_loss_fn_model_returns_loss():
@@ -210,7 +232,7 @@ def test_forward_with_less_than_two_inputs():
     x = torch.randn(5, 10)
     with pytest.raises(AssertionError) as exc_info:
         lora_training((x,))
-    assert "Expected at least two inputs" in str(exc_info.value)
+    assert "must have two elements" in str(exc_info.value)
 
 
 def test_toggle_calibrate():
@@ -266,6 +288,26 @@ def test_lora_trainer_train():
     # Create dummy data loader with different batch types
     dataset = TensorDataset(torch.randn(2, 5, 10), torch.randn(2, 5, 10))
     train_loader = DataLoader(dataset, batch_size=1)
+    lora_trainer.train(train_loader, num_epochs=1, fhe="disable")
+
+    class DictDataset(Dataset):
+        """Dataset that contains data in Python dictionaries."""
+
+        def __init__(self, x, labels):
+            self.data = x
+            self.target = labels
+
+        def __getitem__(self, index):
+            x = self.data[index]
+            y = self.target[index]
+
+            return {"x": x, "labels": y}
+
+        def __len__(self):
+            return len(self.data)
+
+    dict_dataset = DictDataset(torch.randn(2, 5, 10), torch.randn(2, 5, 10))
+    train_loader = DataLoader(dict_dataset, batch_size=1)
     lora_trainer.train(train_loader, num_epochs=1, fhe="disable")
 
 
@@ -462,7 +504,7 @@ def test_lora_training_forward_with_loss_fn_and_attention_mask():
     attention_mask = torch.randint(0, 2, (5, 10))
 
     # Call forward with (input_ids, labels, attention_mask)
-    loss, _ = lora_training((x, y, attention_mask))
+    loss, _ = lora_training({"x": x, "labels": y, "attention_mask": attention_mask})
     assert isinstance(loss, torch.Tensor)
 
 
@@ -497,7 +539,7 @@ def test_lora_training_forward_with_additional_inputs():
     y = torch.randn(5, 10)
     attention_mask = torch.randint(0, 2, (5, 10))
 
-    loss, _ = lora_training((x, y, attention_mask))
+    loss, _ = lora_training({"x": x, "labels": y, "attention_mask": attention_mask})
     assert isinstance(loss, torch.Tensor)
 
 
@@ -512,16 +554,13 @@ def test_lora_training_forward_with_no_loss_fn_and_no_labels():
     assert "The model did not return a loss." in str(exc_info.value)
 
 
-def test_lora_trainer_train_with_various_batch_types():
+@pytest.mark.parametrize("has_loss", [True, False])
+def test_lora_trainer_train_with_various_batch_types(has_loss):
     """Test LoraTrainer.train with batches of different types."""
     model = DummyLoRAModel()
+    loss_fn = nn.functional.mse_loss if has_loss else None
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
-    lora_trainer = LoraTrainer(model, optimizer=optimizer)
-
-    # Mock the hybrid_model's __call__ method
-    lora_trainer.hybrid_model = MagicMock(
-        return_value=(torch.tensor(1.0, requires_grad=True), None)
-    )
+    lora_trainer = LoraTrainer(model, optimizer=optimizer, loss_fn=loss_fn)
 
     class DictDataset(Dataset):
         """Dataset with dict items."""
@@ -547,8 +586,46 @@ def test_lora_trainer_train_with_various_batch_types():
         def __getitem__(self, idx):
             return self.data[idx]
 
-    class NonTensorDataset(Dataset):
-        """Dataset with non-tensor items."""
+    # Test with dict batch
+    dataset_dict = [{"x": torch.randn(5, 10), "labels": torch.randn(5, 10)} for _ in range(2)]
+    train_loader_dict: DataLoader = DataLoader(DictDataset(dataset_dict), batch_size=1)
+    lora_trainer.compile({"x": torch.randn(1, 5, 10), "labels": torch.randn(1, 5, 10)}, n_bits=8)
+    lora_trainer.train(train_loader_dict, num_epochs=1)
+
+    # Test with UserDict batch
+    dataset_user_dict = [
+        UserDict({"x": torch.randn(5, 10), "labels": torch.randn(5, 10)}) for _ in range(2)
+    ]
+    train_loader_udict: DataLoader = DataLoader(DictDataset(dataset_user_dict), batch_size=1)
+    lora_trainer.train(train_loader_udict, num_epochs=1)
+
+    if not has_loss:
+        # Test with list/tuple batch
+        dataset_list = [(torch.randn(5, 10), torch.randn(5, 10)) for _ in range(2)]
+        train_loader_list: DataLoader = DataLoader(ListDataset(dataset_list), batch_size=1)
+        lora_trainer.train(train_loader_list, num_epochs=1)
+
+
+def test_lora_trainer_inference_keygen():
+    """Test LoraTrainer on a large model and infer with FHE."""
+    model = DummyGLWELoRAModel()
+    loss_fn = None  # nn.functional.mse_loss
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+    lora_trainer = LoraTrainer(model, optimizer=optimizer, loss_fn=loss_fn)
+
+    # Test with list/tuple batch
+    dataset_list = [(torch.randn(5, 512), torch.randn(5, 512)) for _ in range(2)]
+    lora_trainer.compile((dataset_list[0][0], dataset_list[0][1]))
+    lora_trainer.hybrid_model((dataset_list[0][0], dataset_list[0][1]), fhe="execute")
+
+
+def test_lora_move_optimizer():
+    """Test LoraTrainer.train with batches of different types."""
+    model = DummyLoRAModel()
+    optimizer = torch.optim.AdamW(model.parameters(), lr=0.01)
+
+    class ListDataset(Dataset):
+        """Dataset with list items."""
 
         def __init__(self, data):
             self.data = data
@@ -559,27 +636,18 @@ def test_lora_trainer_train_with_various_batch_types():
         def __getitem__(self, idx):
             return self.data[idx]
 
-    # Test with dict batch
-    dataset_dict = [{"input": torch.randn(5, 10), "label": torch.randn(5, 10)} for _ in range(2)]
-    train_loader_dict: DataLoader = DataLoader(DictDataset(dataset_dict), batch_size=1)
-    lora_trainer.train(train_loader_dict, num_epochs=1)
-
-    # Test with list/tuple batch
-    dataset_list = [(torch.randn(5, 10), torch.randn(5, 10)) for _ in range(2)]
+    dataset_list = [(torch.randn(5, 10), torch.randn(5, 10)) for _ in range(200)]
     train_loader_list: DataLoader = DataLoader(ListDataset(dataset_list), batch_size=1)
-    lora_trainer.train(train_loader_list, num_epochs=1)
 
-    # Test with single tensor batch
-    dataset_single = TensorDataset(torch.stack([torch.randn(5, 10) for _ in range(2)]))
-    train_loader_single: DataLoader = DataLoader(dataset_single, batch_size=1)
-    lora_trainer.train(train_loader_single, num_epochs=1)
+    model.train()
+    optimizer.zero_grad()
+    for _, batch in enumerate(train_loader_list):
+        res = model(batch[0])["logits"]
+        loss = torch.nn.functional.mse_loss(res, batch[1])
+        loss.backward()
+        optimizer.step()
 
-    # Test with single non-tensor item batch
-    dataset_non_tensor = NonTensorDataset(
-        [42 for _ in range(2)]
-    )  # Using integers as non-tensor data
-    train_loader_non_tensor: DataLoader = DataLoader(dataset_non_tensor, batch_size=1)
-    lora_trainer.train(train_loader_non_tensor, num_epochs=1)
+    optimizer_to(optimizer, "cpu")
 
 
 def test_lora_trainer_train_with_gradient_accumulation():
@@ -641,3 +709,63 @@ def test_lora_training_init_validates_model_signature():
     with pytest.raises(ValueError) as exc_info:
         LoraTraining(model, loss_fn=None)  # No loss_fn provided
     assert "must accept a 'labels' parameter" in str(exc_info.value)
+
+
+def test_lora_train_mlp():
+    """Test that a MLP can be lora trained using FHE."""
+
+    class SimpleMLP(nn.Module):
+        """Simple MLP model without LoRA layers."""
+
+        def __init__(self, input_size=2, hidden_size=128, num_classes=2):
+            super().__init__()
+            self.fc1 = nn.Linear(input_size, hidden_size)
+            self.relu = nn.ReLU()
+            self.fc2 = nn.Linear(hidden_size, num_classes)
+
+        def forward(self, x, labels=None):  # pylint: disable=unused-argument
+            """Forward pass of the MLP."""
+            out = self.fc1(x)
+            out = self.relu(out)
+            out = self.fc2(out)
+            return out
+
+    # Create an initial model
+    model = SimpleMLP()
+
+    # Apply LoRA configuration
+    lora_config = LoraConfig(
+        r=1, lora_alpha=1, lora_dropout=0.01, target_modules=["fc1", "fc2"], bias="none"
+    )
+
+    peft_model = get_peft_model(model, lora_config)
+
+    # Generate a second data-set for demonstration purposes
+    x_task2, y_task2 = make_circles(n_samples=32, noise=0.2, factor=0.5)
+    train_loader_task2 = DataLoader(
+        TensorDataset(torch.Tensor(x_task2), torch.LongTensor(y_task2)), batch_size=32, shuffle=True
+    )
+
+    # Define a simple loss function
+    def simple_loss(outputs, targets):
+        return torch.nn.functional.cross_entropy(outputs, targets)
+
+    # Create an Adam optimizer
+    optimizer = torch.optim.Adam(peft_model.parameters(), lr=1e-3)
+
+    # Initialize trainer with the loss and optimizer
+    lora_trainer = LoraTrainer(
+        peft_model,
+        optimizer=optimizer,
+        loss_fn=simple_loss,
+    )
+    # Build a representative data-set for compilation
+    inputset = (
+        torch.Tensor(x_task2[:16]),
+        torch.LongTensor(y_task2[:16]),
+    )
+
+    # Calibrate and compile the model with 8-bit quantization
+    lora_trainer.compile(inputset, n_bits=8)
+    # Train in FHE mode
+    lora_trainer.train(train_loader_task2, fhe="execute")

@@ -117,7 +117,7 @@ class RemoteModule(nn.Module):
         super().__init__()
         self.private_module: Optional[nn.Module] = module
         self.server_remote_address: Optional[str] = server_remote_address
-        self.calibration_data: List = []
+        self.calibration_data: Optional[List] = []
         self.uid = str(uuid.uuid4())
         self.private_q_module: Optional[QuantizedModule] = None
         self.fhe_local_mode: HybridFHEMode = HybridFHEMode.CALIBRATE
@@ -213,6 +213,15 @@ class RemoteModule(nn.Module):
             # towards client lazy loading with caching as done on the server.
             self.clients[shape] = (uid, client)
 
+    def _apply(self, fn, recurse=True):
+        """Prevent remote modules moving private debug weights to GPU.
+
+        .. # noqa: DAR101
+        .. # noqa: DAR201
+
+        """
+        return self
+
     def forward(self, x: torch.Tensor) -> Union[torch.Tensor, QuantTensor]:
         """Forward pass of the remote module.
 
@@ -247,20 +256,20 @@ class RemoteModule(nn.Module):
 
             if self.executor:
                 # Delegate to the optimized GLWE executor
-                y = torch.Tensor(
-                    self.executor.forward(
-                        x.detach().numpy(), self.private_q_module, self.fhe_local_mode
-                    )
-                )
+                y = self.executor.forward(x.detach(), self.private_q_module, self.fhe_local_mode)
             else:
+                device = x.device
                 # Delegate to the quantized module for all fhe modes
                 y = torch.Tensor(
-                    self.private_q_module.forward(x.detach().numpy(), fhe=self.fhe_local_mode.value)
-                )
+                    self.private_q_module.forward(
+                        x.cpu().detach().numpy(), fhe=self.fhe_local_mode.value
+                    )
+                ).to(device)
 
         elif self.fhe_local_mode == HybridFHEMode.CALIBRATE:
             # Calling torch + gathering calibration data
             assert self.private_module is not None
+            assert self.calibration_data is not None
             self.calibration_data.append(x.detach())
             y = self.private_module(x)
             assert isinstance(y, (QuantTensor, torch.Tensor))
@@ -568,10 +577,13 @@ class HybridFHEModel:
 
         self.configuration = configuration
 
-        for name in self.module_names:
+        from tqdm import tqdm
+
+        for name in tqdm(self.module_names, desc="Compiling FHE layers"):
             remote_module = self._get_module_by_name(self.model, name)
             assert isinstance(remote_module, RemoteModule)
 
+            assert remote_module.calibration_data is not None
             calibration_data_tensor = torch.cat(remote_module.calibration_data, dim=0)
 
             if has_any_qnn_layers(self.private_modules[name]):
@@ -595,7 +607,14 @@ class HybridFHEModel:
                         calibration_data_tensor,
                         n_bits=n_bits,
                         rounding_threshold_bits=rounding_threshold_bits,
+                        keep_onnx=False,
                     )
+
+                    vals = self.private_q_modules[name].quant_layers_dict.values()
+                    _, q_op = next(iter(vals))
+                    const_inp = q_op.constant_inputs[1]  # Get the weights, the bias is in [2]
+                    const_inp.values = const_inp.qvalues.astype(numpy.float32)
+                    const_inp.qvalues = const_inp.qvalues.astype(numpy.int16)
                 else:
                     self.private_q_modules[name] = compile_torch_model(
                         self.private_modules[name],
@@ -607,6 +626,8 @@ class HybridFHEModel:
                     )
 
             self.remote_modules[name].private_q_module = self.private_q_modules[name]
+
+            remote_module.calibration_data = None
 
     def _save_fhe_circuit(self, path: Path, via_mlir=False):
         """Private method that saves the FHE circuits.
@@ -621,22 +642,23 @@ class HybridFHEModel:
         for module_name in self.module_names:
             onnx_model = self.private_q_modules[module_name].onnx_model
 
-            # mypy
-            assert onnx_model is not None
-            input_shapes = [
-                tuple(elt.dim_value for elt in onnx_input.type.tensor_type.shape.dim)
-                for onnx_input in onnx_model.graph.input
-            ]
+            if onnx_model is not None:
+                input_shapes = [
+                    tuple(elt.dim_value for elt in onnx_input.type.tensor_type.shape.dim)
+                    for onnx_input in onnx_model.graph.input
+                ]
 
-            assert len(input_shapes) == 1, "Multi-input circuits not supported yet"
-            model_module_path = model_path.resolve() / module_name
-            model_module_path.mkdir(exist_ok=True)
-            model_module_shape_path = model_module_path / tuple_to_underscore_str(input_shapes[0])
-            model_dev = FHEModelDev(
-                str(model_module_shape_path.resolve()),
-                self.private_q_modules[module_name],
-            )
-            model_dev.save(via_mlir=via_mlir)
+                assert len(input_shapes) == 1, "Multi-input circuits not supported yet"
+                model_module_path = model_path.resolve() / module_name
+                model_module_path.mkdir(exist_ok=True)
+                model_module_shape_path = model_module_path / tuple_to_underscore_str(
+                    input_shapes[0]
+                )
+                model_dev = FHEModelDev(
+                    str(model_module_shape_path.resolve()),
+                    self.private_q_modules[module_name],
+                )
+                model_dev.save(via_mlir=via_mlir)
 
     def save_and_clear_private_info(self, path: Path, via_mlir=True):
         """Save the PyTorch model to the provided path and also saves the corresponding FHE circuit.
@@ -645,15 +667,7 @@ class HybridFHEModel:
             path (Path): The directory where the model and the FHE circuit will be saved.
             via_mlir (bool): if fhe circuits should be serialized using via_mlir option
                 useful for cross-platform (compile on one architecture and run on another)
-
-        Raises:
-            NotImplementedError: GLWE backend deployment is not yet supported
         """
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4672
-        # GLWE backend deployment is not yet supported
-        if self.executor is not None:
-            raise NotImplementedError("GLWE backend deployment is not yet supported")
-
         path = Path(path)
         path.mkdir(parents=True, exist_ok=True)
 
