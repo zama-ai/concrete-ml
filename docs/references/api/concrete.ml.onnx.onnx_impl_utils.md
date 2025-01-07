@@ -36,7 +36,7 @@ Pad a tensor according to ONNX spec, using an optional custom pad value.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/onnx_impl_utils.py#L71"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/onnx_impl_utils.py#L75"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compute_conv_output_dims`
 
@@ -68,7 +68,7 @@ See https://pytorch.org/docs/stable/generated/torch.nn.AvgPool2d.html for detail
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/onnx_impl_utils.py#L115"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/onnx_impl_utils.py#L119"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compute_onnx_pool_padding`
 
@@ -100,7 +100,7 @@ The ONNX standard uses ceil_mode=1 to match TensorFlow style pooling output comp
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/onnx_impl_utils.py#L161"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/onnx_impl_utils.py#L165"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `onnx_avgpool_compute_norm_const`
 
@@ -132,7 +132,7 @@ This constant can be a tensor of the same shape as the input or a scalar.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/onnx_impl_utils.py#L233"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/onnx_impl_utils.py#L237"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `rounded_comparison`
 

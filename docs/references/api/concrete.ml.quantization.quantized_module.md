@@ -68,7 +68,7 @@ Get the post-processing parameters.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module.py#L944"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module.py#L946"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `bitwidth_and_range_report`
 
@@ -100,7 +100,7 @@ Check if the quantized module is compiled.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module.py#L797"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module.py#L799"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -142,7 +142,7 @@ Compile the module's forward function.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module.py#L751"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module.py#L753"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
@@ -306,7 +306,8 @@ ______________________________________________________________________
 
 ```python
 quantize_input(
-    *x: Optional[ndarray]
+    *x: Optional[ndarray],
+    dtype: Union[dtype[Any], NoneType, Type[Any], _SupportsDType[dtype[Any]], str, Tuple[Any, int], Tuple[Any, Union[SupportsIndex, Sequence[SupportsIndex]]], List[Any], _DTypeDict, Tuple[Any, Any]] = <class 'numpy.int64'>
 ) → Union[ndarray, Tuple[Union[ndarray, NoneType], ]]
 ```
 
@@ -315,6 +316,7 @@ Take the inputs in fp32 and quantize it using the learned quantization parameter
 **Args:**
 
 - <b>`x`</b> (Optional\[numpy.ndarray\]):  Floating point x or None.
+- <b>`dtype`</b> (numpy.typing.DTypeLike):  optional user-specified datatype for the output
 
 **Returns:**
 
@@ -346,7 +348,7 @@ Forward function for the FHE circuit.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module.py#L779"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module.py#L781"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `set_inputs_quantization_parameters`
 

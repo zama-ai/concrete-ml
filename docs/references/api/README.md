@@ -30,6 +30,7 @@
 - [`concrete.ml.pytest.utils`](./concrete.ml.pytest.utils.md#module-concretemlpytestutils): Common functions or lists for test files, which can't be put in fixtures.
 - [`concrete.ml.quantization`](./concrete.ml.quantization.md#module-concretemlquantization): Modules for quantization.
 - [`concrete.ml.quantization.base_quantized_op`](./concrete.ml.quantization.base_quantized_op.md#module-concretemlquantizationbase_quantized_op): Base Quantized Op class that implements quantization for a float numpy op.
+- [`concrete.ml.quantization.linear_op_glwe_backend`](./concrete.ml.quantization.linear_op_glwe_backend.md#module-concretemlquantizationlinear_op_glwe_backend): GLWE backend for some supported layers.
 - [`concrete.ml.quantization.post_training`](./concrete.ml.quantization.post_training.md#module-concretemlquantizationpost_training): Post Training Quantization methods.
 - [`concrete.ml.quantization.quantized_module`](./concrete.ml.quantization.quantized_module.md#module-concretemlquantizationquantized_module): QuantizedModule API.
 - [`concrete.ml.quantization.quantized_module_passes`](./concrete.ml.quantization.quantized_module_passes.md#module-concretemlquantizationquantized_module_passes): Optimization passes for QuantizedModules.
@@ -51,8 +52,9 @@
 - [`concrete.ml.sklearn.xgb`](./concrete.ml.sklearn.xgb.md#module-concretemlsklearnxgb): Implements XGBoost models.
 - [`concrete.ml.torch`](./concrete.ml.torch.md#module-concretemltorch): Modules for torch to numpy conversion.
 - [`concrete.ml.torch.compile`](./concrete.ml.torch.compile.md#module-concretemltorchcompile): torch compilation function.
+- [`concrete.ml.torch.hybrid_backprop_linear`](./concrete.ml.torch.hybrid_backprop_linear.md#module-concretemltorchhybrid_backprop_linear): Linear layer implementations for backprop FHE-compatible models.
 - [`concrete.ml.torch.hybrid_model`](./concrete.ml.torch.hybrid_model.md#module-concretemltorchhybrid_model): Implement the conversion of a torch model to a hybrid fhe/torch inference.
-- [`concrete.ml.torch.lora`](./concrete.ml.torch.lora.md#module-concretemltorchlora): This module contains classes for LoRA (Low-Rank Adaptation) training and custom layers.
+- [`concrete.ml.torch.lora`](./concrete.ml.torch.lora.md#module-concretemltorchlora): This module contains classes for LoRA (Low-Rank Adaptation) FHE training and custom layers.
 - [`concrete.ml.torch.numpy_module`](./concrete.ml.torch.numpy_module.md#module-concretemltorchnumpy_module): A torch to numpy module.
 - [`concrete.ml.version`](./concrete.ml.version.md#module-concretemlversion): File to manage the version of the package.
 
@@ -61,6 +63,7 @@
 - [`decoder.ConcreteDecoder`](./concrete.ml.common.serialization.decoder.md#class-concretedecoder): Custom json decoder to handle non-native types found in serialized Concrete ML objects.
 - [`encoder.ConcreteEncoder`](./concrete.ml.common.serialization.encoder.md#class-concreteencoder): Custom json encoder to handle non-native types found in serialized Concrete ML objects.
 - [`utils.FheMode`](./concrete.ml.common.utils.md#class-fhemode): Enum representing the execution mode.
+- [`utils.HybridFHEMode`](./concrete.ml.common.utils.md#class-hybridfhemode): Simple enum for different modes of execution of HybridModel.
 - [`fhe_client_server.DeploymentMode`](./concrete.ml.deployment.fhe_client_server.md#class-deploymentmode): Mode for the FHE API.
 - [`fhe_client_server.FHEModelClient`](./concrete.ml.deployment.fhe_client_server.md#class-fhemodelclient): Client API to encrypt and decrypt FHE data.
 - [`fhe_client_server.FHEModelDev`](./concrete.ml.deployment.fhe_client_server.md#class-fhemodeldev): Dev API to save the model and then load and run the FHE circuit.
@@ -70,6 +73,7 @@
 - [`client_engine.ClientEngine`](./concrete.ml.pandas.client_engine.md#class-clientengine): Define a framework that manages keys.
 - [`dataframe.EncryptedDataFrame`](./concrete.ml.pandas.dataframe.md#class-encrypteddataframe): Define an encrypted data-frame framework that supports Pandas operators and parameters.
 - [`torch_models.AddNet`](./concrete.ml.pytest.torch_models.md#class-addnet): Torch model that performs a simple addition between two inputs.
+- [`torch_models.AllZeroCNN`](./concrete.ml.pytest.torch_models.md#class-allzerocnn): A CNN class that has all zero weights and biases.
 - [`torch_models.BranchingGemmModule`](./concrete.ml.pytest.torch_models.md#class-branchinggemmmodule): Torch model with some branching and skip connections.
 - [`torch_models.BranchingModule`](./concrete.ml.pytest.torch_models.md#class-branchingmodule): Torch model with some branching and skip connections.
 - [`torch_models.CNN`](./concrete.ml.pytest.torch_models.md#class-cnn): Torch CNN model for the tests.
@@ -104,9 +108,9 @@
 - [`torch_models.QuantCustomModel`](./concrete.ml.pytest.torch_models.md#class-quantcustommodel): A small quantized network with Brevitas, trained on make_classification.
 - [`torch_models.ShapeOperationsNet`](./concrete.ml.pytest.torch_models.md#class-shapeoperationsnet): Torch QAT model that reshapes the input.
 - [`torch_models.SimpleNet`](./concrete.ml.pytest.torch_models.md#class-simplenet): Fake torch model used to generate some onnx.
-- [`torch_models.SimpleQAT`](./concrete.ml.pytest.torch_models.md#class-simpleqat): Torch model implements a step function that needs Greater, Cast and Where.
 - [`torch_models.SingleMixNet`](./concrete.ml.pytest.torch_models.md#class-singlemixnet): Torch model that with a single conv layer that produces the output, e.g., a blur filter.
 - [`torch_models.StepActivationModule`](./concrete.ml.pytest.torch_models.md#class-stepactivationmodule): Torch model implements a step function that needs Greater, Cast and Where.
+- [`torch_models.StepFunctionPTQ`](./concrete.ml.pytest.torch_models.md#class-stepfunctionptq): Torch model implements a step function that needs Greater, Cast and Where.
 - [`torch_models.TinyCNN`](./concrete.ml.pytest.torch_models.md#class-tinycnn): A very small CNN.
 - [`torch_models.TinyQATCNN`](./concrete.ml.pytest.torch_models.md#class-tinyqatcnn): A very small QAT CNN to classify the sklearn digits data-set.
 - [`torch_models.TorchCustomModel`](./concrete.ml.pytest.torch_models.md#class-torchcustommodel): A small network with Brevitas, trained on make_classification.
@@ -114,9 +118,12 @@
 - [`torch_models.TorchMultiply`](./concrete.ml.pytest.torch_models.md#class-torchmultiply): Torch model that performs a encrypted multiplication between two inputs.
 - [`torch_models.TorchSum`](./concrete.ml.pytest.torch_models.md#class-torchsum): Torch model to test the ReduceSum ONNX operator in a leveled circuit.
 - [`torch_models.UnivariateModule`](./concrete.ml.pytest.torch_models.md#class-univariatemodule): Torch model that calls univariate and shape functions of torch.
+- [`torch_models.WhereNet`](./concrete.ml.pytest.torch_models.md#class-wherenet): Simple network with a where operation for testing.
 - [`base_quantized_op.QuantizedMixingOp`](./concrete.ml.quantization.base_quantized_op.md#class-quantizedmixingop): An operator that mixes (adds or multiplies) together encrypted inputs.
 - [`base_quantized_op.QuantizedOp`](./concrete.ml.quantization.base_quantized_op.md#class-quantizedop): Base class for quantized ONNX ops implemented in numpy.
 - [`base_quantized_op.QuantizedOpUnivariateOfEncrypted`](./concrete.ml.quantization.base_quantized_op.md#class-quantizedopunivariateofencrypted): An univariate operator of an encrypted value.
+- [`linear_op_glwe_backend.GLWELinearLayerExecutor`](./concrete.ml.quantization.linear_op_glwe_backend.md#class-glwelinearlayerexecutor): GLWE execution helper for pure linear layers.
+- [`post_training.CalibrationMode`](./concrete.ml.quantization.post_training.md#class-calibrationmode): Simple enum for different modes of execution of HybridModel.
 - [`post_training.ONNXConverter`](./concrete.ml.quantization.post_training.md#class-onnxconverter): Base ONNX to Concrete ML computation graph conversion class.
 - [`post_training.PostTrainingAffineQuantization`](./concrete.ml.quantization.post_training.md#class-posttrainingaffinequantization): Post-training Affine Quantization.
 - [`post_training.PostTrainingQATImporter`](./concrete.ml.quantization.post_training.md#class-posttrainingqatimporter): Converter of Quantization Aware Training networks.
@@ -183,6 +190,7 @@
 - [`quantizers.MinMaxQuantizationStats`](./concrete.ml.quantization.quantizers.md#class-minmaxquantizationstats): Calibration set statistics.
 - [`quantizers.QuantizationOptions`](./concrete.ml.quantization.quantizers.md#class-quantizationoptions): Options for quantization.
 - [`quantizers.QuantizedArray`](./concrete.ml.quantization.quantizers.md#class-quantizedarray): Abstraction of quantized array.
+- [`quantizers.TorchUniformQuantizer`](./concrete.ml.quantization.quantizers.md#class-torchuniformquantizer): Uniform quantizer with a PyTorch implementation.
 - [`quantizers.UniformQuantizationParameters`](./concrete.ml.quantization.quantizers.md#class-uniformquantizationparameters): Quantization parameters for uniform quantization.
 - [`quantizers.UniformQuantizer`](./concrete.ml.quantization.quantizers.md#class-uniformquantizer): Uniform quantizer.
 - [`p_error_search.BinarySearch`](./concrete.ml.search_parameters.p_error_search.md#class-binarysearch): Class for `p_error` hyper-parameter search for classification and regression tasks.
@@ -221,15 +229,15 @@
 - [`tree.DecisionTreeRegressor`](./concrete.ml.sklearn.tree.md#class-decisiontreeregressor): Implements the sklearn DecisionTreeClassifier.
 - [`xgb.XGBClassifier`](./concrete.ml.sklearn.xgb.md#class-xgbclassifier): Implements the XGBoost classifier.
 - [`xgb.XGBRegressor`](./concrete.ml.sklearn.xgb.md#class-xgbregressor): Implements the XGBoost regressor.
-- [`hybrid_model.HybridFHEMode`](./concrete.ml.torch.hybrid_model.md#class-hybridfhemode): Simple enum for different modes of execution of HybridModel.
+- [`hybrid_backprop_linear.BackwardModuleLinear`](./concrete.ml.torch.hybrid_backprop_linear.md#class-backwardmodulelinear): Backward module for linear layers.
+- [`hybrid_backprop_linear.CustomLinear`](./concrete.ml.torch.hybrid_backprop_linear.md#class-customlinear): Custom linear module.
+- [`hybrid_backprop_linear.ForwardBackwardModule`](./concrete.ml.torch.hybrid_backprop_linear.md#class-forwardbackwardmodule): Custom autograd function for forward and backward passes.
+- [`hybrid_backprop_linear.ForwardModuleLinear`](./concrete.ml.torch.hybrid_backprop_linear.md#class-forwardmodulelinear): Forward module for linear layers.
 - [`hybrid_model.HybridFHEModel`](./concrete.ml.torch.hybrid_model.md#class-hybridfhemodel): Convert a model to a hybrid model.
 - [`hybrid_model.HybridFHEModelServer`](./concrete.ml.torch.hybrid_model.md#class-hybridfhemodelserver): Hybrid FHE Model Server.
 - [`hybrid_model.LoggerStub`](./concrete.ml.torch.hybrid_model.md#class-loggerstub): Placeholder type for a typical logger like the one from loguru.
 - [`hybrid_model.RemoteModule`](./concrete.ml.torch.hybrid_model.md#class-remotemodule): A wrapper class for the modules to be evaluated remotely with FHE.
-- [`lora.BackwardModuleLinear`](./concrete.ml.torch.lora.md#class-backwardmodulelinear): Backward module for linear layers.
-- [`lora.CustomLinear`](./concrete.ml.torch.lora.md#class-customlinear): Custom linear module.
-- [`lora.ForwardBackwardModule`](./concrete.ml.torch.lora.md#class-forwardbackwardmodule): Custom autograd function for forward and backward passes.
-- [`lora.ForwardModuleLinear`](./concrete.ml.torch.lora.md#class-forwardmodulelinear): Forward module for linear layers.
+- [`lora.LoraTrainer`](./concrete.ml.torch.lora.md#class-loratrainer): Trainer class for LoRA fine-tuning with FHE support.
 - [`lora.LoraTraining`](./concrete.ml.torch.lora.md#class-loratraining): LoraTraining module for fine-tuning with LoRA in a hybrid model setting.
 - [`numpy_module.NumpyModule`](./concrete.ml.torch.numpy_module.md#class-numpymodule): General interface to transform a torch.nn.Module to numpy module.
 
@@ -383,6 +391,7 @@
 - [`utils.load_torch_model`](./concrete.ml.pytest.utils.md#function-load_torch_model): Load an object saved with torch.save() from a file or dict.
 - [`utils.pandas_dataframe_are_equal`](./concrete.ml.pytest.utils.md#function-pandas_dataframe_are_equal): Determine if both data-frames are identical.
 - [`utils.values_are_equal`](./concrete.ml.pytest.utils.md#function-values_are_equal): Indicate if two values are equal.
+- [`linear_op_glwe_backend.has_glwe_backend`](./concrete.ml.quantization.linear_op_glwe_backend.md#function-has_glwe_backend): Check if the GLWE backend is installed.
 - [`post_training.get_n_bits_dict`](./concrete.ml.quantization.post_training.md#function-get_n_bits_dict): Convert the n_bits parameter into a proper dictionary.
 - [`quantizers.fill_from_kwargs`](./concrete.ml.quantization.quantizers.md#function-fill_from_kwargs): Fill a parameter set structure from kwargs parameters.
 - [`p_error_search.compile_and_simulated_fhe_inference`](./concrete.ml.search_parameters.p_error_search.md#function-compile_and_simulated_fhe_inference): Get the quantized module of a given model in FHE, simulated or not.
@@ -405,3 +414,5 @@
 - [`hybrid_model.tuple_to_underscore_str`](./concrete.ml.torch.hybrid_model.md#function-tuple_to_underscore_str): Convert a tuple to a string representation.
 - [`hybrid_model.underscore_str_to_tuple`](./concrete.ml.torch.hybrid_model.md#function-underscore_str_to_tuple): Convert a a string representation of a tuple to a tuple.
 - [`lora.get_remote_names`](./concrete.ml.torch.lora.md#function-get_remote_names): Get names of modules to be executed remotely.
+- [`lora.grad_to`](./concrete.ml.torch.lora.md#function-grad_to): Move parameter gradient to device.
+- [`lora.optimizer_to`](./concrete.ml.torch.lora.md#function-optimizer_to): Move optimizer object to device.

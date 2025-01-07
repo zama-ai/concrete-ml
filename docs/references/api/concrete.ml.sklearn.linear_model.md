@@ -27,14 +27,7 @@ For more details on LinearRegression please refer to the scikit-learn documentat
 ### <kbd>method</kbd> `__init__`
 
 ```python
-__init__(
-    n_bits=8,
-    fit_intercept=True,
-    normalize='deprecated',
-    copy_X=True,
-    n_jobs=None,
-    positive=False
-)
+__init__(n_bits=8, fit_intercept=True, copy_X=True, n_jobs=None, positive=False)
 ```
 
 ______________________________________________________________________
@@ -83,7 +76,7 @@ Is None if the model is not fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/linear_model.py#L68"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/linear_model.py#L66"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -93,7 +86,7 @@ dump_dict() → Dict[str, Any]
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/linear_model.py#L95"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/linear_model.py#L92"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -103,7 +96,7 @@ load_dict(metadata: Dict)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/linear_model.py#L123"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/linear_model.py#L119"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `SGDClassifier`
 
@@ -120,7 +113,7 @@ An FHE linear classifier model fitted with stochastic gradient descent.
 
 For more details on SGDClassifier please refer to the scikit-learn documentation: https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html
 
-<a href="../../../src/concrete/ml/sklearn/linear_model.py#L151"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/linear_model.py#L147"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -223,7 +216,7 @@ Using this attribute is deprecated.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1010"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1006"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -233,7 +226,7 @@ dump_dict() → Dict[str, Any]
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/linear_model.py#L777"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/linear_model.py#L773"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -276,7 +269,7 @@ The fitted estimator.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/linear_model.py#L263"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/linear_model.py#L259"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_sklearn_params`
 
@@ -286,7 +279,7 @@ get_sklearn_params(deep: bool = True) → dict
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1067"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1063"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -296,7 +289,7 @@ load_dict(metadata: Dict)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/linear_model.py#L869"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/linear_model.py#L865"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `partial_fit`
 
@@ -326,7 +319,7 @@ This function does one iteration of SGD training. Looping n_times over this func
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/linear_model.py#L923"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/linear_model.py#L919"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -362,7 +355,7 @@ The justification for the formula in the loss="modified_huber" case is in the ap
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1130"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1126"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `SGDRegressor`
 
@@ -376,7 +369,7 @@ An FHE linear regression model fitted with stochastic gradient descent.
 
 For more details on SGDRegressor please refer to the scikit-learn documentation: https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html
 
-<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1150"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1146"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -451,7 +444,7 @@ Is None if the model is not fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1197"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1193"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -461,7 +454,7 @@ dump_dict() → Dict[str, Any]
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1238"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1234"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -471,7 +464,7 @@ load_dict(metadata: Dict)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1279"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1275"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `ElasticNet`
 
@@ -485,7 +478,7 @@ An ElasticNet regression model with FHE.
 
 For more details on ElasticNet please refer to the scikit-learn documentation: https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.ElasticNet.html
 
-<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1299"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1295"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -495,7 +488,6 @@ __init__(
     alpha=1.0,
     l1_ratio=0.5,
     fit_intercept=True,
-    normalize='deprecated',
     precompute=False,
     max_iter=1000,
     copy_X=True,
@@ -553,7 +545,7 @@ Is None if the model is not fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1331"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1325"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -563,7 +555,7 @@ dump_dict() → Dict[str, Any]
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1365"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1358"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -573,7 +565,7 @@ load_dict(metadata: Dict)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1400"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1392"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `Lasso`
 
@@ -587,7 +579,7 @@ A Lasso regression model with FHE.
 
 For more details on Lasso please refer to the scikit-learn documentation: https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html
 
-<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1420"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1412"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -596,7 +588,6 @@ __init__(
     n_bits=8,
     alpha: float = 1.0,
     fit_intercept=True,
-    normalize='deprecated',
     precompute=False,
     copy_X=True,
     max_iter=1000,
@@ -654,7 +645,7 @@ Is None if the model is not fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1450"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1440"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -664,7 +655,7 @@ dump_dict() → Dict[str, Any]
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1483"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1472"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -674,7 +665,7 @@ load_dict(metadata: Dict)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1517"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1505"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `Ridge`
 
@@ -688,7 +679,7 @@ A Ridge regression model with FHE.
 
 For more details on Ridge please refer to the scikit-learn documentation: https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html
 
-<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1537"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1525"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -697,10 +688,9 @@ __init__(
     n_bits=8,
     alpha: float = 1.0,
     fit_intercept=True,
-    normalize='deprecated',
     copy_X=True,
     max_iter=None,
-    tol=0.001,
+    tol=0.0001,
     solver='auto',
     positive=False,
     random_state=None
@@ -753,7 +743,7 @@ Is None if the model is not fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1563"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1549"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -763,7 +753,7 @@ dump_dict() → Dict[str, Any]
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1594"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1579"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -773,7 +763,7 @@ load_dict(metadata: Dict)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1625"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1609"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `LogisticRegression`
 
@@ -787,7 +777,7 @@ A logistic regression model with FHE.
 
 For more details on LogisticRegression please refer to the scikit-learn documentation: https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
 
-<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1645"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1629"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -882,7 +872,7 @@ Using this attribute is deprecated.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1685"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1669"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -892,7 +882,7 @@ dump_dict() → Dict[str, Any]
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1722"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/linear_model.py#L1706"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 

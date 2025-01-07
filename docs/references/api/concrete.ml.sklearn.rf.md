@@ -38,7 +38,8 @@ __init__(
     warm_start=False,
     class_weight=None,
     ccp_alpha=0.0,
-    max_samples=None
+    max_samples=None,
+    monotonic_cst=None
 )
 ```
 
@@ -116,7 +117,7 @@ Using this attribute is deprecated.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/rf.py#L75"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/rf.py#L77"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -126,7 +127,7 @@ dump_dict() → Dict[str, Any]
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/rf.py#L112"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/rf.py#L115"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -136,7 +137,7 @@ load_dict(metadata: Dict)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/rf.py#L69"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/rf.py#L71"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -146,13 +147,13 @@ post_processing(y_preds: ndarray) → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/rf.py#L159"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/rf.py#L163"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `RandomForestRegressor`
 
 Implements the RandomForest regressor.
 
-<a href="../../../src/concrete/ml/sklearn/rf.py#L167"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/rf.py#L171"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -175,7 +176,8 @@ __init__(
     verbose=0,
     warm_start=False,
     ccp_alpha=0.0,
-    max_samples=None
+    max_samples=None,
+    monotonic_cst=None
 )
 ```
 
@@ -229,7 +231,7 @@ Is None if the model is not fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/rf.py#L213"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/rf.py#L219"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -239,7 +241,7 @@ dump_dict() → Dict[str, Any]
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/rf.py#L249"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/rf.py#L256"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
