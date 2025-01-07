@@ -6,7 +6,7 @@ from typing import Any, List, Tuple, Union
 import torch
 from torch import Tensor, nn
 from torch.utils.data import DataLoader
-from tqdm import tqdm
+from tqdm.autonotebook import tqdm
 
 from ..common.utils import assert_true
 from .hybrid_backprop_linear import CustomLinear

@@ -18,6 +18,7 @@ import torch
 from brevitas.quant_tensor import QuantTensor
 from concrete.fhe import Configuration
 from torch import nn
+from tqdm.autonotebook import tqdm
 
 from ..common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE, HybridFHEMode
 from ..deployment.fhe_client_server import FHEModelClient, FHEModelDev, FHEModelServer
@@ -576,8 +577,6 @@ class HybridFHEModel:
         self.model(x)
 
         self.configuration = configuration
-
-        from tqdm import tqdm
 
         for name in tqdm(self.module_names, desc="Compiling FHE layers"):
             remote_module = self._get_module_by_name(self.model, name)
