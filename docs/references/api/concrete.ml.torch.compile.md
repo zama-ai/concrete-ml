@@ -68,7 +68,8 @@ build_quantized_module(
     import_qat: bool = False,
     n_bits: Union[int, Dict[str, int]] = 8,
     rounding_threshold_bits: Union[NoneType, int, Dict[str, Union[str, int]]] = None,
-    reduce_sum_copy=False
+    reduce_sum_copy=False,
+    keep_onnx: Optional[bool] = True
 ) → QuantizedModule
 ```
 
@@ -84,6 +85,7 @@ Take a model in torch or ONNX, turn it to numpy, quantize its inputs / weights /
 - <b>`n_bits`</b>:  the number of bits for the quantization
 - <b>`rounding_threshold_bits`</b> (Union\[None, int, Dict\[str, Union\[str, int\]\]\]):  Defines precision  rounding for model accumulators. Accepts None, an int, or a dict.  The dict can specify 'method' (fhe.Exactness.EXACT or fhe.Exactness.APPROXIMATE)  and 'n_bits' ('auto' or int)
 - <b>`reduce_sum_copy`</b> (bool):  if the inputs of QuantizedReduceSum should be copied to avoid  bit-width propagation
+- <b>`keep_onnx`</b> (bool):  keep the onnx model inside the QuantizedModule. Set to False  to save memory. Keeping the onnx model is useful for debugging
 
 **Returns:**
 
@@ -91,7 +93,7 @@ Take a model in torch or ONNX, turn it to numpy, quantize its inputs / weights /
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/compile.py#L274"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/compile.py#L279"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_torch_model`
 
@@ -143,7 +145,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/compile.py#L361"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/compile.py#L366"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_onnx_model`
 
@@ -195,7 +197,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/compile.py#L444"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/compile.py#L449"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_brevitas_qat_model`
 

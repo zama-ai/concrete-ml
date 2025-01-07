@@ -38,6 +38,14 @@ ______________________________________________________________________
 
 <a href="../../../src/concrete/ml/quantization/post_training.py#L190"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
+## <kbd>class</kbd> `CalibrationMode`
+
+Simple enum for different modes of execution of HybridModel.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/quantization/post_training.py#L198"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
 ## <kbd>class</kbd> `ONNXConverter`
 
 Base ONNX to Concrete ML computation graph conversion class.
@@ -54,7 +62,7 @@ This class should be sub-classed to provide specific calibration and quantizatio
 - <b>`numpy_model`</b> (NumpyModule):  Model in numpy.
 - <b>`rounding_threshold_bits`</b> (Union\[None, int, Dict\[str, Union\[str, int\]\]\]):  Defines precision  rounding for model accumulators. Accepts None, an int, or a dict.  The dict can specify 'method' (fhe.Exactness.EXACT or fhe.Exactness.APPROXIMATE)  and 'n_bits' ('auto' or int)
 
-<a href="../../../src/concrete/ml/quantization/post_training.py#L228"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/post_training.py#L236"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -108,12 +116,15 @@ Get the number of bits to use for the quantization of any constants (usually wei
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/post_training.py#L684"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/post_training.py#L733"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_module`
 
 ```python
-quantize_module(*calibration_data: ndarray) → QuantizedModule
+quantize_module(
+    *calibration_data: ndarray,
+    keep_onnx: Optional[bool] = True
+) → QuantizedModule
 ```
 
 Quantize numpy module.
@@ -123,6 +134,7 @@ Following https://arxiv.org/abs/1712.05877 guidelines.
 **Args:**
 
 - <b>`calibration_data`</b> (numpy.ndarray):   Data that will be used to compute the bounds,  scales and zero point values for every quantized object.
+- <b>`keep_onnx`</b> (bool):  keep the onnx model inside the QuantizedModule. Set to False  to save memory. Keeping the onnx model is useful for debugging
 
 **Returns:**
 
@@ -130,7 +142,7 @@ Following https://arxiv.org/abs/1712.05877 guidelines.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/post_training.py#L827"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/post_training.py#L880"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `PostTrainingAffineQuantization`
 
@@ -153,7 +165,7 @@ Create the quantized version of the passed numpy module.
 
 - <b>`QuantizedModule`</b>:  A quantized version of the numpy model.
 
-<a href="../../../src/concrete/ml/quantization/post_training.py#L228"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/post_training.py#L236"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -207,12 +219,15 @@ Get the number of bits to use for the quantization of any constants (usually wei
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/post_training.py#L684"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/post_training.py#L733"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_module`
 
 ```python
-quantize_module(*calibration_data: ndarray) → QuantizedModule
+quantize_module(
+    *calibration_data: ndarray,
+    keep_onnx: Optional[bool] = True
+) → QuantizedModule
 ```
 
 Quantize numpy module.
@@ -222,6 +237,7 @@ Following https://arxiv.org/abs/1712.05877 guidelines.
 **Args:**
 
 - <b>`calibration_data`</b> (numpy.ndarray):   Data that will be used to compute the bounds,  scales and zero point values for every quantized object.
+- <b>`keep_onnx`</b> (bool):  keep the onnx model inside the QuantizedModule. Set to False  to save memory. Keeping the onnx model is useful for debugging
 
 **Returns:**
 
@@ -229,7 +245,7 @@ Following https://arxiv.org/abs/1712.05877 guidelines.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/post_training.py#L978"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/post_training.py#L1056"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `PostTrainingQATImporter`
 
@@ -237,7 +253,7 @@ Converter of Quantization Aware Training networks.
 
 This class provides specific configuration for QAT networks during ONNX network conversion to Concrete ML computation graphs.
 
-<a href="../../../src/concrete/ml/quantization/post_training.py#L228"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/post_training.py#L236"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -291,12 +307,15 @@ Get the number of bits to use for the quantization of any constants (usually wei
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/post_training.py#L684"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/post_training.py#L733"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_module`
 
 ```python
-quantize_module(*calibration_data: ndarray) → QuantizedModule
+quantize_module(
+    *calibration_data: ndarray,
+    keep_onnx: Optional[bool] = True
+) → QuantizedModule
 ```
 
 Quantize numpy module.
@@ -306,6 +325,7 @@ Following https://arxiv.org/abs/1712.05877 guidelines.
 **Args:**
 
 - <b>`calibration_data`</b> (numpy.ndarray):   Data that will be used to compute the bounds,  scales and zero point values for every quantized object.
+- <b>`keep_onnx`</b> (bool):  keep the onnx model inside the QuantizedModule. Set to False  to save memory. Keeping the onnx model is useful for debugging
 
 **Returns:**
 
