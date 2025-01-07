@@ -4,16 +4,16 @@ MarkupSafe, 2.1.5, BSD License
 PyYAML, 6.0.2, MIT License
 brevitas, 0.10.2, UNKNOWN
 certifi, 2024.12.14, Mozilla Public License 2.0 (MPL 2.0)
-charset-normalizer, 3.4.0, MIT License
+charset-normalizer, 3.4.1, MIT License
 coloredlogs, 15.0.1, MIT License
 concrete-ml-extensions, 0.1.4, BSD-3-Clause-Clear
-concrete-python, 2.9.0rc1.dev20241219, BSD-3-Clause
+concrete-python, 2.9.0, BSD-3-Clause
 dependencies, 2.0.1, BSD License
 dill, 0.3.9, BSD License
 filelock, 3.16.1, The Unlicense (Unlicense)
-flatbuffers, 24.3.25, Apache Software License
+flatbuffers, 24.12.23, Apache Software License
 fsspec, 2024.12.0, BSD License
-huggingface-hub, 0.27.0, Apache Software License
+huggingface-hub, 0.27.1, Apache Software License
 humanfriendly, 10.0, MIT License
 hummingbird-ml, 0.4.11, MIT License
 idna, 3.10, BSD License
@@ -48,7 +48,7 @@ torch, 2.3.1, BSD License
 tqdm, 4.67.1, MIT License; Mozilla Public License 2.0 (MPL 2.0)
 typing_extensions, 4.12.2, Python Software Foundation License
 tzdata, 2024.2, Apache Software License
-unfoldNd, 0.2.2, MIT License
+unfoldNd, 0.2.3, MIT License
 urllib3, 2.2.3, MIT License
 xgboost, 1.6.2, Apache Software License
 z3-solver, 4.13.0.0, MIT License
