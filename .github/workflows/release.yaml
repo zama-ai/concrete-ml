@@ -52,7 +52,7 @@ jobs:
         && startsWith(github.head_ref, 'chore/prepare_release_')
         && contains(github.event.pull_request.title, 'Prepare release')
       )
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     outputs:
       label: ${{ steps.start-ec2-runner.outputs.label }}
       ec2-instance-id: ${{ steps.start-ec2-runner.outputs.ec2-instance-id || '' }}
@@ -578,7 +578,7 @@ jobs:
   stop-runner-linux:
     name: Stop EC2 runner
     needs: [start-runner-linux, release-package]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     if: ${{ always() && (needs.start-runner-linux.result != 'skipped') }}
     steps:
       - name: Configure AWS credentials
@@ -603,7 +603,7 @@ jobs:
     name: Send Slack notification
     if: ${{ always() }}
     timeout-minutes: 2
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs:
       [
         start-runner-linux,
