@@ -158,6 +158,7 @@ jobs:
           ./script/make_utils/setup_os_deps.sh
           source $HOME/.bashrc
           printenv
+          cat $HOME/.bashrc
           make setup_env
 
       - name: Check version coherence and apidocs
