@@ -179,7 +179,7 @@ if [[ "${OS_NAME}" == "Linux" ]]; then
         python3 -m pip install --no-cache-dir --upgrade pip && \
         python3 -m pip install --no-cache-dir --ignore-installed poetry==1.8.4 \
     );
-    echo "PATH=$PATH:/home/dev_user/.local/bin/" >> ~/.bashrc
+    echo "PATH=$PATH:$HOME/.local/bin/" >> ~/.bashrc
 elif [[ "${OS_NAME}" == "Darwin" ]]; then
 
     # Some problems with the git which is preinstalled on AWS virtual machines. Let's unlink it
