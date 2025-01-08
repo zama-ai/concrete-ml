@@ -157,8 +157,9 @@ jobs:
           export HOME=/root
           ./script/make_utils/setup_os_deps.sh
           source $HOME/.bashrc
-          printenv
-          cat $HOME/.bashrc
+
+      - name: Install dependencies part 2
+        run: |
           make setup_env
 
       - name: Check version coherence and apidocs
