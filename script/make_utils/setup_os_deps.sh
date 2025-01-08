@@ -85,8 +85,8 @@ linux_install_github_cli () {
     # https://github.com/cli/cli/blob/trunk/docs/install_linux.md#debian-ubuntu-linux-raspberry-pi-os-apt
     echo "Installing github-CLI"
     export GH_CLI_VERSION="2.51.0"
-    wget -P $HOME https://github.com/cli/cli/releases/download/v${GH_CLI_VERSION}/gh_${GH_CLI_VERSION}_linux_amd64.deb
-    ${SUDO_BIN:+$SUDO_BIN} dpkg -i $HOME/gh_${GH_CLI_VERSION}_linux_amd64.deb
+    wget -P "$HOME" https://github.com/cli/cli/releases/download/v${GH_CLI_VERSION}/gh_${GH_CLI_VERSION}_linux_amd64.deb
+    ${SUDO_BIN:+$SUDO_BIN} dpkg -i "$HOME/gh_${GH_CLI_VERSION}_linux_amd64.deb"
 }
 
 linux_install_cmake () {
@@ -179,7 +179,7 @@ if [[ "${OS_NAME}" == "Linux" ]]; then
         python3 -m pip install --no-cache-dir --ignore-installed poetry==1.8.4 \
     ) || (pipx install poetry==1.8.4 && pipx ensurepath);
 
-    echo "PATH=$PATH:$HOME/.local/bin/" >> $HOME/.bashrc
+    echo "PATH=$PATH:$HOME/.local/bin/" >> "$HOME/.bashrc"
 elif [[ "${OS_NAME}" == "Darwin" ]]; then
 
     # Some problems with the git which is preinstalled on AWS virtual machines. Let's unlink it
