@@ -132,6 +132,7 @@ jobs:
           sed -i 's|^deb http://archive|deb http://fr.archive|g' /etc/apt/sources.list
           apt update && apt install git git-lfs -y
           apt -y install sudo
+          export HOME=/root
 
       # We need to include LFS files as some are needed for checking the documentation
       - name: Checkout Code
