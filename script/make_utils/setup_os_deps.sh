@@ -174,7 +174,7 @@ if [[ "${OS_NAME}" == "Linux" ]]; then
 
     # Install poetry, either with pipx for ubuntu >= 23
     # or through regular pip for older ubuntu
-    (pipx install poetry && pipx ensurepath) || \
+    (pipx install poetry==1.8.4 && pipx ensurepath) || \
     (\
         python3 -m pip install --no-cache-dir --upgrade pip && \
         python3 -m pip install --no-cache-dir --ignore-installed poetry==1.8.4 \
