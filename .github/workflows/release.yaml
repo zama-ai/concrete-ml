@@ -160,12 +160,11 @@ jobs:
 
       - name: Install dependencies part 2
         run: |
-          PATH=$PATH:/root/.local/bin make setup_env
+          make setup_env
 
       - name: Check version coherence and apidocs
         run: |
-          PATH=$PATH:/root/.local/bin make check_version_coherence
-          PATH=$PATH:/root/.local/bin make check_apidocs
+          make check_version_coherence
 
       - name: Get release version and tag name
         id: get-release-version
