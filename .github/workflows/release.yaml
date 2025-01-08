@@ -157,6 +157,7 @@ jobs:
           export HOME=/root
           ./script/make_utils/setup_os_deps.sh
           source $HOME/.bashrc
+          printenv
           make setup_env
 
       - name: Check version coherence and apidocs
