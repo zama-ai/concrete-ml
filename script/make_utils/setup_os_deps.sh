@@ -90,6 +90,12 @@ linux_install_github_cli () {
 }
 
 linux_install_cmake () {
+    # Install lsb-release if not present
+    if ! command -v lsb_release >/dev/null 2>&1; then
+        ${SUDO_BIN:+$SUDO_BIN} apt-get update
+        ${SUDO_BIN:+$SUDO_BIN} apt-get -y install lsb-release
+    fi
+
     # Get Ubuntu version codename
     UBUNTU_CODENAME=$(lsb_release -cs)
     
