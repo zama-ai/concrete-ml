@@ -154,6 +154,7 @@ jobs:
           sudo apt-mark hold docker.io
 
           ./script/make_utils/setup_os_deps.sh
+          source $HOME/.bashrc
           make setup_env
 
       - name: Check version coherence and apidocs
