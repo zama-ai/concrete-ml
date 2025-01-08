@@ -1,7 +1,7 @@
 """This module contains classes for LoRA (Low-Rank Adaptation) FHE training and custom layers."""
 
 from collections import UserDict
-from typing import Any, List, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 
 import torch
 from torch import Tensor, nn
@@ -263,7 +263,7 @@ class LoraTraining(torch.nn.Module):
         # Return the original (unscaled) loss for logging
         return loss.detach(), None
 
-    def process_inputs(self, inputs: Any) -> Tuple[torch.Tensor, torch.Tensor]:
+    def process_inputs(self, inputs: Any) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor]]:
         """Process training inputs such as labels and attention mask.
 
         Args:
