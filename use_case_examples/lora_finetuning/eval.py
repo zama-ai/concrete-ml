@@ -206,7 +206,11 @@ label_tensor = torch.randint(
     0, tokenizer.vocab_size, (PER_DEVICE_TRAIN_BATCH_SIZE, BLOCK_SIZE), dtype=torch.long
 )
 attention_mask = torch.ones((PER_DEVICE_TRAIN_BATCH_SIZE, BLOCK_SIZE), dtype=torch.long)
-inputset = (input_tensor, label_tensor, attention_mask)
+inputset = {
+    "input_ids": input_tensor,
+    "attention_mask": attention_mask,
+    "labels": label_tensor
+}
 
 # Prepare eval loader
 eval_loader = DataLoader(test_dataset, batch_size=4, shuffle=False, collate_fn=data_collator)
