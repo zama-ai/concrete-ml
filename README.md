@@ -41,14 +41,22 @@ Concrete ML is designed with ease of use in mind. Data scientists can use models
 
 ### Use cases
 
-By leveraging FHE, Concrete ML can unlock a myriad of new use cases for machine learning, such as enabling secure and private data collaboration, protecting sensitive data while still allowing for analysis, and facilitating machine learning on data-sets that are subject to strict data privacy regulations, for instance
+By leveraging FHE, Concrete ML enables various privacy-preserving applications:
 
-- **Healthcare data analysis**: Improve patient care while maintaining privacy by allowing secure, confidential data sharing between healthcare providers.
-- **Financial services**: Facilitate secure financial data analysis for risk management and fraud detection, keeping client information encrypted and safe.
-- **Ad campaign tracking**: Create targeted advertising and campaign insights in a post-cookie era, ensuring user privacy through encrypted data analysis.
-- **Industries:** Enable predictive maintenance in the cloud while keeping sensitive data confidential, enhancing efficiency and data security.
-- **Biometrics:** Give the ability to create user authentication applications without having to reveal their identities.
-- **Government:** Enable governments to create digitized versions of their services without having to trust cloud providers.
+#### Healthcare
+- **Medical Diagnosis**: Process encrypted patient data while maintaining HIPAA compliance
+- **Drug Discovery**: Collaborate on sensitive pharmaceutical research
+- **Patient Monitoring**: Analyze encrypted vital signs and health metrics
+
+#### Financial Services  
+- **Fraud Detection**: Process encrypted transaction data
+- **Risk Assessment**: Evaluate loan applications while protecting personal data
+- **Trading Algorithms**: Execute strategies on encrypted market data
+
+#### Enterprise
+- **HR Analytics**: Process employee data securely
+- **Supply Chain**: Analyze sensitive business metrics
+- **Customer Intelligence**: Process customer data while maintaining GDPR compliance
 
 *See more use cases in the list of [demos](#demos).*
 <br></br>
@@ -296,3 +304,24 @@ This software is distributed under the **BSD-3-Clause-Clear** license. Read [thi
 <p align="right">
   <a href="#about" > ↑ Back to top </a>
 </p>
+
+### Troubleshooting
+
+Common issues and solutions:
+
+1. **Installation Errors**
+   - Ensure your Python version is supported (3.8-3.12)
+   - On Linux, install required system packages: `apt-get install build-essential python3-dev`
+   - On Windows, use Docker or WSL2
+
+2. **Compilation Errors**
+   - Check input data types match model expectations
+   - Ensure sufficient memory for compilation
+   - Verify model complexity is suitable for FHE
+
+3. **Performance Issues**
+   - Use smaller batch sizes for inference
+   - Reduce model precision if possible
+   - Consider model architecture optimizations
+
+For more help, visit our [community forum](https://community.zama.ai/).
