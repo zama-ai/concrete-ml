@@ -1691,6 +1691,10 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # Extract scikit-learn's initialization parameters
         init_params = sklearn_model.get_params()
 
+        # Remove deprecated parameters
+        deprecated = "deprecated"
+        init_params = {k: v for k, v in init_params.items() if v != deprecated}
+
         # Ensure compatibility for both sklearn 1.1 and >=1.4
         # This parameter was removed in 1.4. If this package is installed
         # with sklearn 1.1 which has it, then remove it when
