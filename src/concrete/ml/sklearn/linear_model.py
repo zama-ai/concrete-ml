@@ -1641,7 +1641,6 @@ class LogisticRegression(SklearnLinearClassifierMixin):
         random_state=None,
         solver="lbfgs",
         max_iter=100,
-        multi_class="auto",
         verbose=0,
         warm_start=False,
         n_jobs=None,
@@ -1660,7 +1659,6 @@ class LogisticRegression(SklearnLinearClassifierMixin):
         self.random_state = random_state
         self.solver = solver
         self.max_iter = max_iter
-        self.multi_class = multi_class
         self.verbose = verbose
         self.warm_start = warm_start
         self.n_jobs = n_jobs
@@ -1695,7 +1693,6 @@ class LogisticRegression(SklearnLinearClassifierMixin):
         metadata["random_state"] = self.random_state
         metadata["solver"] = self.solver
         metadata["max_iter"] = self.max_iter
-        metadata["multi_class"] = self.multi_class
         metadata["verbose"] = self.verbose
         metadata["warm_start"] = self.warm_start
         metadata["n_jobs"] = self.n_jobs
@@ -1732,7 +1729,6 @@ class LogisticRegression(SklearnLinearClassifierMixin):
         obj.random_state = metadata["random_state"]
         obj.solver = metadata["solver"]
         obj.max_iter = metadata["max_iter"]
-        obj.multi_class = metadata["multi_class"]
         obj.verbose = metadata["verbose"]
         obj.warm_start = metadata["warm_start"]
         obj.n_jobs = metadata["n_jobs"]
