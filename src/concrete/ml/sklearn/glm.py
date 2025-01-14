@@ -144,7 +144,7 @@ class _GeneralizedLinearRegressor(SklearnLinearRegressorMixin):
 
         # Remove the parameters added by Concrete ML
         params.pop("n_bits", None)
-        # Remove sklearn 1.4 parameter when using sklearn 1.1
+        # Remove sklearn 1.5 parameter when using sklearn 1.1
         if "1.1." in sklearn.__version__:
             params.pop("solver", None)  # pragma: no cover
 

@@ -1691,16 +1691,11 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # Extract scikit-learn's initialization parameters
         init_params = sklearn_model.get_params()
 
-        # Remove deprecated parameters
-        deprecated = "deprecated"
-        init_params = {k: v for k, v in init_params.items() if v != deprecated}
-
-        # Ensure compatibility for both sklearn 1.1 and >=1.4
-        # This parameter was removed in 1.4. If this package is installed
+        # Ensure compatibility for both sklearn 1.1 and >=1.5
+        # This parameter was removed in 1.5. If this package is installed
         # with sklearn 1.1 which has it, then remove it when
-        # instantiating the 1.4 API compatible Concrete ML model
+        # instantiating the 1.5 API compatible Concrete ML model
         init_params.pop("normalize", None)
-        init_params.pop("multi_class", None)
 
         # Instantiate the Concrete ML model and update initialization parameters
         # This update is necessary as we currently store scikit-learn attributes in Concrete ML

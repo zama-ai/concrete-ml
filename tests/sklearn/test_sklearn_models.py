@@ -2244,7 +2244,7 @@ def test_initialization_variables_and_defaults_match(
     """
     if "1.1." in sklearn.__version__:
         pytest.skip(
-            "Concrete ML currently implements sklearn 1.4 API"
+            "Concrete ML currently implements sklearn 1.5 API"
             f" skipping this test on version {sklearn.__version__}"
         )
 

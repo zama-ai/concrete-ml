@@ -1637,6 +1637,7 @@ class LogisticRegression(SklearnLinearClassifierMixin):
         C=1.0,
         fit_intercept=True,
         intercept_scaling=1,
+        multi_class="auto",
         class_weight=None,
         random_state=None,
         solver="lbfgs",
@@ -1655,6 +1656,7 @@ class LogisticRegression(SklearnLinearClassifierMixin):
         self.C = C
         self.fit_intercept = fit_intercept
         self.intercept_scaling = intercept_scaling
+        self.multi_class = multi_class
         self.class_weight = class_weight
         self.random_state = random_state
         self.solver = solver
@@ -1689,6 +1691,7 @@ class LogisticRegression(SklearnLinearClassifierMixin):
         metadata["C"] = self.C
         metadata["fit_intercept"] = self.fit_intercept
         metadata["intercept_scaling"] = self.intercept_scaling
+        metadata["multi_class"] = self.multi_class
         metadata["class_weight"] = self.class_weight
         metadata["random_state"] = self.random_state
         metadata["solver"] = self.solver
@@ -1725,6 +1728,7 @@ class LogisticRegression(SklearnLinearClassifierMixin):
         obj.C = metadata["C"]
         obj.fit_intercept = metadata["fit_intercept"]
         obj.intercept_scaling = metadata["intercept_scaling"]
+        obj.multi_class = metadata["multi_class"]
         obj.class_weight = metadata["class_weight"]
         obj.random_state = metadata["random_state"]
         obj.solver = metadata["solver"]
