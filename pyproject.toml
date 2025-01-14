@@ -172,6 +172,7 @@ filterwarnings = [
     "ignore:read_text is deprecated.*:DeprecationWarning",
     "ignore:open_binary is deprecated.*:DeprecationWarning",
     "ignore:pkg_resources is deprecated as an API.*:DeprecationWarning",
+    "ignore:'multi_class' was deprecated in version 1.5 and will be removed in 1.7.*:FutureWarning",
 ]
 
 [tool.semantic_release]
