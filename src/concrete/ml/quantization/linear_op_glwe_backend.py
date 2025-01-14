@@ -138,7 +138,7 @@ class GLWELinearLayerExecutor:
         )
 
         # The GLWE backend needs uint64 encoding for both neg/pos values
-        q_weight = q_weight.astype(numpy.uint64)
+        q_weight = q_weight.astype(numpy.int64).astype(numpy.uint64)
 
         # Some models have (B, C, H)-size activations,
         # for example LLMs: B=batch size, C=context length, H=hidden dime

@@ -2,6 +2,7 @@
 
 import enum
 from abc import abstractmethod
+from numbers import Integral
 from typing import Dict, List, Optional, Set, Tuple, Type, Union, cast
 
 import numpy
@@ -28,7 +29,7 @@ from .quantizers import QuantizationOptions, QuantizedArray, UniformQuantizer
 
 
 # pylint: disable=too-many-lines
-def _inspect_tree_n_bits(n_bits):
+def _inspect_tree_n_bits(n_bits: Union[int, Dict[str, int]]) -> None:
     """Validate the 'n_bits' parameter for tree-based models.
 
     This function checks whether 'n_bits' is a valid integer or dictionary.
@@ -45,7 +46,7 @@ def _inspect_tree_n_bits(n_bits):
             a dictionary with the following keys :
             - "op_inputs" (mandatory): number of bits to quantize the input values
             - "op_leaves" (optional): number of bits to quantize the leaves, must be less than or
-                equal to 'op_inputs. defaults to the value of 'op_inputs if not specified.
+                equal to 'op_inputs'. Defaults to the value of 'op_inputs' if not specified.
 
     Raises:
         ValueError: If 'n_bits' does not conform to the required format or value constraints.
@@ -56,28 +57,27 @@ def _inspect_tree_n_bits(n_bits):
         "integer values for the following keys:\n"
         "- 'op_inputs' (mandatory): number of bits to quantize the input values\n"
         "- 'op_leaves' (optional): number of bits to quantize the leaves, must be less than or "
-        "equal to 'op_inputs'. Defaults to the value of 'op_inputs' if not specified."
+        "equal to 'op_inputs'. Defaults to the value of 'op_inputs' if not specified.\n"
         "When using a single integer for n_bits, its value is assigned to 'op_inputs' and "
         "'op_leaves' bits.\n"
     )
 
     error_message = ""
 
-    if isinstance(n_bits, int):
+    if isinstance(n_bits, Integral):
         if n_bits <= 0:
             error_message = "n_bits must be a strictly positive integer"
     elif isinstance(n_bits, dict):
-        if "op_inputs" not in n_bits.keys():
+        if "op_inputs" not in n_bits:
             error_message = "Invalid keys in `n_bits` dictionary. The key 'op_inputs' is mandatory"
         elif set(n_bits.keys()) - {"op_leaves", "op_inputs"}:
             error_message = (
                 "Invalid keys in 'n_bits' dictionary. Only 'op_inputs' (mandatory) and 'op_leaves' "
                 "(optional) are allowed"
             )
-        elif not all(isinstance(value, int) and value > 0 for value in n_bits.values()):
+        elif not all(isinstance(value, Integral) and value > 0 for value in n_bits.values()):
             error_message = "All values in 'n_bits' dictionary must be strictly positive integers"
-
-        elif n_bits.get("op_leaves", 0) > n_bits.get("op_inputs", 0):
+        elif "op_leaves" in n_bits and n_bits["op_leaves"] > n_bits["op_inputs"]:
             error_message = "'op_leaves' must be less than or equal to 'op_inputs'"
     else:
         error_message = "n_bits must be either an integer or a dictionary"
@@ -111,14 +111,17 @@ def _get_n_bits_dict_trees(n_bits: Union[int, Dict[str, int]]) -> Dict[str, int]
     _inspect_tree_n_bits(n_bits)
 
     # If a single integer is passed, we use a default value for the model's input and leaves
-    if isinstance(n_bits, int):
-        return {"op_inputs": n_bits, "op_leaves": n_bits}
+    if isinstance(n_bits, Integral):
+        return {"op_inputs": int(n_bits), "op_leaves": int(n_bits)}
+
+    # At this point we know n_bits is a Dict[str, int]
+    n_bits_dict: Dict[str, int] = dict(cast(Dict[str, int], n_bits))
 
     # Default 'op_leaves' to 'op_inputs' if not specified
-    if "op_leaves" not in n_bits:
-        n_bits["op_leaves"] = n_bits["op_inputs"]
+    if "op_leaves" not in n_bits_dict:
+        n_bits_dict["op_leaves"] = n_bits_dict["op_inputs"]
 
-    return n_bits
+    return n_bits_dict
 
 
 def get_n_bits_dict(n_bits: Union[int, Dict[str, int]]) -> Dict[str, int]:
