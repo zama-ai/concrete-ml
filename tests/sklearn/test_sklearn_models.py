@@ -31,6 +31,7 @@ import tempfile
 
 # pylint: disable=too-many-lines, too-many-arguments
 import warnings
+from functools import partial
 from typing import Any, Dict, List
 
 import numpy
@@ -1586,6 +1587,21 @@ def test_serialization(
     verbose=True,
 ):
     """Test Serialization."""
+
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4694
+    # Skip test for regressors that use internal scikit-learn loss classes
+    problematic_models = {"TweedieRegressor", "GammaRegressor", "PoissonRegressor"}
+
+    # Get the class name, handling both regular classes and partial objects
+    class_name = (
+        model_class.func.__name__ if isinstance(model_class, partial) else model_class.__name__
+    )
+
+    if class_name in problematic_models:
+        pytest.skip(
+            f"Skipping {class_name} due to internal scikit-learn " "class serialization issues"
+        )
+
     n_bits = get_n_bits_non_correctness(model_class)
 
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
