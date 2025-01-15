@@ -2293,6 +2293,22 @@ def test_initialization_variables_and_defaults_match(
     }
     sklearn_params_defaults = get_params(model)
 
+    # If dual is present in sklearn_params_defaults and set to "auto", change it to True
+    # This handles the difference between sklearn 1.1 (True) and 1.5 ("auto")
+    if (
+        model_name in ["LinearSVC", "LinearSVR", "LogisticRegression"]
+        and sklearn_params_defaults.get("dual") == "auto"
+    ):
+        sklearn_params_defaults["dual"] = True
+
+    # If multi_class is present and set to "deprecated", change it to "auto"
+    # This handles the difference between sklearn versions for LogisticRegression
+    if (
+        model_name == "LogisticRegression"
+        and sklearn_params_defaults.get("multi_class") == "deprecated"
+    ):
+        sklearn_params_defaults["multi_class"] = "auto"
+
     # Calculate differences in parameters and defaults
     missing_params = set(sklearn_params_defaults.keys()) - set(cml_params_defaults.keys())
     extra_params = (set(cml_params_defaults.keys()) - set(sklearn_params_defaults.keys())) - {
