@@ -863,6 +863,9 @@ jobs:
           && steps.conformance.outcome == 'success'
           && !cancelled()
         run: |
+          # Exit immediately if any command fails
+          set -e
+          
           for file in ${{ steps.changed-files-in-pr.outputs.tests_all_changed_files }}; do
               make pytest_one TEST="$file"
           done
