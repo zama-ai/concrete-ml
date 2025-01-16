@@ -61,6 +61,7 @@ from concrete.ml.common.utils import (
     is_classifier_or_partial_classifier,
     is_model_class_in_a_list,
     is_regressor_or_partial_regressor,
+    CiphertextFormat
 )
 from concrete.ml.pytest.utils import (
     MODELS_AND_DATASETS,
@@ -2368,3 +2369,25 @@ def test_xgb_serialization_errors(model_class, param, error_message):
         with pytest.raises(NotImplementedError, match=error_message):
             model = instantiate_model_generic(model_class, 5, **param)
             model.dumps()
+
+
+@pytest.mark.parametrize(
+    "model_class, parameters",
+    get_sklearn_tree_models_and_datasets()
+) #     get_sklearn_linear_models_and_datasets()
+def test_tfhers_inputs_outputs(model_class, parameters, load_data, is_weekly_option):
+    n_bits = get_n_bits_non_correctness(model_class)
+
+    model_name = get_model_name(model_class)
+
+    x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
+
+    # Instantiate the model
+    model = instantiate_model_generic(model_class, n_bits=n_bits)
+
+    # Fit the model to create the equivalent sklearn model
+    model.fit(x, y)
+
+    model.compile(x, ciphertext_format=CiphertextFormat.TFHE_RS)
+
+    model.predict(x, fhe="execute")
