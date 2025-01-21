@@ -103,9 +103,23 @@ class FheMode(str, enum.Enum):
         """
         return fhe in FheMode.__members__.values()
 
-class CiphertextFormat(enum.Enum):
+
+class CiphertextFormat(str, enum.Enum):
     CONCRETE = "concrete"
     TFHE_RS = "tfhe-rs"
+
+    @staticmethod
+    def is_valid(format: Union["CiphertextFormat", str]) -> bool:
+        """Indicate if the given name is a supported FHE mode.
+
+        Args:
+            fhe (Union[FheMode, str]): The FHE mode to check.
+
+        Returns:
+            bool: Whether the FHE mode is supported or not.
+        """
+        return format in CiphertextFormat.__members__.values()
+
 
 class HybridFHEMode(enum.Enum):
     """Simple enum for different modes of execution of HybridModel."""
@@ -788,24 +802,3 @@ def check_execution_device_is_valid_and_is_cuda(
                 "CUDA FHE execution was requested but no compatible CUDA "
                 "enabled device could be found"
             )
-
-# 
-#        lwe_noise_distribution: DynamicDistribution::new_t_uniform(46),
-#        glwe_noise_distribution: DynamicDistribution::new_t_uniform(17),
-TFHE_RS_DEFAULT_CRYPTO_PARAMS = {
- "lwe_dimension": 879,
-    "glwe_dimension": 1,
-    "polynomial_size": 2048,
-    "lwe_noise_distribution": {"Gaussian": {"std": 1.0994794733558207e-6, "mean": 0.0}},
-    "glwe_noise_distribution": {"Gaussian": {"std": 2.168404344971009e-19, "mean": 0.0}},
-    "pbs_base_log": 23,
-    "pbs_level": 1,
-    "ks_base_log": 3,
-    "ks_level": 5,
-    "message_modulus": 4,
-    "carry_modulus": 4,
-    "max_noise_level": 5,
-    "log2_p_fail": -71.625,
-    "ciphertext_modulus": {"modulus": 0, "scalar_bits": 64},
-    "encryption_key_choice": "Big",
-}
