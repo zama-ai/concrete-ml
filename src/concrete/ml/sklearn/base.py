@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import json
 import os
 import tempfile
 
@@ -15,12 +16,11 @@ from functools import partial
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Set, TextIO, Type, Union
 
-import concrete_ml_extensions as fhext
-
 import brevitas.nn as qnn
 
 # pylint: disable-next=ungrouped-imports
 import concrete.fhe as cp
+import concrete_ml_extensions as fhext
 import numpy
 import onnx
 import sklearn
@@ -43,14 +43,13 @@ from ..common.debugging.custom_assert import assert_true
 from ..common.serialization.dumpers import dump, dumps
 from ..common.utils import (
     USE_OLD_VL,
-    FheMode,
     CiphertextFormat,
+    FheMode,
     check_compilation_device_is_valid_and_is_cuda,
     check_execution_device_is_valid_and_is_cuda,
     check_there_is_no_p_error_options_in_configuration,
     generate_proxy_function,
     manage_parameters_for_pbs_errors,
-    TFHE_RS_DEFAULT_CRYPTO_PARAMS,
 )
 from ..onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
 from ..onnx.onnx_model_manipulations import clean_graph_after_node_op_type, remove_node_types
@@ -504,12 +503,36 @@ class BaseEstimator:
         """
 
     @abstractmethod
-    def _get_module_to_compile(self, ciphertext_format: CiphertextFormat = CiphertextFormat.CONCRETE) -> Union[Compiler, QuantizedModule]:
+    def _get_module_to_compile(
+        self
+    ) -> Union[Compiler, QuantizedModule]:
         """Retrieve the module instance to compile.
 
         Returns:
             Union[Compiler, QuantizedModule]: The module instance to compile.
         """
+
+    def _get_tfhres_module_to_compile(self, inputset):
+        c = self._get_module_to_compile()
+        graph = c.trace(inputset)
+        # get input / output info
+
+        output_dtype = graph.ordered_outputs()[0].output.dtype
+        output_bitwidth = output_dtype.bit_width
+        output_signed = output_dtype.is_signed
+        crypto_params = json.loads(fhext.get_crypto_params_radix())
+        out_dtype_spec = tfhers.get_type_from_params_dict(crypto_params, output_signed, output_bitwidth)
+
+        native_function_to_compile = c._func_def.function
+
+        def tfhers_tree_inference(inputs):
+            concrete_x = tfhers.to_native(inputs)
+            res = native_function_to_compile(concrete_x)
+            tfhers_res = tfhers.from_native(res[0], out_dtype_spec)  # tfhers.dtypes.int16_2_2
+            return tfhers_res
+
+        return Compiler(tfhers_tree_inference, {"inputs": "encrypted"})
+
 
     def compile(
         self,
@@ -572,8 +595,17 @@ class BaseEstimator:
         # Generate the compilation input-set with proper dimensions
         inputset = _get_inputset_generator(q_X)
 
+        assert_true(
+            CiphertextFormat.is_valid(ciphertext_format),
+            f"{ciphertext_format} is an invalid value, should be one of {[i.value for i in CiphertextFormat]}",
+        )
+
+        if ciphertext_format == CiphertextFormat.CONCRETE:
         # Retrieve the compiler instance
-        module_to_compile = self._get_module_to_compile(ciphertext_format)
+            module_to_compile = self._get_module_to_compile()
+        else:
+            assert ciphertext_format == CiphertextFormat.TFHE_RS
+            module_to_compile = self._get_tfhres_module_to_compile(_get_inputset_generator(q_X))
 
         # Compiling using a QuantizedModule requires different steps and should not be done here
         assert isinstance(module_to_compile, Compiler), (
@@ -587,7 +619,12 @@ class BaseEstimator:
         enable_key_compression = os.environ.get("USE_KEY_COMPRESSION", "1") == "1"
 
         if ciphertext_format == CiphertextFormat.TFHE_RS:
-            dtype_spec = tfhers.get_type_from_params_dict(TFHE_RS_DEFAULT_CRYPTO_PARAMS, False, 8)
+            assert all([
+                self.input_quantizers[i].is_signed == self.input_quantizers[0].is_signed for i in range(1, len(self.input_quantizers))])
+            is_signed = self.input_quantizers[0].is_signed
+
+            crypto_params = json.loads(fhext.get_crypto_params_radix())
+            dtype_spec = tfhers.get_type_from_params_dict(crypto_params, is_signed, 8)
             dtype = partial(tfhers.TFHERSInteger, dtype_spec)
             inputset = list([dtype(v) for v in inputset])
 
@@ -607,9 +644,14 @@ class BaseEstimator:
 
         self._is_compiled = True
         self._compiled_for_cuda = use_gpu
-        self._ciphertext_format = ciphertext_format
-        self._tfhers_bridge =  tfhers.new_bridge(self.fhe_circuit_)
 
+        self._ciphertext_format = ciphertext_format
+        if ciphertext_format == CiphertextFormat.TFHE_RS:
+            self._tfhers_bridge = tfhers.new_bridge(self.fhe_circuit_)
+        else:
+            self._tfhers_bridge = None
+
+#        print(self.fhe_circuit_.graph.format())
         # For mypy
         assert isinstance(self.fhe_circuit, Circuit)
 
@@ -626,6 +668,33 @@ class BaseEstimator:
             numpy.ndarray: The quantized predicted values.
         """
 
+    def encrypt_run_decrypt_tfhers_concrete(self, *inputs):
+        input_is_signed = self.input_quantizers[0].is_signed
+        encrypt_func = fhext.encrypt_serialize_i8_radix_2d if input_is_signed else fhext.encrypt_serialize_u8_radix_2d
+        output_0 = self.fhe_circuit_.graph.ordered_outputs()[0]
+        output_is_signed = output_0.inputs[0].dtype.is_signed
+        decrypt_func = fhext.decrypt_serialized_i8_radix_2d if output_is_signed else fhext.decrypt_serialized_u8_radix_2d
+
+        tfhers_x = tuple(
+            [
+                self._tfhers_bridge.import_value(
+                    encrypt_func(
+                        inputs[idx].astype(numpy.uint8), self.tfhers_sk
+                    ),
+                    input_idx=idx,
+                )
+                for idx in range(len(inputs))
+            ]
+        )
+        result = self.fhe_circuit_.server.run(
+            tfhers_x, evaluation_keys=self.fhe_circuit_.client.evaluation_keys
+        )
+        buff = self._tfhers_bridge.export_value(result, output_idx=0)
+        shape = self._tfhers_bridge.output_shapes_per_func["tfhers_tree_inference_proxy"]
+        result_np = decrypt_func(buff, shape[0][1], self.tfhers_sk)
+        result_np = result_np.reshape(shape[0])
+        return result_np
+
     def predict(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
         """Predict values for X, in FHE or in the clear.
 
@@ -641,21 +710,6 @@ class BaseEstimator:
         Returns:
             np.ndarray: The predicted values for X.
         """
-
-        def encrypt_run_decrypt_tfhers_concrete(*inputs):
-            # encrypt with fhext
-            # import fheuint8 and get its description
-            sk, bsk, lwe_sk = fhext.keygen_radix()
-            tfhers_uint8_x = tuple([
-                self._tfhers_bridge.import_value(
-                    fhext.encrypt_serialize_u8_radix_2d(inputs[idx].astype(numpy.uint8), sk), 
-                    input_idx=idx
-                ) for idx in range(len(inputs))
-            ])
-            self.fhe_circuit_.server.run(tfhers_uint8_x, evaluation_keys=bsk)
-            # buff = tfhers_bridge.export_value(encrypted_result, output_idx=0)
-            # decrypt with fhext
-            pass
 
         assert_true(
             FheMode.is_valid(fhe),
@@ -685,41 +739,50 @@ class BaseEstimator:
             # Check that the model is properly compiled
             self.check_model_is_compiled()
 
+            # For mypy, even though we already check this with self.check_model_is_compiled()
+            assert self.fhe_circuit is not None
+
+            # If the inference should be executed using simulation
+            if fhe == "simulate":
+                if self._ciphertext_format == CiphertextFormat.TFHE_RS:
+                    raise ValueError("Can't simulate with TFHE-rs cts")
+
+                is_crt_encoding = self.fhe_circuit.statistics["packing_key_switch_count"] != 0
+
+                # If the virtual library method should be used
+                # For now, use the virtual library when simulating
+                # circuits that use CRT  encoding because the official simulation is too slow
+                # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4391
+                if USE_OLD_VL or is_crt_encoding:
+                    predict_method = partial(
+                        self.fhe_circuit.graph, p_error=self.fhe_circuit.p_error
+                    )  # pragma: no cover
+
+                # Else, use the official simulation method
+                else:
+                    predict_method = self.fhe_circuit.simulate
+
+            # Else, use the FHE execution method
+            else:
+                if self._ciphertext_format == CiphertextFormat.TFHE_RS:
+                    sk, bsk, lwe_sk = fhext.keygen_radix()
+
+                    self.tfhers_sk = sk
+
+                    input_idx_to_key = {0: lwe_sk}
+                    self._tfhers_bridge.keygen_with_initial_keys(
+                        input_idx_to_key_buffer=input_idx_to_key
+                    )
+
+                    predict_method = self.encrypt_run_decrypt_tfhers_concrete
+                else:
+                    predict_method = self.fhe_circuit.encrypt_run_decrypt
+
             q_y_pred_list = []
             for q_X_i in q_X:
                 # Expected encrypt_run_decrypt output shape is (1, n_features) while q_X_i
                 # is of shape (n_features,)
                 q_X_i = numpy.expand_dims(q_X_i, 0)
-
-                # For mypy, even though we already check this with self.check_model_is_compiled()
-                assert self.fhe_circuit is not None
-
-                # If the inference should be executed using simulation
-                if fhe == "simulate":
-                    if self._ciphertext_format == CiphertextFormat.TFHE_RS:
-                        raise ValueError("Can't simulate with TFHE-rs cts")        
-            
-                    is_crt_encoding = self.fhe_circuit.statistics["packing_key_switch_count"] != 0
-
-                    # If the virtual library method should be used
-                    # For now, use the virtual library when simulating
-                    # circuits that use CRT  encoding because the official simulation is too slow
-                    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4391
-                    if USE_OLD_VL or is_crt_encoding:
-                        predict_method = partial(
-                            self.fhe_circuit.graph, p_error=self.fhe_circuit.p_error
-                        )  # pragma: no cover
-
-                    # Else, use the official simulation method
-                    else:
-                        predict_method = self.fhe_circuit.simulate
-
-                # Else, use the FHE execution method
-                else:
-                    if self._ciphertext_format == CiphertextFormat.TFHE_RS:
-                        predict_method = encrypt_run_decrypt_tfhers_concrete
-                    else:
-                        predict_method = self.fhe_circuit.encrypt_run_decrypt
 
                 # Execute the inference in FHE or with simulation
                 q_y_pred_i = predict_method(q_X_i)
@@ -1545,20 +1608,14 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         return y_preds
 
-    def _get_module_to_compile(self, ciphertext_format: CiphertextFormat = CiphertextFormat.CONCRETE) -> Union[Compiler, QuantizedModule]:
+    def _get_module_to_compile(
+        self,
+    ) -> Union[Compiler, QuantizedModule]:
         assert self._tree_inference is not None, self._is_not_fitted_error_message()
-
-        def tfhers_tree_inference(inputs):
-            concrete_x = tfhers.to_native(inputs)
-            res = self._tree_inference(concrete_x)
-            tfhers_res = tfhers.from_native(
-                res, tfhers.dtypes.int16_2_2
-            )
-            return tfhers_res
 
         # Generate the proxy function to compile
         _tree_inference_proxy, parameters_mapping = generate_proxy_function(
-            self._tree_inference if ciphertext_format == CiphertextFormat.CONCRETE else tfhers_tree_inference, ["inputs"]
+            self._tree_inference, ["inputs"]
         )
 
         # Create the compiler instance
@@ -1897,7 +1954,10 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         return y_preds
 
-    def _get_module_to_compile(self, ciphertext_format: CiphertextFormat = CiphertextFormat.CONCRETE) -> Union[Compiler, QuantizedModule]:
+    def _get_module_to_compile(
+        self,
+    ) -> Union[Compiler, QuantizedModule]:
+
         # Define the inference function to compile.
         # This function can neither be a class method nor a static one because self we want to avoid
         # having self as a parameter while still being able to access some of its attribute
@@ -1912,10 +1972,9 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
             """
             return self._inference(q_X)
 
-        # Create the compiler instance
-        compiler = Compiler(inference_to_compile, {"q_X": "encrypted"})
 
-        return compiler
+        # Create the compiler instance
+        return Compiler(inference_to_compile, {"q_X": "encrypted"})
 
     def _inference(self, q_X: numpy.ndarray) -> numpy.ndarray:
         assert self._weight_quantizer is not None, self._is_not_fitted_error_message()
@@ -2219,7 +2278,9 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         return q_y_preds
 
-    def _get_module_to_compile(self, ciphertext_format: CiphertextFormat = CiphertextFormat.CONCRETE) -> Union[Compiler, QuantizedModule]:
+    def _get_module_to_compile(
+        self,
+    ) -> Union[Compiler, QuantizedModule]:
         # Define the inference function to compile.
         # This function can neither be a class method nor a static one because self we want to avoid
         # having self as a parameter while still being able to access some of its attribute
