@@ -11,7 +11,7 @@ import numpy
 import onnx
 import torch
 from concrete.compiler import check_gpu_available, check_gpu_enabled
-from concrete.fhe import Exactness, tfhers
+from concrete.fhe import Exactness
 from concrete.fhe.dtypes import Integer
 from sklearn.base import is_classifier, is_regressor
 
@@ -105,20 +105,22 @@ class FheMode(str, enum.Enum):
 
 
 class CiphertextFormat(str, enum.Enum):
+    """Type of ciphertext used as input/output for a model."""
+
     CONCRETE = "concrete"
     TFHE_RS = "tfhe-rs"
 
     @staticmethod
-    def is_valid(format: Union["CiphertextFormat", str]) -> bool:
-        """Indicate if the given name is a supported FHE mode.
+    def is_valid(ct_format: Union["CiphertextFormat", str]) -> bool:
+        """Indicate if the given name is a supported FHE ciphertext format.
 
         Args:
-            fhe (Union[FheMode, str]): The FHE mode to check.
+            ct_format (Union[CiphertextFormat, str]): The ciphertext format to check.
 
         Returns:
-            bool: Whether the FHE mode is supported or not.
+            bool: Whether the ciphertext format is valid.
         """
-        return format in CiphertextFormat.__members__.values()
+        return ct_format in CiphertextFormat.__members__.values()
 
 
 class HybridFHEMode(enum.Enum):

@@ -70,6 +70,7 @@ from concrete.ml.pytest.utils import (
     get_sklearn_all_models_and_datasets,
     get_sklearn_linear_models_and_datasets,
     get_sklearn_neighbors_models_and_datasets,
+    get_sklearn_neural_net_models_and_datasets,
     get_sklearn_tree_models_and_datasets,
     instantiate_model_generic,
 )
@@ -2372,39 +2373,70 @@ def test_xgb_serialization_errors(model_class, param, error_message):
 
 
 @pytest.mark.parametrize(
-    "model_class, parameters", get_sklearn_tree_models_and_datasets(True, True) + get_sklearn_linear_models_and_datasets()
-)  #     get_sklearn_linear_models_and_datasets()
-def test_tfhers_inputs_outputs_linear_(model_class, parameters, load_data, is_weekly_option):
-    n_bits = 8 #get_n_bits_non_correctness(model_class)
-
-    model_name = get_model_name(model_class)
+    "model_class, parameters", get_sklearn_tree_models_and_datasets(True, True)
+)
+@pytest.mark.parametrize("n_bits", [4, 8, 12])
+def test_tfhers_inputs_outputs_trees(model_class, parameters, n_bits, load_data):
+    """Check that 8b tree-based classifiers work with TFHE-rs inputs/outputs."""
 
     x, y = get_dataset(model_class, parameters, n_bits, load_data, True)
-    fhe_test_data = x[0:5, :]
+
+    # Use a single example in FHE to make the test fast enough for the CI
+    fhe_test_data = x[0:1, :]
 
     model = instantiate_model_generic(model_class, n_bits=n_bits)
     # Fit the model to create the equivalent sklearn model
     model.fit(x, y)
 
-    import time
+    # If the model is not supported or if the n_bits is not supported
+    # an error is raised
+    if not n_bits == 8 or is_regressor_or_partial_regressor(model_class):
+        with pytest.raises(AssertionError, match=".*supported for 8-bit tree-based.*"):
+            model.compile(x, ciphertext_format=CiphertextFormat.TFHE_RS)
+        return
 
+    # Check that we can first compile to Concrete, then to
+    # TFHE-rs input/outputs then to concrete again
     model.compile(x)
-
-    ts = time.time()
-    y_pred_cml = model.predict(fhe_test_data, fhe="execute")
-    print(f"Concrete time: {time.time()-ts}")
 
     model.compile(x, ciphertext_format=CiphertextFormat.TFHE_RS)
 
-    ts = time.time()
+    # Run the model in FHE for TFHE-rs inputs/outputs
     y_pred_tfhers = model.predict(fhe_test_data, fhe="execute")
-    print(f"Tfhe-rs time: {time.time()-ts}")
     y_pred_disable = model.predict(fhe_test_data, fhe="disable")
 
     model.compile(x)
 
-    ts = time.time()
-    y_pred_cml = model.predict(fhe_test_data, fhe="execute")
-    print(f"Concrete time 2: {time.time()-ts}")
-
+    # Check correctness with TFHE-rs inputs/outputs
     assert numpy.all(y_pred_tfhers == y_pred_disable)
+
+
+@pytest.mark.parametrize(
+    "model_class, parameters", get_sklearn_tree_models_and_datasets(True, True)
+)
+def test_tfhers_trees_non_8b_not_working(model_class, parameters, load_data):
+    """Check that non-supported configs for tree models for TFHE-rs inputs raise an exception."""
+    n_bits = 4
+
+    x, y = get_dataset(model_class, parameters, n_bits, load_data, True)
+    model = instantiate_model_generic(model_class, n_bits=n_bits)
+    model.fit(x, y)
+
+    with pytest.raises(AssertionError, match=".*supported for 8-bit tree-based.*"):
+        model.compile(x, ciphertext_format=CiphertextFormat.TFHE_RS)
+
+
+@pytest.mark.parametrize(
+    "model_class, parameters",
+    get_sklearn_linear_models_and_datasets() + get_sklearn_neural_net_models_and_datasets(),
+)
+def test_tfhers_cml_models_not_working(model_class, parameters, load_data):
+    """Check that models that don't support TFHE-rs inputs raise an exception."""
+    n_bits = 8
+
+    x, y = get_dataset(model_class, parameters, n_bits, load_data, True)
+    model = instantiate_model_generic(model_class, n_bits=n_bits)
+    model.fit(x, y)
+
+    with pytest.raises(AssertionError, match=".*supported for 8-bit tree-based.*"):
+        model.compile(x, ciphertext_format=CiphertextFormat.TFHE_RS)
