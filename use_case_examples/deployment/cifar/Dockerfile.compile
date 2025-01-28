@@ -1,5 +1,12 @@
-FROM zamafhe/concrete-ml
+ARG CML_VER=v1.8.0
+FROM zamafhe/concrete-ml:${CML_VER}
 WORKDIR /project
+
+# Add a non-root user and group
+RUN groupadd -g 10001 grp02 && \
+    useradd -u 10000 -g grp02 usr01 && \
+    chown -R usr01:grp02 /project
+
 COPY requirements.txt  requirements.txt
 #RUN python -m pip install torchvision==0.14.1 --no-deps
 RUN python -m pip install -r requirements.txt
@@ -8,5 +15,9 @@ RUN python -m pip install requests
 COPY models/ models/
 COPY experiments/ experiments/
 COPY compile.py compile.py
+
+
+# Switch to the non-root user
+USER usr01:grp02
 
 ENTRYPOINT python compile.py
