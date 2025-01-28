@@ -711,34 +711,18 @@ class BaseEstimator:
         assert self._tfhers_bridge is not None
 
         input_is_signed = self.input_quantizers[0].is_signed
-        encrypt_func = (
-            fhext.encrypt_serialize_i8_radix_2d  # pylint: disable=no-member
-            if input_is_signed
-            else fhext.encrypt_serialize_u8_radix_2d  # pylint: disable=no-member
-        )
+
         encrypt_dtype = numpy.int8 if input_is_signed else numpy.uint8
         output_0 = self.fhe_circuit.graph.ordered_outputs()[0]
         output_is_signed = output_0.inputs[0].dtype.is_signed
         output_bitwidth = output_0.inputs[0].dtype.bit_width
-        if output_bitwidth == 16:
-            decrypt_func = (
-                fhext.decrypt_serialized_i16_radix_2d  # pylint: disable=no-member
-                if output_is_signed
-                else fhext.decrypt_serialized_u16_radix_2d  # pylint: disable=no-member
-            )
-        else:
-            decrypt_func = (
-                fhext.decrypt_serialized_i8_radix_2d  # pylint: disable=no-member
-                if output_is_signed
-                else fhext.decrypt_serialized_u8_radix_2d  # pylint: disable=no-member
-            )
 
         assert self.tfhers_sk is not None
 
         tfhers_x = tuple(
             [
                 self._tfhers_bridge.import_value(
-                    encrypt_func(inputs[idx].astype(encrypt_dtype), self.tfhers_sk),
+                    fhext.encrypt_radix(inputs[idx].astype(encrypt_dtype), self.tfhers_sk),
                     input_idx=idx,
                 )
                 for idx in range(len(inputs))
@@ -756,7 +740,10 @@ class BaseEstimator:
         shape = out_shapes[func_name][0]
         num_cols = shape[1] if len(shape) > 1 else shape[0]
 
-        result_np = decrypt_func(buff, num_cols, self.tfhers_sk)
+        # The output bitwidth for trees should be the same as the input one
+        result_np = fhext.decrypt_radix(
+            buff, (-1, 1), output_bitwidth, output_is_signed, self.tfhers_sk
+        )
         result_np = result_np.reshape(shape)
         return result_np
 
