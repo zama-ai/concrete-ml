@@ -6,14 +6,14 @@ brevitas, 0.10.2, UNKNOWN
 certifi, 2024.12.14, Mozilla Public License 2.0 (MPL 2.0)
 charset-normalizer, 3.4.1, MIT License
 coloredlogs, 15.0.1, MIT License
-concrete-ml-extensions, 0.1.4, BSD-3-Clause-Clear
-concrete-python, 2.9.0, BSD-3-Clause
+concrete-ml-extensions, 0.1.5, BSD-3-Clause-Clear
+concrete-python, 2.9.0rc2.dev20250128, BSD-3-Clause
 dependencies, 2.0.1, BSD License
 dill, 0.3.9, BSD License
 filelock, 3.16.1, The Unlicense (Unlicense)
-flatbuffers, 24.12.23, Apache Software License
+flatbuffers, 25.1.24, Apache Software License
 fsspec, 2024.12.0, BSD License
-huggingface-hub, 0.27.1, Apache Software License
+huggingface-hub, 0.28.0, Apache Software License
 humanfriendly, 10.0, MIT License
 hummingbird-ml, 0.4.11, MIT License
 idna, 3.10, BSD License
@@ -47,7 +47,7 @@ threadpoolctl, 3.5.0, BSD License
 torch, 2.2.2, BSD License
 tqdm, 4.67.1, MIT License; Mozilla Public License 2.0 (MPL 2.0)
 typing_extensions, 4.12.2, Python Software Foundation License
-tzdata, 2024.2, Apache Software License
+tzdata, 2025.1, Apache Software License
 unfoldNd, 0.2.3, MIT License
 urllib3, 2.2.3, MIT License
 xgboost, 1.6.2, Apache Software License

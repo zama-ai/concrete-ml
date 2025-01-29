@@ -42,7 +42,7 @@ onnxoptimizer, 0.3.13, Apache License v2.0
 onnxruntime, 1.18.0, MIT License
 packaging, 24.2, Apache Software License; BSD License
 pandas, 2.0.3, BSD License
-protobuf, 5.29.3, 3-Clause BSD License
+protobuf, 3.20.3, BSD-3-Clause
 psutil, 5.9.8, BSD License
 python-dateutil, 2.9.0.post0, Apache Software License; BSD License
 pytz, 2024.2, MIT License
@@ -58,6 +58,7 @@ tabulate, 0.8.10, MIT License
 threadpoolctl, 3.5.0, BSD License
 torch, 2.3.1, BSD License
 tqdm, 4.67.1, MIT License; Mozilla Public License 2.0 (MPL 2.0)
+triton, 2.3.1, MIT License
 typing_extensions, 4.12.2, Python Software Foundation License
 tzdata, 2025.1, Apache Software License
 unfoldNd, 0.2.3, MIT License
