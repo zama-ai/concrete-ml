@@ -2399,16 +2399,17 @@ def test_tfhers_inputs_outputs_trees(model_class, parameters, n_bits, load_data)
     # TFHE-rs input/outputs then to concrete again
     model.compile(x)
 
+    y_pred_concrete = model.predict(fhe_test_data, fhe="execute")
+
     model.compile(x, ciphertext_format=CiphertextFormat.TFHE_RS)
 
     # Run the model in FHE for TFHE-rs inputs/outputs
     y_pred_tfhers = model.predict(fhe_test_data, fhe="execute")
-    y_pred_disable = model.predict(fhe_test_data, fhe="disable")
 
     model.compile(x)
 
     # Check correctness with TFHE-rs inputs/outputs
-    assert numpy.all(y_pred_tfhers == y_pred_disable)
+    assert numpy.all(y_pred_tfhers == y_pred_concrete)
 
 
 @pytest.mark.parametrize(

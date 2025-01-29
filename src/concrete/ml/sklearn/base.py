@@ -578,9 +578,6 @@ class BaseEstimator:
 
         Returns:
             Circuit: The compiled Circuit.
-
-        Raises:
-            ValueError: if the arguments are invalid
         """
         # Reset for double compile
         self._is_compiled = False
@@ -742,7 +739,7 @@ class BaseEstimator:
 
         # The output bitwidth for trees should be the same as the input one
         result_np = fhext.decrypt_radix(
-            buff, (-1, 1), output_bitwidth, output_is_signed, self.tfhers_sk
+            buff, (-1, num_cols), output_bitwidth, output_is_signed, self.tfhers_sk
         )
         result_np = result_np.reshape(shape)
         return result_np
@@ -761,6 +758,9 @@ class BaseEstimator:
 
         Returns:
             np.ndarray: The predicted values for X.
+
+        Raises:
+            ValueError: if the arguments are invalid
         """
 
         assert_true(
