@@ -96,6 +96,9 @@ env:
   # rerun. By default, we do not want to print this warning
   FAILED_TESTS_ARE_FLAKY: "false"
 
+  SLAB_PROFILE: c54xlarge
+
+
 jobs:
   commit-checks:
     name: Commit Checks
@@ -298,16 +301,16 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     outputs:
-      label-38: ${{ steps.start-ec2-runner-38.outputs.label }}
-      ec2-instance-id-38: ${{ steps.start-ec2-runner-38.outputs.ec2-instance-id || '' }}
-      label-39: ${{ steps.start-ec2-runner-39.outputs.label }}
-      ec2-instance-id-39: ${{ steps.start-ec2-runner-39.outputs.ec2-instance-id || '' }}
-      label-310: ${{ steps.start-ec2-runner-310.outputs.label }}
-      ec2-instance-id-310: ${{ steps.start-ec2-runner-310.outputs.ec2-instance-id || '' }}
-      label-311: ${{ steps.start-ec2-runner-311.outputs.label }}
-      ec2-instance-id-311: ${{ steps.start-ec2-runner-311.outputs.ec2-instance-id || '' }}
-      label-312: ${{ steps.start-ec2-runner-312.outputs.label }}
-      ec2-instance-id-312: ${{ steps.start-ec2-runner-312.outputs.ec2-instance-id || '' }}
+      label-38: ${{ steps.start-slab-runner-38.outputs.label }}
+      slab-instance-id-38: ${{ steps.start-slab-runner-38.outputs.label || '' }}
+      label-39: ${{ steps.start-slab-runner-39.outputs.label }}
+      slab-instance-id-39: ${{ steps.start-slab-runner-39.outputs.label || '' }}
+      label-310: ${{ steps.start-slab-runner-310.outputs.label }}
+      slab-instance-id-310: ${{ steps.start-slab-runner-310.outputs.label || '' }}
+      label-311: ${{ steps.start-slab-runner-311.outputs.label }}
+      slab-instance-id-311: ${{ steps.start-slab-runner-311.outputs.label || '' }}
+      label-312: ${{ steps.start-slab-runner-312.outputs.label }}
+      slab-instance-id-312: ${{ steps.start-slab-runner-312.outputs.label || '' }}
       matrix: ${{ steps.update-linux-matrix.outputs.linux-matrix }}
     steps:
       - name: Checkout Code
@@ -320,125 +323,65 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Start EC2 runner python 3.8
-        id: start-ec2-runner-38
+      - name: Start instance
+        id: start-slab-runner-38
         if: ${{ !cancelled() && fromJSON(needs.matrix-preparation.outputs.needs-38-linux-runner) }}
-        uses: machulav/ec2-github-runner@1827d6ca7544d7044ddbd2e9360564651b463da2
+        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
         with:
           mode: start
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
-          ec2-instance-type: ${{ needs.matrix-preparation.outputs.instance-type }}
-          subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
-          security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
-          aws-resource-tags: >
-            [
-              {"Key": "Name", "Value": "cml-ci-ec2-github-runner-py38"},
-              {"Key": "GitHubRepository", "Value": "${{ github.repository }}"},
-              {"Key": "Python version", "Value": "3.8"},
-              {"Key": "Actor", "Value": "${{ github.actor }}"},
-              {"Key": "Action", "Value": "${{ github.action }}"},
-              {"Key": "GitHash", "Value": "${{ github.sha }}"},
-              {"Key": "RefName", "Value": "${{ github.ref_name }}"},
-              {"Key": "RunId", "Value": "${{ github.run_id }}"},
-              {"Key": "Team", "Value": "CML"}
-            ]
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          backend: aws
+          profile: ${{ env.SLAB_PROFILE }}
 
-      - name: Start EC2 runner python 3.9
-        id: start-ec2-runner-39
+      - name: Start Slab runner python 3.9
+        id: start-slab-runner-39
         if: ${{ !cancelled() && fromJSON(needs.matrix-preparation.outputs.needs-39-linux-runner) }}
-        uses: machulav/ec2-github-runner@1827d6ca7544d7044ddbd2e9360564651b463da2
+        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
         with:
           mode: start
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
-          ec2-instance-type: ${{ needs.matrix-preparation.outputs.instance-type }}
-          subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
-          security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
-          aws-resource-tags: >
-            [
-              {"Key": "Name", "Value": "cml-ci-ec2-github-runner-py39"},
-              {"Key": "GitHubRepository", "Value": "${{ github.repository }}"},
-              {"Key": "Python version", "Value": "3.9"},
-              {"Key": "Actor", "Value": "${{ github.actor }}"},
-              {"Key": "Action", "Value": "${{ github.action }}"},
-              {"Key": "GitHash", "Value": "${{ github.sha }}"},
-              {"Key": "RefName", "Value": "${{ github.ref_name }}"},
-              {"Key": "RunId", "Value": "${{ github.run_id }}"},
-              {"Key": "Team", "Value": "CML"}
-            ]
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          backend: aws
+          profile: ${{ env.SLAB_PROFILE }}
 
-      - name: Start EC2 runner python 3.10
-        id: start-ec2-runner-310
+      - name: Start Slab runner python 3.10
+        id: start-slab-runner-310
         if: ${{ !cancelled() && fromJSON(needs.matrix-preparation.outputs.needs-310-linux-runner) }}
-        uses: machulav/ec2-github-runner@1827d6ca7544d7044ddbd2e9360564651b463da2
+        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
         with:
           mode: start
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
-          ec2-instance-type: ${{ needs.matrix-preparation.outputs.instance-type }}
-          subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
-          security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
-          aws-resource-tags: >
-            [
-              {"Key": "Name", "Value": "cml-ci-ec2-github-runner-py310"},
-              {"Key": "GitHubRepository", "Value": "${{ github.repository }}"},
-              {"Key": "Python version", "Value": "3.10"},
-              {"Key": "Actor", "Value": "${{ github.actor }}"},
-              {"Key": "Action", "Value": "${{ github.action }}"},
-              {"Key": "GitHash", "Value": "${{ github.sha }}"},
-              {"Key": "RefName", "Value": "${{ github.ref_name }}"},
-              {"Key": "RunId", "Value": "${{ github.run_id }}"},
-              {"Key": "Team", "Value": "CML"}
-            ]
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          backend: aws
+          profile: ${{ env.SLAB_PROFILE }}
 
-      - name: Start EC2 runner python 3.11
-        id: start-ec2-runner-311
+      - name: Start Slab runner python 3.11
+        id: start-slab-runner-311
         if: ${{ !cancelled() && fromJSON(needs.matrix-preparation.outputs.needs-311-linux-runner) }}
-        uses: machulav/ec2-github-runner@1827d6ca7544d7044ddbd2e9360564651b463da2
+        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
         with:
           mode: start
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
-          ec2-instance-type: ${{ needs.matrix-preparation.outputs.instance-type }}
-          subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
-          security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
-          aws-resource-tags: >
-            [
-              {"Key": "Name", "Value": "cml-ci-ec2-github-runner-py311"},
-              {"Key": "GitHubRepository", "Value": "${{ github.repository }}"},
-              {"Key": "Python version", "Value": "3.11"},
-              {"Key": "Actor", "Value": "${{ github.actor }}"},
-              {"Key": "Action", "Value": "${{ github.action }}"},
-              {"Key": "GitHash", "Value": "${{ github.sha }}"},
-              {"Key": "RefName", "Value": "${{ github.ref_name }}"},
-              {"Key": "RunId", "Value": "${{ github.run_id }}"},
-              {"Key": "Team", "Value": "CML"}
-            ]
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          backend: aws
+          profile: ${{ env.SLAB_PROFILE }}
 
-      - name: Start EC2 runner python 3.12
-        id: start-ec2-runner-312
+      - name: Start Slab runner python 3.12
+        id: start-slab-runner-312
         if: ${{ !cancelled() && fromJSON(needs.matrix-preparation.outputs.needs-312-linux-runner) }}
-        uses: machulav/ec2-github-runner@1827d6ca7544d7044ddbd2e9360564651b463da2
+        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
         with:
           mode: start
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
-          ec2-instance-type: ${{ needs.matrix-preparation.outputs.instance-type }}
-          subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
-          security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
-          aws-resource-tags: >
-            [
-              {"Key": "Name", "Value": "cml-ci-ec2-github-runner-py312"},
-              {"Key": "GitHubRepository", "Value": "${{ github.repository }}"},
-              {"Key": "Python version", "Value": "3.12"},
-              {"Key": "Actor", "Value": "${{ github.actor }}"},
-              {"Key": "Action", "Value": "${{ github.action }}"},
-              {"Key": "GitHash", "Value": "${{ github.sha }}"},
-              {"Key": "RefName", "Value": "${{ github.ref_name }}"},
-              {"Key": "RunId", "Value": "${{ github.run_id }}"},
-              {"Key": "Team", "Value": "CML"}
-            ]
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          backend: aws
+          profile: ${{ env.SLAB_PROFILE }}
 
       - name: Update Linux runs_on Matrix
         id: update-linux-matrix
@@ -446,15 +389,15 @@ jobs:
           MATRIX: ${{ needs.matrix-preparation.outputs.linux-matrix }}
         run: |
           MATRIX=$(echo "${MATRIX}" | jq -rc \
-          '(. | map(select(.os_kind=="linux" and .python_version=="3.8") |= . + {"runs_on": "${{ steps.start-ec2-runner-38.outputs.label }}"}) )')
+          '(. | map(select(.os_kind=="linux" and .python_version=="3.8") |= . + {"runs_on": "${{ steps.start-slab-runner-38.outputs.label }}"}) )')
           MATRIX=$(echo "${MATRIX}" | jq -rc \
-          '(. | map(select(.os_kind=="linux" and .python_version=="3.9") |= . + {"runs_on": "${{ steps.start-ec2-runner-39.outputs.label }}"}) )')
+          '(. | map(select(.os_kind=="linux" and .python_version=="3.9") |= . + {"runs_on": "${{ steps.start-slab-runner-39.outputs.label }}"}) )')
           MATRIX=$(echo "${MATRIX}" | jq -rc \
-          '(. | map(select(.os_kind=="linux" and .python_version=="3.10") |= . + {"runs_on": "${{ steps.start-ec2-runner-310.outputs.label }}"}) )')
+          '(. | map(select(.os_kind=="linux" and .python_version=="3.10") |= . + {"runs_on": "${{ steps.start-slab-runner-310.outputs.label }}"}) )')
           MATRIX=$(echo "${MATRIX}" | jq -rc \
-          '(. | map(select(.os_kind=="linux" and .python_version=="3.11") |= . + {"runs_on": "${{ steps.start-ec2-runner-311.outputs.label }}"}) )')
+          '(. | map(select(.os_kind=="linux" and .python_version=="3.11") |= . + {"runs_on": "${{ steps.start-slab-runner-311.outputs.label }}"}) )')
           MATRIX=$(echo "${MATRIX}" | jq -rc \
-          '(. | map(select(.os_kind=="linux" and .python_version=="3.12") |= . + {"runs_on": "${{ steps.start-ec2-runner-312.outputs.label }}"}) )')
+          '(. | map(select(.os_kind=="linux" and .python_version=="3.12") |= . + {"runs_on": "${{ steps.start-slab-runner-312.outputs.label }}"}) )')
 
           echo "Updated matrix:"
           echo "${MATRIX}"
@@ -1048,7 +991,7 @@ jobs:
           fi
 
   stop-runner-linux:
-    name: Stop EC2 runner (Linux)
+    name: Stop Slab runner (Linux)
     needs: [build-linux, start-runner-linux]
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -1061,50 +1004,55 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Stop EC2 runner python 3.8
-        uses: machulav/ec2-github-runner@1827d6ca7544d7044ddbd2e9360564651b463da2
-        if: ${{ always() && needs.start-runner-linux.outputs.ec2-instance-id-38 }}
+      - name: Stop Slab runner python 3.8
+        if: ${{ always() && needs.start-runner-linux.outputs.slab-instance-id-38 }}
+        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
         with:
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          label: ${{ needs.start-runner-linux.outputs.label-38 }}
-          ec2-instance-id: ${{ needs.start-runner-linux.outputs.ec2-instance-id-38 }}
           mode: stop
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          label: ${{ needs.start-runner-linux.outputs.slab-instance-id-38 }}
 
-      - name: Stop EC2 runner python 3.9
-        uses: machulav/ec2-github-runner@1827d6ca7544d7044ddbd2e9360564651b463da2
-        if: ${{ always() && needs.start-runner-linux.outputs.ec2-instance-id-39 }}
+      - name: Stop Slab runner python 3.9
+        if: ${{ always() && needs.start-runner-linux.outputs.slab-instance-id-39 }}
+        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
         with:
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          label: ${{ needs.start-runner-linux.outputs.label-39 }}
-          ec2-instance-id: ${{ needs.start-runner-linux.outputs.ec2-instance-id-39 }}
           mode: stop
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          label: ${{ needs.start-runner-linux.outputs.slab-instance-id-39 }}
 
-      - name: Stop EC2 runner python 3.10
-        uses: machulav/ec2-github-runner@1827d6ca7544d7044ddbd2e9360564651b463da2
-        if: ${{ always() && needs.start-runner-linux.outputs.ec2-instance-id-310 }}
+      - name: Stop Slab runner python 3.10
+        if: ${{ always() && needs.start-runner-linux.outputs.slab-instance-id-310 }}
+        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
         with:
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          label: ${{ needs.start-runner-linux.outputs.label-310 }}
-          ec2-instance-id: ${{ needs.start-runner-linux.outputs.ec2-instance-id-310 }}
           mode: stop
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          label: ${{ needs.start-runner-linux.outputs.slab-instance-id-310 }}
 
-      - name: Stop EC2 runner python 3.11
-        uses: machulav/ec2-github-runner@1827d6ca7544d7044ddbd2e9360564651b463da2
-        if: ${{ always() && needs.start-runner-linux.outputs.ec2-instance-id-311 }}
+      - name: Stop Slab runner python 3.11
+        if: ${{ always() && needs.start-runner-linux.outputs.slab-instance-id-311 }}
+        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
         with:
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          label: ${{ needs.start-runner-linux.outputs.label-311 }}
-          ec2-instance-id: ${{ needs.start-runner-linux.outputs.ec2-instance-id-311 }}
           mode: stop
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          label: ${{ needs.start-runner-linux.outputs.slab-instance-id-311 }}
 
-      - name: Stop EC2 runner python 3.12
-        uses: machulav/ec2-github-runner@1827d6ca7544d7044ddbd2e9360564651b463da2
-        if: ${{ always() && needs.start-runner-linux.outputs.ec2-instance-id-312 }}
+      - name: Stop Slab runner python 3.12
+        if: ${{ always() && needs.start-runner-linux.outputs.slab-instance-id-312 }}
+        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
         with:
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          label: ${{ needs.start-runner-linux.outputs.label-312 }}
-          ec2-instance-id: ${{ needs.start-runner-linux.outputs.ec2-instance-id-312 }}
           mode: stop
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          label: ${{ needs.setup-ec2.outputs.runner-name }}
 
   build-macos-intel:
     name: Python ${{ matrix.python_version }} (macOS, intel)

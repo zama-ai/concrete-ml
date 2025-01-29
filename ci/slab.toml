@@ -6,6 +6,14 @@ instance_type = "m6i.metal"
 subnet_id = "subnet-a029b7ed"
 security_group= ["sg-0bf1c1d79c97bc88f", ]
 
+
+[profile.c54xlarge]
+region = "eu-west-3"
+image_id = "ami-0be33931bc16f7a85"
+instance_type = "c5.4xlarge"
+subnet_id = "subnet-a029b7ed"
+security_group= ["sg-0bf1c1d79c97bc88f", ]
+
 [backend.aws.big-cpu]
 region = "eu-west-1"
 image_id = "ami-0898af27b3e2421d8"
