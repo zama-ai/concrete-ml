@@ -540,8 +540,8 @@ class BaseEstimator:
     def compile(
         self,
         X: Data,
-        ciphertext_format: CiphertextFormat = CiphertextFormat.CONCRETE,
         configuration: Optional[Configuration] = None,
+        ciphertext_format: Union[str, CiphertextFormat] = CiphertextFormat.CONCRETE,
         artifacts: Optional[DebugArtifacts] = None,
         show_mlir: bool = False,
         p_error: Optional[float] = None,
@@ -555,12 +555,12 @@ class BaseEstimator:
             X (Data): A representative set of input values used for building cryptographic
                 parameters, as a Numpy array, Torch tensor, Pandas DataFrame or List. This is
                 usually the training data-set or a sub-set of it.
+            configuration (Optional[Configuration]): Options to use for compilation. Default
+                to None.
             ciphertext_format (CiphertextFormat): The format of input/output ciphertexts. Can
                 be one of "concrete" or "tfhe-rs". When using tfhe-rs the model's
                 latency will be lower because of the necessary conversion between
                 tfhe-rs and concrete. Using tfhe-rs allows you to use fhEVM ciphertexts.
-            configuration (Optional[Configuration]): Options to use for compilation. Default
-                to None.
             artifacts (Optional[DebugArtifacts]): Artifacts information about the compilation
                 process to store for debugging. Default to None.
             show_mlir (bool): Indicate if the MLIR graph should be printed during compilation.
@@ -1326,8 +1326,8 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
     def compile(
         self,
         X: Data,
-        ciphertext_format: CiphertextFormat = CiphertextFormat.CONCRETE,
         configuration: Optional[Configuration] = None,
+        ciphertext_format: Union[str, CiphertextFormat] = CiphertextFormat.CONCRETE,
         artifacts: Optional[DebugArtifacts] = None,
         show_mlir: bool = False,
         p_error: Optional[float] = None,
