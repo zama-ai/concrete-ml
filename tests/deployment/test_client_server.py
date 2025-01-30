@@ -13,6 +13,7 @@ import pytest
 from torch import nn
 
 from concrete import fhe
+from concrete.ml.common.utils import CiphertextFormat, to_tuple
 from concrete.ml.deployment.fhe_client_server import (
     DeploymentMode,
     FHEModelClient,
@@ -20,7 +21,14 @@ from concrete.ml.deployment.fhe_client_server import (
     FHEModelServer,
 )
 from concrete.ml.pytest.torch_models import FCSmall
-from concrete.ml.pytest.utils import MODELS_AND_DATASETS, get_model_name, instantiate_model_generic
+from concrete.ml.pytest.utils import (
+    MODELS_AND_DATASETS,
+    _get_sklearn_tree_models,
+    get_model_name,
+    instantiate_model_generic,
+    is_classifier_or_partial_classifier,
+    is_model_class_in_a_list,
+)
 from concrete.ml.quantization.quantized_module import QuantizedModule
 from concrete.ml.sklearn.linear_model import SGDClassifier
 from concrete.ml.torch.compile import compile_torch_model
@@ -100,7 +108,12 @@ def test_client_server_sklearn_inference(
     # Running the simulation using a model that is not compiled should not be possible
     with pytest.raises(AttributeError, match=".* model is not compiled.*"):
         check_client_server_inference(
-            x_test, model, key_dir, check_array_equal, check_float_array_equal
+            x_test,
+            model,
+            key_dir,
+            CiphertextFormat.CONCRETE,
+            check_array_equal,
+            check_float_array_equal,
         )
 
     compilation_kwargs = {
@@ -140,7 +153,67 @@ def test_client_server_sklearn_inference(
 
     # Check client/server FHE predictions vs the FHE predictions of the dev model
     check_client_server_inference(
-        x_test, model, key_dir, check_array_equal, check_float_array_equal
+        x_test,
+        model,
+        key_dir,
+        CiphertextFormat.CONCRETE,
+        check_array_equal,
+        check_float_array_equal,
+    )
+
+
+# This is a known flaky test
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4014
+@pytest.mark.flaky
+@pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
+@pytest.mark.parametrize("n_bits", [8])
+def test_client_server_tfhers_sklearn_inference(
+    model_class,
+    parameters,
+    n_bits,
+    load_data,
+    default_configuration,
+    check_array_equal,
+    check_float_array_equal,
+):
+    """Test the client-server interface.
+
+    This test checks that built-in models inference produces correct results
+    when using TFHE-rs ciphertexts for input /output."""
+
+    if not (
+        is_model_class_in_a_list(model_class, _get_sklearn_tree_models())
+        and is_classifier_or_partial_classifier(model_class)
+    ):
+        pytest.skip(
+            "Only 8-b tree-based classifiers are tested for deployment with tfhe-rs ciphertexts"
+        )
+
+    # Generate random data
+    x, y = load_data(model_class, **parameters)
+
+    x_train = x[:-1]
+    y_train = y[:-1]
+    x_test = x[-1:]
+
+    # Instantiate the model
+    model = instantiate_model_generic(model_class, n_bits=n_bits)
+    model.fit(x_train, y_train)
+
+    compilation_kwargs = {
+        "X": x_train,
+        "configuration": default_configuration,
+        "ciphertext_format": CiphertextFormat.TFHE_RS,
+    }
+
+    # Compile the model
+    model.compile(**compilation_kwargs)
+
+    key_dir = default_configuration.insecure_key_cache_location
+
+    # Check client/server FHE predictions vs the FHE predictions of the dev model
+    check_client_server_inference(
+        x_test, model, key_dir, CiphertextFormat.TFHE_RS, check_array_equal, check_float_array_equal
     )
 
 
@@ -163,7 +236,12 @@ def test_client_server_custom_model(
         quantized_module = QuantizedModule()
 
         check_client_server_inference(
-            x_test, quantized_module, key_dir, check_array_equal, check_float_array_equal
+            x_test,
+            quantized_module,
+            key_dir,
+            CiphertextFormat.CONCRETE,
+            check_array_equal,
+            check_float_array_equal,
         )
 
     torch_model = FCSmall(2, nn.ReLU)
@@ -190,7 +268,12 @@ def test_client_server_custom_model(
     )
 
     check_client_server_inference(
-        x_test, quantized_numpy_module, key_dir, check_array_equal, check_float_array_equal
+        x_test,
+        quantized_numpy_module,
+        key_dir,
+        CiphertextFormat.CONCRETE,
+        check_array_equal,
+        check_float_array_equal,
     )
 
 
@@ -251,7 +334,7 @@ def check_client_server_files(model, mode="inference"):
 
 
 def check_client_server_inference(
-    x_test, model, key_dir, check_array_equal, check_float_array_equal
+    x_test, model, key_dir, ciphertext_format, check_array_equal, check_float_array_equal
 ):
     """Test the client server interface API.
 
@@ -291,12 +374,20 @@ def check_client_server_inference(
     q_y_pred_encrypted_serialized = fhe_model_server.run(q_x_encrypted_serialized, evaluation_keys)
 
     # Client side : Decrypt, de-quantize and post-process the result
-    q_y_pred = fhe_model_client.deserialize_decrypt(q_y_pred_encrypted_serialized)
-    y_pred = fhe_model_client.deserialize_decrypt_dequantize(q_y_pred_encrypted_serialized)
+    q_y_pred = fhe_model_client.deserialize_decrypt(*to_tuple(q_y_pred_encrypted_serialized))
+    y_pred = fhe_model_client.deserialize_decrypt_dequantize(
+        *to_tuple(q_y_pred_encrypted_serialized)
+    )
 
     # Dev side: Predict using the model and circuit from development
     q_x_test = model.quantize_input(x_test)
-    q_y_pred_dev = model.fhe_circuit.encrypt_run_decrypt(q_x_test)
+    if (
+        ciphertext_format == CiphertextFormat.TFHE_RS
+    ):  # fhe_circuit.server._tfhers_specs is not None:
+        q_y_pred_dev = model.encrypt_run_decrypt_tfhers_concrete(q_x_test)
+    else:
+        q_y_pred_dev = model.fhe_circuit.encrypt_run_decrypt(q_x_test)
+
     y_pred_dev = model.dequantize_output(q_y_pred_dev)
     y_pred_dev = model.post_processing(y_pred_dev)
 
