@@ -14,10 +14,13 @@ from concrete import fhe
 from ..common.debugging.custom_assert import assert_true
 from ..common.serialization.dumpers import dump
 from ..common.serialization.loaders import load
-from ..common.utils import to_tuple
+from ..common.utils import to_tuple, CiphertextFormat
 from ..quantization import QuantizedModule
 from ..version import __version__ as CML_VERSION
 from ._utils import deserialize_encrypted_values, serialize_encrypted_values
+
+from concrete.fhe import tfhers
+import concrete_ml_extensions as fhext
 
 try:
     # 3.8 and above
@@ -108,6 +111,7 @@ class FHEModelServer:
     """Server API to load and run the FHE circuit."""
 
     server: fhe.Server
+    _tfhers_bridge: Optional[tfhers.bridge.Bridge] = None
 
     def __init__(self, path_dir: str):
         """Initialize the FHE API.
@@ -120,6 +124,7 @@ class FHEModelServer:
 
         # Load the FHE circuit
         self.load()
+        self._tfhers_bridge = None
 
     def load(self):
         """Load the circuit."""
@@ -182,6 +187,13 @@ class FHEModelServer:
         if isinstance(evaluation_keys, bytes):
             evaluation_keys = fhe.EvaluationKeys.deserialize(evaluation_keys)
 
+        if self._tfhers_bridge is None:
+            circuits = self.server.program_info.get_circuits()
+            self._tfhers_bridge = tfhers.new_bridge(circuits[0])
+            input_quant_encrypted = tuple([
+                self._tfhers_bridge.import_value(x, input_idx) for input_idx, x in enumerate(input_quant_encrypted)
+            ])
+
         result_quant_encrypted = self.server.run(
             *input_quant_encrypted, evaluation_keys=evaluation_keys
         )
@@ -229,6 +241,7 @@ class FHEModelDev:
             "input_quantizers": module_to_export.input_quantizers,
             "output_quantizers": module_to_export.output_quantizers,
             "is_training": is_training,
+            "ciphertext_format": module_to_export._ciphertext_format
         }
 
         # Export the `is_fitted` attribute for built-in models
@@ -370,6 +383,9 @@ class FHEModelClient:
             # pylint: disable-next=protected-access
             self.model._is_fitted = serialized_processing["is_fitted"]
 
+        self.model._ciphertext_format = serialized_processing["ciphertext_format"]
+        self.tfhers_sk = None
+        
         # Load model parameters
         # Add some checks on post-processing-params
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3131
@@ -409,8 +425,20 @@ class FHEModelClient:
         # Quantize the values
         x_quant = to_tuple(self.model.quantize_input(*x))
 
-        # Encrypt the values
-        x_quant_encrypted = to_tuple(self.client.encrypt(*x_quant))
+        if self.model._ciphertext_format == CiphertextFormat.TFHE_RS:
+            input_is_signed = self.model.input_quantizers[0].is_signed
+
+            encrypt_dtype = numpy.int8 if input_is_signed else numpy.uint8
+
+            x_quant_encrypted = tuple(
+                [
+                    fhext.encrypt_radix(x_quant[idx].astype(encrypt_dtype), self.tfhers_sk)
+                    for idx in range(len(x_quant))
+                ]
+            )
+        else:
+            # Encrypt the values
+            x_quant_encrypted = to_tuple(self.client.encrypt(*x_quant))
 
         # Serialize the encrypted values to be sent to the server
         x_quant_encrypted_serialized = serialize_encrypted_values(*x_quant_encrypted)
