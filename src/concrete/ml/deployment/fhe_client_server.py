@@ -7,14 +7,16 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Optional, Tuple, Union
 
+import concrete_ml_extensions as fhext
 import numpy
+from concrete.fhe import tfhers
 
 from concrete import fhe
 
 from ..common.debugging.custom_assert import assert_true
 from ..common.serialization.dumpers import dump
 from ..common.serialization.loaders import load
-from ..common.utils import to_tuple
+from ..common.utils import CiphertextFormat, to_tuple
 from ..quantization import QuantizedModule
 from ..version import __version__ as CML_VERSION
 from ._utils import deserialize_encrypted_values, serialize_encrypted_values
@@ -108,6 +110,7 @@ class FHEModelServer:
     """Server API to load and run the FHE circuit."""
 
     server: fhe.Server
+    _tfhers_bridge: Optional[tfhers.bridge.Bridge] = None
 
     def __init__(self, path_dir: str):
         """Initialize the FHE API.
@@ -120,6 +123,7 @@ class FHEModelServer:
 
         # Load the FHE circuit
         self.load()
+        self._tfhers_bridge = None
 
     def load(self):
         """Load the circuit."""
@@ -128,6 +132,19 @@ class FHEModelServer:
         check_concrete_versions(server_zip_path)
 
         self.server = fhe.Server.load(Path(self.path_dir).joinpath("server.zip"))
+
+        specs = self.server.client_specs
+
+        if specs.tfhers_specs is not None and len(specs.tfhers_specs.output_types_per_func) > 0:
+            lst_keys = list(specs.tfhers_specs.output_types_per_func.keys())
+            assert (
+                len(lst_keys) == 1
+            ), "The FHE model server cannot be instantiated on a multi-function circuit"
+            func_name = lst_keys[0]
+
+            if specs.tfhers_specs.output_types_per_func[func_name] is not None:
+                server_client = fhe.Client(self.server.client_specs)
+                self._tfhers_bridge = tfhers.new_bridge(server_client)
 
     # We should make 'serialized_encrypted_quantized_data' handle unpacked inputs, as Concrete does,
     # instead of tuples
@@ -175,7 +192,17 @@ class FHEModelServer:
 
         # Deserialize the values if they are all serialized
         if inputs_are_serialized:
-            input_quant_encrypted = to_tuple(deserialize_encrypted_values(*input_quant_encrypted))
+            if self._tfhers_bridge is not None:
+                input_quant_encrypted = tuple(
+                    [
+                        self._tfhers_bridge.import_value(x, input_idx)
+                        for input_idx, x in enumerate(input_quant_encrypted)
+                    ]
+                )
+            else:
+                input_quant_encrypted = to_tuple(
+                    deserialize_encrypted_values(*input_quant_encrypted)
+                )
 
         # Deserialize the evaluation keys if they are serialized
         evaluation_keys = serialized_evaluation_keys
@@ -188,7 +215,19 @@ class FHEModelServer:
 
         # If inputs were serialized, return serialized values as well
         if inputs_are_serialized:
-            result_quant_encrypted = serialize_encrypted_values(*to_tuple(result_quant_encrypted))
+            if self._tfhers_bridge is not None:
+                result_quant_encrypted = tuple(
+                    [
+                        self._tfhers_bridge.export_value(x, output_idx=idx)
+                        for idx, x in enumerate(
+                            to_tuple(result_quant_encrypted)
+                        )  # pylint: disable=no-member
+                    ]
+                )
+            else:
+                result_quant_encrypted = serialize_encrypted_values(
+                    *to_tuple(result_quant_encrypted)
+                )
 
         # Mypy complains because the outputs of `serialize_encrypted_values` can be None, but here
         # we already made sure this is not the case
@@ -229,6 +268,7 @@ class FHEModelDev:
             "input_quantizers": module_to_export.input_quantizers,
             "output_quantizers": module_to_export.output_quantizers,
             "is_training": is_training,
+            "ciphertext_format": module_to_export.ciphertext_format,
         }
 
         # Export the `is_fitted` attribute for built-in models
@@ -322,6 +362,8 @@ class FHEModelClient:
     """Client API to encrypt and decrypt FHE data."""
 
     client: fhe.Client
+    _tfhers_bridge: Optional[tfhers.bridge.Bridge] = None
+    _tfhers_sk: Optional[bytes] = None
 
     def __init__(self, path_dir: str, key_dir: Optional[str] = None):
         """Initialize the FHE API.
@@ -370,6 +412,8 @@ class FHEModelClient:
             # pylint: disable-next=protected-access
             self.model._is_fitted = serialized_processing["is_fitted"]
 
+        self.model.ciphertext_format = serialized_processing["ciphertext_format"]
+
         # Load model parameters
         # Add some checks on post-processing-params
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3131
@@ -381,7 +425,19 @@ class FHEModelClient:
         Args:
             force (bool): if True, regenerate the keys even if they already exist
         """
-        self.client.keygen(force)
+
+        if self.model.ciphertext_format == CiphertextFormat.TFHE_RS:
+            sk, _, lwe_sk = fhext.keygen_radix()  # pylint: disable=no-member
+            self._tfhers_bridge = tfhers.new_bridge(self.client)
+
+            input_idx_to_key = {0: lwe_sk}
+            self._tfhers_bridge.keygen_with_initial_keys(  # pylint: disable=no-member
+                input_idx_to_key_buffer=input_idx_to_key
+            )
+
+            self._tfhers_sk = sk
+        else:
+            self.client.keygen(force)
 
     def get_serialized_evaluation_keys(self) -> bytes:
         """Get the serialized evaluation keys.
@@ -409,13 +465,23 @@ class FHEModelClient:
         # Quantize the values
         x_quant = to_tuple(self.model.quantize_input(*x))
 
+        if self.model.ciphertext_format == CiphertextFormat.TFHE_RS:
+            input_is_signed = self.model.input_quantizers[0].is_signed
+
+            encrypt_dtype = numpy.int8 if input_is_signed else numpy.uint8
+
+            return tuple(
+                [
+                    fhext.encrypt_radix(x_quant[idx].astype(encrypt_dtype), self._tfhers_sk)
+                    for idx in range(len(x_quant))
+                ]
+            )
+
         # Encrypt the values
         x_quant_encrypted = to_tuple(self.client.encrypt(*x_quant))
 
         # Serialize the encrypted values to be sent to the server
-        x_quant_encrypted_serialized = serialize_encrypted_values(*x_quant_encrypted)
-
-        return x_quant_encrypted_serialized
+        return serialize_encrypted_values(*x_quant_encrypted)
 
     # We should find a better name for `serialized_encrypted_quantized_result`
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4476
@@ -431,13 +497,33 @@ class FHEModelClient:
         Returns:
             Union[Any, Tuple[Any, ...]]: The decrypted and deserialized values.
         """
-        # Deserialize the encrypted values
-        result_quant_encrypted = to_tuple(
-            deserialize_encrypted_values(*serialized_encrypted_quantized_result)
-        )
 
-        # Decrypt the values
-        result_quant = self.client.decrypt(*result_quant_encrypted)
+        if self.model.ciphertext_format == CiphertextFormat.TFHE_RS:
+            specs = self.client.specs.tfhers_specs
+            func_name = list(specs.output_types_per_func.keys())[0]
+
+            result_quant = tuple(
+                [
+                    fhext.decrypt_radix(
+                        serialized_encrypted_quantized_result[idx],
+                        specs.output_shapes_per_func[func_name][idx],
+                        specs.output_types_per_func[func_name][idx].bit_width,
+                        specs.output_types_per_func[func_name][idx].is_signed,
+                        self._tfhers_sk,
+                    )
+                    for idx in range(len(serialized_encrypted_quantized_result))
+                ]
+            )
+            if len(result_quant) == 1:
+                result_quant = result_quant[0]
+        else:
+            # Deserialize the encrypted values
+            result_quant_encrypted = to_tuple(
+                deserialize_encrypted_values(*serialized_encrypted_quantized_result)
+            )
+
+            # Decrypt the values
+            result_quant = self.client.decrypt(*result_quant_encrypted)
 
         return result_quant
 
