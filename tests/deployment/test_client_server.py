@@ -20,7 +20,7 @@ from concrete.ml.deployment.fhe_client_server import (
     FHEModelServer,
 )
 from concrete.ml.pytest.torch_models import FCSmall
-from concrete.ml.pytest.utils import MODELS_AND_DATASETS, get_model_name, instantiate_model_generic
+from concrete.ml.pytest.utils import MODELS_AND_DATASETS, get_model_name, instantiate_model_generic, is_classifier_or_partial_classifier, is_model_class_in_a_list, _get_sklearn_tree_models
 from concrete.ml.quantization.quantized_module import QuantizedModule
 from concrete.ml.sklearn.linear_model import SGDClassifier
 from concrete.ml.torch.compile import compile_torch_model
@@ -138,10 +138,60 @@ def test_client_server_sklearn_inference(
         # considered in this test.
         check_is_good_execution_for_cml_vs_circuit(x_test, model, simulate=False, n_allowed_runs=1)
 
+
     # Check client/server FHE predictions vs the FHE predictions of the dev model
     check_client_server_inference(
         x_test, model, key_dir, check_array_equal, check_float_array_equal
     )
+
+
+
+# This is a known flaky test
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4014
+@pytest.mark.flaky
+@pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
+@pytest.mark.parametrize("n_bits", [8])
+def test_client_server_tfhers_sklearn_inference(
+    model_class,
+    parameters,
+    n_bits,
+    load_data,
+    default_configuration,
+    check_is_good_execution_for_cml_vs_circuit,
+    check_array_equal,
+    check_float_array_equal,
+):
+    if not (is_model_class_in_a_list(model_class, _get_sklearn_tree_models()) and is_classifier_or_partial_classifier(model_class)):
+        pytest.skip("Only 8-b tree-based classifiers are tested for deployment with tfhe-rs ciphertexts")
+
+    # Generate random data
+    x, y = load_data(model_class, **parameters)
+
+    x_train = x[:-1]
+    y_train = y[:-1]
+    x_test = x[-1:]
+
+
+    # Instantiate the model
+    model = instantiate_model_generic(model_class, n_bits=n_bits)
+    model.fit(x_train, y_train)
+
+    compilation_kwargs = {
+        "X": x_train,
+        "configuration": default_configuration,
+        "ciphertext_format": "tfhe-rs"
+    }
+
+    # Compile the model
+    fhe_circuit = model.compile(**compilation_kwargs)
+
+    key_dir = default_configuration.insecure_key_cache_location
+
+    # Check client/server FHE predictions vs the FHE predictions of the dev model
+    check_client_server_inference(
+        x_test, model, key_dir, check_array_equal, check_float_array_equal
+    )
+
 
 
 def test_client_server_custom_model(
