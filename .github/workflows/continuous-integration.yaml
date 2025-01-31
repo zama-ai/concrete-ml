@@ -822,6 +822,13 @@ jobs:
             fi
           fi
 
+          # Add manual coverage check
+          coverage_percentage=$(coverage report | grep "TOTAL" | awk '{print $NF}' | sed 's/%//')
+          if (( $(echo "$coverage_percentage < 100" | bc -l) )); then
+            echo "Coverage is below 100% (got ${coverage_percentage}%)"
+            exit 1
+          fi
+
       # Upload the list of flaky tests that have been re-run (if the only failed tests were flaky)
       - name: Upload flaky tests list (weekly)
         uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
