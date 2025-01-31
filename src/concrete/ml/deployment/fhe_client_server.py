@@ -384,7 +384,6 @@ class FHEModelClient:
             self.model._is_fitted = serialized_processing["is_fitted"]
 
         self.model._ciphertext_format = serialized_processing["ciphertext_format"]
-        self.tfhers_sk = None
         
         # Load model parameters
         # Add some checks on post-processing-params
@@ -397,7 +396,20 @@ class FHEModelClient:
         Args:
             force (bool): if True, regenerate the keys even if they already exist
         """
-        self.client.keygen(force)
+
+        if self.model._ciphertext_format == CiphertextFormat.TFHE_RS:
+            sk, _, lwe_sk = fhext.keygen_radix()  # pylint: disable=no-member
+            self._tfhers_bridge = tfhers.new_bridge(self.client._client_specs.program_info.get_circuits()[0])
+
+            input_idx_to_key = {0: lwe_sk}
+            self._tfhers_bridge.keygen_with_initial_keys(  # pylint: disable=no-member
+                input_idx_to_key_buffer=input_idx_to_key
+            )
+
+            self.tfhers_sk = sk
+        else:
+            self.client.keygen(force)
+
 
     def get_serialized_evaluation_keys(self) -> bytes:
         """Get the serialized evaluation keys.
