@@ -295,51 +295,15 @@ jobs:
           echo "needs-312-linux-runner=${NEEDS_LINUX_312_RUNNER}" >> $GITHUB_OUTPUT
           echo "instance-type=${INSTANCE_TYPE}" >> $GITHUB_OUTPUT
 
-  start-runner-linux:
-    needs: [commit-checks, matrix-preparation]
-    name: Start EC2 runner (Linux)
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    outputs:
-      matrix: ${{ steps.update-linux-matrix.outputs.linux-matrix }}
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Update Linux runs_on Matrix
-        id: update-linux-matrix
-        env:
-          MATRIX: ${{ needs.matrix-preparation.outputs.linux-matrix }}
-        run: |
-          MATRIX=$(echo "${MATRIX}" | jq -rc \
-          '(. | map(select(.os_kind=="linux" and .python_version=="3.8") |= . + {"runs_on": "ubuntu-24.04"}) )')
-          MATRIX=$(echo "${MATRIX}" | jq -rc \
-          '(. | map(select(.os_kind=="linux" and .python_version=="3.9") |= . + {"runs_on": "ubuntu-24.04"}) )')
-          MATRIX=$(echo "${MATRIX}" | jq -rc \
-          '(. | map(select(.os_kind=="linux" and .python_version=="3.10") |= . + {"runs_on": "ubuntu-24.04"}) )')
-          MATRIX=$(echo "${MATRIX}" | jq -rc \
-          '(. | map(select(.os_kind=="linux" and .python_version=="3.11") |= . + {"runs_on": "ubuntu-24.04"}) )')
-          MATRIX=$(echo "${MATRIX}" | jq -rc \
-          '(. | map(select(.os_kind=="linux" and .python_version=="3.12") |= . + {"runs_on": "ubuntu-24.04"}) )')
-
-          echo "Updated matrix:"
-          echo "${MATRIX}"
-
-          echo "linux-matrix=${MATRIX}" >> $GITHUB_OUTPUT
-
   build-linux:
-    name: Python ${{ matrix.python_version }} (Linux)
-    needs: [start-runner-linux]
+    name: Launch multiple Python versions (Linux)
+    needs: [matrix-preparation]
     # Run in a clean container
     #container:
     #  image: ubuntu:20.04
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(format('{{"include":{0}}}', needs.start-runner-linux.outputs.matrix)) }}
+      matrix: ${{ fromJSON(format('{{"include":{0}}}', needs.matrix-preparation.outputs.linux-matrix)) }}
     uses: ./.github/workflows/continuous-integration-common.yaml
     with:
       python_version: ${{ matrix.python_version }}
