@@ -348,7 +348,7 @@ jobs:
       IS_REF_BUILD: ${{ matrix.python_version == '3.8' }}
     outputs:
       hashes: ${{ steps.hash.outputs.hashes }}
-    uses: ./.github/workflows/continous-integration-common.yaml
+    uses: ./.github/workflows/continuous-integration-common.yaml
     with:
       profile: c54xlarge
       python-version: ${{ matrix.python_version }}
