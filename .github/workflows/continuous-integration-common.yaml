@@ -56,6 +56,7 @@ env:
   # differentiate the release CI from regular CIs by using 'inputs.inp_event_name', which should be set
   # to "release" by the release workflow
   IS_PR: ${{ inputs.gh_event_name == 'pull_request' && inputs.inp_event_name != 'release' }}
+  IS_REF_BUILD: ${{ inputs.python_version == '3.8' }}
   # Run the weekly CI if it has been triggered manually by the weekly workflow, meaning
   # 'inputs.inp_event_name' is set to "weekly"
   IS_WEEKLY: ${{ inputs.inp_event_name == 'weekly'}}
@@ -125,7 +126,6 @@ jobs:
     strategy:
       fail-fast: false
     env:
-      IS_REF_BUILD: ${{ inputs.python_version == '3.8' }}
       PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
