@@ -296,12 +296,14 @@ jobs:
       # - any documentation files has been changed
       # - the source code has been changed
       # - Makefile has been changed
+
+      #             (fromJSON(env.IS_RELEASE) && fromJSON(env.IS_REF_BUILD))
+      #      || 
       - name: Fix docs
         id: fix-docs
         if: |
           (
-            (fromJSON(env.IS_RELEASE) && fromJSON(env.IS_REF_BUILD))
-            || steps.changed-files-in-pr.outcome == 'skipped'
+            steps.changed-files-in-pr.outcome == 'skipped'
             || steps.changed-files-in-pr.outputs.docs_any_changed == 'true'
             || steps.changed-files-in-pr.outputs.use_cases_any_changed == 'true'
             || steps.changed-files-in-pr.outputs.src_any_changed == 'true'

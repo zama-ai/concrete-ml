@@ -303,7 +303,7 @@ jobs:
     #  image: ubuntu:20.04
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.matrix-preparation.outputs.linux-matrix) }}
+      matrix: ${{ fromJSON(format('{{"include":{0}}}', needs.matrix-preparation.outputs.linux-matrix)) }}
     uses: ./.github/workflows/continuous-integration-common.yaml
     with:
       python_version: ${{ matrix.python_version }}
