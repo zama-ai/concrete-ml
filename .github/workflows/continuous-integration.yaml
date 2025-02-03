@@ -309,7 +309,7 @@ jobs:
       python_version: ${{ matrix.python_version }}
       gh_event_name: ${{ github.event_name }}
       inp_event_name: ${{ inputs.event_name }}
-      manual_call: ${{ inputs.manual_call }}
+#      manual_call: ${{ inputs.manual_call }}
     secrets: inherit
 
   provenance:

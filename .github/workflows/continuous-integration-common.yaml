@@ -14,7 +14,7 @@ on:
         required: true
       manual_call:
         type: boolean
-        required: true
+#        required: true
     outputs:
       hashes:
         value: ${{ jobs.build-linux.outputs.hashes }}
@@ -297,13 +297,12 @@ jobs:
       # - the source code has been changed
       # - Makefile has been changed
 
-      #             (fromJSON(env.IS_RELEASE) && fromJSON(env.IS_REF_BUILD))
-      #      || 
       - name: Fix docs
         id: fix-docs
         if: |
           (
-            steps.changed-files-in-pr.outcome == 'skipped'
+            (fromJSON(env.IS_RELEASE) && fromJSON(env.IS_REF_BUILD))
+            || steps.changed-files-in-pr.outcome == 'skipped'
             || steps.changed-files-in-pr.outputs.docs_any_changed == 'true'
             || steps.changed-files-in-pr.outputs.use_cases_any_changed == 'true'
             || steps.changed-files-in-pr.outputs.src_any_changed == 'true'
