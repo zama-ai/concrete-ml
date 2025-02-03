@@ -466,7 +466,6 @@ jobs:
     needs:
       [
         matrix-preparation,
-        start-runner-linux,
         build-linux,
         build-macos-intel,
         decide-slack-report,
