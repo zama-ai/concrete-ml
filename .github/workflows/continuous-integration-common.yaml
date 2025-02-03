@@ -59,7 +59,7 @@ env:
   IS_REF_BUILD: ${{ inputs.python_version == '3.8' }}
   # Run the weekly CI if it has been triggered manually by the weekly workflow, meaning
   # 'inputs.inp_event_name' is set to "weekly"
-  IS_WEEKLY: ${{ inputs.inp_event_name == 'weekly'}}
+  IS_WEEKLY: ${{ inputs.inp_event_name == 'weekly' }}
   # The 'IS_RELEASE' variable indicates that the workflow has been triggered by the releasing
   # process itself, before publishing it. It should only happen when the release workflow triggers
   # the CI, in which 'inputs.inp_event_name' is set to "release"
