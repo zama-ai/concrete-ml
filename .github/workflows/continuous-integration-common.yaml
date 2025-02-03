@@ -19,8 +19,6 @@ on:
       hashes:
         value: ${{ jobs.build-linux.outputs.hashes }}
     secrets:
-      REPO_CHECKOUT_TOKEN:
-        required: true
       SLAB_ACTION_TOKEN:
         required: true
       SLAB_BASE_URL:
