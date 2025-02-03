@@ -185,6 +185,8 @@ jobs:
       - name: Install dependencies
         id: install-deps
         run: |
+          apt-mark hold docker.io
+
           ./script/make_utils/setup_os_deps.sh
           mkdir -p ~/.aws
           echo "[default]\nregion=eu-west-3\noutput=json\n" >> ~/.aws/config
