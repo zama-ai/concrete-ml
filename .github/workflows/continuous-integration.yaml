@@ -316,15 +316,15 @@ jobs:
           MATRIX: ${{ needs.matrix-preparation.outputs.linux-matrix }}
         run: |
           MATRIX=$(echo "${MATRIX}" | jq -rc \
-          '(. | map(select(.os_kind=="linux" and .python_version=="3.8") |= . + {"runs_on": "${{ steps.start-slab-runner-38.outputs.label }}"}) )')
+          '(. | map(select(.os_kind=="linux" and .python_version=="3.8") |= . + {"runs_on": "ubuntu-24.04"}) )')
           MATRIX=$(echo "${MATRIX}" | jq -rc \
-          '(. | map(select(.os_kind=="linux" and .python_version=="3.9") |= . + {"runs_on": "${{ steps.start-slab-runner-39.outputs.label }}"}) )')
+          '(. | map(select(.os_kind=="linux" and .python_version=="3.9") |= . + {"runs_on": "ubuntu-24.04"}) )')
           MATRIX=$(echo "${MATRIX}" | jq -rc \
-          '(. | map(select(.os_kind=="linux" and .python_version=="3.10") |= . + {"runs_on": "${{ steps.start-slab-runner-310.outputs.label }}"}) )')
+          '(. | map(select(.os_kind=="linux" and .python_version=="3.10") |= . + {"runs_on": "ubuntu-24.04"}) )')
           MATRIX=$(echo "${MATRIX}" | jq -rc \
-          '(. | map(select(.os_kind=="linux" and .python_version=="3.11") |= . + {"runs_on": "${{ steps.start-slab-runner-311.outputs.label }}"}) )')
+          '(. | map(select(.os_kind=="linux" and .python_version=="3.11") |= . + {"runs_on": "ubuntu-24.04"}) )')
           MATRIX=$(echo "${MATRIX}" | jq -rc \
-          '(. | map(select(.os_kind=="linux" and .python_version=="3.12") |= . + {"runs_on": "${{ steps.start-slab-runner-312.outputs.label }}"}) )')
+          '(. | map(select(.os_kind=="linux" and .python_version=="3.12") |= . + {"runs_on": "ubuntu-24.04"}) )')
 
           echo "Updated matrix:"
           echo "${MATRIX}"
@@ -334,25 +334,18 @@ jobs:
   build-linux:
     name: Python ${{ matrix.python_version }} (Linux)
     needs: [start-runner-linux]
-    runs-on: ${{ matrix.runs_on }}
     # Run in a clean container
-    container:
-      image: ubuntu:20.04
-    defaults:
-      run:
-        shell: bash
+    #container:
+    #  image: ubuntu:20.04
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(format('{{"include":{0}}}', needs.start-runner-linux.outputs.matrix)) }}
-    env:
-      IS_REF_BUILD: ${{ matrix.python_version == '3.8' }}
-    outputs:
-      hashes: ${{ steps.hash.outputs.hashes }}
     uses: ./.github/workflows/continuous-integration-common.yaml
     with:
-      profile: c54xlarge
-      python-version: ${{ matrix.python_version }}
-      IS_REF_BUILD: ${{ matrix.python_version == '3.8' }}
+      python_version: ${{ matrix.python_version }}
+      gh_event_name: ${{ github.event_name }}
+      inp_event_name: ${{ inputs.event_name }}
+      manual_call: ${{ inputs.manual_call }}
     secrets: inherit
 
   provenance:
@@ -389,70 +382,6 @@ jobs:
           if [[ ${{ needs.build-linux.result }} != "success" ]]; then
             exit 1
           fi
-
-  stop-runner-linux:
-    name: Stop Slab runner (Linux)
-    needs: [build-linux, start-runner-linux]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 2
-    if: ${{ always() && (needs.start-runner-linux.result != 'skipped') }}
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Stop Slab runner python 3.8
-        if: ${{ always() && needs.start-runner-linux.outputs.slab-instance-id-38 }}
-        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
-        with:
-          mode: stop
-          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
-          slab-url: ${{ secrets.SLAB_BASE_URL }}
-          job-secret: ${{ secrets.JOB_SECRET }}
-          label: ${{ needs.start-runner-linux.outputs.slab-instance-id-38 }}
-
-      - name: Stop Slab runner python 3.9
-        if: ${{ always() && needs.start-runner-linux.outputs.slab-instance-id-39 }}
-        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
-        with:
-          mode: stop
-          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
-          slab-url: ${{ secrets.SLAB_BASE_URL }}
-          job-secret: ${{ secrets.JOB_SECRET }}
-          label: ${{ needs.start-runner-linux.outputs.slab-instance-id-39 }}
-
-      - name: Stop Slab runner python 3.10
-        if: ${{ always() && needs.start-runner-linux.outputs.slab-instance-id-310 }}
-        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
-        with:
-          mode: stop
-          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
-          slab-url: ${{ secrets.SLAB_BASE_URL }}
-          job-secret: ${{ secrets.JOB_SECRET }}
-          label: ${{ needs.start-runner-linux.outputs.slab-instance-id-310 }}
-
-      - name: Stop Slab runner python 3.11
-        if: ${{ always() && needs.start-runner-linux.outputs.slab-instance-id-311 }}
-        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
-        with:
-          mode: stop
-          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
-          slab-url: ${{ secrets.SLAB_BASE_URL }}
-          job-secret: ${{ secrets.JOB_SECRET }}
-          label: ${{ needs.start-runner-linux.outputs.slab-instance-id-311 }}
-
-      - name: Stop Slab runner python 3.12
-        if: ${{ always() && needs.start-runner-linux.outputs.slab-instance-id-312 }}
-        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
-        with:
-          mode: stop
-          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
-          slab-url: ${{ secrets.SLAB_BASE_URL }}
-          job-secret: ${{ secrets.JOB_SECRET }}
-          label: ${{ needs.setup-ec2.outputs.runner-name }}
 
   build-macos-intel:
     name: Python ${{ matrix.python_version }} (macOS, intel)
@@ -575,7 +504,6 @@ jobs:
         matrix-preparation,
         start-runner-linux,
         build-linux,
-        stop-runner-linux,
         build-macos-intel,
         decide-slack-report,
       ]
