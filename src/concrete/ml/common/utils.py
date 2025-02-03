@@ -20,7 +20,6 @@ from ..common.debugging import assert_true
 
 _VALID_ARG_CHARS = set(string.ascii_letters).union(str(i) for i in range(10)).union(("_",))
 
-
 SUPPORTED_FLOAT_TYPES = {
     "float64": torch.float64,
     "float32": torch.float32,
