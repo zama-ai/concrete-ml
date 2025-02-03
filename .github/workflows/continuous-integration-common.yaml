@@ -135,6 +135,11 @@ jobs:
           echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
           echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
 
+      - name: Set Home
+        run: |
+          echo "Set HOME=$(pwd)"
+          echo "HOME=$(pwd)" >> $GITHUB_ENV
+
       # Replace default archive.ubuntu.com from docker image with fr mirror
       # original archive showed performance issues and is farther away
       - name: Docker container related setup and git installation
