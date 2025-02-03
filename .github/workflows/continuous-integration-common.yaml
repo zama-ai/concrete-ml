@@ -86,7 +86,6 @@ jobs:
     timeout-minutes: 15
     outputs:
       label: ${{ steps.start-slab-runner.outputs.label }}
-      slab-instance-id: ${{ steps.start-slab-runner.outputs.label || '' }}
     steps:  
       - name: Checkout Code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -114,7 +113,7 @@ jobs:
   build-linux:
     name: Python ${{ inputs.python_version }} (Linux)
     needs: [start-runner-linux]
-    runs-on: ${{ matrix.runs_on }}
+    runs-on: ${{ needs.start-runner-linux.outputs.label }}
     # Run in a clean container
     # container:
     #  image: ubuntu:20.04
@@ -685,13 +684,13 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Stop Slab runner python 3.8
-        if: ${{ always() && needs.start-runner-linux.outputs.slab-instance-id }}
+      - name: Stop Slab runner python
+        if: ${{ always() && needs.start-runner-linux.outputs.label }}
         uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
         with:
           mode: stop
           github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
           slab-url: ${{ secrets.SLAB_BASE_URL }}
           job-secret: ${{ secrets.JOB_SECRET }}
-          label: ${{ needs.start-runner-linux.outputs.slab-instance-id }}
+          label: ${{ needs.start-runner-linux.outputs.label }}
 
