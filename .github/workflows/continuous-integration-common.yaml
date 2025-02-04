@@ -444,6 +444,7 @@ jobs:
           )
           && steps.conformance.outcome == 'success'
           && !cancelled()
+        shell: bash +e {0}
         run: |
           if [[ "${{ env.IS_WEEKLY }}" == "true" ]]; then
             PYTEST_OPTIONS="--weekly"
@@ -451,13 +452,10 @@ jobs:
             PYTEST_OPTIONS=""
           fi
 
-          set +e  # Disable exit on error to capture the exit code
           make pytest_and_report PYTEST_OPTIONS=${PYTEST_OPTIONS}
-          pytest_exit_code=$?
-          set -e  # Re-enable exit on error
 
           # If regular tests failed, check for flaky tests
-          if [ $pytest_exit_code -ne 0 ]; then
+          if [ $? -ne 0 ]; then
             # Convert pytest report to formatted report with only information about failed tests
             poetry run python ./script/actions_utils/pytest_failed_test_report.py \
               --pytest-input-report "pytest_report.json" \
@@ -468,6 +466,7 @@ jobs:
             # Check if all failed tests are known flaky tests
             FAILED_TESTS_ARE_FLAKY=$(jq .all_failed_tests_are_flaky "failed_tests_report.json")
 
+            echo "All failed tests were flaky tests, trying to re-run"
             echo "FAILED_TESTS_ARE_FLAKY=${FAILED_TESTS_ARE_FLAKY}" >> "$GITHUB_ENV"
 
             # If all failed tests are known flaky tests, try to rerun them
