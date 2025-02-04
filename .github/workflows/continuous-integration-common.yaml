@@ -330,7 +330,7 @@ jobs:
           && steps.fix-docs.outcome == 'success'
           && !cancelled()
         run: |
-          chmod -R 777 docs
+          chmod -R 777 /root
           make check_links
           make check_symlinks
 
