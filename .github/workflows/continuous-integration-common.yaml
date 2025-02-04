@@ -185,7 +185,6 @@ jobs:
       - name: Install dependencies
         id: install-deps
         run: |
-          chmod -R 777 docs
           apt-mark hold docker.io
 
           ./script/make_utils/setup_os_deps.sh
@@ -322,6 +321,8 @@ jobs:
           make docs_no_links
 
       # Do not check links during the release process in order to avoid temporary connection errors
+      # Chmod since check links doesn't run as root but the files belong to root
+      # Can not chmod earlier since git diff on chmoded files will give an error in the checkers
       - name: Check links
         id: check_links
         if: |
@@ -329,6 +330,7 @@ jobs:
           && steps.fix-docs.outcome == 'success'
           && !cancelled()
         run: |
+          chmod -R 777 docs
           make check_links
           make check_symlinks
 
