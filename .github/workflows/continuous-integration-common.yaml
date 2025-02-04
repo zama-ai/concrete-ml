@@ -558,6 +558,7 @@ jobs:
           && steps.pytest.outcome != 'skipped'
           && !cancelled()
         run: |
+          cat global-coverage-infos.json
           ./script/actions_utils/coverage.sh global-coverage-infos.json
 
       - name: Comment with coverage
