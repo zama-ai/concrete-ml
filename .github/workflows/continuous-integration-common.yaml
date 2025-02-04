@@ -139,6 +139,7 @@ jobs:
         run: |
           echo "Set HOME=$(pwd)"
           echo "HOME=$(pwd)" >> $GITHUB_ENV
+          chmod -r 777 concrete-ml
 
       # Replace default archive.ubuntu.com from docker image with fr mirror
       # original archive showed performance issues and is farther away
