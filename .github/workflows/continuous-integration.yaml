@@ -296,7 +296,7 @@ jobs:
           echo "instance-type=${INSTANCE_TYPE}" >> $GITHUB_OUTPUT
 
   build-linux:
-    name: Launch multiple Python versions (Linux)
+    name: Single Python Version (Linux)
     needs: [matrix-preparation]
     # Run in a clean container
     #container:

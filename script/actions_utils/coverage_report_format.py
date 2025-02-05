@@ -3,6 +3,7 @@
 """Helper script for github actions"""
 import argparse
 import json
+import sys
 from pathlib import Path
 from typing import List
 
@@ -61,6 +62,9 @@ def global_coverage(args):
     coverage_content = global_coverage_infos["content"]
     global_coverage_output_file_path = Path(args.global_coverage_output_file).resolve()
     write_coverage_file(global_coverage_output_file_path, exit_code, coverage_content)
+
+    print(f"Exiting with pytest err code {exit_code}")
+    sys.exit(exit_code)
 
 
 def main(args):
