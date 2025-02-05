@@ -1,5 +1,6 @@
 # syntax=docker/dockerfile:1
-FROM ubuntu:20.04
+ARG UBUNTU_BASE=20.04
+FROM ubuntu:${UBUNTU_BASE}
 
 ENV TZ=Europe/Paris
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
@@ -30,6 +31,14 @@ RUN --mount=type=secret,id=build-env \
 WORKDIR /app
 COPY docker/release_resources/entry_point.sh ./entry_point.sh
 RUN mkdir /data
+
+# Add a non-root user and group
+RUN groupadd -g 10001 grp02 && \
+    useradd -u 10000 -g grp02 usr01 && \
+    chown -R usr01:grp02 /data /app /pkg
+
+# Switch to the non-root user
+USER usr01:grp02
 
 WORKDIR /data
 VOLUME [ "/data" ]

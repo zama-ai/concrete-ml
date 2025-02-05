@@ -1,8 +1,19 @@
-FROM zamafhe/concrete-ml:latest
+ARG CML_VER=v1.8.0
+FROM zamafhe/concrete-ml:${CML_VER}
 WORKDIR /project
+
+# Add a non-root user and group
+RUN groupadd -g 10001 grp02 && \
+    useradd -u 10000 -g grp02 usr01 && \
+    chown -R usr01:grp02 /project
+
 COPY dev dev
 COPY server_requirements.txt server_requirements.txt
 COPY server.py server.py
 RUN python -m pip install -r ./server_requirements.txt
 EXPOSE 5000
+
+# Switch to the non-root user
+USER usr01:grp02
+
 ENTRYPOINT python server.py
