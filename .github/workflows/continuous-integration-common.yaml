@@ -466,7 +466,7 @@ jobs:
             # Check if all failed tests are known flaky tests
             FAILED_TESTS_ARE_FLAKY=$(jq .all_failed_tests_are_flaky "failed_tests_report.json")
 
-            echo "Are all failed tests flaky: ${FAILED_TESTS_ARE_FLAKY}, if so try to re-run"
+            echo "Are all failed tests flaky: ${FAILED_TESTS_ARE_FLAKY}. If 'true' they will be re-run"
             echo "FAILED_TESTS_ARE_FLAKY=${FAILED_TESTS_ARE_FLAKY}" >> "$GITHUB_ENV"
 
             # If all failed tests are known flaky tests, try to rerun them
