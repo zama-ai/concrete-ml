@@ -92,6 +92,10 @@ TRUSTED_SKOPS = (
         "sklearn.neighbors._classification.KNeighborsClassifier",
         "sklearn.metrics._dist_metrics.EuclideanDistance",
         "sklearn.neighbors._kd_tree.KDTree",
+        "_loss.CyHalfTweedieLossIdentity",
+        "_loss.CyHalfTweedieLoss",
+        "_loss.CyHalfPoissonLoss",
+        "_loss.CyHalfGammaLoss",
     ]
 )
 
