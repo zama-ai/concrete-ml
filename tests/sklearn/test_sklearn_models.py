@@ -31,7 +31,6 @@ import tempfile
 
 # pylint: disable=too-many-lines, too-many-arguments
 import warnings
-from functools import partial
 from typing import Any, Dict, List
 
 import numpy
