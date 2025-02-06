@@ -186,7 +186,7 @@ jobs:
         id: install-deps
         run: |
           apt-mark hold docker.io
-          apt remove unattended-upgrades
+          apt remove -y unattended-upgrades
 
           ./script/make_utils/setup_os_deps.sh
           mkdir -p ~/.aws
