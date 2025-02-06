@@ -348,12 +348,11 @@ jobs:
           fi
 
   build-macos-intel:
-    name: Python ${{ matrix.python_version }} (macOS, intel)
+    name: Default Python on macOS (intel)
     needs: [matrix-preparation]
     # macOS (intel) build is currently broken so there is not need to test it until Concrete fixes it
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4428
-    # if: ${{ needs.matrix-preparation.outputs.macos-matrix != '[]' }}
-    if: false
+    if: ${{ needs.matrix-preparation.outputs.macos-matrix != '[]' }}
     runs-on: ${{ matrix.runs_on }}
     defaults:
       run:
