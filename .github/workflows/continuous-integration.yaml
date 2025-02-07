@@ -96,7 +96,7 @@ env:
   # rerun. By default, we do not want to print this warning
   FAILED_TESTS_ARE_FLAKY: "false"
 
-  SLAB_PROFILE: c54xlarge
+  SLAB_PROFILE: ciprofile
 
 
 jobs:
@@ -309,7 +309,7 @@ jobs:
       python_version: ${{ matrix.python_version }}
       gh_event_name: ${{ github.event_name }}
       inp_event_name: ${{ inputs.event_name }}
-#      manual_call: ${{ inputs.manual_call }}
+      manual_call: ${{ inputs.manual_call || false }}
     secrets: inherit
 
   provenance:

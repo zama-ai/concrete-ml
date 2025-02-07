@@ -14,7 +14,7 @@ on:
         required: true
       manual_call:
         type: boolean
-#        required: true
+        required: true
     outputs:
       hashes:
         value: ${{ jobs.build-linux.outputs.hashes }}
