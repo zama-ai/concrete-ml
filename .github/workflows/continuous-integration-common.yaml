@@ -147,6 +147,7 @@ jobs:
           echo "TZ=${TZ}" >> "$GITHUB_ENV"
           ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
           sed -i 's|^deb http://archive|deb http://fr.archive|g' /etc/apt/sources.list
+          apt remove -y unattended-upgrades
           apt update && apt install git git-lfs -y
 
       # By default, `git clone` downloads all LFS files, which we want to avoid in CIs other than
@@ -185,7 +186,6 @@ jobs:
         id: install-deps
         run: |
           apt-mark hold docker.io
-          apt remove -y unattended-upgrades
 
           ./script/make_utils/setup_os_deps.sh
           mkdir -p ~/.aws
