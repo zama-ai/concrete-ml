@@ -77,7 +77,7 @@ env:
   # rerun. By default, we do not want to print this warning
   FAILED_TESTS_ARE_FLAKY: "false"
 
-  SLAB_PROFILE: c54xlarge
+  SLAB_PROFILE: ciprofile
 
 jobs:  
   start-runner-linux:
