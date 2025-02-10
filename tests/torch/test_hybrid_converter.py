@@ -239,8 +239,9 @@ def test_invalid_model():
         HybridFHEModel(invalid_model, module_names="sub_module")
 
 
+@pytest.mark.parametrize("use_dynamic_quantization, n_bits", [(True, 8), (False, 10)])
 @pytest.mark.parametrize("n_hidden", [256, 512, 2048])
-def test_hybrid_glwe_correctness(n_hidden):
+def test_hybrid_glwe_correctness(n_hidden, use_dynamic_quantization, n_bits):
     """Tests that the GLWE backend produces correct results for the hybrid model."""
 
     num_samples = 200
@@ -292,7 +293,9 @@ def test_hybrid_glwe_correctness(n_hidden):
     is_pure_linear = hybrid_local._has_only_large_linear_layers  # pylint: disable=protected-access
     assert is_pure_linear == should_use_glwe
 
-    hybrid_local.compile_model(x1_train, n_bits=10)
+    hybrid_local.compile_model(
+        x1_train, n_bits=n_bits, use_dynamic_quantization=use_dynamic_quantization
+    )
 
     y_qm = hybrid_local(x1_test, fhe="disable").numpy()
     y_hybrid_torch = hybrid_local(x1_test, fhe="torch").detach().numpy()

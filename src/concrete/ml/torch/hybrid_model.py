@@ -230,8 +230,8 @@ class RemoteModule(nn.Module):
             x (torch.Tensor): The input tensor to match device with.
         """
         assert self.private_module is not None
-        if next(self.private_module.parameters()).device != x.device:
-            self.private_module = self.private_module.to(x.device)
+        if next(self.private_module.parameters()).device != x.device:  # pragma: no cover
+            self.private_module = self.private_module.to(x.device)  # pragma: no cover
 
     def forward(self, x: torch.Tensor) -> Union[torch.Tensor, QuantTensor]:
         """Forward pass of the remote module.
@@ -568,7 +568,7 @@ class HybridFHEModel:
         p_error: Optional[float] = None,
         device: str = "cpu",
         configuration: Optional[Configuration] = None,
-        use_dynamic_quantization: bool = True,
+        use_dynamic_quantization: bool = False,
     ):
         """Compiles the specific layers to FHE.
 
@@ -586,6 +586,10 @@ class HybridFHEModel:
             use_dynamic_quantization (bool): If True, use dynamic quantization;
                 otherwise, use static quantization. (only for GLWE backend)
         """
+        assert (
+            has_glwe_backend() or not use_dynamic_quantization
+        ), "Dynamic quantization requires GLWE backend"
+
         # We do a forward pass where we accumulate inputs to use for compilation
         self.set_fhe_mode(HybridFHEMode.CALIBRATE)
 

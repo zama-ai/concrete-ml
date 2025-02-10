@@ -5,6 +5,7 @@
 import tempfile
 from collections import UserDict
 from pathlib import Path
+from typing import List
 from unittest.mock import MagicMock
 
 import pytest
@@ -865,7 +866,7 @@ def test_evaluation():
     inputset = (torch.randn(5, 10), torch.randn(5, 10))
 
     # Define a simple evaluation metric function with a counter to track calls
-    eval_calls: list[int] = []
+    eval_calls: List[int] = []
 
     def eval_metric_fn(model, loader):
         # Verify model is in eval mode during evaluation
