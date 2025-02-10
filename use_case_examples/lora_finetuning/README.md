@@ -60,6 +60,8 @@ Execute the Jupyter notebook `GPT2FineTuneHybrid.ipynb` to start the fine-tuning
 
 The repository includes an evaluation script (`eval.py`) that allows you to train, evaluate and compare the LLaMA model training with different modes:
 
+<!--pytest-codeblocks:skip-->
+
 ```sh
 python eval.py --mode [torch|8bit|16bit]
 ```
