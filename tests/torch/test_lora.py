@@ -2,7 +2,9 @@
 
 # pylint: disable=redefined-outer-name
 
+import tempfile
 from collections import UserDict
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -235,16 +237,6 @@ def test_forward_with_less_than_two_inputs():
     assert "must have two elements" in str(exc_info.value)
 
 
-def test_toggle_calibrate():
-    """Test toggle_calibrate."""
-    model = DummyLoRAModel()
-    lora_training = LoraTraining(model)
-    lora_training.toggle_calibrate(True)
-    assert lora_training.calibrate is True
-    lora_training.toggle_calibrate(False)
-    assert lora_training.calibrate is False
-
-
 def test_set_loss_scaling_factor():
     """Test set_loss_scaling_factor."""
     model = DummyLoRAModel()
@@ -262,33 +254,33 @@ def test_lora_trainer_init():
     assert lora_trainer.hybrid_model is not None
 
 
-def test_lora_trainer_compile():
+@pytest.mark.parametrize("use_dynamic_quantization", [True, False])
+def test_lora_trainer_compile(use_dynamic_quantization):
     """Test LoraTrainer compile."""
     model = DummyLoRAModel()
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
     lora_trainer = LoraTrainer(model, optimizer=optimizer)
-    inputset = [(torch.randn(5, 10), torch.randn(5, 10))]
-    # Mock the compile_model method
-    lora_trainer.hybrid_model.compile_model = MagicMock()
-    lora_trainer.compile(inputset)
-    lora_trainer.hybrid_model.compile_model.assert_called_once()
-    assert lora_trainer.lora_training_module.calibrate is False
+    inputset = (torch.randn(5, 10), torch.randn(5, 10))
+    lora_trainer.compile(inputset, use_dynamic_quantization=use_dynamic_quantization)
 
 
-def test_lora_trainer_train():
+@pytest.mark.parametrize("use_dynamic_quantization", [True, False])
+@pytest.mark.parametrize("fhe", ["disable", "execute"])
+def test_lora_trainer_train(use_dynamic_quantization, fhe):
     """Test LoraTrainer train."""
     model = DummyLoRAModel()
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
     training_args = {"gradient_accumulation_steps": 1, "max_grad_norm": 1.0}
     lora_trainer = LoraTrainer(model, optimizer=optimizer, training_args=training_args)
-    # Mock the hybrid_model's __call__ method
-    lora_trainer.hybrid_model = MagicMock(
-        return_value=(torch.tensor(1.0, requires_grad=True), None)
-    )
+    inputset = (torch.randn(2, 5, 10), torch.randn(2, 5, 10))
+
+    # Compile the model
+    lora_trainer.compile(inputset, use_dynamic_quantization=use_dynamic_quantization)
+
     # Create dummy data loader with different batch types
     dataset = TensorDataset(torch.randn(2, 5, 10), torch.randn(2, 5, 10))
     train_loader = DataLoader(dataset, batch_size=1)
-    lora_trainer.train(train_loader, num_epochs=1, fhe="disable")
+    lora_trainer.train(train_loader, num_epochs=1, fhe=fhe)
 
     class DictDataset(Dataset):
         """Dataset that contains data in Python dictionaries."""
@@ -590,20 +582,20 @@ def test_lora_trainer_train_with_various_batch_types(has_loss):
     dataset_dict = [{"x": torch.randn(5, 10), "labels": torch.randn(5, 10)} for _ in range(2)]
     train_loader_dict: DataLoader = DataLoader(DictDataset(dataset_dict), batch_size=1)
     lora_trainer.compile({"x": torch.randn(1, 5, 10), "labels": torch.randn(1, 5, 10)}, n_bits=8)
-    lora_trainer.train(train_loader_dict, num_epochs=1)
+    lora_trainer.train(train_loader_dict, num_epochs=1, fhe="disable")
 
     # Test with UserDict batch
     dataset_user_dict = [
         UserDict({"x": torch.randn(5, 10), "labels": torch.randn(5, 10)}) for _ in range(2)
     ]
     train_loader_udict: DataLoader = DataLoader(DictDataset(dataset_user_dict), batch_size=1)
-    lora_trainer.train(train_loader_udict, num_epochs=1)
+    lora_trainer.train(train_loader_udict, num_epochs=1, fhe="disable")
 
     if not has_loss:
         # Test with list/tuple batch
         dataset_list = [(torch.randn(5, 10), torch.randn(5, 10)) for _ in range(2)]
         train_loader_list: DataLoader = DataLoader(ListDataset(dataset_list), batch_size=1)
-        lora_trainer.train(train_loader_list, num_epochs=1)
+        lora_trainer.train(train_loader_list, num_epochs=1, fhe="disable")
 
 
 def test_lora_trainer_inference_keygen():
@@ -769,3 +761,158 @@ def test_lora_train_mlp():
     lora_trainer.compile(inputset, n_bits=8)
     # Train in FHE mode
     lora_trainer.train(train_loader_task2, fhe="execute")
+
+
+def test_checkpoint_saving_loading_and_resuming():
+    """Test checkpoint saving, loading, resuming training and result tracking."""
+    num_samples = 10
+    input_data = torch.randn(num_samples, 10)
+    target_data = torch.randn(num_samples, 10)
+    dataset = TensorDataset(input_data, target_data)
+    train_loader = DataLoader(dataset, batch_size=1)
+
+    # Create a dummy model and optimizer.
+    model = DummyLoRAModel()
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+    # Add a learning rate scheduler
+    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.1)
+    # Create an arbitrary input set for model compilation.
+    inputset = (torch.randn(5, 10), torch.randn(5, 10))
+
+    # Use a temporary directory for checkpoint files.
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # First training phase
+        lora_trainer = LoraTrainer(
+            model, optimizer=optimizer, lr_scheduler=lr_scheduler, checkpoint_dir=temp_dir
+        )
+        lora_trainer.compile(inputset, n_bits=8)
+        lora_trainer.train(train_loader, fhe="disable", num_epochs=3, device="cpu")
+
+        # Check that a checkpoint file is created for each epoch.
+        for epoch in range(1, 4):
+            checkpoint_path = Path(temp_dir) / f"checkpoint_epoch_{epoch}.pth"
+            assert checkpoint_path.exists(), f"Checkpoint for epoch {epoch} not found."
+
+        # Test that training losses have been recorded.
+        initial_losses = lora_trainer.get_training_losses()
+        assert len(initial_losses) > 0, "No training losses recorded in the first phase."
+
+        # Test that gradient statistics have been recorded.
+        grad_stats = lora_trainer.get_gradient_stats()
+        assert isinstance(grad_stats, dict), "Gradient stats should be a dictionary."
+        for param_name, stats in grad_stats.items():
+            assert len(stats) > 0, f"No gradient stats recorded for parameter '{param_name}'."
+
+        # Test loading non-existent checkpoint
+        with pytest.raises(FileNotFoundError):
+            lora_trainer.load_checkpoint("non_existent_checkpoint.pth")
+
+        # Store initial learning rate
+        initial_lr = optimizer.param_groups[0]["lr"]
+
+        # New model which undergoes same layer replacement as original model.
+        # This is needed to ensure that the loaded checkpoint is compatible with the new model
+        model = DummyLoRAModel()
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+        lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.1)
+
+        resumed_trainer = LoraTrainer(
+            model, optimizer=optimizer, lr_scheduler=lr_scheduler, checkpoint_dir=temp_dir
+        )
+
+        # Compile the model, which will automatically load the latest checkpoint
+        loaded_epoch, loaded_global_step = resumed_trainer.compile(inputset, n_bits=8)
+
+        # Verify the loaded checkpoint is from epoch 3 (the latest)
+        assert loaded_epoch == 3, "Latest checkpoint epoch does not match expected value."
+        assert loaded_global_step > 0, "Loaded global step should be greater than 0."
+
+        # Verify that the learning rate was properly restored from checkpoint
+        loaded_lr = optimizer.param_groups[0]["lr"]
+        expected_lr = initial_lr * (lr_scheduler.gamma**loaded_epoch)
+        assert (
+            abs(loaded_lr - expected_lr) < 1e-6
+        ), "Learning rate was not properly restored from checkpoint"
+
+        # Resume training for 1 additional epoch
+        resumed_trainer.train(
+            train_loader,
+            fhe="disable",
+            num_epochs=4,  # Note: training will start from epoch (loaded_epoch + 1)=4
+            device="cpu",
+        )
+
+        # After resuming, check that additional training losses have been recorded.
+        resumed_losses = resumed_trainer.get_training_losses()
+        assert len(resumed_losses) > len(
+            initial_losses
+        ), "No additional training losses recorded after resuming."
+
+        # Also check that gradient statistics have been updated.
+        resumed_grad_stats = resumed_trainer.get_gradient_stats()
+        for param_name, stats in resumed_grad_stats.items():
+            assert (
+                len(stats) > 0
+            ), f"No gradient stats recorded for parameter '{param_name}' after resuming."
+
+
+def test_evaluation():
+    """Test that evaluation is done correctly."""
+    model = DummyLoRAModel()
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+    train_loader = DataLoader(TensorDataset(torch.randn(5, 10), torch.randn(5, 10)), batch_size=1)
+    eval_loader = DataLoader(TensorDataset(torch.randn(3, 10), torch.randn(3, 10)), batch_size=1)
+    inputset = (torch.randn(5, 10), torch.randn(5, 10))
+
+    # Define a simple evaluation metric function with a counter to track calls
+    eval_calls: list[int] = []
+
+    def eval_metric_fn(model, loader):
+        # Verify model is in eval mode during evaluation
+        assert not model.training, "Model should be in eval mode during evaluation"
+        eval_calls.append(len(eval_calls) + 1)  # Track call count
+
+        total_loss = 0.0
+        with torch.no_grad():
+            for x, y in loader:
+                output = model(x)
+                # Extract logits from the output dictionary
+                logits = output["logits"]
+                loss = torch.nn.functional.mse_loss(logits, y)
+                total_loss += loss.item()
+        return {"eval_loss": total_loss / len(loader)}
+
+    # Test case 1: With evaluation data and metric function
+    lora_trainer = LoraTrainer(
+        model,
+        optimizer=optimizer,
+        eval_loader=eval_loader,
+        eval_metric_fn=eval_metric_fn,
+        eval_steps=2,
+    )
+
+    lora_trainer.compile(inputset, n_bits=8)
+    # Train for a few steps to trigger evaluation
+    lora_trainer.train(train_loader, num_epochs=1, fhe="disable")
+
+    # Verify evaluations occurred
+    assert len(eval_calls) > 0, "No evaluations were performed"
+    assert eval_calls == list(range(1, len(eval_calls) + 1)), "Evaluations were not sequential"
+
+    # Verify model is back in training mode after training
+    assert model.training, "Model should be back in training mode after training"
+
+    # Test case 2: Without evaluation data and metric function
+    eval_calls.clear()  # Reset counter
+    # New model without evaluation data and metric function
+    model_no_eval = DummyLoRAModel()
+    optimizer_no_eval = torch.optim.SGD(model_no_eval.parameters(), lr=0.01)
+    lora_trainer_no_eval = LoraTrainer(model_no_eval, optimizer=optimizer_no_eval)
+
+    lora_trainer_no_eval.compile(inputset, n_bits=8)
+    # Train for a few steps
+    lora_trainer_no_eval.train(train_loader, num_epochs=1, fhe="disable")
+
+    # Verify no evaluations occurred
+    msg = "Evaluations should not occur without eval_loader and eval_metric_fn"
+    assert len(eval_calls) == 0, msg

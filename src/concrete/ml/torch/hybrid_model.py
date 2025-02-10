@@ -223,6 +223,16 @@ class RemoteModule(nn.Module):
         """
         return self
 
+    def _ensure_module_on_device(self, x: torch.Tensor) -> None:
+        """Ensure the private module is on the same device as the input tensor.
+
+        Args:
+            x (torch.Tensor): The input tensor to match device with.
+        """
+        assert self.private_module is not None
+        if next(self.private_module.parameters()).device != x.device:
+            self.private_module = self.private_module.to(x.device)
+
     def forward(self, x: torch.Tensor) -> Union[torch.Tensor, QuantTensor]:
         """Forward pass of the remote module.
 
@@ -272,6 +282,7 @@ class RemoteModule(nn.Module):
             assert self.private_module is not None
             assert self.calibration_data is not None
             self.calibration_data.append(x.detach())
+            self._ensure_module_on_device(x)
             y = self.private_module(x)
             assert isinstance(y, (QuantTensor, torch.Tensor))
 
@@ -284,6 +295,8 @@ class RemoteModule(nn.Module):
         elif self.fhe_local_mode == HybridFHEMode.TORCH:
             # Using torch layers
             assert self.private_module is not None
+            # Move private module parameters to same device as input if needed
+            self._ensure_module_on_device(x)
             y = self.private_module(x)
         else:  # pragma:no cover
             # Shouldn't happen
@@ -555,6 +568,7 @@ class HybridFHEModel:
         p_error: Optional[float] = None,
         device: str = "cpu",
         configuration: Optional[Configuration] = None,
+        use_dynamic_quantization: bool = True,
     ):
         """Compiles the specific layers to FHE.
 
@@ -569,6 +583,8 @@ class HybridFHEModel:
             device: FHE compilation device, can be either 'cpu' or 'cuda'.
             configuration (Configuration): A concrete Configuration object specifying the FHE
                 encryption parameters. If not specified, a default configuration is used.
+            use_dynamic_quantization (bool): If True, use dynamic quantization;
+                otherwise, use static quantization. (only for GLWE backend)
         """
         # We do a forward pass where we accumulate inputs to use for compilation
         self.set_fhe_mode(HybridFHEMode.CALIBRATE)
@@ -600,7 +616,9 @@ class HybridFHEModel:
                 # then simply quantize the model without compiling with
                 # Concrete Python.
                 if self._has_only_large_linear_layers and has_glwe_backend():
-                    self.executor = GLWELinearLayerExecutor()
+                    self.executor = GLWELinearLayerExecutor(
+                        use_dynamic_quantization=use_dynamic_quantization
+                    )
                     self.private_q_modules[name] = build_quantized_module(
                         self.private_modules[name],
                         calibration_data_tensor,
@@ -612,7 +630,7 @@ class HybridFHEModel:
                     vals = self.private_q_modules[name].quant_layers_dict.values()
                     _, q_op = next(iter(vals))
                     const_inp = q_op.constant_inputs[1]  # Get the weights, the bias is in [2]
-                    const_inp.values = const_inp.qvalues.astype(numpy.float32)
+                    # const_inp.values = const_inp.qvalues.astype(numpy.float32)
                     const_inp.qvalues = const_inp.qvalues.astype(numpy.int16)
                 else:
                     self.private_q_modules[name] = compile_torch_model(
