@@ -31,7 +31,7 @@ else # Assume Linux
     TOTAL_CPUS := $(shell nproc)
 endif
 ifeq ($(shell test $(TOTAL_CPUS) -lt 4; echo $$?),0) # very few cores
-	PYTEST_CORES := TOTAL_CPUS
+	PYTEST_CORES := $(TOTAL_CPUS)
 	FHE_NUMPY_CORES := 1
 else
 	PYTEST_CORES := $(shell if [ `expr $(TOTAL_CPUS) / 4` -lt 4 ]; then expr $(TOTAL_CPUS) / 4; else echo 4; fi)
