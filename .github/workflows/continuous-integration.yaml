@@ -349,7 +349,7 @@ jobs:
           fi
 
   build-macos-intel:
-    name: Default Python on macOS (intel)
+    name: Python on macOS
     needs: [matrix-preparation]
     # macOS (intel) build is currently broken so there is not need to test it until Concrete fixes it
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4428
