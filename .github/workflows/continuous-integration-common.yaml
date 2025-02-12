@@ -77,7 +77,7 @@ env:
   # rerun. By default, we do not want to print this warning
   FAILED_TESTS_ARE_FLAKY: "false"
 
-  SLAB_PROFILE: ciprofile
+  SLAB_PROFILE: ${{ inputs.inp_event_name == 'weekly' && 'weekly_ciprofile' || 'pr_ciprofile' }}
 
 jobs:  
   start-runner-linux:
