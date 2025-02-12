@@ -430,6 +430,31 @@ jobs:
         run: |
           make pytest_macOS_for_GitHub
 
+          # If regular tests failed, check for flaky tests
+          if [ $? -ne 0 ]; then
+            # Convert pytest report to formatted report with only information about failed tests
+            poetry run python ./script/actions_utils/pytest_failed_test_report.py \
+              --pytest-input-report "pytest_report.json" \
+              --failed-tests-report "failed_tests_report.json" \
+              --failed-tests-comment "failed_tests_comment_${{ inputs.python_version }}.txt" \
+              --failed-tests-list "failed_tests_slack_list_${{ inputs.python_version }}.txt"
+
+            # Check if all failed tests are known flaky tests
+            FAILED_TESTS_ARE_FLAKY=$(jq .all_failed_tests_are_flaky "failed_tests_report.json")
+
+            echo "Are all failed tests flaky: ${FAILED_TESTS_ARE_FLAKY}."
+
+            # If all failed tests are known flaky tests, report success
+            if [[ "${FAILED_TESTS_ARE_FLAKY}" == "true" ]]; then
+              exit 0
+            # Else, return exit status 1 in order to make this step fail
+            else
+              exit 1
+            fi
+          else
+            echo "No flaky tests were reported!"
+          fi
+
   decide-slack-report:
     name: Decide Slack report
     runs-on: ubuntu-24.04

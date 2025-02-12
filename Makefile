@@ -277,7 +277,14 @@ pytest:
 # Coverage options are not included since they look to fail on macOS
 # (see https://github.com/zama-ai/concrete-ml-internal/issues/4428)
 .PHONY: pytest_macOS_for_GitHub # Run pytest without coverage options
-pytest_macOS_for_GitHub: pytest_internal_parallel
+pytest_macOS_for_GitHub:
+	"$(MAKE)" pytest_internal_parallel \
+	PYTEST_OPTIONS="\
+	--json-report \
+	--json-report-file='pytest_report.json' \
+	--json-report-omit collectors log traceback streams warnings  \
+	--json-report-indent=4 \
+	${PYTEST_OPTIONS}"
 
 .PHONY: pytest_and_report # Run pytest and output the report in a JSON file
 pytest_and_report:
