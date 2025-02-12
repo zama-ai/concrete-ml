@@ -12,6 +12,21 @@ from pathlib import Path
 from typing import List
 
 import requests
+from requests.adapters import HTTPAdapter, Retry
+
+
+def requests_get_with_retry(url, *, headers):
+
+    s = requests.Session()
+
+    retries = Retry(total=5, backoff_factor=0.1, status_forcelist=[500, 502, 503, 504])
+
+    s.mount("http://", HTTPAdapter(max_retries=retries))
+    s.mount("https://", HTTPAdapter(max_retries=retries))
+
+    r = s.get(url, headers=headers)
+
+    return r
 
 
 def check_links(file_path: Path, verbose: bool) -> List[str]:
@@ -46,7 +61,7 @@ def check_links(file_path: Path, verbose: bool) -> List[str]:
     # Check each link
     for link in links_to_check:
         try:
-            response = requests.get(link, headers=headers, timeout=10)
+            response = requests_get_with_retry(link, headers=headers)
             if response.status_code == 200:
                 status_message = f"OK: {link}"
             else:
