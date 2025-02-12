@@ -64,7 +64,7 @@ def main(args):
                     "runs_on": macos_os,
                     "python_version": python_version,
                 }
-        )
+            )
 
     print(json.dumps(github_action_matrix, indent=4, cls=EnumEncoder))
 
