@@ -16,7 +16,15 @@ from requests.adapters import HTTPAdapter, Retry
 
 
 def requests_get_with_retry(url, *, headers):
+    """Check a link wity retries.
 
+    Args:
+        url: The URL to check
+        headers: HTTP request headers
+
+    Returns:
+        response: HTTP response structure
+    """
     s = requests.Session()
 
     retries = Retry(total=5, backoff_factor=0.1, status_forcelist=[500, 502, 503, 504])
