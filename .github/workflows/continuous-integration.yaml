@@ -305,7 +305,6 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJSON(format('{{"include":{0}}}', needs.matrix-preparation.outputs.linux-matrix)) }}
     uses: ./.github/workflows/continuous-integration-common.yaml
-    if: ${{ false }}
     with:
       python_version: ${{ matrix.python_version }}
       gh_event_name: ${{ github.event_name }}
@@ -427,6 +426,7 @@ jobs:
       # Add support for re-running flaky tests on macOS (intel) CI
       # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4428
       - name: PyTest Source Code
+        shell: bash +e {0}
         run: |
           make pytest_macOS_for_GitHub
 
