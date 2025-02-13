@@ -626,7 +626,7 @@ jobs:
         run: |
           git lfs pull --include "docs/advanced_examples/data/**" --exclude  ""
 
-          make pytest_nb
+          WEEKLY_CI=1 make pytest_nb
 
       - name: Fast sanity check
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}

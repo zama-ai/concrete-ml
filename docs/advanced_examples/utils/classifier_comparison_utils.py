@@ -8,6 +8,7 @@
 # License: BSD 3 clause
 
 import warnings
+import os
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 import time
@@ -29,6 +30,9 @@ ALWAYS_USE_SIM = False
 # pylint: disable=too-many-locals,too-many-statements,too-many-branches,invalid-name
 def make_classifier_comparison(title, classifiers, decision_level, verbose=False, save_plot=False, simulate=False, h=0.04):
     n_samples = 200
+
+    if os.environ.get('WEEKLY_CI', '0') == '0':
+        h = 0.1
 
     X, y = make_classification(
         n_samples=n_samples,
