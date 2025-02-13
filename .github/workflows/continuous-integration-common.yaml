@@ -647,7 +647,6 @@ jobs:
       - name: Check installation with pip and python ${{ inputs.python_version }} (weekly)
         if: |
             (fromJSON(env.IS_WEEKLY))
-            && inputs.python_version != '3.12'
             && steps.conformance.outcome == 'success'
             && !cancelled()
         run: |
