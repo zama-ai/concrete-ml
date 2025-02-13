@@ -642,7 +642,6 @@ jobs:
         run: |
           ./script/make_utils/check_installation_with_all_python.sh --version ${{ inputs.python_version }} --sync_env
 
-      # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4679
       # Check installation with pip
       - name: Check installation with pip and python ${{ inputs.python_version }} (weekly)
         if: |

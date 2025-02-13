@@ -350,8 +350,6 @@ jobs:
   build-macos-intel:
     name: Python on macOS
     needs: [matrix-preparation]
-    # macOS (intel) build is currently broken so there is not need to test it until Concrete fixes it
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4428
     if: ${{ needs.matrix-preparation.outputs.macos-matrix != '[]' }}
     runs-on: ${{ matrix.runs_on }}
     defaults:
@@ -423,8 +421,6 @@ jobs:
       # macOS builds are already long, so we decide not to use --weekly on them, it could be
       # changed. Remark also that, for mac, due to unexpected issues with GitHub, we have a
       # slightly different way to launch pytest
-      # Add support for re-running flaky tests on macOS (intel) CI
-      # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4428
       - name: PyTest Source Code
         shell: bash +e {0}
         run: |
