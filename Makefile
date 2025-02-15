@@ -478,6 +478,7 @@ pytest_nb:
 		-n0 \
 		--randomly-dont-reorganize \
 		--count=$(COUNT) \
+		--durations=0 \
 		--randomly-dont-reset-seed -Wignore --nbmake; \
 	else \
 		echo "No notebook found"; \
