@@ -32,7 +32,7 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
     n_samples = 200
 
     if os.environ.get('WEEKLY_CI', '0') == '0':
-        h = 0.1
+        h = 0.2
 
     X, y = make_classification(
         n_samples=n_samples,
@@ -256,6 +256,9 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
 def make_classifier_comparison_from_sklearn(title, classifiers, decision_level, verbose=False, save_plot=False, simulate=False, h=0.04):
     n_samples = 200
     num_models = 3
+
+    if os.environ.get('WEEKLY_CI', '0') == '0':
+        h = 0.4
 
     X, y = make_classification(
         n_samples=n_samples,
