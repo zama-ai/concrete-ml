@@ -30,9 +30,14 @@ ifeq ($(UNAME_S),Darwin) # macOS
 else # Assume Linux
     TOTAL_CPUS := $(shell nproc)
 endif
-PYTEST_CORES := $(shell if [ `expr $(TOTAL_CPUS) / 4` -lt 4 ]; then expr $(TOTAL_CPUS) / 4; else echo 4; fi)
-# Calculate cores per pytest worker: total_cores / pytest_cores
-FHE_NUMPY_CORES := $(shell expr $(TOTAL_CPUS) / $(PYTEST_CORES))
+ifeq ($(shell test $(TOTAL_CPUS) -lt 4; echo $$?),0) # very few cores
+	PYTEST_CORES := $(TOTAL_CPUS)
+	FHE_NUMPY_CORES := 1
+else
+	PYTEST_CORES := $(shell if [ `expr $(TOTAL_CPUS) / 4` -lt 4 ]; then expr $(TOTAL_CPUS) / 4; else echo 4; fi)
+	# Calculate cores per pytest worker: total_cores / pytest_cores
+	FHE_NUMPY_CORES := $(shell expr $(TOTAL_CPUS) / $(PYTEST_CORES))
+endif
 
 # At the end of the command, we currently need to force an 'import skorch' in Python in order to 
 # avoid an obscure bug that led to all pytest commands to fail when installing dependencies with 
@@ -272,7 +277,14 @@ pytest:
 # Coverage options are not included since they look to fail on macOS
 # (see https://github.com/zama-ai/concrete-ml-internal/issues/4428)
 .PHONY: pytest_macOS_for_GitHub # Run pytest without coverage options
-pytest_macOS_for_GitHub: pytest_internal_parallel
+pytest_macOS_for_GitHub:
+	"$(MAKE)" pytest_internal_parallel \
+	PYTEST_OPTIONS="\
+	--json-report \
+	--json-report-file='pytest_report.json' \
+	--json-report-omit collectors log traceback streams warnings  \
+	--json-report-indent=4 \
+	${PYTEST_OPTIONS}"
 
 .PHONY: pytest_and_report # Run pytest and output the report in a JSON file
 pytest_and_report:
@@ -478,6 +490,7 @@ pytest_nb:
 		-n0 \
 		--randomly-dont-reorganize \
 		--count=$(COUNT) \
+		--durations=0 \
 		--randomly-dont-reset-seed -Wignore --nbmake; \
 	else \
 		echo "No notebook found"; \

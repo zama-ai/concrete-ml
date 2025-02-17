@@ -1,0 +1,696 @@
+name: CML tests - common
+
+on:
+  workflow_call:
+    inputs:
+      python_version:
+        type: string
+        required: true
+      gh_event_name:
+        type: string
+        required: true
+      inp_event_name:
+        type: string
+        required: true
+      manual_call:
+        type: boolean
+        required: true
+    outputs:
+      hashes:
+        value: ${{ jobs.build-linux.outputs.hashes }}
+    secrets:
+      SLAB_ACTION_TOKEN:
+        required: true
+      SLAB_BASE_URL:
+        required: true
+      SLAB_URL:
+        required: true
+      JOB_SECRET:
+        required: true
+      SLACK_CHANNEL:
+        required: true
+      BOT_USERNAME:
+        required: true
+      SLACK_WEBHOOK:
+        required: true
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      AWS_REGION:
+        required: true
+      PIP_INDEX_URL:
+        required: true
+      INTERNAL_PYPI_URL_FOR_MASK:
+        required: true
+      INTERNAL_REPO_URL_FOR_MASK:
+        required: true
+        
+env:
+  ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  # The CI can be triggered by the release workflow which itself can be triggered by the merge of a
+  # pull-request (following the 'prepare_release' workflow). Since GitHub weirdly propagates the
+  # original 'inputs.gh_event_name' (here "pull_request") in all nested workflows, we need to
+  # differentiate the release CI from regular CIs by using 'inputs.inp_event_name', which should be set
+  # to "release" by the release workflow
+  IS_PR: ${{ inputs.gh_event_name == 'pull_request' && inputs.inp_event_name != 'release' }}
+  IS_REF_BUILD: ${{ inputs.python_version == '3.8' }}
+  # Run the weekly CI if it has been triggered manually by the weekly workflow, meaning
+  # 'inputs.inp_event_name' is set to "weekly"
+  IS_WEEKLY: ${{ inputs.inp_event_name == 'weekly' }}
+  # The 'IS_RELEASE' variable indicates that the workflow has been triggered by the releasing
+  # process itself, before publishing it. It should only happen when the release workflow triggers
+  # the CI, in which 'inputs.inp_event_name' is set to "release"
+  IS_RELEASE: ${{ inputs.inp_event_name == 'release' }}
+  IS_PUSH_TO_MAIN: ${{ inputs.gh_event_name == 'push' && github.ref == 'refs/heads/main' }}
+  IS_PUSH_TO_RELEASE: ${{ inputs.gh_event_name == 'push' && startsWith(github.ref, 'refs/heads/release/') }}
+  IS_WORKFLOW_DISPATCH: ${{ inputs.gh_event_name == 'workflow_dispatch' && inputs.manual_call}}
+  # The 'IS_PUBLISHED_RELEASE' variable indicates that the workflow has been triggered by a
+  # release's successful publishing
+  IS_PUBLISHED_RELEASE: ${{ inputs.gh_event_name == 'release'}}
+  AGENT_TOOLSDIRECTORY: /opt/hostedtoolcache
+  RUNNER_TOOL_CACHE: /opt/hostedtoolcache
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  # The 'FAILED_TESTS_ARE_FLAKY' variable is used to print a warning messages if flaky tests are
+  # rerun. By default, we do not want to print this warning
+  FAILED_TESTS_ARE_FLAKY: "false"
+
+  SLAB_PROFILE: ${{ inputs.inp_event_name == 'weekly' && 'weekly_ciprofile' || 'pr_ciprofile' }}
+
+jobs:  
+  start-runner-linux:
+    name: Start Slab runner (Linux)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    outputs:
+      label: ${{ steps.start-slab-runner.outputs.label }}
+    steps:  
+      - name: Checkout Code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Start instance
+        id: start-slab-runner
+        if: ${{ !cancelled() }}
+        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
+        with:
+          mode: start
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          backend: aws
+          profile: ${{ env.SLAB_PROFILE }}
+
+
+  build-linux:
+    name: Python ${{ inputs.python_version }} (Linux)
+    needs: [start-runner-linux]
+    runs-on: ${{ needs.start-runner-linux.outputs.label }}
+    # Run in a clean container
+    # container:
+    #  image: ubuntu:20.04
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+    env:
+      PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    outputs:
+      hashes: ${{ steps.hash.outputs.hashes }}
+    steps:
+      - name: Add masks
+        run: |
+          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
+          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
+
+      - name: Set Home
+        run: |
+          echo "Set HOME=$(pwd)"
+          echo "HOME=$(pwd)" >> $GITHUB_ENV
+
+      # Replace default archive.ubuntu.com from docker image with fr mirror
+      # original archive showed performance issues and is farther away
+      - name: Docker container related setup and git installation
+        run: |
+          TZ=Europe/Paris
+          echo "TZ=${TZ}" >> "$GITHUB_ENV"
+          ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
+          sed -i 's|^deb http://archive|deb http://fr.archive|g' /etc/apt/sources.list
+          apt remove -y unattended-upgrades
+          apt update && apt install git git-lfs -y
+
+      # By default, `git clone` downloads all LFS files, which we want to avoid in CIs other than
+      # weekly ones (which also test notebooks)
+      - name: Disable LFS download by default
+        if: ${{ !fromJSON(env.IS_WEEKLY) }}
+        run: |
+          git lfs install --skip-smudge
+
+      # Checkout the code
+      # 'fetch-depth' is set to 0 in order to fetch all tags (used for generating the changelog)
+      - name: Checkout Code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+
+      # Pull necessary LFS files (and thus avoid downloading files stored for benchmarks, use cases, ...)
+      - name: Pull LFS files
+        run: |
+          git lfs pull --include "tests/data/**, src/concrete/ml/pandas/_client_server_files/**" --exclude  ""
+
+      - name: Set up Python ${{ inputs.python_version }}
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b
+        id: setup-python
+        with:
+          python-version: ${{ inputs.python_version }}
+
+      - name: Check python3 version
+        env:
+          SYSTEM_VERSION_COMPAT: 0
+        run: |
+          which python3
+          which pip3
+
+      - name: Install dependencies
+        id: install-deps
+        run: |
+          apt-mark hold docker.io
+
+          ./script/make_utils/setup_os_deps.sh
+          mkdir -p ~/.aws
+          echo "[default]\nregion=eu-west-3\noutput=json\n" >> ~/.aws/config
+          # Needed to include Python.h
+          export C_INCLUDE_PATH="${C_INCLUDE_PATH}:/__w/_tool/Python/$(python -c 'import platform; print(platform.python_version())')/x64/include"
+
+          echo
+          echo "Using these tools:"
+          which python3
+          which pip3
+          echo
+
+          make setup_env
+
+      - name: Check actionlint
+        run:
+          make actionlint
+
+      - name: Source code conformance
+        id: make-pcc
+        if: ${{ steps.install-deps.outcome == 'success' && !cancelled() }}
+        # pcc launches an internal target with proper flags
+        run: |
+          make pcc
+
+      # Checked for changes between main and the current branch in a PR. More specifically,
+      # this is used in regular CIs to avoid launching Pytest, checking codeblocks, building docs
+      # or other steps if the associated files were not touched. For most, we also check that the
+      # linux MD5 has not changed, which means that no libraries got updated. This is done in order
+      # to handle PRs which only upgrades dependencies
+      # Following the 'files_yaml' section, we define what files should trigger a defined acronym
+      # (src, codeblocks, ...) when some changes are detected in them. For example, if some
+      # dependencies were changed, 'tests', 'determinism', 'codeblocks' and 'determinism' acronyms
+      # will be affected. We use the license MD5 file for that because it is built on the
+      # poetry.lock as well as the Concrete Python version, which can be installed manually in the
+      # makefile.
+      # For codeblocks, 'make pytest_codeblocks' runs the `make_utils/pytest_codeblocks.sh` script,
+      # which executes a find and grep command to find them. In the following section, we manually
+      # re-define what this command does by looking at all markdown files that are neither in hidden
+      # directories nor in docs/_apidocs or similar paths. Additionally, as for others, we check for
+      # changes in the source directory or in installed dependencies.
+      # This step is skipped if it has been manually triggered in GitHub's Action interface as well
+      # as for release and weekly checks, as there are no changes to check in these cases
+      - name: Get all changed files from main in PR
+        id: changed-files-in-pr
+        if: |
+          fromJSON(env.IS_PR)
+          && steps.install-deps.outcome == 'success'
+          && steps.make-pcc.outcome == 'success'
+          && !cancelled()
+        uses: tj-actions/changed-files@d6e91a2266cdb9d62096cebf1e8546899c6aa18f # v45.0.6
+        with:
+          files_yaml: |
+            src:
+              - src/**
+              - '!src/concrete/ml/version.py'
+            tests:
+              - 'tests/**/test_*.py'
+            tests_utils:
+              - tests/data/**
+              - src/concrete/ml/pytest/**
+            determinism:
+              - tests/seeding/test_seeding.py
+            docs:
+              - docs/**
+              - '*.md'
+              - LICENSE
+            use_cases:
+              - use_case_examples/**
+            codeblocks:
+              - '**.md'
+              - '!.*/**'
+              - '!docs/_*/**'
+              - '!docs/SUMMARY.md'
+              - '!docs/references/api/**.md'
+            dependencies:
+              - deps_licenses/licenses_linux_user.txt.md5
+            conftest:
+              - conftest.py
+            makefile:
+              - Makefile
+
+      # Run determinism test if:
+      # - during weekly or release CI, as well as when the CI has been triggered manually (through
+      # GitHub's Action interface)
+      # - the determinism test file has been changed
+      # - the source code has been changed
+      # - any dependency has been updated
+      # - conftest.py has been changed
+      # - Makefile has been changed
+      - name: Determinism
+        id: determinism
+        if: |
+          (
+            steps.changed-files-in-pr.outcome == 'skipped'
+            || steps.changed-files-in-pr.outputs.determinism_any_changed == 'true'
+            || steps.changed-files-in-pr.outputs.src_any_changed == 'true'
+            || steps.changed-files-in-pr.outputs.dependencies_any_changed == 'true'
+            || steps.changed-files-in-pr.outputs.conftest_any_changed == 'true'
+            || steps.changed-files-in-pr.outputs.makefile_any_changed == 'true'
+          )
+          && steps.install-deps.outcome == 'success'
+          && steps.make-pcc.outcome == 'success'
+          && !cancelled()
+        run: |
+          make determinism
+
+      # Fix the documentation for Gitbook if :
+      # - the current workflow takes place in a release CI with the reference build
+      # - the current workflow takes place in a weekly CI or it has been triggered manually (through
+      # GitHub's Action interface)
+      # - any documentation files has been changed
+      # - the source code has been changed
+      # - Makefile has been changed
+
+      - name: Fix docs
+        id: fix-docs
+        if: |
+          (
+            (fromJSON(env.IS_RELEASE) && fromJSON(env.IS_REF_BUILD))
+            || steps.changed-files-in-pr.outcome == 'skipped'
+            || steps.changed-files-in-pr.outputs.docs_any_changed == 'true'
+            || steps.changed-files-in-pr.outputs.use_cases_any_changed == 'true'
+            || steps.changed-files-in-pr.outputs.src_any_changed == 'true'
+            || steps.changed-files-in-pr.outputs.makefile_any_changed == 'true'
+          )
+          && steps.install-deps.outcome == 'success'
+          && steps.make-pcc.outcome == 'success'
+          && steps.determinism.outcome != 'failure'
+          && !cancelled()
+        run: |
+          make docs_no_links
+
+      # Do not check links during the release process in order to avoid temporary connection errors
+      # Do not check links in the weekly either to avoid wasting CI time
+      # Chmod since check links doesn't run as root but the files belong to root
+      # Can not chmod earlier since git diff on chmoded files will give an error in the checkers
+      - name: Check links
+        id: check_links
+        if: |
+          !fromJSON(env.IS_RELEASE)
+          && steps.fix-docs.outcome == 'success'
+          && !fromJSON(env.IS_WEEKLY)
+          && !cancelled()
+        run: |
+          chmod -R 777 /root
+          make check_links
+          make check_symlinks
+
+      # Make sure all necessary steps passed. For fix-docs and determinism steps, we only check for
+      # non-failures as the 'changed-files-in-pr' step might skip them
+      - name: Stop if previous steps failed
+        id: conformance
+        if: ${{ always() && !cancelled() }}
+        env:
+          CONFORMANCE_STATUS: >-
+            ${{
+              steps.make-pcc.outcome == 'success'
+              && steps.determinism.outcome != 'failure'
+              && steps.fix-docs.outcome != 'failure'
+              && steps.check_links.outcome != 'failure'
+            }}
+        run: |
+          if [[ "${CONFORMANCE_STATUS}" != "true" ]]; then
+            echo "Conformance failed, got:"
+            echo "Make conformance step: ${{ steps.make-pcc.outcome }}"
+            echo "Determinism step: ${{ steps.determinism.outcome }}"
+            echo "Fix docs step: ${{ steps.fix-docs.outcome }}"
+            echo "Check links step: ${{ steps.check_links.outcome }}"
+            exit 1
+          fi
+
+      # Generate the changelog for releases with the reference build only
+      # The changelog is generated by considering all commits from the latest stable previous
+      # version (not a release candidate) up to the new upcoming version
+      - name: Generate release changelog
+        id: changelog
+        if: |
+          fromJSON(env.IS_RELEASE)
+          && fromJSON(env.IS_REF_BUILD)
+          && steps.conformance.outcome == 'success'
+          && !cancelled()
+        run: |
+          PROJECT_VERSION="$(poetry version --short)"
+          GIT_TAG="v${PROJECT_VERSION}"
+          CHANGELOG_FILE="CHANGELOG_${GIT_TAG}.md"
+          echo "changelog-file=${CHANGELOG_FILE}" >> $GITHUB_OUTPUT
+          poetry run python ./script/make_utils/changelog_helper.py \
+          --to-ref "${{ github.sha }}" > "${CHANGELOG_FILE}"
+
+      - name: Upload changelog artifacts
+        if: ${{ steps.changelog.outcome == 'success' && !cancelled() }}
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08
+        with:
+          name: changelog
+          path: ${{ steps.changelog.outputs.changelog-file }}
+
+      # Build the wheel for releases with the reference build only
+      # Create packages before tests, to be able to get them if some unexpected test failure happens
+      # Build the package only once, as we don't have binary dependency this can be used on Linux
+      # and macOS as long as the dependencies are available
+      - name: Build wheel
+        id: build-wheel
+        if: |
+          fromJSON(env.IS_RELEASE)
+          && fromJSON(env.IS_REF_BUILD)
+          && steps.conformance.outcome == 'success'
+          && !cancelled()
+        run: |
+          rm -rf dist
+          poetry build -f wheel
+
+      - name: "Generate hashes"
+        id: hash
+        if: ${{ steps.build-wheel.outcome == 'success' && !cancelled() }}
+        run: |
+          cd dist && echo "hashes=$(sha256sum * | base64 -w0)" >> $GITHUB_OUTPUT
+
+      - name: Upload wheel artifacts
+        if: ${{ steps.build-wheel.outcome == 'success' && !cancelled() }}
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08
+        with:
+          name: py3-wheel
+          path: dist/*.whl
+
+      # Run pytest if :
+      # - the current workflow does no take place release CI
+      # - if the CI has been triggered manually (through GitHub's Action interface)
+      # - the source code has been changed
+      # - any tests utils (pytest, data) has been changed
+      # - any dependency has been updated
+      # - conftest.py has been changed
+      # - Makefile has been changed
+      # If the workflow takes place in a release CI, an option is added to take into account more tests
+      # If only some test files were changed, this step is skipped and each associated tests will be
+      # run individually in a following step (pytest_modified_tests_only)
+      # If regular tests failed, a following script checks for flaky tests. If all failed tests
+      # are known flaky tests, they are rerun. Otherwise, the step exits with status 1.
+      # The 'bash +e {0}' is added here in order to make sure that the step does not exit directly
+      # if 'make pytest' fails
+      - name: PyTest Source Code (regular, weekly)
+        id: pytest
+        if: |
+          (
+            (
+              steps.changed-files-in-pr.outcome == 'success'
+              && (
+                steps.changed-files-in-pr.outputs.src_any_changed == 'true'
+                || steps.changed-files-in-pr.outputs.tests_utils_any_changed == 'true'
+                || steps.changed-files-in-pr.outputs.dependencies_any_changed == 'true'
+                || steps.changed-files-in-pr.outputs.conftest_any_changed == 'true'
+                || steps.changed-files-in-pr.outputs.makefile_any_changed == 'true'
+              )
+            )
+            || fromJSON(env.IS_WORKFLOW_DISPATCH)
+            || fromJSON(env.IS_WEEKLY)
+          )
+          && steps.conformance.outcome == 'success'
+          && !cancelled()
+        shell: bash +e {0}
+        run: |
+          if [[ "${{ env.IS_WEEKLY }}" == "true" ]]; then
+            PYTEST_OPTIONS="--weekly"
+          else
+            PYTEST_OPTIONS=""
+          fi
+
+          make pytest_and_report PYTEST_OPTIONS=${PYTEST_OPTIONS}
+
+          # If regular tests failed, check for flaky tests
+          if [ $? -ne 0 ]; then
+            # Convert pytest report to formatted report with only information about failed tests
+            poetry run python ./script/actions_utils/pytest_failed_test_report.py \
+              --pytest-input-report "pytest_report.json" \
+              --failed-tests-report "failed_tests_report.json" \
+              --failed-tests-comment "failed_tests_comment_${{ inputs.python_version }}.txt" \
+              --failed-tests-list "failed_tests_slack_list_${{ inputs.python_version }}.txt"
+
+            # Check if all failed tests are known flaky tests
+            FAILED_TESTS_ARE_FLAKY=$(jq .all_failed_tests_are_flaky "failed_tests_report.json")
+
+            echo "Are all failed tests flaky: ${FAILED_TESTS_ARE_FLAKY}. If 'true' they will be re-run"
+            echo "FAILED_TESTS_ARE_FLAKY=${FAILED_TESTS_ARE_FLAKY}" >> "$GITHUB_ENV"
+
+            # If all failed tests are known flaky tests, try to rerun them
+            if [[ "${FAILED_TESTS_ARE_FLAKY}" == "true" ]]; then
+              make pytest_run_last_failed && ./script/actions_utils/coverage.sh global-coverage-infos.json
+
+            # Else, return exit status 1 in order to make this step fail
+            else
+              exit 1
+            fi
+          fi
+
+      # Upload the list of flaky tests that have been re-run (if the only failed tests were flaky)
+      - name: Upload flaky tests list (weekly)
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+        if: |
+          fromJSON(env.IS_WEEKLY)
+          && steps.pytest.outcome == 'success'
+          && fromJSON(env.FAILED_TESTS_ARE_FLAKY)
+          && !cancelled()
+        with:
+          name: failed_flaky_${{ inputs.python_version }}
+          path: failed_tests_slack_list_${{ inputs.python_version }}.txt
+
+      # If regular tests passed but at least one known flaky test have been rerun, a warning
+      # comment is published in the PR and all flaky tests that initially failed are listed
+      - name: Warn PR with flaky tests (regular)
+        uses: marocchino/sticky-pull-request-comment@331f8f5b4215f0445d3c07b4967662a32a2d3e31
+        if: |
+          fromJSON(env.IS_PR)
+          && steps.pytest.outcome == 'success'
+          && fromJSON(env.FAILED_TESTS_ARE_FLAKY)
+          && !cancelled()
+        with:
+          header: flaky-test
+          recreate: true
+          path: failed_tests_comment_${{ inputs.python_version }}.txt
+
+      # If pytest step has been skipped but some changes has been detected in test files,
+      # meaning there was no other changed impacting our testing suite, we only need to run these
+      # modified tests
+      # Note that if pytest utils or test data are changed, the pytest step should have been
+      # triggered instead
+      - name: PyTest on modified tests only
+        id: pytest_modified_tests_only
+        if: |
+          fromJSON(env.IS_PR)
+          && steps.changed-files-in-pr.outcome == 'success'
+          && steps.pytest.outcome == 'skipped'
+          && steps.changed-files-in-pr.outputs.tests_any_changed == 'true'
+          && steps.conformance.outcome == 'success'
+          && !cancelled()
+        run: |
+          # Exit immediately if any command fails
+          set -e
+          
+          for file in ${{ steps.changed-files-in-pr.outputs.tests_all_changed_files }}; do
+              make pytest_one TEST="$file"
+          done
+
+      # Run Pytest on all of our tests (except flaky ones) using PyPI's local wheel in the weekly
+      # or during the release process
+      - name: PyTest (no flaky) with PyPI local wheel of Concrete ML (weekly, release)
+        if: |
+          (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE))
+          && steps.conformance.outcome == 'success'
+          && !cancelled()
+        run: |
+          make pytest_pypi_wheel_cml_no_flaky
+
+      # Run Pytest on all of our tests (except flaky ones) using Concrete ML's latest version
+      # available on PyPI after publishing a release
+      - name: PyTest (no flaky) with PyPI (published release)
+        if: |
+          fromJSON(env.IS_PUBLISHED_RELEASE)
+          && steps.conformance.outcome == 'success'
+          && !cancelled()
+        run: |
+          PROJECT_VERSION="$(poetry version --short)"
+
+          make pytest_pypi_cml_no_flaky VERSION="$PROJECT_VERSION"
+
+      # Compute coverage only on reference build
+      - name: Test coverage (regular, weekly)
+        id: coverage
+        if: |
+          fromJSON(env.IS_REF_BUILD)
+          && steps.pytest.outcome != 'skipped'
+          && !cancelled()
+        run: |
+          ./script/actions_utils/coverage.sh global-coverage-infos.json
+
+      - name: Comment with coverage
+        uses: marocchino/sticky-pull-request-comment@331f8f5b4215f0445d3c07b4967662a32a2d3e31
+        if: ${{ steps.coverage.outcome != 'skipped' && !cancelled() }}
+        continue-on-error: true
+        with:
+          header: coverage
+          recreate: true
+          path: diff-coverage.txt
+
+      # Run Pytest on codeblocks if:
+      # - the current workflow does no take place in a weekly or release CI
+      # - the source code has been changed
+      # - any markdown file has been changed
+      # - any dependency has been updated
+      # - Makefile has been changed
+      - name: PyTest CodeBlocks (regular)
+        if: |
+          (
+            (
+              steps.changed-files-in-pr.outcome == 'success'
+              && (
+                steps.changed-files-in-pr.outputs.src_any_changed == 'true'
+                || steps.changed-files-in-pr.outputs.codeblocks_any_changed == 'true'
+                || steps.changed-files-in-pr.outputs.dependencies_any_changed == 'true'
+                || steps.changed-files-in-pr.outputs.makefile_any_changed == 'true'
+              )
+            )
+            || fromJSON(env.IS_WORKFLOW_DISPATCH)
+          )
+          && steps.conformance.outcome == 'success'
+          && !cancelled()
+        run: |
+          make pytest_codeblocks
+
+      # Run Pytest on all codeblocks on a weekly basis or while releasing
+      - name: PyTest CodeBlocks with PyPI local wheel of Concrete ML (weekly, release)
+        if: |
+          (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE))
+          && steps.conformance.outcome == 'success'
+          && !cancelled()
+        run: |
+          make pytest_codeblocks_pypi_wheel_cml
+
+      # Run Pytest on all codeblocks using Concrete ML's latest version available on PyPI after
+      # publishing a release
+      - name: PyTest CodeBlocks with PyPI (published release)
+        if: |
+          fromJSON(env.IS_PUBLISHED_RELEASE)
+          && steps.conformance.outcome == 'success'
+          && !cancelled()
+        run: |
+          PROJECT_VERSION="$(poetry version --short)"
+
+          make pytest_codeblocks_pypi_cml VERSION="$PROJECT_VERSION"
+
+      # Run Pytest on all notebooks on a weekly basis
+      # Note: some notebooks need specific data stored in LFS
+      - name: PyTest Notebooks (weekly)
+        if: |
+          fromJSON(env.IS_WEEKLY)
+          && steps.conformance.outcome == 'success'
+          && !cancelled()
+        run: |
+          git lfs pull --include "docs/advanced_examples/data/**" --exclude  ""
+
+          WEEKLY_CI=1 make pytest_nb
+
+      - name: Fast sanity check
+        if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
+        run: |
+          make fast_sanity_check
+
+      # Check installation with sync_env
+      - name: Check installation with sync_env and python ${{ inputs.python_version }} (weekly, release)
+        if: |
+            (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE))
+            && steps.conformance.outcome == 'success'
+            && !cancelled()
+        run: |
+          ./script/make_utils/check_installation_with_all_python.sh --version ${{ inputs.python_version }} --sync_env
+
+      # Check installation with pip
+      - name: Check installation with pip and python ${{ inputs.python_version }} (weekly)
+        if: |
+            (fromJSON(env.IS_WEEKLY))
+            && steps.conformance.outcome == 'success'
+            && !cancelled()
+        run: |
+          ./script/make_utils/check_installation_with_all_python.sh --version ${{ inputs.python_version }} --pip
+
+      # Check installation with wheel
+      - name: Check installation with wheel and python ${{ inputs.python_version }} (weekly, release)
+        if: |
+            (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE))
+            && steps.conformance.outcome == 'success'
+            && !cancelled()
+        run: |
+          ./script/make_utils/check_installation_with_all_python.sh --version ${{ inputs.python_version }} --wheel
+
+      # Check installation with git clone
+      - name: Check installation with clone and python ${{ inputs.python_version }} (weekly, release)
+        if: |
+            (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE))
+            && steps.conformance.outcome == 'success'
+            && !cancelled()
+        run: |
+          ./script/make_utils/check_installation_with_all_python.sh --version ${{ inputs.python_version }} --clone
+
+
+  stop-runner-linux:
+    name: Stop Slab runner (Linux)
+    needs: [build-linux, start-runner-linux]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    if: ${{ always() && (needs.start-runner-linux.result != 'skipped') }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Stop Slab runner python
+        if: ${{ always() && needs.start-runner-linux.outputs.label }}
+        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
+        with:
+          mode: stop
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          label: ${{ needs.start-runner-linux.outputs.label }}
+

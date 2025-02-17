@@ -173,6 +173,8 @@ filterwarnings = [
     "ignore:open_binary is deprecated.*:DeprecationWarning",
     "ignore:pkg_resources is deprecated as an API.*:DeprecationWarning",
     "ignore:'multi_class' was deprecated in version 1.5 and will be removed in 1.7.*:FutureWarning",
+    "ignore:Skipping device Apple Paravirtual device.*:UserWarning",
+    "ignore:The exported ONNX model failed ONNX shape inference.*:UserWarning",
 ]
 
 [tool.semantic_release]

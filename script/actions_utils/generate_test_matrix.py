@@ -36,7 +36,7 @@ class OS(enum.Enum):
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4010
 OS_VERSIONS = {
     OS.LINUX: "ubuntu-20.04",
-    OS.MACOS: "macos-12",
+    OS.MACOS: ["macos-13", "macos-14"],
 }
 
 
@@ -57,13 +57,14 @@ def main(args):
             }
         )
     for python_version in args.macos_python_versions:
-        github_action_matrix.append(
-            {
-                "os_kind": OS.MACOS,
-                "runs_on": OS_VERSIONS[OS.MACOS],
-                "python_version": python_version,
-            }
-        )
+        for macos_os in OS_VERSIONS[OS.MACOS]:
+            github_action_matrix.append(
+                {
+                    "os_kind": OS.MACOS,
+                    "runs_on": macos_os,
+                    "python_version": python_version,
+                }
+            )
 
     print(json.dumps(github_action_matrix, indent=4, cls=EnumEncoder))
 
