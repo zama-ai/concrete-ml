@@ -273,7 +273,9 @@ class GLWELinearLayerExecutor:
             q_x_torch = quantizer.quant(x, dtype=torch.float32)
             q_x_torch = torch.transpose(q_x_torch, 1, 0) if transpose_inputs1 else q_x_torch
 
-            # The bias is already included in the output quantizer zero-point.
+            # There is no need to add the bias to the de-quantized values
+            # as the bias is already included in the output quantizer
+            # zero-point, in the analytical calibration
             q_w = torch.from_numpy(qweight).to(q_x_torch.device)
             mm = torch.matmul(q_x_torch, q_w)
             return out_quantizer.dequant(mm)
@@ -287,10 +289,13 @@ class GLWELinearLayerExecutor:
         _, quantized_layer = next(iter(q_module.quant_layers_dict.items()))
         device = x.device
 
-        # Dynamically quantize weights and inputs.
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4711
+        # Static per-channel weight quantization.
         weight_q, weight_scale, weight_zp, sum_w = self._per_channel_weight_quantization(
             weight, q_module, device
         )
+
+        # Dynamic quantization for inputs.
         x_q, x_scale, x_zp, original_shape = self._dynamic_input_quantization(
             x, q_module, transpose_inputs1
         )
@@ -339,19 +344,25 @@ class GLWELinearLayerExecutor:
         assert isinstance(q_x, numpy.ndarray)
         q_x = numpy.transpose(q_x) if transpose_inputs1 else q_x
 
+        # Need to slice the last GLWE (this will be improved in later  cml-extensions)
         num_valid_glwe_values_in_last_ciphertext = (
             qweight.shape[1] % self.poly_size or self.poly_size
         )
 
+        # The GLWE backend needs uint64 encoding for both neg/pos values
         # Convert weights to required type.
         qweight = qweight.astype(numpy.int64).astype(numpy.uint64)
 
-        # Ensure q_x is 3D (batch, rows, cols).
+        # Some models have (B, C, H)-size activations,
+        # for example LLMs: B=batch size, C=context length, H=hidden dime
+        # while other models only have (B, H)-size activations.
+        # Add a B=1 dimension if needed
         return_2d = False
         if q_x.ndim == 2:
             return_2d = True
             q_x = numpy.expand_dims(q_x, 0)
 
+        # The GLWE backend needs contiguous memory uint64 encoding for both neg/pos values
         q_x = numpy.ascontiguousarray(q_x.astype(numpy.uint64))
         assert qweight.ndim == 2
 
@@ -378,10 +389,13 @@ class GLWELinearLayerExecutor:
             )
             result_buffer[idx, :] = q_result.astype(numpy.int64)
 
+        # There is no need to add the bias to the de-quantized values
+        # as the bias is already included in the output quantizer
+        # zero-point, in the analytical calibration
         y = q_module.dequantize_output(*to_tuple(result_buffer))
         assert isinstance(y, numpy.ndarray)
         if return_2d:
-            y = numpy.squeeze(y)
+            y = numpy.squeeze(y, axis=0)
         return torch.Tensor(y.astype(numpy.float32)).to(x_device)
 
     def _forward_fhe_dynamic(  # pylint: disable=too-many-locals
@@ -406,6 +420,8 @@ class GLWELinearLayerExecutor:
             self.keygen()  # pragma: no cover
 
         device = x.device
+
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4711
         # Dynamic quantization for weights and input.
         weight_q, weight_scale, weight_zp, sum_w = self._per_channel_weight_quantization(
             weight, q_module, device
@@ -414,6 +430,7 @@ class GLWELinearLayerExecutor:
             x, q_module, transpose_inputs1
         )
 
+        # The GLWE backend needs uint64 encoding for both neg/pos values
         # Convert quantized data to numpy arrays for encryption.
         x_q_int = x_q.long().cpu().numpy().astype(numpy.int64).astype(numpy.uint64)
         weight_q_int = weight_q.long().cpu().numpy().astype(numpy.int64).astype(numpy.uint64)

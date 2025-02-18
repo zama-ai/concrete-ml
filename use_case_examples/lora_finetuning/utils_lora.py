@@ -45,7 +45,8 @@ def generate_and_print(prompt, model, tokenizer, seed=None, max_new_tokens=30):
         tokenizer: The tokenizer associated with the model.
         seed (int, optional): Seed for random number generators to ensure reproducibility.
         max_new_tokens (int, optional): Maximum number of tokens to generate. Defaults to 30.
-    Returns both the prompt and generated response.
+    Returns:
+        str: The generated text (response only, without the prompt).
     """
     try:
         # Set the environment variable for CuBLAS deterministic behavior
@@ -77,12 +78,10 @@ def generate_and_print(prompt, model, tokenizer, seed=None, max_new_tokens=30):
                 pad_token_id=tokenizer.eos_token_id,
             )
 
-        # Decode the generated text
-        generated_text = tokenizer.decode(output[0], skip_special_tokens=True)
-
-        # Remove the prompt from the generated text if it is included
-        if generated_text.startswith(prompt):
-            generated_text = generated_text[len(prompt) :].strip()
+        # Get only the newly generated tokens
+        input_length = inputs["input_ids"].shape[1]
+        generated_ids = output[0, input_length:]
+        generated_text = tokenizer.decode(generated_ids, skip_special_tokens=True).strip()
 
         # Print the prompt and generated text
         print(f"Prompt: {prompt}")

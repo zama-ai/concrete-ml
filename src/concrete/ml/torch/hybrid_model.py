@@ -230,7 +230,11 @@ class RemoteModule(nn.Module):
             x (torch.Tensor): The input tensor to match device with.
         """
         assert self.private_module is not None
-        if next(self.private_module.parameters()).device != x.device:  # pragma: no cover
+
+        # Check if any parameter is not on the same device as the input tensor
+        if any(
+            param.device != x.device for param in self.private_module.parameters()
+        ):  # pragma: no cover
             self.private_module = self.private_module.to(x.device)  # pragma: no cover
 
     def forward(self, x: torch.Tensor) -> Union[torch.Tensor, QuantTensor]:
@@ -634,7 +638,9 @@ class HybridFHEModel:
                     vals = self.private_q_modules[name].quant_layers_dict.values()
                     _, q_op = next(iter(vals))
                     const_inp = q_op.constant_inputs[1]  # Get the weights, the bias is in [2]
-                    # const_inp.values = const_inp.qvalues.astype(numpy.float32)
+
+                    if not use_dynamic_quantization:
+                        const_inp.values = const_inp.qvalues.astype(numpy.float32)
                     const_inp.qvalues = const_inp.qvalues.astype(numpy.int16)
                 else:
                     self.private_q_modules[name] = compile_torch_model(

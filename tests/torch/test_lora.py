@@ -255,53 +255,46 @@ def test_lora_trainer_init():
     assert lora_trainer.hybrid_model is not None
 
 
-@pytest.mark.parametrize("use_dynamic_quantization", [True, False])
-def test_lora_trainer_compile(use_dynamic_quantization):
-    """Test LoraTrainer compile."""
-    model = DummyLoRAModel()
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
-    lora_trainer = LoraTrainer(model, optimizer=optimizer)
-    inputset = (torch.randn(5, 10), torch.randn(5, 10))
-    lora_trainer.compile(inputset, use_dynamic_quantization=use_dynamic_quantization)
-
-
-@pytest.mark.parametrize("use_dynamic_quantization", [True, False])
+@pytest.mark.parametrize(
+    "model_cls", [DummyLoRAModel, DummyGLWELoRAModel], ids=["DummyLoRAModel", "DummyGLWELoRAModel"]
+)
+@pytest.mark.parametrize(
+    "use_dynamic_quantization",
+    [True, False],
+    ids=["use_dynamic_quantization", "use_static_quantization"],
+)
 @pytest.mark.parametrize("fhe", ["disable", "execute"])
-def test_lora_trainer_train(use_dynamic_quantization, fhe):
+@pytest.mark.parametrize(
+    "input_shape",
+    [
+        (2, 5, 10),  # 3D input
+        (2, 10),  # 2D input
+    ],
+    ids=["3d_input", "2d_input"],
+)
+def test_lora_trainer_train(model_cls, use_dynamic_quantization, fhe, input_shape):
     """Test LoraTrainer train."""
-    model = DummyLoRAModel()
+    model = model_cls()
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
     training_args = {"gradient_accumulation_steps": 1, "max_grad_norm": 1.0}
     lora_trainer = LoraTrainer(model, optimizer=optimizer, training_args=training_args)
-    inputset = (torch.randn(2, 5, 10), torch.randn(2, 5, 10))
+
+    # Adjust last dimension for GLWE model
+    if isinstance(model, DummyGLWELoRAModel):
+        input_shape = (
+            input_shape[:-1] + (512,) if len(input_shape) == 3 else input_shape[:-1] + (512,)
+        )
+
+    # Create input tensors with the same shape
+    inputset = (torch.randn(*input_shape), torch.randn(*input_shape))
 
     # Compile the model
     lora_trainer.compile(inputset, use_dynamic_quantization=use_dynamic_quantization)
 
-    # Create dummy data loader with different batch types
-    dataset = TensorDataset(torch.randn(2, 5, 10), torch.randn(2, 5, 10))
+    # Create dataset with the same input shapes
+    dataset = TensorDataset(torch.randn(*input_shape), torch.randn(*input_shape))
     train_loader = DataLoader(dataset, batch_size=1)
     lora_trainer.train(train_loader, num_epochs=1, fhe=fhe)
-
-    class DictDataset(Dataset):
-        """Dataset that contains data in Python dictionaries."""
-
-        def __init__(self, x, labels):
-            self.data = x
-            self.target = labels
-
-        def __getitem__(self, index):
-            x = self.data[index]
-            y = self.target[index]
-
-            return {"x": x, "labels": y}
-
-        def __len__(self):
-            return len(self.data)
-
-    dict_dataset = DictDataset(torch.randn(2, 5, 10), torch.randn(2, 5, 10))
-    train_loader = DataLoader(dict_dataset, batch_size=1)
-    lora_trainer.train(train_loader, num_epochs=1, fhe="disable")
 
 
 def test_lora_trainer_train_with_lr_scheduler():
