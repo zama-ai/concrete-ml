@@ -24,7 +24,7 @@ The following models are supported for training on clear data and predicting on 
 
 In addition to predicting on encrypted data, the following models  support training on encrypted data.
 
-|       [SGDClassifier](../references/api/concrete.ml.sklearn.linear_model.md#class-sgdclassifier)       |                           [SGDClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html)                           |
+|       [SGDClassifier](../references/api/concrete.ml.sklearn.linear_model.md#class-sgdclassifier)       |                           [SGDRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html)                           |
 
 ## Quantization parameters
 
