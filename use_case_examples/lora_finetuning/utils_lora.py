@@ -45,47 +45,53 @@ def generate_and_print(prompt, model, tokenizer, seed=None, max_new_tokens=30):
         tokenizer: The tokenizer associated with the model.
         seed (int, optional): Seed for random number generators to ensure reproducibility.
         max_new_tokens (int, optional): Maximum number of tokens to generate. Defaults to 30.
+    Returns:
+        str: The generated text (response only, without the prompt).
     """
-    # Set the environment variable for CuBLAS deterministic behavior
-    os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
+    try:
+        # Set the environment variable for CuBLAS deterministic behavior
+        os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 
-    # Set the random seed for reproducibility
-    if seed is not None:
-        random.seed(seed)
-        np.random.seed(seed)
-        torch.manual_seed(seed)
-        if torch.cuda.is_available():
-            torch.cuda.manual_seed_all(seed)
+        # Set the random seed for reproducibility
+        if seed is not None:
+            random.seed(seed)
+            np.random.seed(seed)
+            torch.manual_seed(seed)
+            if torch.cuda.is_available():
+                torch.cuda.manual_seed_all(seed)
 
-    # Encode the input prompt
-    inputs = tokenizer.encode_plus(prompt, return_tensors="pt")
+        # Encode the input prompt
+        inputs = tokenizer.encode_plus(prompt, return_tensors="pt")
 
-    # Generate text
-    output = model.generate(
-        input_ids=inputs["input_ids"].to(model.device),
-        attention_mask=inputs["attention_mask"].to(model.device),
-        max_new_tokens=max_new_tokens,
-        num_return_sequences=1,
-        no_repeat_ngram_size=2,
-        top_k=50,
-        top_p=0.95,
-        temperature=0.1,
-        do_sample=True,
-        pad_token_id=tokenizer.eos_token_id,
-    )
+        # Move inputs to the same device as the model
+        inputs = {k: v.to(model.device) for k, v in inputs.items()}
 
-    # Decode the generated text
-    generated_text = tokenizer.decode(output[0], skip_special_tokens=True)
+        # Generate text
+        with torch.no_grad():
+            output = model.generate(
+                input_ids=inputs["input_ids"],
+                attention_mask=inputs["attention_mask"],
+                max_new_tokens=max_new_tokens,
+                top_p=0.9,
+                temperature=0.6,
+                do_sample=True,
+                pad_token_id=tokenizer.eos_token_id,
+            )
 
-    # Remove the prompt from the generated text if it is included
-    if generated_text.startswith(prompt):
-        generated_text = generated_text[len(prompt) :].strip()
+        # Get only the newly generated tokens
+        input_length = inputs["input_ids"].shape[1]
+        generated_ids = output[0, input_length:]
+        generated_text = tokenizer.decode(generated_ids, skip_special_tokens=True).strip()
 
-    # Only keep text up to the first newline
-    generated_text = generated_text.split("\n")[0]
+        # Print the prompt and generated text
+        print(f"Prompt: {prompt}")
+        print(f"Response: {generated_text}\n")
 
-    # Print the prompt and generated text on the same line
-    print(f"{prompt} {generated_text}")
+        return generated_text
+
+    except Exception as e:
+        print(f"Error in generation: {str(e)}")
+        return None
 
 
 def print_weights_and_size(model, print_detail=False):

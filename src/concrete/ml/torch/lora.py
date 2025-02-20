@@ -1,7 +1,10 @@
 """This module contains classes for LoRA (Low-Rank Adaptation) FHE training and custom layers."""
 
+import copy
+import logging
 from collections import UserDict
-from typing import Any, List, Optional, Tuple, Union
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import torch
 from torch import Tensor, nn
@@ -21,6 +24,43 @@ except ImportError:  # pragma: no cover
 LINEAR_LAYERS: tuple = (nn.Linear,)
 if TransformerConv1D is not None:
     LINEAR_LAYERS = LINEAR_LAYERS + (TransformerConv1D,)
+
+
+# pylint: disable=abstract-method
+# pylint: disable=arguments-differ
+
+
+def setup_logger(log_file: str, level=logging.INFO):
+    """Set up a logger that logs to both console and a file.
+
+    Args:
+        log_file (str): The path to the log file.
+        level (int): The logging level.
+
+    Returns:
+        logging.Logger: The logger instance.
+    """
+    logger = logging.getLogger(__name__)
+    logger.setLevel(level)
+
+    for handler in logger.handlers:
+        handler.close()
+    logger.handlers.clear()
+
+    # Console handler
+    ch = logging.StreamHandler()
+    ch.setLevel(level)
+    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+    ch.setFormatter(formatter)
+
+    # File handler
+    fh = logging.FileHandler(log_file, mode="a", encoding="utf-8")
+    fh.setLevel(level)
+    fh.setFormatter(formatter)
+
+    logger.addHandler(ch)
+    logger.addHandler(fh)
+    return logger
 
 
 # pylint: disable=protected-access
@@ -60,8 +100,7 @@ class LoraTraining(torch.nn.Module):
     backward passes in FHE.
 
     The class replaces standard linear layers with custom layers that are
-    compatible with LoRA and FHE operations. It provides mechanisms to
-    toggle between calibration and optimization modes.
+    compatible with LoRA and FHE operations.
 
     Args:
         model (torch.nn.Module): The base model with LoRA layers to be fine-tuned.
@@ -184,14 +223,6 @@ class LoraTraining(torch.nn.Module):
 
         _replace(model)
 
-    def toggle_calibrate(self, enable: bool = True):
-        """Toggle calibration mode.
-
-        Args:
-            enable (bool): Whether to enable calibration mode.
-        """
-        self.calibrate = enable
-
     def forward(self, inputs: Tuple[Tensor, ...]) -> Tuple[Tensor, Union[Tensor, None]]:
         """Forward pass of the LoRA training module.
 
@@ -295,11 +326,15 @@ class LoraTraining(torch.nn.Module):
         return attention_mask, labels
 
 
+# pylint: disable=too-many-instance-attributes
 class LoraTrainer:
     """Trainer class for LoRA fine-tuning with FHE support.
 
-    This class handles the training loop, optimizer, scheduler,
-    and integrates with the hybrid model.
+    This class handles:
+    - Training loop
+    - Periodic logging and evaluation
+    - Loss tracking
+    - Integration with hybrid FHE model
 
     Args:
         model (nn.Module): The base model with LoRA layers to be fine-tuned.
@@ -310,8 +345,14 @@ class LoraTrainer:
         n_layers_to_skip_for_backprop (int): Number of initial linear layers to keep as standard
             layers. Since the first layer doesn't need backpropagation (no previous layer to
             update), we typically skip 1 layer. Defaults to 1.
+        eval_loader (DataLoader, optional): DataLoader for evaluation data.
+        eval_metric_fn (callable, optional): Function(model, eval_loader) -> dict of metrics.
+        logging_steps (int, optional): Log loss every N training steps. Defaults to 1.
+        eval_steps (int, optional): Evaluate on eval set every N training steps. Defaults to 10.
+        train_log_path (str, optional): Path to a log file for training. Defaults to "training.log".
     """
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         model,
@@ -320,12 +361,29 @@ class LoraTrainer:
         lr_scheduler=None,
         training_args=None,
         n_layers_to_skip_for_backprop=1,
+        eval_loader: Optional[DataLoader] = None,
+        eval_metric_fn: Optional[Callable] = None,
+        logging_steps: int = 1,
+        eval_steps: int = 10,
+        train_log_path: str = "training.log",
+        checkpoint_dir: str = None,
     ):
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
         self.training_args = training_args or {}
         self.gradient_accumulation_steps = self.training_args.get("gradient_accumulation_steps", 1)
         self.max_grad_norm = self.training_args.get("max_grad_norm", None)
+
+        self.eval_loader = eval_loader
+        self.eval_metric_fn = eval_metric_fn
+        self.logging_steps = logging_steps
+        self.eval_steps = eval_steps
+        self.training_losses: List[float] = []
+        self.gradient_stats: Dict[str, List[float]] = {}
+
+        # Set up logging
+        self.logger = setup_logger(train_log_path)
+        self.logger.info("=== Starting new training session ===")
 
         assert_true(
             training_args is None
@@ -351,16 +409,108 @@ class LoraTrainer:
             self.lora_training_module, module_names=self.remote_names
         )
 
-    def compile(self, inputset, n_bits=8):
+        self.checkpoint_dir = checkpoint_dir
+        if self.checkpoint_dir is not None:
+            Path(self.checkpoint_dir).mkdir(parents=True, exist_ok=True)
+
+    def compile(self, inputset, n_bits=8, use_dynamic_quantization=True):
         """Compile the hybrid model with the given input set.
 
         Args:
             inputset (tuple): Input set for compilation.
             n_bits (int): Bit width for quantization.
+            use_dynamic_quantization (bool): Whether to use dynamic quantization.
+
+        Returns:
+            Tuple[int, int]: The epoch and global step of the latest checkpoint if found,
+                else (0, 0).
         """
-        self.lora_training_module.toggle_calibrate(enable=True)
-        self.hybrid_model.compile_model(inputset, n_bits=n_bits)
-        self.lora_training_module.toggle_calibrate(enable=False)
+        # Load latest checkpoint if checkpoint_dir exists
+        epoch, global_step = 0, 0
+        if self.checkpoint_dir is not None:
+            checkpoint_files = sorted(Path(self.checkpoint_dir).glob("checkpoint_epoch_*.pth"))
+            if checkpoint_files:
+                latest_checkpoint = str(checkpoint_files[-1])
+                epoch, global_step = self.load_checkpoint(latest_checkpoint)
+
+        self.hybrid_model.compile_model(
+            copy.deepcopy(inputset),
+            n_bits=n_bits,
+            use_dynamic_quantization=use_dynamic_quantization,
+        )
+
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4707
+        # Need a forward call to set the executors in remote modules
+        self.hybrid_model.set_fhe_mode("disable")
+        self.hybrid_model(inputset)
+        self.logger.info("Compilation complete.")
+
+        return epoch, global_step
+
+    def _evaluate(self, step: int):
+        if self.eval_loader and self.eval_metric_fn:
+            self.logger.info("Running evaluation at step %d...", step)
+            self.lora_training_module.inference_model.eval()
+            metrics: Dict[str, float] = self.eval_metric_fn(
+                self.lora_training_module.inference_model, self.eval_loader
+            )
+            metrics_str = ", ".join([f"{k}: {v:.4f}" for k, v in metrics.items()])
+            self.logger.info("[Evaluation at step %d] %s", step, metrics_str)
+            self.lora_training_module.inference_model.train()  # back to train mode
+
+        else:
+            self.logger.info("No evaluation data or metric function provided.")
+
+    def save_checkpoint(self, epoch: int, global_step: int):
+        """Save a training checkpoint.
+
+        Args:
+            epoch (int): The current epoch number.
+            global_step (int): The current global step number.
+        """
+        assert self.checkpoint_dir is not None, "Checkpoint directory is not set"
+        checkpoint_path = Path(self.checkpoint_dir) / f"checkpoint_epoch_{epoch}.pth"
+        save_dict = {
+            "model_state_dict": self.lora_training_module.inference_model.state_dict(),
+            "optimizer_state_dict": self.optimizer.state_dict(),
+            "lr_scheduler_state_dict": (
+                self.lr_scheduler.state_dict() if self.lr_scheduler else None
+            ),
+            "training_losses": self.training_losses,
+            "global_step": global_step,
+            "epoch": epoch,
+            "gradient_stats": self.gradient_stats,
+        }
+        torch.save(save_dict, checkpoint_path)
+        self.logger.info("Checkpoint saved at %s", checkpoint_path)
+
+    def load_checkpoint(self, checkpoint_path: str):
+        """Load a training checkpoint and restore model, optimizer, and lr_scheduler.
+
+        Args:
+            checkpoint_path (str): Path to the checkpoint file.
+
+        Returns:
+            Tuple[int, int]: The epoch and global step of the checkpoint.
+
+        Raises:
+            FileNotFoundError: If the checkpoint file is not found.
+        """
+        if not Path(checkpoint_path).is_file():
+            raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
+        checkpoint = torch.load(checkpoint_path, map_location="cpu")
+        self.lora_training_module.inference_model.load_state_dict(checkpoint["model_state_dict"])
+        self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+        if self.lr_scheduler and checkpoint["lr_scheduler_state_dict"] is not None:
+            self.lr_scheduler.load_state_dict(checkpoint["lr_scheduler_state_dict"])
+        self.training_losses = checkpoint.get("training_losses", [])
+        global_step = checkpoint.get("global_step", 0)
+        epoch = checkpoint.get("epoch", 0)
+        self.gradient_stats = checkpoint.get("gradient_stats", {})
+        self.logger.info(
+            "Checkpoint loaded from %s (Epoch %d, Step %d)", checkpoint_path, epoch, global_step
+        )
+        return epoch, global_step
 
     def train(
         self,
@@ -378,7 +528,6 @@ class LoraTrainer:
             device (str): A device string that is compatible with PyTorch, used for
                 client-side computations.
         """
-
         self.hybrid_model.model.to(device)
         optimizer_to(self.optimizer, device)
 
@@ -387,13 +536,20 @@ class LoraTrainer:
         # Set the loss scaling factor for gradient accumulation
         self.lora_training_module.set_loss_scaling_factor(self.gradient_accumulation_steps)
 
-        epoch_pbar = tqdm(range(1, num_epochs + 1), desc="Training", unit="epoch")
+        start_epoch = 1
+        global_step = 0
 
-        for epoch in epoch_pbar:
+        for epoch in range(start_epoch, num_epochs + 1):
             total_loss = 0.0
-            self.optimizer.zero_grad()  # Zero gradients at the start of the epoch
+            steps_this_epoch = 0
+            self.optimizer.zero_grad()
 
-            for step, batch in enumerate(train_loader):
+            epoch_bar = tqdm(
+                enumerate(train_loader), total=len(train_loader), desc=f"Epoch {epoch}", leave=False
+            )
+            for step, batch in epoch_bar:
+                global_step += 1
+                steps_this_epoch += 1
                 if isinstance(batch, (UserDict, dict)):
                     # Convert dict to tuple of values and move them to the device
                     batch = {k: v.to(device) for k, v in batch.items()}
@@ -412,11 +568,29 @@ class LoraTrainer:
 
                 # Accumulate loss for logging
                 total_loss += loss.item()
+                self.training_losses.append(loss.item())
 
-                # Update weights after gradient accumulation steps
-                if (step + 1) % self.gradient_accumulation_steps == 0 or (step + 1) == len(
-                    train_loader
+                # Logging
+                if global_step % self.logging_steps == 0:
+                    avg_loss = total_loss / steps_this_epoch
+                    self.logger.info(
+                        "Step %d: loss=%f, avg_loss=%f",
+                        global_step,
+                        loss.item(),
+                        avg_loss,
+                    )
+
+                # Evaluation
+                if global_step % self.eval_steps == 0:
+                    self._evaluate(global_step)
+
+                # Gradient accumulation steps
+                if ((step + 1) % self.gradient_accumulation_steps == 0) or (
+                    step + 1 == len(train_loader)
                 ):
+                    # Log gradients before clipping and store stats
+                    self._log_gradients()
+
                     if self.max_grad_norm is not None:
                         torch.nn.utils.clip_grad_norm_(
                             self.lora_training_module.parameters(), self.max_grad_norm
@@ -424,24 +598,37 @@ class LoraTrainer:
 
                     # Optimizer step
                     self.optimizer.step()
-
-                    # Scheduler step
-                    if self.lr_scheduler is not None:
+                    if self.lr_scheduler:
                         self.lr_scheduler.step()
-
-                    # Zero gradients
                     self.optimizer.zero_grad()
 
-            avg_loss = total_loss / len(train_loader)
-            epoch_pbar.set_postfix(
-                {
-                    "Epoch": epoch,
-                    "Avg Loss": f"{avg_loss:.4f}",
-                    "FHE Mode": fhe,
-                }
+                epoch_bar.set_postfix({"loss": f"{loss.item():.4f}"})
+
+            avg_epoch_loss = total_loss / len(train_loader)
+            self.logger.info(
+                "Epoch %d completed. Avg Loss: %f, FHE Mode: %s",
+                epoch,
+                avg_epoch_loss,
+                fhe,
             )
 
-        print(f"Training completed. Final Avg Loss: {avg_loss:.4f}, FHE Mode: {fhe}")
+            # Save checkpoint after each epoch
+            if self.checkpoint_dir:
+                self.save_checkpoint(epoch, global_step)
+
+        self.logger.info(
+            "Training completed. Final Avg Loss: %f, FHE Mode: %s",
+            avg_epoch_loss,
+            fhe,
+        )
+
+    def get_training_losses(self):
+        """Return all recorded training losses.
+
+        Returns:
+            List[float]: All recorded training losses.
+        """
+        return self.training_losses
 
     def save_and_clear_private_info(self, path):
         """Save the model and remove private information.
@@ -450,6 +637,33 @@ class LoraTrainer:
             path (str): The path to save the model.
         """
         self.hybrid_model.save_and_clear_private_info(path)
+        self.logger.info("Model saved at %s", path)
+
+    def _log_gradients(self):
+        """Calculate and log gradient statistics for each layer."""
+        grad_stats = {}
+        for name, param in self.lora_training_module.named_parameters():
+            if param.grad is not None:
+                grad_norm = param.grad.norm().item()
+                grad_stats[name] = grad_norm
+
+                # Store in history
+                if name not in self.gradient_stats:
+                    self.gradient_stats[name] = []
+                self.gradient_stats[name].append(grad_norm)
+
+        # Log average gradient magnitude across all layers
+        if grad_stats:
+            avg_grad = sum(grad_stats.values()) / len(grad_stats)
+            self.logger.info("Average gradient magnitude: %f", avg_grad)
+
+    def get_gradient_stats(self):
+        """Return recorded gradient statistics.
+
+        Returns:
+            Dict[str, List[float]]: Gradient statistics per layer over time.
+        """
+        return self.gradient_stats
 
 
 def get_remote_names(model: nn.Module, include_embedding_layers: bool = False) -> List[str]:

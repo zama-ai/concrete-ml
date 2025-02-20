@@ -56,6 +56,31 @@ Each notebook includes its own data-set:
 
 Execute the Jupyter notebook `GPT2FineTuneHybrid.ipynb` to start the fine-tuning process. The notebook is structured into several steps:
 
+### Evaluation Script
+
+The repository includes an evaluation script (`eval.py`) that allows you to train, evaluate and compare the LLaMA model training with different modes:
+
+<!--pytest-codeblocks:skip-->
+
+```sh
+python eval.py --mode [torch|8bit|16bit]
+```
+
+The script supports three modes:
+
+- `torch`: Regular PyTorch training without quantization
+- `8bit`: Training with 8-bit quantization
+- `16bit`: Training with 16-bit quantization
+
+The script will:
+
+1. Train the model on a math word problems dataset
+1. Generate evaluation metrics and sample responses
+1. Save the results in mode-specific files:
+   - Training logs: `training_log_{mode}.txt`
+   - Generated responses: `eval_generated_responses_{mode}.txt`
+   - Model weights: `deployment/llama_lora_finetuned_{mode}/`
+
 ## Deployment/Production Scenario
 
 In a deployment or production scenario, the model can be fine-tuned as follows:
@@ -78,9 +103,35 @@ After fine-tuning, the model's weights are distributed between the client and se
 
 Note that the embeddings are not considered for now but contain a significant amount of weights (around 30%) for GPT2. They will be considered in a future version of Concrete ML.
 
-### LLaMA Results
+#### Training Results Visualization
 
-TBD
+![LoRA Fine-tuning Quantized Loss Comparison](./assets/fine_tuning_loss.svg)
+
+*LoRA Fine-tuning Quantized Loss Comparison*
+
+- **FP32**: Full precision (32-bit floating point) baseline training
+- **ST-ST**: Static per-Tensor quantization with fixed ranges
+  - Input: Static per-Tensor quantization
+  - Weight: Static per-Tensor quantization
+- **DTen-ST**: Dynamic/Static hybrid quantization
+  - Input: Dynamic per-Tensor quantization
+  - Weight: Static per-Tensor quantization
+- **DTok-SC**: Dynamic quantization with finer granularity
+  - Input: Dynamic per-Token quantization
+  - Weight: Static per-Channel quantization
+
+#### Final Training Losses (Step 2500)
+
+| Model Configuration | Final Loss                                            |
+| ------------------- | ----------------------------------------------------- |
+| 8-bit (ST-ST)       | 2.1290                                                |
+| 16-bit (ST-ST)      | 0.4776                                                |
+| 8-bit (DTen-ST)     | 0.4215                                                |
+| 16-bit (DTen-ST)    | <span style="background-color: #e6ffe6">0.2681</span> |
+| FP32 (Baseline)     | <span style="background-color: #e6ffe6">0.2670</span> |
+| 8-bit (DTok-SC)     | <span style="background-color: #e6ffe6">0.2688</span> |
+
+Dynamic quantization is necessary in the backpropagation step to avoid *gradient explosion*. And per-token / per-channel quantization makes the 8-bit models match the performance of the 32-bit models.
 
 ## Conclusion
 

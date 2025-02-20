@@ -100,7 +100,7 @@ class QuantizedModel:
         q_inputs = self.quantizer.quantize(inputs, key="inputs_quant")
 
         # If the FHE mode is set to disable, we only need to run the quantized operators in the
-        # clear and dequantize
+        # clear and de-quantize
         if fhe == "disable":
             q_y = self.run_numpy(q_inputs)
 
