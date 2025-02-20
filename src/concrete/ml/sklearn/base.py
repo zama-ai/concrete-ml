@@ -798,7 +798,9 @@ class BaseEstimator:
             # If the inference should be executed using simulation
             if fhe == "simulate":
                 if self._ciphertext_format == CiphertextFormat.TFHE_RS:
-                    raise ValueError("Can't simulate with TFHE-rs cts")
+                    raise ValueError(
+                        "Simulation with TFHE-rs ciphertext inputs/outputs is not yet implemented"
+                    )
 
                 is_crt_encoding = self.fhe_circuit.statistics["packing_key_switch_count"] != 0
 

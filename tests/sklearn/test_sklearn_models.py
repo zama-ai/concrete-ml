@@ -2403,6 +2403,9 @@ def test_tfhers_inputs_outputs_trees(model_class, parameters, n_bits, load_data)
 
     model.compile(x, ciphertext_format=CiphertextFormat.TFHE_RS)
 
+    with pytest.raises(ValueError, match="Simulation with TFHE-rs ciphertext.*"):
+        model.predict(fhe_test_data, fhe="simulate")
+
     # Run the model in FHE for TFHE-rs inputs/outputs
     y_pred_tfhers = model.predict(fhe_test_data, fhe="execute")
 
