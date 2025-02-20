@@ -413,7 +413,7 @@ class LoraTrainer:
         if self.checkpoint_dir is not None:
             Path(self.checkpoint_dir).mkdir(parents=True, exist_ok=True)
 
-    def compile(self, inputset, n_bits=8, use_dynamic_quantization=False):
+    def compile(self, inputset, n_bits=8, use_dynamic_quantization=True):
         """Compile the hybrid model with the given input set.
 
         Args:

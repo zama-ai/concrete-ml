@@ -329,7 +329,7 @@ if args.mode == "torch":
 else:
     bits = 8 if args.mode == "8bit" else 16
     print(f"Compiling model with {bits} bits...")
-    lora_trainer.compile(inputset, n_bits=bits, use_dynamic_quantization=True)
+    lora_trainer.compile(inputset, n_bits=bits)
 
 # ------------------------------------------------------------------
 # Train
