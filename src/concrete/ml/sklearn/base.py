@@ -514,7 +514,7 @@ class BaseEstimator:
             Union[Compiler, QuantizedModule]: The module instance to compile.
         """
 
-    def _get_tfhres_module_to_compile(self, inputset):
+    def _get_tfhers_module_to_compile(self, inputset):
         c = self._get_module_to_compile()
         assert isinstance(c, Compiler)
         graph = c.trace(inputset)
@@ -625,7 +625,7 @@ class BaseEstimator:
                     "DecisionTreeClassifier, RandomForestClassifier, XGBClassifier"
                 ),
             )
-            module_to_compile = self._get_tfhres_module_to_compile(_get_inputset_generator(q_X))
+            module_to_compile = self._get_tfhers_module_to_compile(_get_inputset_generator(q_X))
 
         # Compiling using a QuantizedModule requires different steps and should not be done here
         assert isinstance(module_to_compile, Compiler), (
