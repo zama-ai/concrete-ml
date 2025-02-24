@@ -677,7 +677,6 @@ class BaseEstimator:
         else:
             self._tfhers_bridge = None
 
-        #        print(self.fhe_circuit_.graph.format())
         # For mypy
         assert isinstance(self.fhe_circuit, Circuit)
 
