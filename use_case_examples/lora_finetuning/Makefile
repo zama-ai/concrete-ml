@@ -11,3 +11,6 @@ one:
 
 two:
 	@$(TIME_NB) LLamaFineTuning.ipynb
+
+three:
+	@$(TIME_NB) math_eval_llama_lora.ipynb
