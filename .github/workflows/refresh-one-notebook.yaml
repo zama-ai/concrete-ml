@@ -95,13 +95,15 @@ env:
   SVMClassifier: "docs/advanced_examples/SVMClassifier.ipynb" 
   WhitePaperExperiments: "use_case_examples/white_paper_experiment/WhitePaperExperiments.ipynb" 
   XGBClassifier: "docs/advanced_examples/XGBClassifier.ipynb" 
-  XGBRegressor: "docs/advanced_examples/XGBRegressor.ipynb" 
+  XGBRegressor: "docs/advanced_examples/XGBRegressor.ipynb"
   # --- refresh_notebooks_list.py: refresh list of notebook paths currently available [END] ---
+  SLAB_PROFILE: "pr_ciprofile"
 
 jobs:
   start-runner-linux:
-    name: Start EC2 runner
+    name: Start Slab runner (Linux)
     runs-on: ubuntu-20.04
+    timeout-minutes: 15
     outputs:
       label-38: ${{ steps.start-slab-runner-38.outputs.label }}
       slab-instance-id-38: ${{ steps.start-slab-runner-38.outputs.slab-instance-id || '' }}
@@ -131,7 +133,7 @@ jobs:
   refresh-one-notebook:
     needs: [start-runner-linux]
 
-    runs-on: ${{ needs.start-runner-linux.outputs.label-38 }}
+    runs-on: ${{ needs.start-runner-linux.outputs.label }}
     # Run in a clean container
     container:
       image: ubuntu:20.04
@@ -215,9 +217,10 @@ jobs:
 
 
   stop-runner-linux:
-    name: Stop EC2 runner
+    name: Stop Slab runner (Linux)
     needs: [refresh-one-notebook, start-runner-linux]
     runs-on: ubuntu-20.04
+    timeout-minutes: 2
     if: ${{ always() && (needs.start-runner-linux.result != 'skipped') }}
     steps:
       - name: Configure AWS credentials
