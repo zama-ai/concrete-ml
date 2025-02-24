@@ -84,6 +84,7 @@ env:
   LogisticRegression: "docs/advanced_examples/LogisticRegression.ipynb" 
   LogisticRegressionTraining: "docs/advanced_examples/LogisticRegressionTraining.ipynb" 
   LoraMLP: "docs/advanced_examples/LoraMLP.ipynb" 
+  MathEvalLoraLLaMA: "use_case_examples/lora_finetuning/MathEvalLoraLLaMA.ipynb" 
   PerrorImpactOnFMNIST: "use_case_examples/cifar/cifar_brevitas_finetuning/PerrorImpactOnFMNIST.ipynb" 
   PoissonRegression: "docs/advanced_examples/PoissonRegression.ipynb" 
   QGPT2Evaluate: "use_case_examples/llm/QGPT2Evaluate.ipynb" 
