@@ -104,6 +104,25 @@ class FheMode(str, enum.Enum):
         return fhe in FheMode.__members__.values()
 
 
+class CiphertextFormat(str, enum.Enum):
+    """Type of ciphertext used as input/output for a model."""
+
+    CONCRETE = "concrete"
+    TFHE_RS = "tfhe-rs"
+
+    @staticmethod
+    def is_valid(ct_format: Union["CiphertextFormat", str]) -> bool:
+        """Indicate if the given name is a supported FHE ciphertext format.
+
+        Args:
+            ct_format (Union[CiphertextFormat, str]): The ciphertext format to check.
+
+        Returns:
+            bool: Whether the ciphertext format is valid.
+        """
+        return ct_format in CiphertextFormat.__members__.values()
+
+
 class HybridFHEMode(enum.Enum):
     """Simple enum for different modes of execution of HybridModel."""
 
