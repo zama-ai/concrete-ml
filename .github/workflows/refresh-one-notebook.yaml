@@ -93,16 +93,17 @@ env:
   SVMClassifier: "docs/advanced_examples/SVMClassifier.ipynb" 
   WhitePaperExperiments: "use_case_examples/white_paper_experiment/WhitePaperExperiments.ipynb" 
   XGBClassifier: "docs/advanced_examples/XGBClassifier.ipynb" 
-  XGBRegressor: "docs/advanced_examples/XGBRegressor.ipynb" 
+  XGBRegressor: "docs/advanced_examples/XGBRegressor.ipynb"
   # --- refresh_notebooks_list.py: refresh list of notebook paths currently available [END] ---
+  SLAB_PROFILE: "pr_ciprofile"
 
 jobs:
   start-runner-linux:
-    name: Start EC2 runner
+    name: Start Slab runner (Linux)
     runs-on: ubuntu-20.04
+    timeout-minutes: 15
     outputs:
-      label-38: ${{ steps.start-ec2-runner-38.outputs.label }}
-      ec2-instance-id-38: ${{ steps.start-ec2-runner-38.outputs.ec2-instance-id || '' }}
+      label: ${{ steps.start-slab-runner.outputs.label }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -113,22 +114,21 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Start EC2 runner python 38
-        id: start-ec2-runner-38
-        uses: machulav/ec2-github-runner@1827d6ca7544d7044ddbd2e9360564651b463da2
+      - name: Start Slab runner (Linux)
+        id: start-slab-runner
+        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
         with:
           mode: start
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
-          ec2-instance-type: "m6i.metal"
-          subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
-          security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          backend: aws
+          profile: ${{ env.SLAB_PROFILE }}
 
   refresh-one-notebook:
     needs: [start-runner-linux]
 
-    runs-on: ${{ needs.start-runner-linux.outputs.label-38 }}
+    runs-on: ${{ needs.start-runner-linux.outputs.label }}
     # Run in a clean container
     container:
       image: ubuntu:20.04
@@ -212,9 +212,10 @@ jobs:
 
 
   stop-runner-linux:
-    name: Stop EC2 runner
+    name: Stop Slab runner (Linux)
     needs: [refresh-one-notebook, start-runner-linux]
     runs-on: ubuntu-20.04
+    timeout-minutes: 2
     if: ${{ always() && (needs.start-runner-linux.result != 'skipped') }}
     steps:
       - name: Configure AWS credentials
@@ -224,14 +225,14 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Stop EC2 runner python 38
-        uses: machulav/ec2-github-runner@1827d6ca7544d7044ddbd2e9360564651b463da2
-        if: ${{ always() && needs.start-runner-linux.outputs.ec2-instance-id-38 }}
+      - name: Stop Slab runner (Linux)
+        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
         with:
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          label: ${{ needs.start-runner-linux.outputs.label-38 }}
-          ec2-instance-id: ${{ needs.start-runner-linux.outputs.ec2-instance-id-38 }}
           mode: stop
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          label: ${{ needs.start-runner-linux.outputs.label }}
 
   send-report:
     if: ${{ github.ref_name == 'main' || startsWith(github.ref_name , 'release/') }} 
