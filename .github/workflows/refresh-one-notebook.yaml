@@ -84,7 +84,7 @@ env:
   LogisticRegression: "docs/advanced_examples/LogisticRegression.ipynb" 
   LogisticRegressionTraining: "docs/advanced_examples/LogisticRegressionTraining.ipynb" 
   LoraMLP: "docs/advanced_examples/LoraMLP.ipynb" 
-  MathEvalLoraLLaMA: "use_case_examples/lora_finetuning/MathEvalLoraLLaMA.ipynb" 
+  MathEvalLoraLLama: "use_case_examples/lora_finetuning/MathEvalLoraLLama.ipynb" 
   PerrorImpactOnFMNIST: "use_case_examples/cifar/cifar_brevitas_finetuning/PerrorImpactOnFMNIST.ipynb" 
   PoissonRegression: "docs/advanced_examples/PoissonRegression.ipynb" 
   QGPT2Evaluate: "use_case_examples/llm/QGPT2Evaluate.ipynb" 
@@ -95,7 +95,7 @@ env:
   SVMClassifier: "docs/advanced_examples/SVMClassifier.ipynb" 
   WhitePaperExperiments: "use_case_examples/white_paper_experiment/WhitePaperExperiments.ipynb" 
   XGBClassifier: "docs/advanced_examples/XGBClassifier.ipynb" 
-  XGBRegressor: "docs/advanced_examples/XGBRegressor.ipynb"
+  XGBRegressor: "docs/advanced_examples/XGBRegressor.ipynb" 
   # --- refresh_notebooks_list.py: refresh list of notebook paths currently available [END] ---
   SLAB_PROFILE: "pr_ciprofile"
 
