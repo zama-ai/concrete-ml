@@ -277,7 +277,7 @@ jobs:
 
       # Push changes to ref
       - name: Push changes
-        uses: ad-m/github-push-action@master
+        uses: ad-m/github-push-action@d91a481090679876dfc4178fef17f286781251df # v0.8.0
         with:
           github_token: ${{ secrets.BOT_TOKEN }}
           branch: ${{ env.TARGET_BRANCH_NAME }}
