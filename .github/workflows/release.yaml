@@ -89,12 +89,12 @@ jobs:
   # the reusable workflow (here 'continuous-integration.yaml') uses its own runner
   release-tests:
     name: Run tests
-    needs: [start-runner-linux, release-checks]
+    needs: [start-runner-linux] # , release-checks
     uses: ./.github/workflows/continuous-integration.yaml
     secrets: inherit
     with:
       event_name: "release"
-      
+
   # Check that everything is up to date and run all non-flaky tests on different Python versions
   release-checks:
     name: Install deps and run checks
