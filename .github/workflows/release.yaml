@@ -37,14 +37,14 @@ env:
   SLAB_PROFILE: weekly_ciprofile
 
 jobs:
-  # Open the AWS EC2 instance if the release process has been triggered manually, if the release
+  # Open the AWS Slab instance if the release process has been triggered manually, if the release
   # preparation pull-request has been merged or if a pull-request has been merged in a release
   # branch. In the second case, we also make sure that the PR contains "Prepare release" in their
   # title coming from a branch that starts with "chore/prepare_release_". This workflow will not
   # be triggered if a pull request preparing a patch release is merged as the PR's title and branch
   # name are expected to be different
   start-runner-linux:
-    name: Start EC2 runner
+    name: Start Slab runner
     if: |
       github.event_name == 'workflow_dispatch'
       || (
@@ -55,7 +55,7 @@ jobs:
       )
     runs-on: ubuntu-24.04
     outputs:
-      label: ${{ steps.start-ec2-runner.outputs.label }}
+      label: ${{ steps.start-slab-runner.outputs.label }}
       slab-instance-id: ${{ steps.start-slab-runner.outputs.label || '' }}
 
     steps:
@@ -283,7 +283,7 @@ jobs:
           branch: ${{ env.TARGET_BRANCH_NAME }}
           tags: true
 
-  # This action creates docker and pypi images directly on the AWS EC2 instance
+  # This action creates docker and pypi images directly on the AWS Slab instance
   # The 'PRIVATE_RELEASE_IMAGE_BASE' variable is kept here in case Concrete ML starts to publish
   # private nightly releases one day. Currently, release candidates and actual releases are all
   # done through the 'PUBLIC_RELEASE_IMAGE_BASE' image. The private image is also used to list all
@@ -570,9 +570,9 @@ jobs:
           echo "RELEASE_URL=${{ steps.create-release.outputs.url }}" >> $GITHUB_ENV
 
 
-  # Close the AWS EC2 instance
+  # Close the AWS Slab instance
   stop-runner-linux:
-    name: Stop EC2 runner
+    name: Stop Slab runner
     needs: [start-runner-linux, release-package]
     runs-on: ubuntu-24.04
     if: ${{ always() && (needs.start-runner-linux.result != 'skipped') }}
