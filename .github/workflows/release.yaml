@@ -34,6 +34,7 @@ env:
   BRANCH_NAME: ${{ github.ref_name }}
   BRANCH_IS_MAIN: ${{ github.ref_name == 'main' }}
   BRANCH_IS_RELEASE: ${{ startsWith(github.ref_name, 'release/') }}
+  SLAB_PROFILE: weekly_ciprofile
 
 jobs:
   # Open the AWS EC2 instance if the release process has been triggered manually, if the release
@@ -82,7 +83,6 @@ jobs:
           job-secret: ${{ secrets.JOB_SECRET }}
           backend: aws
           profile: ${{ env.SLAB_PROFILE }}
-
 
   # Check that everything is up to date and run all non-flaky tests on different Python versions
   release-checks:
