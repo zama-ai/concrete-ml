@@ -34,16 +34,17 @@ env:
   BRANCH_NAME: ${{ github.ref_name }}
   BRANCH_IS_MAIN: ${{ github.ref_name == 'main' }}
   BRANCH_IS_RELEASE: ${{ startsWith(github.ref_name, 'release/') }}
+  SLAB_PROFILE: weekly_ciprofile
 
 jobs:
-  # Open the AWS EC2 instance if the release process has been triggered manually, if the release
+  # Open the AWS Slab instance if the release process has been triggered manually, if the release
   # preparation pull-request has been merged or if a pull-request has been merged in a release
   # branch. In the second case, we also make sure that the PR contains "Prepare release" in their
   # title coming from a branch that starts with "chore/prepare_release_". This workflow will not
   # be triggered if a pull request preparing a patch release is merged as the PR's title and branch
   # name are expected to be different
   start-runner-linux:
-    name: Start EC2 runner
+    name: Start Slab runner
     if: |
       github.event_name == 'workflow_dispatch'
       || (
@@ -54,8 +55,8 @@ jobs:
       )
     runs-on: ubuntu-24.04
     outputs:
-      label: ${{ steps.start-ec2-runner.outputs.label }}
-      ec2-instance-id: ${{ steps.start-ec2-runner.outputs.ec2-instance-id || '' }}
+      label: ${{ steps.start-slab-runner.outputs.label }}
+      slab-instance-id: ${{ steps.start-slab-runner.outputs.label || '' }}
 
     steps:
       - name: Checkout Code
@@ -71,27 +72,17 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Start EC2 runner python
-        id: start-ec2-runner
-        uses: machulav/ec2-github-runner@1827d6ca7544d7044ddbd2e9360564651b463da2
+      - name: Start SLAB runner
+        id: start-slab-runner
+        if: ${{ !cancelled() }}
+        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
         with:
           mode: start
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
-          ec2-instance-type: "c6i.16xlarge"
-          subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
-          security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
-          aws-resource-tags: >
-            [
-              {"Key": "Name", "Value": "cml-package-release-ec2-github-runner"},
-              {"Key": "GitHubRepository", "Value": "${{ github.repository }}"},
-              {"Key": "Actor", "Value": "${{ github.actor }}"},
-              {"Key": "Action", "Value": "${{ github.action }}"},
-              {"Key": "GitHash", "Value": "${{ github.sha }}"},
-              {"Key": "RefName", "Value": "${{ github.ref_name }}"},
-              {"Key": "RunId", "Value": "${{ github.run_id }}"},
-              {"Key": "Team", "Value": "CML"}
-            ]
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          backend: aws
+          profile: ${{ env.SLAB_PROFILE }}
 
   # Check that everything is up to date and run all non-flaky tests on different Python versions
   release-checks:
@@ -292,7 +283,7 @@ jobs:
           branch: ${{ env.TARGET_BRANCH_NAME }}
           tags: true
 
-  # This action creates docker and pypi images directly on the AWS EC2 instance
+  # This action creates docker and pypi images directly on the AWS Slab instance
   # The 'PRIVATE_RELEASE_IMAGE_BASE' variable is kept here in case Concrete ML starts to publish
   # private nightly releases one day. Currently, release candidates and actual releases are all
   # done through the 'PUBLIC_RELEASE_IMAGE_BASE' image. The private image is also used to list all
@@ -579,9 +570,9 @@ jobs:
           echo "RELEASE_URL=${{ steps.create-release.outputs.url }}" >> $GITHUB_ENV
 
 
-  # Close the AWS EC2 instance
+  # Close the AWS Slab instance
   stop-runner-linux:
-    name: Stop EC2 runner
+    name: Stop Slab runner
     needs: [start-runner-linux, release-package]
     runs-on: ubuntu-24.04
     if: ${{ always() && (needs.start-runner-linux.result != 'skipped') }}
@@ -593,15 +584,15 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Stop EC2 runner
-        uses: machulav/ec2-github-runner@1827d6ca7544d7044ddbd2e9360564651b463da2
-        if: ${{ always() && needs.start-runner-linux.outputs.ec2-instance-id }}
+      - name: Stop Slab runner python
+        if: ${{ always() && needs.start-runner-linux.outputs.slab-instance-id }}
+        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
         with:
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          label: ${{ needs.start-runner-linux.outputs.label }}
-          ec2-instance-id: ${{ needs.start-runner-linux.outputs.ec2-instance-id }}
           mode: stop
-
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          label: ${{ needs.start-runner-linux.outputs.slab-instance-id }}
 
   # Report the final status on Slack
   send-report:
