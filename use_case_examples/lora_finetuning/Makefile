@@ -14,4 +14,4 @@ two:
 	@$(TIME_NB) LLamaFineTuning.ipynb
 
 three:
-	@$(TIME_NB) MathEvalLoraLLama.ipynb.ipynb
+	@$(TIME_NB) MathEvalLoraLLama.ipynb
