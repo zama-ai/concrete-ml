@@ -35,7 +35,7 @@ instance_type = "hpc7a.96xlarge"
 [backend.aws.t4gpu]
 region = "eu-west-1"
 image_id = "ami-0898af27b3e2421d8"
-instance_type = "g4dn.4xlarge"
+instance_type = "g5.xlarge"
 
 [backend.hyperstack.single-h100]
 environment_name = "canada"
