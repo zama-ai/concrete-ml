@@ -8,6 +8,7 @@ concurrency:
 
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  SLAB_PROFILE: m6i
 
 jobs:
   start-runner-linux:

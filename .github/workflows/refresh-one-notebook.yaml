@@ -53,6 +53,7 @@ concurrency:
 
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  SLAB_PROFILE: m6i
   # --- refresh_notebooks_list.py: refresh list of notebook paths currently available [START] ---
   # --- do not edit, auto generated part by `make refresh_notebooks_list` ---
   CifarInFhe: "use_case_examples/cifar/cifar_brevitas_finetuning/CifarInFhe.ipynb" 
