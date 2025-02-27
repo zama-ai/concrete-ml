@@ -36,6 +36,7 @@ concurrency:
 
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  SLAB_PROFILE: t4gpu
 
 jobs:
   start-runner-linux:
