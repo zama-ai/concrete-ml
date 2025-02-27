@@ -42,8 +42,8 @@ jobs:
     name: Start EC2 runner
     runs-on: ubuntu-20.04
     outputs:
-      label-38: ${{ steps.start-ec2-runner-38.outputs.label }}
-      ec2-instance-id-38: ${{ steps.start-ec2-runner-38.outputs.ec2-instance-id || '' }}
+      label: ${{ steps.start-slab-runner.outputs.label }}
+      slab-instance-id: ${{ steps.start-slab-runner.outputs.label || '' }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -55,20 +55,21 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Start EC2 runner python 38
-        id: start-ec2-runner-38
-        uses: machulav/ec2-github-runner@1827d6ca7544d7044ddbd2e9360564651b463da2
+      - name: Start SLAB runner
+        id: start-slab-runner
+        if: ${{ !cancelled() }}
+        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
         with:
           mode: start
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
-          ec2-instance-type: "m6i.metal"
-          subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
-          security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          backend: aws
+          profile: ${{ env.SLAB_PROFILE }}
 
   run-use-case-examples:
     needs: [start-runner-linux]
-    runs-on: ${{ needs.start-runner-linux.outputs.label-38 }}
+    runs-on: ${{ needs.start-runner-linux.outputs.label }}
     container:
       image: ubuntu:22.04
     defaults:
@@ -154,14 +155,15 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Stop EC2 runner python 38
-        uses: machulav/ec2-github-runner@1827d6ca7544d7044ddbd2e9360564651b463da2
-        if: ${{ always() && needs.start-runner-linux.outputs.ec2-instance-id-38 }}
+      - name: Stop Slab runner python
+        if: ${{ always() && needs.start-runner-linux.outputs.slab-instance-id }}
+        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
         with:
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          label: ${{ needs.start-runner-linux.outputs.label-38 }}
-          ec2-instance-id: ${{ needs.start-runner-linux.outputs.ec2-instance-id-38 }}
           mode: stop
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          label: ${{ needs.start-runner-linux.outputs.slab-instance-id }}
 
   send-report:
     if: ${{ always() }}
