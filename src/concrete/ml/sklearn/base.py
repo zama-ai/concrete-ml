@@ -648,7 +648,6 @@ class BaseEstimator:
             is_signed = self.input_quantizers[0].is_signed
 
             crypto_params = json.loads(fhext.get_crypto_params_radix())  # pylint: disable=no-member
-            print("crypto_params:", crypto_params)
             dtype_spec = tfhers.get_type_from_params_dict(  # pylint: disable=no-member
                 crypto_params, is_signed, 8
             )  # pylint: disable=no-member
@@ -694,7 +693,7 @@ class BaseEstimator:
             numpy.ndarray: The quantized predicted values.
         """
 
-    def encrypt_tfhers(self, *q_X: numpy.ndarray):
+    def encrypt_tfhers(self, *q_X: numpy.ndarray, tfhers_sk):
         """Encrypt the quantized input using tfhe-rs.
 
         Args:
@@ -705,7 +704,7 @@ class BaseEstimator:
         """
         assert self.fhe_circuit is not None
         assert self._tfhers_bridge is not None
-        assert self.tfhers_sk is not None, "Secret key must be available for encryption."
+        assert tfhers_sk is not None, "Secret key must be available for encryption."
 
         input_is_signed = self.input_quantizers[0].is_signed
         encrypt_dtype = numpy.int8 if input_is_signed else numpy.uint8
@@ -713,26 +712,26 @@ class BaseEstimator:
         return tuple(
             [
                 self._tfhers_bridge.import_value(
-                    fhext.encrypt_radix(q_X[idx].astype(encrypt_dtype), self.tfhers_sk),
+                    fhext.encrypt_radix(q_X[idx].astype(encrypt_dtype), tfhers_sk),
                     input_idx=idx,
                 )
                 for idx in range(len(q_X))
             ]
         )
 
-    def run_tfhers(self, encrypted_inputs, serialize: bool = True):
+    def run_tfhers(self, encrypted_inputs,  tfhers_pk, serialize: bool = True):
         """Execute in FHE with tfhe-rs ciphertexts."""
         assert self.fhe_circuit is not None
 
         encrypted_result = self.fhe_circuit.server.run(
-            encrypted_inputs, evaluation_keys=self.fhe_circuit.client.evaluation_keys
+            encrypted_inputs, evaluation_keys=tfhers_pk #self.fhe_circuit.client.evaluation_keys
         )
         if serialize:
             return self._tfhers_bridge.export_value(encrypted_result, output_idx=0)  # pylint: disable=no-member
         return encrypted_result
 
 
-    def decrypt_tfhers(self, encrypted_output):
+    def decrypt_tfhers(self, encrypted_output, tfhers_sk):
         """Decrypt the tfhe-rs encrypted output.
 
         Args:
@@ -761,7 +760,7 @@ class BaseEstimator:
         shape = out_shapes[func_name][0]
         num_cols = shape[1] if len(shape) > 1 else shape[0]
 
-        result_np = fhext.decrypt_radix(encrypted_output, (-1, num_cols), output_bitwidth, output_is_signed, self.tfhers_sk)
+        result_np = fhext.decrypt_radix(encrypted_output, (-1, num_cols), output_bitwidth, output_is_signed, tfhers_sk)
         result_np = result_np.reshape(shape)
 
         return result_np
@@ -774,17 +773,31 @@ class BaseEstimator:
         assert self.tfhers_sk is not None
 
         # Encrypt
-        encrypted_inputs = self.encrypt_tfhers(*inputs)
+        encrypted_inputs = self.encrypt_tfhers(*inputs, tfhers_sk=self.tfhers_sk)
 
         # Run FHE computation
-        encrypted_result = self.run_tfhers(encrypted_inputs)
+        encrypted_result = self.run_tfhers(encrypted_inputs, tfhers_pk=self.tfhers_pk)
 
         # Decrypt
-        result_np = self.decrypt_tfhers(encrypted_result)
+        result_np = self.decrypt_tfhers(encrypted_result, tfhers_sk=self.tfhers_sk)
 
         return result_np
 
+    def keygen_tfhers(self):
+        assert self._tfhers_bridge is not None
 
+        sk, pk, lwe_sk = fhext.keygen_radix()  # pylint: disable=no-member
+
+        self.tfhers_sk = sk
+
+        input_idx_to_key = {0: lwe_sk}
+        self._tfhers_bridge.keygen_with_initial_keys(  # pylint: disable=no-member
+            input_idx_to_key_buffer=input_idx_to_key
+        )
+        self.tfhers_pk = self.fhe_circuit.client.evaluation_keys
+        
+        return sk, self.tfhers_pk, pk, lwe_sk
+                    
     def predict(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
         """Predict values for X, in FHE or in the clear.
 
@@ -861,16 +874,9 @@ class BaseEstimator:
             # Else, use the FHE execution method
             else:
                 if self._ciphertext_format == CiphertextFormat.TFHE_RS:
-                    assert self._tfhers_bridge is not None
+  
 
-                    sk, _, lwe_sk = fhext.keygen_radix()  # pylint: disable=no-member
-
-                    self.tfhers_sk = sk
-
-                    input_idx_to_key = {0: lwe_sk}
-                    self._tfhers_bridge.keygen_with_initial_keys(  # pylint: disable=no-member
-                        input_idx_to_key_buffer=input_idx_to_key
-                    )
+                    self.keygen_tfhers()
 
                     predict_method = self.encrypt_run_decrypt_tfhers_concrete
                 else:
@@ -917,7 +923,6 @@ class BaseEstimator:
             numpy.ndarray: The post-processed predictions.
         """
 
-        print("POST: post_processing")
         assert isinstance(y_preds, numpy.ndarray), "Output predictions must be an array."
 
         return y_preds
