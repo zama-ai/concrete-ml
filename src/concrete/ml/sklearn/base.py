@@ -648,6 +648,7 @@ class BaseEstimator:
             is_signed = self.input_quantizers[0].is_signed
 
             crypto_params = json.loads(fhext.get_crypto_params_radix())  # pylint: disable=no-member
+            print("crypto_params:", crypto_params)
             dtype_spec = tfhers.get_type_from_params_dict(  # pylint: disable=no-member
                 crypto_params, is_signed, 8
             )  # pylint: disable=no-member
@@ -693,55 +694,96 @@ class BaseEstimator:
             numpy.ndarray: The quantized predicted values.
         """
 
-    def encrypt_run_decrypt_tfhers_concrete(self, *inputs):
-        """Execute in FHE with tfhe-rs ciphertexts.
+    def encrypt_tfhers(self, *q_X: numpy.ndarray):
+        """Encrypt the quantized input using tfhe-rs.
 
         Args:
-            inputs (Tuple[numpy.ndarray]): The quantized input values.
+            q_X (Tuple[numpy.ndarray]): The quantized input values.
 
         Returns:
-            numpy.ndarray: The quantized predicted values.
+            A tuple of encrypted input tensors suitable for tfhe-rs execution.
         """
-
         assert self.fhe_circuit is not None
         assert self._tfhers_bridge is not None
+        assert self.tfhers_sk is not None, "Secret key must be available for encryption."
 
         input_is_signed = self.input_quantizers[0].is_signed
-
         encrypt_dtype = numpy.int8 if input_is_signed else numpy.uint8
+
+        return tuple(
+            [
+                self._tfhers_bridge.import_value(
+                    fhext.encrypt_radix(q_X[idx].astype(encrypt_dtype), self.tfhers_sk),
+                    input_idx=idx,
+                )
+                for idx in range(len(q_X))
+            ]
+        )
+
+    def run_tfhers(self, encrypted_inputs, serialize: bool = True):
+        """Execute in FHE with tfhe-rs ciphertexts."""
+        assert self.fhe_circuit is not None
+
+        encrypted_result = self.fhe_circuit.server.run(
+            encrypted_inputs, evaluation_keys=self.fhe_circuit.client.evaluation_keys
+        )
+        if serialize:
+            return self._tfhers_bridge.export_value(encrypted_result, output_idx=0)  # pylint: disable=no-member
+        return encrypted_result
+
+
+    def decrypt_tfhers(self, encrypted_output):
+        """Decrypt the tfhe-rs encrypted output.
+
+        Args:
+            encrypted_output: The encrypted output.
+
+        Returns:
+            A NumPy array.
+        """
+        assert self.fhe_circuit is not None
+        assert self._tfhers_bridge is not None
+        assert self.tfhers_sk is not None
+
         output_0 = self.fhe_circuit.graph.ordered_outputs()[0]
         output_is_signed = output_0.inputs[0].dtype.is_signed
         output_bitwidth = output_0.inputs[0].dtype.bit_width
 
-        assert self.tfhers_sk is not None
+        if not isinstance(encrypted_output, bytes):
+            try:
+                encrypted_output = self._tfhers_bridge.export_value(encrypted_output, output_idx=0)
+            except Exception as e:
+                raise ValueError(f"Failed to export encrypted output: {e}")
 
-        tfhers_x = tuple(
-            [
-                self._tfhers_bridge.import_value(
-                    fhext.encrypt_radix(inputs[idx].astype(encrypt_dtype), self.tfhers_sk),
-                    input_idx=idx,
-                )
-                for idx in range(len(inputs))
-            ]
-        )
-        result = self.fhe_circuit.server.run(
-            tfhers_x, evaluation_keys=self.fhe_circuit.client.evaluation_keys
-        )
-        buff = self._tfhers_bridge.export_value(result, output_idx=0)  # pylint: disable=no-member
-
-        # Get the output shape of the compiled function
-        out_shapes = self._tfhers_bridge.output_shapes_per_func  # pylint: disable=no-member
-        assert len(out_shapes) == 1
+        out_shapes = self._tfhers_bridge.output_shapes_per_func
+        assert len(out_shapes) == 1, "Expected exactly one function output."
         func_name = list(out_shapes.keys())[0]
         shape = out_shapes[func_name][0]
         num_cols = shape[1] if len(shape) > 1 else shape[0]
 
-        # The output bitwidth for trees should be the same as the input one
-        result_np = fhext.decrypt_radix(
-            buff, (-1, num_cols), output_bitwidth, output_is_signed, self.tfhers_sk
-        )
+        result_np = fhext.decrypt_radix(encrypted_output, (-1, num_cols), output_bitwidth, output_is_signed, self.tfhers_sk)
         result_np = result_np.reshape(shape)
+
         return result_np
+
+
+    def encrypt_run_decrypt_tfhers_concrete(self, *inputs):
+        """Execute in FHE with tfhe-rs ciphertexts."""
+        assert self.fhe_circuit is not None
+        assert self._tfhers_bridge is not None
+        assert self.tfhers_sk is not None
+
+        # Encrypt
+        encrypted_inputs = self.encrypt_tfhers(*inputs)
+
+        # Run FHE computation
+        encrypted_result = self.run_tfhers(encrypted_inputs)
+
+        # Decrypt
+        result_np = self.decrypt_tfhers(encrypted_result)
+
+        return result_np
+
 
     def predict(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
         """Predict values for X, in FHE or in the clear.
@@ -874,6 +916,8 @@ class BaseEstimator:
         Returns:
             numpy.ndarray: The post-processed predictions.
         """
+
+        print("POST: post_processing")
         assert isinstance(y_preds, numpy.ndarray), "Output predictions must be an array."
 
         return y_preds
