@@ -116,10 +116,9 @@ def test_serialize_random_state(random_state, random_state_type):
 def test_serialize_sklearn_model(concrete_model_class, load_data):
     """Test serialization of sklearn_model objects."""
 
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4694
     # Skip test for regressors that use internal scikit-learn loss classes
     problematic_models = {"TweedieRegressor", "GammaRegressor", "PoissonRegressor"}
-    if concrete_model_class.__name__ in problematic_models:
+    if concrete_model_class.__name__ in problematic_models and "1.1." in sklearn.__version__:
         pytest.skip(
             f"Skipping {concrete_model_class.__name__} due to internal scikit-learn "
             "class serialization issues"
