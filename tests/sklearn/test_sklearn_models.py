@@ -29,6 +29,9 @@ import os
 import sys
 import tempfile
 
+from concrete.fhe import Configuration
+from concrete.fhe.compilation.configuration import SecurityLevel
+
 # pylint: disable=too-many-lines, too-many-arguments
 import warnings
 from typing import Any, Dict, List
@@ -2401,7 +2404,9 @@ def test_tfhers_inputs_outputs_trees(model_class, parameters, n_bits, load_data)
 
     y_pred_concrete = model.predict(fhe_test_data, fhe="execute")
 
-    model.compile(x, ciphertext_format=CiphertextFormat.TFHE_RS)
+    cfg = Configuration(security_level=SecurityLevel.SECURITY_132_BITS)
+
+    model.compile(x, configuration=cfg, ciphertext_format=CiphertextFormat.TFHE_RS)
 
     with pytest.raises(ValueError, match="Simulation with TFHE-rs ciphertext.*"):
         model.predict(fhe_test_data, fhe="simulate")
