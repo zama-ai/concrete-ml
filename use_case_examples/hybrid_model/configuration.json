@@ -1,0 +1,1 @@
+{"model_name": "gpt2", "model_name_no_special_char": "gpt2", "module_names": ["transformer.h.0.attn.c_attn"]}
