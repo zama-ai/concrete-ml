@@ -726,9 +726,7 @@ class BaseEstimator:
         encrypted_result = self.fhe_circuit.server.run(
             encrypted_inputs, evaluation_keys=tfhers_pk #self.fhe_circuit.client.evaluation_keys
         )
-        if serialize:
-            return self._tfhers_bridge.export_value(encrypted_result, output_idx=0)  # pylint: disable=no-member
-        return encrypted_result
+        return self._tfhers_bridge.export_value(encrypted_result, output_idx=0)  # pylint: disable=no-member
 
 
     def decrypt_tfhers(self, encrypted_output, tfhers_sk):
@@ -795,8 +793,8 @@ class BaseEstimator:
             input_idx_to_key_buffer=input_idx_to_key
         )
         self.tfhers_pk = self.fhe_circuit.client.evaluation_keys
-        
-        return sk, self.tfhers_pk, pk, lwe_sk
+                
+        return sk, self.tfhers_pk, pk, self._tfhers_bridge.serialize_input_secret_key(0)
                     
     def predict(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
         """Predict values for X, in FHE or in the clear.
