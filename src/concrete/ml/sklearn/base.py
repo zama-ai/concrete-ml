@@ -523,6 +523,7 @@ class BaseEstimator:
         output_bitwidth = output_dtype.bit_width
         output_signed = output_dtype.is_signed
         crypto_params = json.loads(fhext.get_crypto_params_radix())  # pylint: disable=no-member
+        print("---->", crypto_params,)
         out_dtype_spec = tfhers.get_type_from_params_dict(  # pylint: disable=no-member
             crypto_params, output_signed, output_bitwidth
         )
@@ -719,9 +720,10 @@ class BaseEstimator:
             ]
         )
 
-    def run_tfhers(self, encrypted_inputs,  tfhers_pk, serialize: bool = True):
+    def run_tfhers(self, encrypted_inputs,  tfhers_pk):
         """Execute in FHE with tfhe-rs ciphertexts."""
         assert self.fhe_circuit is not None
+    
 
         encrypted_result = self.fhe_circuit.server.run(
             encrypted_inputs, evaluation_keys=tfhers_pk #self.fhe_circuit.client.evaluation_keys

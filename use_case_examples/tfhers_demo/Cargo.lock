@@ -15,10 +15,11 @@ dependencies = [
 
 [[package]]
 name = "aligned-vec"
-version = "0.5.0"
+version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4aa90d7ce82d4be67b64039a3d588d38dbcc6736577de4a847025ce5b0c468d1"
+checksum = "af15ccceeacb9304119d97925de463bc97ae3555ee8dc8056f67b119f66e5934"
 dependencies = [
+ "equator",
  "serde",
 ]
 
@@ -114,42 +115,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "concrete-csprng"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90518357249582c16a6b64d7410243dfb3109d5bf0ad1665c058c9a59f2fc4cc"
-dependencies = [
- "aes",
- "libc",
- "rayon",
-]
-
-[[package]]
-name = "concrete-fft"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "86ff7397e00e903afb03f0adca6a5f3bec3a6e96a7cdb70bdc088e01b125e170"
-dependencies = [
- "aligned-vec",
- "bytemuck",
- "dyn-stack",
- "js-sys",
- "num-complex",
- "pulp",
- "serde",
-]
-
-[[package]]
-name = "concrete-ntt"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bea708a14b4cfe650eec644eac11889a187404a3a0738a41a5524b0f548850a1"
-dependencies = [
- "aligned-vec",
- "pulp",
-]
-
-[[package]]
 name = "cpufeatures"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -200,19 +165,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "demo_project"
-version = "0.1.0"
-dependencies = [
- "base64",
- "bincode",
- "ciborium",
- "rand",
- "serde-pickle",
- "serde_json",
- "tfhe",
-]
-
-[[package]]
 name = "digest"
 version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -224,12 +176,11 @@ dependencies = [
 
 [[package]]
 name = "dyn-stack"
-version = "0.10.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "56e53799688f5632f364f8fb387488dd05db9fe45db7011be066fc20e7027f8b"
+checksum = "bf6fa63092e3ca9f602f6500fddd05502412b748c4c4682938565b44eb9e0066"
 dependencies = [
  "bytemuck",
- "reborrow",
 ]
 
 [[package]]
@@ -237,6 +188,26 @@ name = "either"
 version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "48c757948c5ede0e46177b7add2e67155f70e33c07fea8284df6576da70b3719"
+
+[[package]]
+name = "equator"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4711b213838dfee0117e3be6ac926007d7f433d7bbe33595975d4190cb07e6fc"
+dependencies = [
+ "equator-macro",
+]
+
+[[package]]
+name = "equator-macro"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "44f23cf4b44bfce11a86ace86f8a73ffdec849c9fd00a386a53d278bd9e81fb3"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
 
 [[package]]
 name = "generic-array"
@@ -286,9 +257,9 @@ checksum = "c397ca3ea05ad509c4ec451fea28b4771236a376ca1c69fd5143aae0cf8f93c4"
 
 [[package]]
 name = "itertools"
-version = "0.11.0"
+version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1c173a5686ce8bfa551b3563d0c2170bf24ca44da99c7ca4bfdab5418c3fe57"
+checksum = "2b192c782037fadd9cfa75548310488aabdbf3d2da73885b31bd0abd03351285"
 dependencies = [
  "either",
 ]
@@ -414,14 +385,28 @@ dependencies = [
 
 [[package]]
 name = "pulp"
-version = "0.18.22"
+version = "0.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a0a01a0dc67cf4558d279f0c25b0962bd08fc6dec0137699eae304103e882fe6"
+checksum = "a9e3f19bdeda2e49d16c8ae90f9615adc2298ee16974bb250d0afb705e33043f"
 dependencies = [
  "bytemuck",
  "libm",
  "num-complex",
  "reborrow",
+]
+
+[[package]]
+name = "pulp"
+version = "0.21.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "95fb7a99b37aaef4c7dd2fd15a819eb8010bfc7a2c2155230d51f497316cad6d"
+dependencies = [
+ "bytemuck",
+ "cfg-if",
+ "libm",
+ "num-complex",
+ "reborrow",
+ "version_check",
 ]
 
 [[package]]
@@ -563,32 +548,69 @@ dependencies = [
 
 [[package]]
 name = "tfhe"
-version = "0.10.0"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7190b3967c9322674bae8f247380c8a90d38448fbd8cd35b17a1958f39190ec2"
+checksum = "f6e9c8cc15c3ba99f02a3027135ff1c0db33cd561324fc4e6a93006f7c8de5a1"
 dependencies = [
  "aligned-vec",
  "bincode",
  "bytemuck",
- "concrete-csprng",
- "concrete-fft",
- "concrete-ntt",
  "dyn-stack",
  "itertools",
  "paste",
- "pulp",
+ "pulp 0.21.4",
  "rand_core",
  "rayon",
  "serde",
  "sha3",
+ "tfhe-csprng",
+ "tfhe-fft",
+ "tfhe-ntt",
  "tfhe-versionable",
 ]
 
 [[package]]
-name = "tfhe-versionable"
-version = "0.3.2"
+name = "tfhe-csprng"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "32111f6df1b4ced57bea0bc548a35eb8130e5b9f2084378299eeacf4148cb8a5"
+checksum = "7b1a0b71a91c9e36e9e1e8e6a528a056086b01e193e173472ae59cfaac56fdad"
+dependencies = [
+ "aes",
+ "libc",
+ "rayon",
+]
+
+[[package]]
+name = "tfhe-fft"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8fd167dab126860cfcdce2cdcf9a17826d0789b95f3b6984e6b171c7713085e6"
+dependencies = [
+ "aligned-vec",
+ "bytemuck",
+ "dyn-stack",
+ "js-sys",
+ "num-complex",
+ "pulp 0.20.1",
+ "serde",
+]
+
+[[package]]
+name = "tfhe-ntt"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6cd83664188b7640456ed938f7414f0d414e96bdc07b95aaba05c2ba13e3c478"
+dependencies = [
+ "aligned-vec",
+ "bytemuck",
+ "pulp 0.20.1",
+]
+
+[[package]]
+name = "tfhe-versionable"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af3a2785eb45d8bbb1cf26eb19277a7398b2fc818ad5136b57f5ee280bf0c430"
 dependencies = [
  "aligned-vec",
  "num-complex",
@@ -598,13 +620,26 @@ dependencies = [
 
 [[package]]
 name = "tfhe-versionable-derive"
-version = "0.3.2"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a463428890873548472daba5bdcecfe34b89c98518b4bd6cbd8595ac48fc0771"
+checksum = "f221336486fd08a09dcfd035845f18ae4b742bbf6b6c21dc2121f6b3322705f7"
 dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "tfhers_demo"
+version = "0.1.0"
+dependencies = [
+ "base64",
+ "bincode",
+ "ciborium",
+ "rand",
+ "serde-pickle",
+ "serde_json",
+ "tfhe",
 ]
 
 [[package]]
