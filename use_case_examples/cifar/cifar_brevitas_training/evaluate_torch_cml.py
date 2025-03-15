@@ -71,10 +71,8 @@ def main(args):
 
     model = cnv_2w2a(False)
 
-    # Add MPS (for macOS with Apple Silicon or AMD GPUs) support when error is fixed. For now, we
-    # observe a decrease in torch's top1 accuracy when using MPS devices
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3953
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    # Add MPS (for macOS with Apple Silicon or AMD GPUs) support
+    device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
     compilation_device = "cuda" if concrete.compiler.check_gpu_available() else "cpu"
 
     print("Torch device in use:", device)

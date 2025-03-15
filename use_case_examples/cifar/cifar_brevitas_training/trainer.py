@@ -199,10 +199,8 @@ class Trainer(object):
             self.device = "cuda:" + str(args.gpus[0])
             torch.backends.cudnn.benchmark = True
         else:
-            # Add MPS (for macOS with Apple Silicon or AMD GPUs) support when error is fixed. For
-            # now, we observe a decrease in torch's top1 accuracy when using MPS devices
-            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3953
-            self.device = "cpu"
+            # Add MPS (for macOS with Apple Silicon or AMD GPUs) support
+            self.device = "mps" if torch.backends.mps.is_available() else "cpu"
 
         self.device = torch.device(self.device)
 
