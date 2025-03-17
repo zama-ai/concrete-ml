@@ -81,11 +81,11 @@ def main(file_to_update):
             newlines.append(TAB + NO_EDIT_MESSAGE)
 
             # Append the complete list of current available notebooks with a specific format
-            newlines.append(TAB + 'description: "Notebook file name only in: ' + r"\n" + "\n")
-            newlines.extend(
-                TAB + f"- {notebook_path.stem} " + r"\n" + "\n" for notebook_path in notebook_paths
-            )
-            newlines.append(TAB + '"\n')
+            newlines.append(TAB + "type: choice\n")
+            newlines.append(TAB + "description: Notebook file name\n")
+            newlines.append(TAB + "options:\n")
+            newlines.extend(TAB + f"- {notebook_path.stem}\n" for notebook_path in notebook_paths)
+            newlines.append("\n")
 
         # Else, if the current line is the "notebook path list" header start, update the list
         elif line.startswith(NOTEBOOK_PATHS_LIST_HEADER_START):
