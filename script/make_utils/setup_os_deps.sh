@@ -123,6 +123,8 @@ linux_install_cmake () {
         ${SUDO_BIN:+$SUDO_BIN} tee -a /etc/apt/sources.list.d/kitware.list >/dev/null
     ${SUDO_BIN:+$SUDO_BIN} apt-get update
     ${SUDO_BIN:+$SUDO_BIN} apt-get -y install cmake
+
+    cmake --version
 }
 
 OS_NAME=$(uname)
