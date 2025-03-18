@@ -6,7 +6,7 @@ from typing import List, Optional, Tuple, Union
 import numpy
 
 from concrete import fhe
-
+from ._development import CURRENT_API_VERSION, API_VERSION_SPECS
 
 def encrypt_value(
     value: Optional[Union[int, numpy.ndarray, List]], client: fhe.Client, n: int, pos: int
@@ -29,7 +29,8 @@ def encrypt_value(
     clear_inputs = [None] * n
     clear_inputs[pos] = value  # type: ignore[assignment]
 
-    encrypted_outputs = client.encrypt(*clear_inputs)
+    encrypt_function = API_VERSION_SPECS[CURRENT_API_VERSION]["join_function"]
+    encrypted_outputs = client.encrypt(*clear_inputs, function_name=encrypt_function)
 
     # Similarly, using the above example, the output becomes (None, encrypted_output, None, None)
     encrypted_output = encrypted_outputs[pos]
@@ -50,7 +51,8 @@ def decrypt_value(
         Optional[Union[int, numpy.ndarray, Tuple[Optional[Union[int, numpy.ndarray]], ...]]]: The
             decrypted value(s).
     """
-    return client.decrypt(value)
+    encrypt_function = API_VERSION_SPECS[CURRENT_API_VERSION]["join_function"]
+    return client.decrypt(value, function_name=encrypt_function)
 
 
 def encrypt_elementwise(
