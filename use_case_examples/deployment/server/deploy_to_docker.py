@@ -97,7 +97,7 @@ def main(path_to_model: Path, image_name: str):
     if args.only_build:
         return
 
-    PORT_TO_CHOOSE=8888
+    PORT_TO_CHOOSE = 8888
 
     # Run newly created Docker server
     try:

@@ -110,8 +110,7 @@ if __name__ == "__main__":
     decrypted_predictions_classes = numpy.array(decrypted_predictions).argmax(axis=1)
     print(f"Decrypted prediction classes are: {decrypted_predictions_classes}")
 
-    # Let's check the results and compare them against the clear model
+    # Check the results and compare them against the clear model
     clear_prediction_classes = y[0:10]
     accuracy = (clear_prediction_classes == decrypted_predictions_classes).mean()
     print(f"Accuracy between FHE prediction and expected results is: {accuracy*100:.0f}%")
-

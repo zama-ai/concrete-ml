@@ -11,8 +11,9 @@ One can also run this example locally using Docker, or just by running the scrip
 #### On the developer machine:
 
 1. To train your model you can
-      - use `train_with_docker.sh` to use Docker (recommended way),
-      - or, only if you know what you're doing and will manage synchronisation between versions, use `python train.py`
+
+   - use `train_with_docker.sh` to use Docker (recommended way),
+   - or, only if you know what you're doing and will manage synchronisation between versions, use `python train.py`
 
    This will train a model and [serialize the FHE circuit](../../../docs/guides/client_server.md) in a new folder called `./dev`.
 
@@ -55,6 +56,7 @@ python3.8 -m venv .venvclient
 source .venvclient/bin/activate
 pip install -r client_requirements.txt
 ```
+
 1. Run the client script:
 
 ```
