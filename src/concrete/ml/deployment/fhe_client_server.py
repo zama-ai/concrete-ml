@@ -141,23 +141,25 @@ class FHEModelServer:
             bytes, fhe.Value, Tuple[bytes, ...], Tuple[fhe.Value, ...]
         ],
         serialized_evaluation_keys: bytes,
+        force_serialization: bool = False,
     ) -> Union[bytes, fhe.Value, Tuple[bytes, ...], Tuple[fhe.Value, ...]]:
-        """Run the model on the server over encrypted data.
+        """Run the FHE circuit on encrypted data.
 
         Args:
-            serialized_encrypted_quantized_data (Union[bytes, fhe.Value, Tuple[bytes, ...], \
-                Tuple[fhe.Value, ...]]): The encrypted and quantized values to consider. If these
+            serialized_encrypted_quantized_data (Union[bytes, fhe.Value, Tuple[bytes, ...],
+                Tuple[fhe.Value, ...]]): The encrypted and quantized input values. If the input
                 values are serialized (in bytes), they are first deserialized.
             serialized_evaluation_keys (bytes): The evaluation keys. If they are serialized (in
                 bytes), they are first deserialized.
+            force_serialization (bool, optional): Whether to force serialization of output even if
+                input was not serialized. Defaults to False.
 
         Returns:
             Union[bytes, fhe.Value, Tuple[bytes, ...], Tuple[fhe.Value, ...]]: The model's encrypted
-                and quantized results. If the inputs were initially serialized, the outputs are also
-                serialized.
+                and quantized results. If force_serialization is True or if the inputs were initially
+                serialized, the outputs are also serialized.
         """
 
-        # TODO: make desr / ser optional
         assert_true(self.server is not None, "Model has not been loaded.")
 
         input_quant_encrypted = to_tuple(serialized_encrypted_quantized_data)
@@ -186,8 +188,8 @@ class FHEModelServer:
             *input_quant_encrypted, evaluation_keys=evaluation_keys
         )
 
-        # If inputs were serialized, return serialized values as well
-        if inputs_are_serialized:
+        # Serialize the output if either inputs were serialized or force_serialization is True
+        if inputs_are_serialized or force_serialization:
             result_quant_encrypted = serialize_encrypted_values(*to_tuple(result_quant_encrypted))
 
         # Mypy complains because the outputs of `serialize_encrypted_values` can be None, but here
