@@ -119,10 +119,10 @@ linux_install_cmake () {
     test -f /usr/share/doc/kitware-archive-keyring/copyright || \
         ${SUDO_BIN:+$SUDO_BIN} rm /usr/share/keyrings/kitware-archive-keyring.gpg
     ${SUDO_BIN:+$SUDO_BIN} apt-get install -y kitware-archive-keyring
-    echo "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ ${UBUNTU_CODENAME}-rc main" | \
-        ${SUDO_BIN:+$SUDO_BIN} tee -a /etc/apt/sources.list.d/kitware.list >/dev/null
     ${SUDO_BIN:+$SUDO_BIN} apt-get update
     ${SUDO_BIN:+$SUDO_BIN} apt-get -y install cmake
+
+    cmake --version
 }
 
 OS_NAME=$(uname)
