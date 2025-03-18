@@ -109,7 +109,7 @@ jobs:
 
       # Open a PR with the new version and updated apidocs
       - name: Open PR
-        uses: peter-evans/create-pull-request@67ccf781d68cd99b580ae25a5c18a1cc84ffff1f
+        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e
         with:
           token: ${{ secrets.BOT_TOKEN }}
           commit-message: "chore: prepare release ${{ env.VERSION }}"
