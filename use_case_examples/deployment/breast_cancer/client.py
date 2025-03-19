@@ -21,7 +21,7 @@ from tqdm import tqdm
 
 from concrete.ml.deployment import FHEModelClient
 
-URL = os.environ.get("URL", f"http://localhost:5000")
+URL = os.environ.get("URL", f"http://localhost:8888")
 STATUS_OK = 200
 ROOT = Path(__file__).parent / "client"
 ROOT.mkdir(exist_ok=True)
@@ -105,4 +105,12 @@ if __name__ == "__main__":
         encrypted_result = result.content
         decrypted_prediction = client.deserialize_decrypt_dequantize(encrypted_result)[0]
         decrypted_predictions.append(decrypted_prediction)
-    print(decrypted_predictions)
+    print(f"Decrypted predictions are: {decrypted_predictions}")
+
+    decrypted_predictions_classes = numpy.array(decrypted_predictions).argmax(axis=1)
+    print(f"Decrypted prediction classes are: {decrypted_predictions_classes}")
+
+    # Check the results and compare them against the clear model
+    clear_prediction_classes = y[0:10]
+    accuracy = (clear_prediction_classes == decrypted_predictions_classes).mean()
+    print(f"Accuracy between FHE prediction and expected results is: {accuracy*100:.0f}%")

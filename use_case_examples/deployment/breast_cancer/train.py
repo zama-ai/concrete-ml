@@ -20,4 +20,4 @@ if __name__ == "__main__":
     model.fit(X_train, y_train)
     model.compile(X_train)
     dev = FHEModelDev("./dev", model)
-    dev.save()
+    dev.save(via_mlir=True)
