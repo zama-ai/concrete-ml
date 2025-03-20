@@ -141,6 +141,7 @@ class FHEModelServer:
             bytes, fhe.Value, Tuple[bytes, ...], Tuple[fhe.Value, ...]
         ],
         serialized_evaluation_keys: bytes,
+        auto_deserialize_serialize: bool = True,
     ) -> Union[bytes, fhe.Value, Tuple[bytes, ...], Tuple[fhe.Value, ...]]:
         """Run the model on the server over encrypted data.
 
@@ -150,14 +151,15 @@ class FHEModelServer:
                 values are serialized (in bytes), they are first deserialized.
             serialized_evaluation_keys (bytes): The evaluation keys. If they are serialized (in
                 bytes), they are first deserialized.
+            auto_deserialize_serialize (bool): If True, automatically deserialize input bytes
+                and serialize outputs when inputs are bytes. If False, input deserialization
+                and output serialization must be handled externally. Default is True.
 
         Returns:
             Union[bytes, fhe.Value, Tuple[bytes, ...], Tuple[fhe.Value, ...]]: The model's encrypted
                 and quantized results. If the inputs were initially serialized, the outputs are also
                 serialized.
         """
-
-        # TODO: make desr / ser optional
         assert_true(self.server is not None, "Model has not been loaded.")
 
         input_quant_encrypted = to_tuple(serialized_encrypted_quantized_data)
@@ -173,8 +175,8 @@ class FHEModelServer:
             inputs_are_serialized ^ inputs_are_encrypted_values
         ), "Inputs must be all of the same types, either 'bytes' or 'concrete.fhe.Value'"
 
-        # Deserialize the values if they are all serialized
-        if inputs_are_serialized:
+        # Deserialize the values if they are all serialized and auto_deserialize_serialize is True
+        if inputs_are_serialized and auto_deserialize_serialize:
             input_quant_encrypted = to_tuple(deserialize_encrypted_values(*input_quant_encrypted))
 
         # Deserialize the evaluation keys if they are serialized
@@ -182,12 +184,19 @@ class FHEModelServer:
         if isinstance(evaluation_keys, bytes):
             evaluation_keys = fhe.EvaluationKeys.deserialize(evaluation_keys)
 
+        # If inputs are still serialized (auto_deserialize_serialize=False), we can't run the model directly
+        if all(isinstance(x, bytes) for x in input_quant_encrypted):
+            raise ValueError(
+                "Input values are serialized (bytes) but auto_deserialize_serialize is False. "
+                "Either set auto_deserialize_serialize to True or deserialize the input values manually."
+            )
+
         result_quant_encrypted = self.server.run(
             *input_quant_encrypted, evaluation_keys=evaluation_keys
         )
 
-        # If inputs were serialized, return serialized values as well
-        if inputs_are_serialized:
+        # If inputs were serialized and auto_deserialize_serialize is True, return serialized values as well
+        if inputs_are_serialized and auto_deserialize_serialize:
             result_quant_encrypted = serialize_encrypted_values(*to_tuple(result_quant_encrypted))
 
         # Mypy complains because the outputs of `serialize_encrypted_values` can be None, but here
