@@ -4,12 +4,28 @@ import json
 
 import numpy
 import torch
-
+import time
 from ..common.utils import HybridFHEMode, to_tuple
 from ..quantization.quantized_ops import QuantizedGemm
 from .quantized_module import QuantizedModule
 from .quantizers import TorchUniformQuantizer
 
+# Custom GLWE parameters
+# Returns 1.39% error rate on 16th bit
+CUSTOM_GLWE_PARAMS = {
+    "bits_reserved_for_computation": 27,
+    "glwe_encryption_noise_distribution_stdev": 5.293956729894075e-23,
+    "encryption_glwe_dimension": 1,              # k_in
+    "polynomial_size": 2048,                     # N_in
+    "ciphertext_modulus_bit_count": 64,
+    "input_storage_ciphertext_modulus": 39,      # ceil(log2(q_in))
+    "packing_ks_level": 2,                       # l_pks
+    "packing_ks_base_log": 14,                   # ceil(log2(b_pks))
+    "packing_ks_polynomial_size": 2048,          # N_out
+    "packing_ks_glwe_dimension": 1,              # k_out
+    "output_storage_ciphertext_modulus": 26,     # ceil(log2(q_out))
+    "pks_noise_distrubution_stdev": 8.095547030480235e-30
+}
 
 def has_glwe_backend():
     """Check if the GLWE backend is installed.
@@ -23,6 +39,83 @@ def has_glwe_backend():
     except ImportError:  # pragma: no cover
         return False  # pragma: no cover
 
+
+# Precompute the base distributions outside the function if you like
+BASE_MEANS = numpy.array([
+    0.5015, 0.4996, 0.5005, 0.4997, 0.4992, 0.4321, 0.2382, 0.1189,
+    0.0595, 0.0300, 0.0150, 0.0075, 0.0036, 0.0018, 0.0009, 0.0004,
+    0.0002, 0.0001, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000,
+    0.0000, 0.0000, 0.0000
+])
+BASE_STDS = numpy.array([
+    0.0071, 0.0073, 0.0088, 0.0070, 0.0068, 0.0281, 0.0208, 0.0121,
+    0.0066, 0.0031, 0.0017, 0.0009, 0.0011, 0.0009, 0.0004, 0.0002,
+    0.0002, 0.0002, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000,
+    0.0000, 0.0000, 0.0000
+])
+
+def apply_noise_batch(
+    batch: numpy.ndarray,
+    n_bits_compute: int,
+    zero_bits_from_msb: int = 0
+) -> numpy.ndarray:
+    """
+    Apply bit-flip noise to an array of integer values.
+    
+    Args:
+        batch: A 1D numpy array of integers (dtype can be int32, int64, etc.).
+        n_bits_compute: Number of bits actually used in the computation result.
+        zero_bits_from_msb: Number of most significant bits to force zero flip-probability.
+                            (Those bits are "noise-free".)
+    Returns:
+        A new numpy array (same shape as batch) where each element has had bits flipped
+        according to per-bit empirical error rates.
+    """
+    batch = batch.astype(numpy.uint64)
+    # 1. Limit noise model to actual number of bits:
+    noise_model_msb = min(n_bits_compute, len(BASE_MEANS))
+    
+    # 2. Slice out just what we need.
+    #    Copy to avoid modifying global BASE_MEANS / BASE_STDS.
+    means = BASE_MEANS[:noise_model_msb].copy()
+    stds  = BASE_STDS[:noise_model_msb].copy()
+    
+    # 3. Zero out certain MSB positions if requested.
+    #    Example: If zero_bits_from_msb=3, the top 3 bits get zero means/stds => no flips.
+    if zero_bits_from_msb > 0:
+        zero_bits_from_msb = min(zero_bits_from_msb, noise_model_msb)
+        # Negative indexing: last 'zero_bits_from_msb' bits are forced to 0 error prob
+        means[-zero_bits_from_msb:] = 0.0
+        stds[-zero_bits_from_msb:] = 0.0
+
+    # 4. Generate random flip probabilities for each (batch, bit).
+    #    For each bit i, we draw from Normal(means[i], stds[i]).
+    #    Shape: (batch_size, noise_model_msb).
+    batch_size = batch.shape[0]
+    flip_probs = numpy.random.normal(
+        loc=means, 
+        scale=stds, 
+        size=(batch_size, noise_model_msb)
+    )
+    #    Clip to [0.0, 1.0]:
+    numpy.clip(flip_probs, 0.0, 1.0, out=flip_probs)
+    
+    # 5. Instead of np.random.binomial(1, p), use uniform < p for speed:
+    #    flips is a boolean array with shape (batch_size, noise_model_msb).
+    flips = (numpy.random.rand(batch_size, noise_model_msb) < flip_probs)
+    
+    # 6. Combine the flipped bits into an integer flip mask for each batch element.
+    #    For bit i, the mask is (1 << i) if flips[i] is True, else 0.
+    #    We'll use a dot-product with a powers-of-two vector.
+    bit_masks = (1 << numpy.arange(noise_model_msb, dtype=numpy.uint64))  # shape = (noise_model_msb,)
+    
+    #    flips is boolean, so we convert to integer (0 or 1) before dot:
+    flip_masks = flips.astype(numpy.uint64).dot(bit_masks)
+    #    flip_masks has shape (batch_size,). Each entry is the integer mask of flipped bits.
+    
+    # 7. XOR to apply the bit flips.
+    #    We can return batch ^ flip_masks or do it in a copy if you want to preserve `batch`.
+    return batch ^ flip_masks
 
 class GLWELinearLayerExecutor:
     """GLWE execution helper for pure linear layers."""
@@ -49,14 +142,14 @@ class GLWELinearLayerExecutor:
         self.compression_key = compression_key
         self.private_key = private_key
 
-        default_crypto_params_glwe = json.loads(fhext.default_params())  # pylint: disable=no-member
+        # Use custom parameters instead of default ones
         self.glwe_crypto_params = (
             fhext.MatmulCryptoParameters.deserialize(  # pylint: disable=no-member
-                json.dumps(default_crypto_params_glwe)
+                json.dumps(CUSTOM_GLWE_PARAMS)
             )
         )
-        self.poly_size = default_crypto_params_glwe["packing_ks_polynomial_size"]
-        self.calibrated_max_bits = default_crypto_params_glwe["bits_reserved_for_computation"]
+        self.poly_size = CUSTOM_GLWE_PARAMS["packing_ks_polynomial_size"]
+        self.calibrated_max_bits = CUSTOM_GLWE_PARAMS["bits_reserved_for_computation"]
         self.use_dynamic_quantization = use_dynamic_quantization
 
     def keygen(self):
@@ -302,6 +395,30 @@ class GLWELinearLayerExecutor:
 
         # Perform integer matrix multiplication.
         mm_raw = torch.matmul(x_q, weight_q).long()
+
+        # # Keep a copy of the original mm_raw for error analysis
+        # original_mm_raw = mm_raw.cpu().numpy().copy()
+
+        # # Apply noise to each element of mm_raw
+        # mm_raw_numpy = mm_raw.cpu().numpy()
+        # original_shape_mm_raw = mm_raw_numpy.shape
+        # # Reshape to 1D array for batch processing
+        # flattened = mm_raw_numpy.ravel()
+        # # Apply noise to the flattened array
+
+        # start_time = time.time()
+        # noisy_flattened = apply_noise_batch(flattened, n_bits_compute=27, zero_bits_from_msb=0)
+        # end_time = time.time()
+        # print(f"Time taken to apply noise: {end_time - start_time} seconds")
+        # # Reshape back to original dimensions
+        # noisy_mm = noisy_flattened.reshape(original_shape_mm_raw)
+
+        # # Analyze and print bit errors
+        # self._analyze_and_print_bit_errors(original_mm_raw, noisy_mm)
+        
+        # # Convert back to torch tensor
+        # mm_raw = torch.from_numpy(noisy_mm).to(device).long()
+
         k = weight_q.shape[0]
 
         # Apply correction and de-quantization.
@@ -315,6 +432,44 @@ class GLWELinearLayerExecutor:
         out_float = self._add_bias(out_float, quantized_layer, device)
 
         return out_float
+
+    def _analyze_and_print_bit_errors(self, original: numpy.ndarray, noisy: numpy.ndarray, max_bit_position: int = 27):
+        """Analyze and print bit error rates between original and noisy matrices.
+        
+        Args:
+            original: Original matrix before applying noise
+            noisy: Matrix after applying noise
+            max_bit_position: Maximum bit position to analyze (default: 22 bits as in apply_noise_batch)
+        """
+        # Ensure same data type
+        original = original.astype(numpy.int64)
+        noisy = noisy.astype(numpy.int64)
+        total_elements = original.size
+        
+        # XOR to find differences
+        xor_result = original ^ noisy
+        
+        # Initialize array for error counts
+        bit_error_counts = numpy.zeros(max_bit_position, dtype=numpy.int64)
+        
+        # Check each bit position for errors
+        for value in xor_result.flatten():
+            for bit_pos in range(max_bit_position):
+                if value & (1 << bit_pos):
+                    bit_error_counts[bit_pos] += 1
+        
+        # Calculate error rates
+        bit_error_rates = (bit_error_counts / total_elements) * 100
+        
+        # Print results
+        print("\n----- Matrix Multiplication Noise Error Analysis -----")
+        print(f"Total elements analyzed: {total_elements}")
+        print("Bit position | Error rate (%)")
+        print("-" * 30)
+        for bit_pos in range(max_bit_position):
+            print(f"{bit_pos:11d} | {bit_error_rates[bit_pos]:12.4f}")
+        print("Average error rate: {:.4f}%".format(numpy.mean(bit_error_rates)))
+        print("-" * 50)
 
     def _forward_fhe_static(
         self,
