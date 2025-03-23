@@ -170,7 +170,7 @@ jobs:
           git lfs pull --include "tests/data/**, src/concrete/ml/pandas/_client_server_files/**" --exclude  ""
 
       - name: Set up Python ${{ inputs.python_version }}
-        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
         id: setup-python
         with:
           python-version: ${{ inputs.python_version }}
