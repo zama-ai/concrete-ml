@@ -515,7 +515,7 @@ class LoraTrainer:
     def train(
         self,
         train_loader: DataLoader,
-        num_epochs: int = 10,
+        num_epochs: int = 1,
         fhe: str = "simulate",
         device: str = "cpu",
     ):
