@@ -98,7 +98,6 @@ env:
   XGBClassifier: "docs/advanced_examples/XGBClassifier.ipynb" 
   XGBRegressor: "docs/advanced_examples/XGBRegressor.ipynb" 
   # --- refresh_notebooks_list.py: refresh list of notebook paths currently available [END] ---
-  SLAB_PROFILE: "pr_ciprofile"
 
 jobs:
   start-runner-linux:
