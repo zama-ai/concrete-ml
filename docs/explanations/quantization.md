@@ -21,15 +21,15 @@ Note that the floating point input is quantized in the clear, meaning it is conv
 
 ## Basics of quantization
 
-Let \$$[\alpha, \beta ]$$ be the range of a value to quantize where $$\alpha$$ is the minimum and $$\beta$$ is the maximum. To quantize a range of floating point values (in $$\mathbb{R}$$) to integer values (in $$\mathbb{Z}$$), the first step is to choose the data type that is going to be used. Many ML models work with weights and activations represented as 8-bit integers, so this will be the value used in this example. Knowing the number of bits that can be used for a value in the range $$[\alpha, \beta ]$$, the `scale` $$S$\$ can be computed :
+Let $$[\alpha, \beta ]$$ be the range of a value to quantize where $$\alpha$$ is the minimum and $$\beta$$ is the maximum. To quantize a range of floating point values (in $$\mathbb{R}$$) to integer values (in $$\mathbb{Z}$$), the first step is to choose the data type that is going to be used. Many ML models work with weights and activations represented as 8-bit integers, so this will be the value used in this example. Knowing the number of bits that can be used for a value in the range $$[\alpha, \beta ]$$, the `scale` $$S$$ can be computed :
 
 $$S = \frac{\beta - \alpha}{2^n - 1}$$
 
-where \$$n$$ is the number of bits ($$n \leq 8$$). In the following, $$n = 8$\$ is assumed.
+where $$n$$ is the number of bits ($$n \leq 8$$). In the following, $$n = 8$$ is assumed.
 
-In practice, the quantization scale is then \$$S = \frac{\beta - \alpha}{255}$$. This means the gap between consecutive representable values cannot be smaller than $$S$$, which, in turn, means there can be a substantial loss of precision. Every interval of length $$S$$ will be represented by a value within the range $$[0..255]$\$.
+In practice, the quantization scale is then $$S = \frac{\beta - \alpha}{255}$$. This means the gap between consecutive representable values cannot be smaller than $$S$$, which, in turn, means there can be a substantial loss of precision. Every interval of length $$S$$ will be represented by a value within the range $$[0..255]$$.
 
-The other important parameter from this quantization schema is the `zero point` \$$Z_p$$ value. This essentially brings the 0 floating point value to a specific integer. If the quantization scheme is asymmetric (quantized values are not centered in 0), the resulting $$Z_p$$ will be in $$\mathbb{Z}$\$.
+The other important parameter from this quantization schema is the `zero point` $$Z_p$$ value. This essentially brings the 0 floating point value to a specific integer. If the quantization scheme is asymmetric (quantized values are not centered in 0), the resulting $$Z_p$$ will be in $$\mathbb{Z}$$.
 
 $$Z_p = \mathtt{round} \left(- \frac{\alpha}{S} \right)$$
 

@@ -2,7 +2,7 @@
 
 ## Security model
 
-The default parameters for Concrete ML are chosen considering the [IND-CPA](https://en.wikipedia.org/wiki/Ciphertext_indistinguishability) security model, and are selected with a [bootstrapping off-by-one error probability](../explanations/advanced_features.md#tolerance-to-off-by-one-error-for-an-individual-tlu) of \$$2^-40$\$. In particular, it is assumed that the results of decrypted computations are not shared by the secret key owner with any third parties, as such an action can lead to leakage of the secret encryption key. If you are designing an application where decryptions must be shared, you will need to craft custom encryption parameters which are chosen in consideration of the IND-CPA^D security model \[1\].
+The default parameters for Concrete ML are chosen considering the [IND-CPA](https://en.wikipedia.org/wiki/Ciphertext_indistinguishability) security model, and are selected with a [bootstrapping off-by-one error probability](../explanations/advanced_features.md#tolerance-to-off-by-one-error-for-an-individual-tlu) of $$2^-40$$. In particular, it is assumed that the results of decrypted computations are not shared by the secret key owner with any third parties, as such an action can lead to leakage of the secret encryption key. If you are designing an application where decryptions must be shared, you will need to craft custom encryption parameters which are chosen in consideration of the IND-CPA^D security model \[1\].
 
 ## Correctness of computations
 

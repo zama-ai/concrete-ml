@@ -706,7 +706,7 @@ class BaseEstimator:
         """
 
     def _encrypt_run_decrypt_internal(self, *inputs):
-        """Execute in FHE on manually quantized data,
+        """Execute in FHE on manually quantized data.
 
         Args:
             inputs (Tuple[numpy.ndarray]): The quantized input values.
