@@ -579,6 +579,8 @@ class LoraTrainer:
                         loss.item(),
                         avg_loss,
                     )
+                    # Log gradients at the same time as loss
+                    self._log_gradients()
 
                 # Evaluation
                 if global_step % self.eval_steps == 0:
@@ -588,9 +590,6 @@ class LoraTrainer:
                 if ((step + 1) % self.gradient_accumulation_steps == 0) or (
                     step + 1 == len(train_loader)
                 ):
-                    # Log gradients before clipping and store stats
-                    self._log_gradients()
-
                     if self.max_grad_norm is not None:
                         torch.nn.utils.clip_grad_norm_(
                             self.lora_training_module.parameters(), self.max_grad_norm
