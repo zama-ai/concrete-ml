@@ -705,8 +705,8 @@ class BaseEstimator:
             numpy.ndarray: The quantized predicted values.
         """
 
-    def encrypt_run_decrypt(self, *inputs):
-        """Execute in FHE with tfhe-rs ciphertexts.
+    def _encrypt_run_decrypt_internal(self, *inputs):
+        """Execute in FHE on manually quantized data,
 
         Args:
             inputs (Tuple[numpy.ndarray]): The quantized input values.
@@ -843,7 +843,7 @@ class BaseEstimator:
                 if self.ciphertext_format == CiphertextFormat.TFHE_RS:
                     assert self._tfhers_bridge is not None
 
-                    predict_method = self.encrypt_run_decrypt
+                    predict_method = self._encrypt_run_decrypt_internal
                 else:
                     predict_method = self.fhe_circuit.encrypt_run_decrypt
 

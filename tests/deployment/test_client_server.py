@@ -382,14 +382,23 @@ def check_client_server_inference(
 
     # Dev side: Predict using the model and circuit from development
     q_x_test = model.quantize_input(x_test)
-    q_y_pred_dev = model.encrypt_run_decrypt(q_x_test)
+
+    # If the model class doesn't have _encrypt_run_decrypt_internal it's a QuantizedModule
+    # and doesn't support tfhe-rs interop
+    if getattr(model, "_encrypt_run_decrypt_internal", False):
+        q_y_pred_dev = model._encrypt_run_decrypt_internal(q_x_test) #  pylint: disable=protected-access
+    else:
+        assert isinstance(model, QuantizedModule)
+        q_y_pred_dev = model.fhe_circuit.encrypt_run_decrypt(q_x_test)
+
     y_pred_dev = model.dequantize_output(q_y_pred_dev)
     y_pred_dev = model.post_processing(y_pred_dev)
+
+    check_array_equal(q_y_pred, q_y_pred_dev)
 
     # Check that both quantized and de-quantized (+ post-processed) results from the server are
     # matching the ones from the dec model
     check_float_array_equal(y_pred, y_pred_dev)
-    check_array_equal(q_y_pred, q_y_pred_dev)
 
 
 def check_input_compression(model, fhe_circuit_compressed, is_torch, **compilation_kwargs):
