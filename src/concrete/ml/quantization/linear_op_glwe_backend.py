@@ -77,10 +77,9 @@ class GLWELinearLayerExecutor:
             tuple: Minimum and maximum quantized values
         """
         input_n_bits = q_module.input_quantizers[0].quant_options.n_bits
-        if is_signed:   
-            return -2**(input_n_bits - 1), 2**(input_n_bits - 1) - 1
-        else:
-            return 0, 2**input_n_bits - 1
+        if is_signed:
+            return -(2 ** (input_n_bits - 1)), 2 ** (input_n_bits - 1) - 1
+        return 0, 2**input_n_bits - 1
 
     def _per_channel_weight_quantization(
         self, weight: numpy.ndarray, q_module: QuantizedModule, device: torch.device
@@ -112,7 +111,7 @@ class GLWELinearLayerExecutor:
 
         # Quantization
         weight_zp = torch.round(q_min - w_min_vals / weight_scale).to(torch.float32)
-        
+
         # Apply quantization with proper broadcasting
         weight_q = torch.round(weight_float / weight_scale) + weight_zp
         weight_q = torch.clamp(weight_q, q_min, q_max).to(torch.float32)

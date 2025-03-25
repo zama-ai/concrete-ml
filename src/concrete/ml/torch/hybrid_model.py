@@ -10,7 +10,7 @@ from abc import abstractmethod
 from collections import defaultdict
 from functools import lru_cache
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union, Callable
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import numpy
 import requests
@@ -524,7 +524,7 @@ class HybridFHEModel:
                 # Set each remote module's progress_callback to update the progress bar
                 for remote_module in self.remote_modules.values():
                     remote_module.progress_callback = lambda: pbar.update(1)
-                
+
                 # Call the model forward pass which, in turn, will trigger each remote module
                 result = self.model(x)
         else:
