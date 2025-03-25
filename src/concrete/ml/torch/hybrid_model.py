@@ -10,7 +10,7 @@ from abc import abstractmethod
 from collections import defaultdict
 from functools import lru_cache
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union, Callable
 
 import numpy
 import requests
@@ -130,6 +130,7 @@ class RemoteModule(nn.Module):
         self.verbose = verbose
         self.optimized_linear_execution = optimized_linear_execution
         self.executor: Optional[GLWELinearLayerExecutor] = None
+        self.progress_callback: Optional[Callable[[], None]] = None
 
     def init_fhe_client(
         self, path_to_client: Optional[Path] = None, path_to_keys: Optional[Path] = None
@@ -305,6 +306,10 @@ class RemoteModule(nn.Module):
         else:  # pragma:no cover
             # Shouldn't happen
             raise ValueError(f"{self.fhe_local_mode} is not recognized")
+
+        # Call progress callback if set
+        if self.progress_callback is not None:
+            self.progress_callback()
 
         return y
 
@@ -511,7 +516,22 @@ class HybridFHEModel:
         for module in self.remote_modules.values():
             module.executor = self.executor
 
-        result = self.model(x)
+        # Show progress bar for execute mode
+        if fhe_mode == HybridFHEMode.EXECUTE:
+            # Initialize the progress bar based on the number of remote modules
+            num_remote_modules = len(self.remote_modules)
+            with tqdm(total=num_remote_modules, desc="FHE Modules Inference") as pbar:
+                # Set each remote module's progress_callback to update the progress bar
+                for remote_module in self.remote_modules.values():
+                    remote_module.progress_callback = lambda: pbar.update(1)
+                
+                # Call the model forward pass which, in turn, will trigger each remote module
+                result = self.model(x)
+        else:
+            # For other modes, just run the model without progress tracking
+            for remote_module in self.remote_modules.values():
+                remote_module.progress_callback = None
+            result = self.model(x)
 
         return result
 
