@@ -142,7 +142,8 @@ class FHEModelServer:
             ), "The FHE model server cannot be instantiated on a multi-function circuit"
             func_name = lst_keys[0]
 
-            if specs.tfhers_specs.output_types_per_func[func_name] is not None:
+            func_specs = specs.tfhers_specs.output_types_per_func[func_name]
+            if func_specs is not None and func_specs[0] is not None:
                 server_client = fhe.Client(self.server.client_specs)
                 self._tfhers_bridge = tfhers.new_bridge(server_client)
 

@@ -111,7 +111,6 @@ def test_client_server_sklearn_inference(
             x_test,
             model,
             key_dir,
-            CiphertextFormat.CONCRETE,
             check_array_equal,
             check_float_array_equal,
         )
@@ -156,7 +155,6 @@ def test_client_server_sklearn_inference(
         x_test,
         model,
         key_dir,
-        CiphertextFormat.CONCRETE,
         check_array_equal,
         check_float_array_equal,
     )
@@ -181,14 +179,6 @@ def test_client_server_tfhers_sklearn_inference(
     This test checks that built-in models inference produces correct results
     when using TFHE-rs ciphertexts for input /output."""
 
-    if not (
-        is_model_class_in_a_list(model_class, _get_sklearn_tree_models())
-        and is_classifier_or_partial_classifier(model_class)
-    ):
-        pytest.skip(
-            "Only 8-b tree-based classifiers are tested for deployment with tfhe-rs ciphertexts"
-        )
-
     # Generate random data
     x, y = load_data(model_class, **parameters)
 
@@ -198,13 +188,26 @@ def test_client_server_tfhers_sklearn_inference(
 
     # Instantiate the model
     model = instantiate_model_generic(model_class, n_bits=n_bits)
-    model.fit(x_train, y_train)
+
+    # Fit the model
+    if getattr(model, "fit_encrypted", False):
+        model.fit(x_train, y_train, fhe="disable")
+    else:
+        model.fit(x_train, y_train)
 
     compilation_kwargs = {
         "X": x_train,
         "configuration": default_configuration,
         "ciphertext_format": CiphertextFormat.TFHE_RS,
     }
+
+    if not (
+        is_model_class_in_a_list(model_class, _get_sklearn_tree_models())
+        and is_classifier_or_partial_classifier(model_class)
+    ):
+        with pytest.raises(AssertionError, match=".* is only supported for 8-bit tree-based.*"):
+            model.compile(**compilation_kwargs)
+        return
 
     # Compile the model
     model.compile(**compilation_kwargs)
@@ -213,7 +216,7 @@ def test_client_server_tfhers_sklearn_inference(
 
     # Check client/server FHE predictions vs the FHE predictions of the dev model
     check_client_server_inference(
-        x_test, model, key_dir, CiphertextFormat.TFHE_RS, check_array_equal, check_float_array_equal
+        x_test, model, key_dir, check_array_equal, check_float_array_equal
     )
 
 
@@ -239,7 +242,6 @@ def test_client_server_custom_model(
             x_test,
             quantized_module,
             key_dir,
-            CiphertextFormat.CONCRETE,
             check_array_equal,
             check_float_array_equal,
         )
@@ -271,7 +273,6 @@ def test_client_server_custom_model(
         x_test,
         quantized_numpy_module,
         key_dir,
-        CiphertextFormat.CONCRETE,
         check_array_equal,
         check_float_array_equal,
     )
@@ -334,7 +335,7 @@ def check_client_server_files(model, mode="inference"):
 
 
 def check_client_server_inference(
-    x_test, model, key_dir, ciphertext_format, check_array_equal, check_float_array_equal
+    x_test, model, key_dir, check_array_equal, check_float_array_equal
 ):
     """Test the client server interface API.
 
@@ -381,13 +382,7 @@ def check_client_server_inference(
 
     # Dev side: Predict using the model and circuit from development
     q_x_test = model.quantize_input(x_test)
-    if (
-        ciphertext_format == CiphertextFormat.TFHE_RS
-    ):  # fhe_circuit.server._tfhers_specs is not None:
-        q_y_pred_dev = model.encrypt_run_decrypt_tfhers_concrete(q_x_test)
-    else:
-        q_y_pred_dev = model.fhe_circuit.encrypt_run_decrypt(q_x_test)
-
+    q_y_pred_dev = model.encrypt_run_decrypt(q_x_test)
     y_pred_dev = model.dequantize_output(q_y_pred_dev)
     y_pred_dev = model.post_processing(y_pred_dev)
 

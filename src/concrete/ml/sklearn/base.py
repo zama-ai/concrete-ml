@@ -705,7 +705,7 @@ class BaseEstimator:
             numpy.ndarray: The quantized predicted values.
         """
 
-    def encrypt_run_decrypt_tfhers_concrete(self, *inputs):
+    def encrypt_run_decrypt(self, *inputs):
         """Execute in FHE with tfhe-rs ciphertexts.
 
         Args:
@@ -716,7 +716,9 @@ class BaseEstimator:
         """
 
         assert self.fhe_circuit is not None
-        assert self._tfhers_bridge is not None
+
+        if self._tfhers_bridge is None:
+            return self.fhe_circuit.encrypt_run_decrypt(*inputs)
 
         sk, _, lwe_sk = fhext.keygen_radix()  # pylint: disable=no-member
 
@@ -755,11 +757,10 @@ class BaseEstimator:
         assert len(out_shapes) == 1
         func_name = list(out_shapes.keys())[0]
         shape = out_shapes[func_name][0]
-        num_cols = shape[1] if len(shape) > 1 else shape[0]
 
         # The output bitwidth for trees should be the same as the input one
         result_np = fhext.decrypt_radix(
-            buff, (-1, num_cols), output_bitwidth, output_is_signed, self.tfhers_sk
+            buff, shape, output_bitwidth, output_is_signed, self.tfhers_sk
         )
         result_np = result_np.reshape(shape)
         return result_np
@@ -842,7 +843,7 @@ class BaseEstimator:
                 if self.ciphertext_format == CiphertextFormat.TFHE_RS:
                     assert self._tfhers_bridge is not None
 
-                    predict_method = self.encrypt_run_decrypt_tfhers_concrete
+                    predict_method = self.encrypt_run_decrypt
                 else:
                     predict_method = self.fhe_circuit.encrypt_run_decrypt
 
