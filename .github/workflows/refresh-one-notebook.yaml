@@ -34,6 +34,7 @@ on:
         - LogisticRegression
         - LogisticRegressionTraining
         - LoraMLP
+        - MathEvalLoraLLama
         - PerrorImpactOnFMNIST
         - PoissonRegression
         - QGPT2Evaluate
