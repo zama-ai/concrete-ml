@@ -170,11 +170,11 @@ QAT is somewhat slower than normal training. QAT introduces quantization during 
 
 Considering that FHE only works with limited integer precision, there is a risk of overflowing in the accumulator, which will make Concrete ML raise an error.
 
-To understand how to overcome this limitation, consider a scenario where 2 bits are used for weights and layer inputs/outputs. The `Linear` layer computes a dot product between weights and inputs $$y = \sum_i w_i x_i$$. With 2 bits, no overflow can occur during the computation of the `Linear` layer as long the number of neurons does not exceed 14, as in the sum of 14 products of 2-bits numbers does not exceed 7 bits.
+To understand how to overcome this limitation, consider a scenario where 2 bits are used for weights and layer inputs/outputs. The `Linear` layer computes a dot product between weights and inputs \$$y = \sum_i w_i x_i$\$. With 2 bits, no overflow can occur during the computation of the `Linear` layer as long the number of neurons does not exceed 14, as in the sum of 14 products of 2-bits numbers does not exceed 7 bits.
 
-By default, Concrete ML uses symmetric quantization for model weights, with values in the interval $$\left[-2^{n_{bits}-1}, 2^{n_{bits}-1}-1\right]$$. For example, for $$n_{bits}=2$$ the possible values are $$[-2, -1, 0, 1]$$; for $$n_{bits}=3$$, the values can be $$[-4,-3,-2,-1,0,1,2,3]$$.
+By default, Concrete ML uses symmetric quantization for model weights, with values in the interval \$$\left[-2^{n_{bits}-1}, 2^{n_{bits}-1}-1\right]$$. For example, for $$n_{bits}=2$$ the possible values are $$[-2, -1, 0, 1]$$; for $$n_{bits}=3$$, the values can be $$[-4,-3,-2,-1,0,1,2,3]$\$.
 
-In a typical setting, the weights will not all have the maximum or minimum values (such as $$-2^{n_{bits}-1}$$). Weights typically have a normal distribution around 0, which is one of the motivating factors for their symmetric quantization. A symmetric distribution and many zero-valued weights are desirable because opposite sign weights can cancel each other out and zero weights do not increase the accumulator size.
+In a typical setting, the weights will not all have the maximum or minimum values (such as \$$-2^{n_{bits}-1}$\$). Weights typically have a normal distribution around 0, which is one of the motivating factors for their symmetric quantization. A symmetric distribution and many zero-valued weights are desirable because opposite sign weights can cancel each other out and zero weights do not increase the accumulator size.
 
 This fact can be leveraged to train a network with more neurons, while not overflowing the accumulator, using a technique called [pruning](../explanations/pruning.md) where the developer can impose a number of zero-valued weights. Torch [provides support for pruning](https://pytorch.org/tutorials/intermediate/pruning_tutorial.html) out of the box.
 

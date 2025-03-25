@@ -152,11 +152,11 @@ Please note that the default setting for the search interval is restricted to a 
 
 ## Rounded activations and quantizers
 
-To speed-up neural networks, a _rounding_ operator can be applied on the accumulators of linear and convolution layers to retain the most significant bits on which the activation and quantization is applied. The accumulator is represented using $$L$$ bits, and $$P \leq L$$ is the desired input bit-width of the TLU operation that computes the activation and quantization.
+To speed-up neural networks, a _rounding_ operator can be applied on the accumulators of linear and convolution layers to retain the most significant bits on which the activation and quantization is applied. The accumulator is represented using \$$L$$ bits, and $$P \leq L$\$ is the desired input bit-width of the TLU operation that computes the activation and quantization.
 
 The rounding operation is defined as follows:
 
-First, compute $$t$$ as the difference between $$L$$, the actual bit-width of the accumulator, and $$P$$:
+First, compute \$$t$$ as the difference between $$L$$, the actual bit-width of the accumulator, and $$P$\$:
 
 $$t = L - P$$
 
@@ -164,7 +164,7 @@ Then, the rounding operation can be computed as:
 
 $$\mathrm{round\_to\_P\_bits}(x, t) = \left\lfloor \frac{x}{2^t} \right\rceil \cdot 2^t$$
 
-where $$x$$ is the input number, and $$\lfloor \cdot \rceil$$ denotes the operation that rounds to the nearest integer.
+where \$$x$$ is the input number, and $$\lfloor \cdot \rceil$\$ denotes the operation that rounds to the nearest integer.
 
 In Concrete ML, this feature is currently implemented for custom neural networks through the compile functions, including
 
@@ -175,7 +175,7 @@ In Concrete ML, this feature is currently implemented for custom neural networks
 The `rounding_threshold_bits` argument can be set to a specific bit-width. It is important to choose an appropriate bit-width threshold to balance the trade-off between speed and accuracy. By reducing the bit-width of intermediate tensors, it is possible to speed-up computations while maintaining accuracy.
 
 {% hint style="warning" %}
-The `rounding_threshold_bits` parameter only works in FHE for TLU input bit-width ($$P$$) **less or equal to 8 bits**.
+The `rounding_threshold_bits` parameter only works in FHE for TLU input bit-width (\$$P$\$) **less or equal to 8 bits**.
 {% endhint %}
 
 To find the best trade-off between speed and accuracy, it is recommended to experiment with different thresholds and check the accuracy on an evaluation set after compiling the model.

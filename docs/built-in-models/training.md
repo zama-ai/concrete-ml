@@ -49,7 +49,7 @@ model.fit(X_binary, y_binary, fhe="execute")
 
 The `max_iter` parameter controls the number of batches that are processed by the training algorithm.
 
-The `parameters_range` parameter determines the initialization of the coefficients and the bias of the logistic regression. It is recommended to give values that are close to the min/max of the training data. It is also possible to normalize the training data so that it lies in the range $$[-1, 1]$$.
+The `parameters_range` parameter determines the initialization of the coefficients and the bias of the logistic regression. It is recommended to give values that are close to the min/max of the training data. It is also possible to normalize the training data so that it lies in the range \$$[-1, 1]$\$.
 
 ## Capabilities and Limitations
 

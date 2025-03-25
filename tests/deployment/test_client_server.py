@@ -386,9 +386,9 @@ def check_client_server_inference(
     # If the model class doesn't have _encrypt_run_decrypt_internal it's a QuantizedModule
     # and doesn't support tfhe-rs interop
     if getattr(model, "_encrypt_run_decrypt_internal", False):
-        q_y_pred_dev = model._encrypt_run_decrypt_internal(
+        q_y_pred_dev = model._encrypt_run_decrypt_internal(  # pylint: disable=protected-access
             q_x_test
-        )  #  pylint: disable=protected-access
+        )
     else:
         assert isinstance(model, QuantizedModule)
         q_y_pred_dev = model.fhe_circuit.encrypt_run_decrypt(q_x_test)

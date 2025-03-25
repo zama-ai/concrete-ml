@@ -52,7 +52,7 @@ This example shows how to train tree-ensemble models (either XGBoost or Random F
 
 - [XGBoost Regression example](../advanced_examples/XGBRegressor.ipynb)
 
-Privacy-preserving prediction of house prices is shown in this example, using the [House Prices](https://www.openml.org/d/43926) data-set. Using 50 trees in the ensemble, with 5 bits of precision for the input features, the FHE regressor obtains an $$R^2$$ score of 0.90 and an execution time of 7-8 seconds.
+Privacy-preserving prediction of house prices is shown in this example, using the [House Prices](https://www.openml.org/d/43926) data-set. Using 50 trees in the ensemble, with 5 bits of precision for the input features, the FHE regressor obtains an \$$R^2$\$ score of 0.90 and an execution time of 7-8 seconds.
 
 ### 6. Fully connected neural network
 
