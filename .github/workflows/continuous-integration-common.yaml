@@ -116,7 +116,7 @@ jobs:
     runs-on: ${{ needs.start-runner-linux.outputs.label }}
     # Run in a clean container
     # container:
-    #  image: ubuntu:20.04
+    #  image: ubuntu:24.04
     defaults:
       run:
         shell: bash
