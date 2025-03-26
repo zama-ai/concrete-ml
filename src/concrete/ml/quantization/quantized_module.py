@@ -19,6 +19,7 @@ from ..common.utils import (
     SUPPORTED_FLOAT_TYPES,
     SUPPORTED_INT_TYPES,
     USE_OLD_VL,
+    CiphertextFormat,
     FheMode,
     all_values_are_floats,
     all_values_are_integers,
@@ -93,6 +94,7 @@ class QuantizedModule:
     input_quantizers: List[UniformQuantizer]
     output_quantizers: List[UniformQuantizer]
     fhe_circuit: Union[None, Circuit]
+    ciphertext_format: Optional[CiphertextFormat] = None
 
     def __init__(
         self,
@@ -892,6 +894,9 @@ class QuantizedModule:
         inputs_encryption_status_dict = dict(
             zip(orig_args_to_proxy_func_args.values(), inputs_encryption_status)
         )
+
+        # Set ciphertext format to Concrete as generic models only support this
+        self.ciphertext_format = CiphertextFormat.CONCRETE
 
         compiler = Compiler(
             forward_proxy,

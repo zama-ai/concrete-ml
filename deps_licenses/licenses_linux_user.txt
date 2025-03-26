@@ -6,8 +6,8 @@ brevitas, 0.10.2, UNKNOWN
 certifi, 2025.1.31, Mozilla Public License 2.0 (MPL 2.0)
 charset-normalizer, 3.4.1, MIT License
 coloredlogs, 15.0.1, MIT License
-concrete-ml-extensions, 0.1.6, BSD-3-Clause-Clear
-concrete-python, 2.9.0rc2.dev20250305, BSD-3-Clause
+concrete-ml-extensions, 0.1.8, BSD-3-Clause-Clear
+concrete-python, 2.9.1rc0.dev20250325, BSD-3-Clause
 dependencies, 2.0.1, BSD License
 dill, 0.3.9, BSD License
 filelock, 3.16.1, The Unlicense (Unlicense)
@@ -45,7 +45,7 @@ pandas, 2.0.3, BSD License
 protobuf, 3.20.3, BSD-3-Clause
 psutil, 5.9.8, BSD License
 python-dateutil, 2.9.0.post0, Apache Software License; BSD License
-pytz, 2025.1, MIT License
+pytz, 2025.2, MIT License
 requests, 2.32.3, Apache Software License
 scikit-learn, 1.5.0, BSD License
 scipy, 1.13.1, BSD License
@@ -55,12 +55,12 @@ skops, 0.5.0, MIT
 skorch, 0.11.0, new BSD 3-Clause
 sympy, 1.13.3, BSD License
 tabulate, 0.8.10, MIT License
-threadpoolctl, 3.5.0, BSD License
+threadpoolctl, 3.6.0, BSD License
 torch, 2.3.1, BSD License
 tqdm, 4.67.1, MIT License; Mozilla Public License 2.0 (MPL 2.0)
 triton, 2.3.1, MIT License
 typing_extensions, 4.12.2, Python Software Foundation License
-tzdata, 2025.1, Apache Software License
+tzdata, 2025.2, Apache Software License
 unfoldNd, 0.2.3, MIT License
 urllib3, 2.2.3, MIT License
 xgboost, 1.6.2, Apache Software License

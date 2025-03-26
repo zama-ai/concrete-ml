@@ -176,7 +176,7 @@ class BaseEstimator:
         self.onnx_model_: Optional[onnx.ModelProto] = None
 
         self._tfhers_bridge: Optional[tfhers.bridge.Bridge] = None
-        self._ciphertext_format: Optional[CiphertextFormat] = None
+        self.ciphertext_format: Optional[CiphertextFormat] = None
         self.tfhers_sk: Optional[bytes] = None
 
     def __getattr__(self, attr: str):
@@ -639,6 +639,7 @@ class BaseEstimator:
         enable_key_compression = os.environ.get("USE_KEY_COMPRESSION", "1") == "1"
 
         if ciphertext_format == CiphertextFormat.TFHE_RS:
+            # Check all quantizers are the same, currently we don't support mixed cases
             assert all(
                 (
                     self.input_quantizers[i].is_signed == self.input_quantizers[0].is_signed
@@ -647,12 +648,23 @@ class BaseEstimator:
             )
             is_signed = self.input_quantizers[0].is_signed
 
+            # Get the default crypto-parmas to use with TFHE-rs
             crypto_params = json.loads(fhext.get_crypto_params_radix())  # pylint: disable=no-member
+
+            # FIXME: better handle the bitwidth here
+            # setting to 8, but actual one could be lower
             dtype_spec = tfhers.get_type_from_params_dict(  # pylint: disable=no-member
                 crypto_params, is_signed, 8
             )  # pylint: disable=no-member
             dtype = partial(tfhers.TFHERSInteger, dtype_spec)
             inputset = (dtype(v) for v in inputset)
+
+            # TFHE-rs uses 132-bit security by default
+            if configuration is None:
+                configuration = cp.Configuration()
+            configuration.security_level = (
+                cp.compilation.configuration.SecurityLevel.SECURITY_132_BITS
+            )
 
         self.fhe_circuit_ = module_to_compile.compile(
             inputset,
@@ -671,7 +683,7 @@ class BaseEstimator:
         self._is_compiled = True
         self._compiled_for_cuda = use_gpu
 
-        self._ciphertext_format = ciphertext_format
+        self.ciphertext_format = ciphertext_format
         if ciphertext_format == CiphertextFormat.TFHE_RS:
             self._tfhers_bridge = tfhers.new_bridge(self.fhe_circuit_)
         else:
@@ -693,8 +705,8 @@ class BaseEstimator:
             numpy.ndarray: The quantized predicted values.
         """
 
-    def encrypt_run_decrypt_tfhers_concrete(self, *inputs):
-        """Execute in FHE with tfhe-rs ciphertexts.
+    def _encrypt_run_decrypt_internal(self, *inputs):
+        """Execute in FHE on manually quantized data.
 
         Args:
             inputs (Tuple[numpy.ndarray]): The quantized input values.
@@ -704,7 +716,18 @@ class BaseEstimator:
         """
 
         assert self.fhe_circuit is not None
-        assert self._tfhers_bridge is not None
+
+        if self._tfhers_bridge is None:
+            return self.fhe_circuit.encrypt_run_decrypt(*inputs)
+
+        sk, _, lwe_sk = fhext.keygen_radix()  # pylint: disable=no-member
+
+        self.tfhers_sk = sk
+
+        input_idx_to_key = {0: lwe_sk}
+        self._tfhers_bridge.keygen_with_initial_keys(  # pylint: disable=no-member
+            input_idx_to_key_buffer=input_idx_to_key
+        )
 
         input_is_signed = self.input_quantizers[0].is_signed
 
@@ -734,11 +757,10 @@ class BaseEstimator:
         assert len(out_shapes) == 1
         func_name = list(out_shapes.keys())[0]
         shape = out_shapes[func_name][0]
-        num_cols = shape[1] if len(shape) > 1 else shape[0]
 
         # The output bitwidth for trees should be the same as the input one
         result_np = fhext.decrypt_radix(
-            buff, (-1, num_cols), output_bitwidth, output_is_signed, self.tfhers_sk
+            buff, shape, output_bitwidth, output_is_signed, self.tfhers_sk
         )
         result_np = result_np.reshape(shape)
         return result_np
@@ -796,7 +818,7 @@ class BaseEstimator:
 
             # If the inference should be executed using simulation
             if fhe == "simulate":
-                if self._ciphertext_format == CiphertextFormat.TFHE_RS:
+                if self.ciphertext_format == CiphertextFormat.TFHE_RS:
                     raise ValueError(
                         "Simulation with TFHE-rs ciphertext inputs/outputs is not yet implemented"
                     )
@@ -818,19 +840,10 @@ class BaseEstimator:
 
             # Else, use the FHE execution method
             else:
-                if self._ciphertext_format == CiphertextFormat.TFHE_RS:
+                if self.ciphertext_format == CiphertextFormat.TFHE_RS:
                     assert self._tfhers_bridge is not None
 
-                    sk, _, lwe_sk = fhext.keygen_radix()  # pylint: disable=no-member
-
-                    self.tfhers_sk = sk
-
-                    input_idx_to_key = {0: lwe_sk}
-                    self._tfhers_bridge.keygen_with_initial_keys(  # pylint: disable=no-member
-                        input_idx_to_key_buffer=input_idx_to_key
-                    )
-
-                    predict_method = self.encrypt_run_decrypt_tfhers_concrete
+                    predict_method = self._encrypt_run_decrypt_internal
                 else:
                     predict_method = self.fhe_circuit.encrypt_run_decrypt
 
