@@ -120,7 +120,7 @@ linux_install_cmake () {
         ${SUDO_BIN:+$SUDO_BIN} rm /usr/share/keyrings/kitware-archive-keyring.gpg
     ${SUDO_BIN:+$SUDO_BIN} apt-get install -y kitware-archive-keyring
     ${SUDO_BIN:+$SUDO_BIN} apt-get update
-    ${SUDO_BIN:+$SUDO_BIN} apt-get -y install cmake=3.28.3-0kitware1ubuntu20.04.1
+    ${SUDO_BIN:+$SUDO_BIN} apt-get -y install cmake=3.28.3-0kitware1ubuntu20.04.1 cmake-data=3.28.3-0kitware1ubuntu20.04.1
 
     cmake --version
 }
