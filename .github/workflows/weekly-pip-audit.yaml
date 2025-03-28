@@ -29,7 +29,7 @@ jobs:
 
   weekly-pip-audit:
     if: ${{ always() }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     env:
       PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
