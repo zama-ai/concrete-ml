@@ -34,6 +34,7 @@ on:
         - LogisticRegression
         - LogisticRegressionTraining
         - LoraMLP
+        - MathEvalLoraLLama
         - PerrorImpactOnFMNIST
         - PoissonRegression
         - QGPT2Evaluate
@@ -84,6 +85,7 @@ env:
   LogisticRegression: "docs/advanced_examples/LogisticRegression.ipynb" 
   LogisticRegressionTraining: "docs/advanced_examples/LogisticRegressionTraining.ipynb" 
   LoraMLP: "docs/advanced_examples/LoraMLP.ipynb" 
+  MathEvalLoraLLama: "use_case_examples/lora_finetuning/MathEvalLoraLLama.ipynb" 
   PerrorImpactOnFMNIST: "use_case_examples/cifar/cifar_brevitas_finetuning/PerrorImpactOnFMNIST.ipynb" 
   PoissonRegression: "docs/advanced_examples/PoissonRegression.ipynb" 
   QGPT2Evaluate: "use_case_examples/llm/QGPT2Evaluate.ipynb" 
@@ -99,8 +101,9 @@ env:
 
 jobs:
   start-runner-linux:
-    name: Start EC2 runner
+    name: Start Slab runner (Linux)
     runs-on: ubuntu-20.04
+    timeout-minutes: 15
     outputs:
       label-38: ${{ steps.start-slab-runner-38.outputs.label }}
       slab-instance-id-38: ${{ steps.start-slab-runner-38.outputs.slab-instance-id || '' }}
@@ -130,7 +133,7 @@ jobs:
   refresh-one-notebook:
     needs: [start-runner-linux]
 
-    runs-on: ${{ needs.start-runner-linux.outputs.label-38 }}
+    runs-on: ${{ needs.start-runner-linux.outputs.label }}
     # Run in a clean container
     container:
       image: ubuntu:20.04
@@ -214,9 +217,10 @@ jobs:
 
 
   stop-runner-linux:
-    name: Stop EC2 runner
+    name: Stop Slab runner (Linux)
     needs: [refresh-one-notebook, start-runner-linux]
     runs-on: ubuntu-20.04
+    timeout-minutes: 2
     if: ${{ always() && (needs.start-runner-linux.result != 'skipped') }}
     steps:
       - name: Configure AWS credentials

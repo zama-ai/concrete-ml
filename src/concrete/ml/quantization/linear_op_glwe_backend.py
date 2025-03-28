@@ -66,22 +66,25 @@ class GLWELinearLayerExecutor:
             self.glwe_crypto_params
         )
 
-    def _get_quant_range(self, q_module: QuantizedModule):
-        """Return the minimum and maximum quantized values for the given module.
+    def _get_quant_range(self, q_module: QuantizedModule, is_signed: bool = False):
+        """Return the minimum and maximum signed quantized values for the given module.
 
         Args:
             q_module: The quantized module to get the range for
+            is_signed: Whether to return the signed range
 
         Returns:
             tuple: Minimum and maximum quantized values
         """
         input_n_bits = q_module.input_quantizers[0].quant_options.n_bits
+        if is_signed:
+            return -(2 ** (input_n_bits - 1)), 2 ** (input_n_bits - 1) - 1
         return 0, 2**input_n_bits - 1
 
     def _per_channel_weight_quantization(
         self, weight: numpy.ndarray, q_module: QuantizedModule, device: torch.device
     ):
-        """Quantize the weights, per-channel.
+        """Quantize the weights, per-channel using symmetric (signed) quantization.
 
         Args:
             weight: Weight tensor to quantize
@@ -92,7 +95,9 @@ class GLWELinearLayerExecutor:
             tuple: Quantized weights, scale, zero point and weight sum
         """
         weight_float = torch.from_numpy(weight).to(device)
-        q_min, q_max = self._get_quant_range(q_module)
+
+        # Get the signed integer range
+        q_min, q_max = self._get_quant_range(q_module, is_signed=True)
 
         w_min_vals, _ = weight_float.min(dim=0, keepdim=True)
         w_max_vals, _ = weight_float.max(dim=0, keepdim=True)
@@ -104,7 +109,10 @@ class GLWELinearLayerExecutor:
         )
         weight_scale = weight_scale.squeeze(-1)  # shape: (out_dim,)
 
-        weight_zp = torch.round((q_min - w_min_vals) / weight_scale).to(torch.float32)
+        # Quantization
+        weight_zp = torch.round(q_min - w_min_vals / weight_scale).to(torch.float32)
+
+        # Apply quantization with proper broadcasting
         weight_q = torch.round(weight_float / weight_scale) + weight_zp
         weight_q = torch.clamp(weight_q, q_min, q_max).to(torch.float32)
         sum_w = weight_q.sum(dim=0)  # sum over the input dimension

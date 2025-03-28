@@ -36,7 +36,7 @@ concurrency:
 
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-  SLAB_PROFILE: t4gpu
+  SLAB_PROFILE: l40_fallback
 
 jobs:
   start-runner-linux:
@@ -164,7 +164,7 @@ jobs:
           github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
           slab-url: ${{ secrets.SLAB_BASE_URL }}
           job-secret: ${{ secrets.JOB_SECRET }}
-          label: ${{ needs.start-runner-linux.outputs.label }}
+          label: ${{ needs.start-runner-linux.outputs.slab-instance-id }}
 
   send-report:
     if: ${{ always() }}
