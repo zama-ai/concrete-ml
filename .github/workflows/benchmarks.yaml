@@ -55,12 +55,12 @@ env:
 jobs:
   prepare-scripts:
     name: Prepare scripts to launch on individual AWS instances
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     defaults:
       run:
         shell: bash
     container:
-      image: ubuntu:20.04
+      image: ubuntu:24.04
     outputs:
       commands: ${{ steps.prepare-commands.outputs.commands }}
       length: ${{ steps.prepare-commands.outputs.length }}
@@ -120,7 +120,7 @@ jobs:
 
   run-job:
     needs: [prepare-scripts]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       # To avoid stopping all workflows if one fails
       fail-fast: false
@@ -151,7 +151,7 @@ jobs:
           ${{ secrets.SLAB_URL }}
 
   slack-notification:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: [run-job]
     steps:
       - name: Slack Notification

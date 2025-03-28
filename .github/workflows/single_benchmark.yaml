@@ -72,7 +72,7 @@ jobs:
     runs-on: ${{ inputs.runner_name }}
     if: ${{ !cancelled() }}
     container:
-      image: ubuntu:20.04
+      image: ubuntu:24.04
     defaults:
       run:
         shell: bash

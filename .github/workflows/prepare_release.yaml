@@ -18,7 +18,7 @@ env:
 jobs:
   prepare-release:
     name: Prepare release ${{ github.event.inputs.version }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     defaults:
       run:
         shell: bash

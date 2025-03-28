@@ -335,7 +335,11 @@ def check_client_server_files(model, mode="inference"):
 
 
 def check_client_server_inference(
-    x_test, model, key_dir, check_array_equal, check_float_array_equal
+    x_test,
+    model,
+    key_dir,
+    check_array_equal,
+    check_float_array_equal,
 ):
     """Test the client server interface API.
 
@@ -366,7 +370,7 @@ def check_client_server_inference(
     fhe_model_server.load()
 
     # Client side : Generate all keys and serialize the evaluation keys for the server
-    evaluation_keys = fhe_model_client.get_serialized_evaluation_keys()
+    evaluation_keys, _ = fhe_model_client.get_serialized_evaluation_keys()
 
     # Client side : Quantize, encrypt and serialize the data
     q_x_encrypted_serialized = fhe_model_client.quantize_encrypt_serialize(x_test)
@@ -660,7 +664,7 @@ def get_fitted_weights(
 
     # Client side : Generate all keys and serialize the evaluation keys for the server
     if fhe_client is not None:
-        evaluation_keys = fhe_client.get_serialized_evaluation_keys()
+        evaluation_keys, _ = fhe_client.get_serialized_evaluation_keys()
 
     # Server side: Fit the model over encrypted data using the training FHE circuit
     weights_enc, bias_enc = fhe_training_run(

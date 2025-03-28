@@ -51,7 +51,7 @@ env:
 jobs:
   setup-ec2:
     name: Setup EC2 instance
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       runner-name: ${{ steps.start-instance.outputs.label }}
     steps:
@@ -206,7 +206,7 @@ jobs:
     name: Teardown EC2 instance (fast-tests)
     if: ${{ always() }}
     needs: [ setup-ec2, run-cifar-10 ]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Stop instance
         id: stop-instance
@@ -219,7 +219,7 @@ jobs:
           label: ${{ needs.setup-ec2.outputs.runner-name }}
 
   slack-notification:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: [run-cifar-10]
     if: github.event.inputs.alternative-cp-branch == 'none' && github.event.inputs.alternative-cp-wheel-artifact-id == 'none'
     steps:

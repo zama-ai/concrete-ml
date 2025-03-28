@@ -12,7 +12,7 @@ env:
 jobs:
   start-runner-linux:
     name: Start EC2 runner
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       label-38: ${{ steps.start-gpu-machine.outputs.label }}
     steps:
@@ -110,7 +110,7 @@ jobs:
   stop-runner-linux:
     name: Stop EC2 runner
     needs: [refresh-notebooks, start-runner-linux]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: ${{ always() && (needs.start-runner-linux.result != 'skipped') }}
     steps:
       - name: Stop instance
@@ -133,7 +133,7 @@ jobs:
       ]
 
     name: Send Slack notification
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 

@@ -22,6 +22,7 @@ on:
           - lora_finetuning
           - resnet
           - sentiment_analysis_with_transformer
+          - tfhers_interoperability
           - titanic
           # --- refresh_use_cases_list.py: refresh list of use cases currently available [END] ---
       push_changes:
@@ -41,7 +42,7 @@ env:
 jobs:
   start-runner-linux:
     name: Start EC2 runner
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     outputs:
       label: ${{ steps.start-slab-runner.outputs.label }}
       slab-instance-id: ${{ steps.start-slab-runner.outputs.label || '' }}
@@ -72,7 +73,7 @@ jobs:
     needs: [start-runner-linux]
     runs-on: ${{ needs.start-runner-linux.outputs.label }}
     container:
-      image: ubuntu:22.04
+      image: ubuntu:24.04
     defaults:
       run:
         shell: bash
@@ -146,7 +147,7 @@ jobs:
   stop-runner-linux:
     name: Stop EC2 runner
     needs: [run-use-case-examples, start-runner-linux]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     if: ${{ always() && (needs.start-runner-linux.result != 'skipped') }}
     steps:
       - name: Configure AWS credentials
@@ -175,7 +176,7 @@ jobs:
         stop-runner-linux,
       ]
     name: Send Slack notification
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 

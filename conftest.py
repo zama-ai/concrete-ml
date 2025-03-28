@@ -533,6 +533,8 @@ def check_is_good_execution_for_cml_vs_circuit():
         model: Union[Callable, QuantizedModule, QuantizedTorchEstimatorMixin],
         simulate: bool,
         n_allowed_runs: int = 5,
+        rtol: float = 1e-5,
+        atol: float = 1e-8,
     ):
         """Check that a model or a quantized module give the same output as the circuit.
 
@@ -543,6 +545,8 @@ def check_is_good_execution_for_cml_vs_circuit():
             simulate (bool): whether to run the execution in FHE or in simulated mode.
             n_allowed_runs (int): in case of FHE execution randomness can make the output slightly
                 different this allows to run the evaluation multiple times
+            rtol (float): Relative tolerance, default to 1e-5.
+            atol (float): Absolute tolerance, default to 1e-8.
         """
 
         inputs = to_tuple(inputs)
@@ -596,11 +600,18 @@ def check_is_good_execution_for_cml_vs_circuit():
                         "a QuantizedModule object."
                     )
 
-            if array_allclose_and_same_shape(y_pred_fhe, y_pred_quantized):
+            if array_allclose_and_same_shape(y_pred_fhe, y_pred_quantized, rtol=rtol, atol=atol):
                 return
 
+        is_close = numpy.isclose(y_pred_fhe, y_pred_quantized, rtol=rtol, atol=atol)
+        rows_with_mismatch = ~numpy.all(is_close, axis=1)
+        mismatch_indices = numpy.where(rows_with_mismatch)[0]
+
         raise RuntimeError(
-            f"Mismatch between circuit results:\n{y_pred_fhe}\n"
+            f"\nPrediction mismatch detected in rows: {mismatch_indices.tolist()}\n"
+            f"FHE predictions:\n{y_pred_fhe[mismatch_indices]}\n"
+            f"Quantized predictions:\n{y_pred_quantized[mismatch_indices]}\n\n"
+            f"Mismatch between circuit results:\n{y_pred_fhe}\n\n"
             f"and model function results:\n{y_pred_quantized}"
         )
 

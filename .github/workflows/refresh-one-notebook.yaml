@@ -8,6 +8,7 @@ on:
         type: choice
         description: Notebook file name
         options:
+        - AuthenticationWithDecisionTree
         - CifarInFhe
         - CifarInFheWithSmallerAccumulators
         - CifarQuantizationAwareTraining
@@ -59,6 +60,7 @@ env:
   SLAB_PROFILE: m6i
   # --- refresh_notebooks_list.py: refresh list of notebook paths currently available [START] ---
   # --- do not edit, auto generated part by `make refresh_notebooks_list` ---
+  AuthenticationWithDecisionTree: "use_case_examples/tfhers_interoperability/AuthenticationWithDecisionTree.ipynb" 
   CifarInFhe: "use_case_examples/cifar/cifar_brevitas_finetuning/CifarInFhe.ipynb" 
   CifarInFheWithSmallerAccumulators: "use_case_examples/cifar/cifar_brevitas_finetuning/CifarInFheWithSmallerAccumulators.ipynb" 
   CifarQuantizationAwareTraining: "use_case_examples/cifar/cifar_brevitas_finetuning/CifarQuantizationAwareTraining.ipynb" 
@@ -102,8 +104,7 @@ env:
 jobs:
   start-runner-linux:
     name: Start Slab runner (Linux)
-    runs-on: ubuntu-20.04
-    timeout-minutes: 15
+    runs-on: ubuntu-24.04
     outputs:
       label-38: ${{ steps.start-slab-runner-38.outputs.label }}
       slab-instance-id-38: ${{ steps.start-slab-runner-38.outputs.slab-instance-id || '' }}
@@ -136,7 +137,7 @@ jobs:
     runs-on: ${{ needs.start-runner-linux.outputs.label }}
     # Run in a clean container
     container:
-      image: ubuntu:20.04
+      image: ubuntu:24.04
     defaults:
       run:
         shell: bash
@@ -219,8 +220,7 @@ jobs:
   stop-runner-linux:
     name: Stop Slab runner (Linux)
     needs: [refresh-one-notebook, start-runner-linux]
-    runs-on: ubuntu-20.04
-    timeout-minutes: 2
+    runs-on: ubuntu-24.04
     if: ${{ always() && (needs.start-runner-linux.result != 'skipped') }}
     steps:
       - name: Configure AWS credentials
@@ -251,7 +251,7 @@ jobs:
 
     # If the target branch is main or a release branch, a slack notification is sent
     name: Send Slack notification
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 

@@ -10,7 +10,7 @@ on:
 jobs:
   sync-repo:
     if: ${{ github.repository == 'zama-ai/concrete-ml' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       # Initial action can be found here: https://github.com/wei/git-sync
       # The issue is that it does not handle new LFS files when pushing, only the ones that are 
