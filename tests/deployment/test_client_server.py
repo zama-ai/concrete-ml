@@ -2,12 +2,14 @@
 
 import json
 import os
+import subprocess
 import tempfile
 import zipfile
 from functools import partial
 from pathlib import Path
 from shutil import copyfile
 
+import concrete_ml_extensions as fhext
 import numpy
 import pytest
 from torch import nn
@@ -215,8 +217,12 @@ def test_client_server_tfhers_sklearn_inference(
     key_dir = default_configuration.insecure_key_cache_location
 
     # Check client/server FHE predictions vs the FHE predictions of the dev model
-    check_client_server_inference(
-        x_test, model, key_dir, check_array_equal, check_float_array_equal
+    check_client_server_tfhers_inference(
+        x_test,
+        model,
+        key_dir,
+        check_array_equal,
+        check_float_array_equal,
     )
 
 
@@ -335,11 +341,7 @@ def check_client_server_files(model, mode="inference"):
 
 
 def check_client_server_inference(
-    x_test,
-    model,
-    key_dir,
-    check_array_equal,
-    check_float_array_equal,
+    x_test, model, key_dir, check_array_equal, check_float_array_equal
 ):
     """Test the client server interface API.
 
@@ -370,7 +372,7 @@ def check_client_server_inference(
     fhe_model_server.load()
 
     # Client side : Generate all keys and serialize the evaluation keys for the server
-    evaluation_keys, _ = fhe_model_client.get_serialized_evaluation_keys()
+    evaluation_keys = fhe_model_client.get_serialized_evaluation_keys()
 
     # Client side : Quantize, encrypt and serialize the data
     q_x_encrypted_serialized = fhe_model_client.quantize_encrypt_serialize(x_test)
@@ -405,6 +407,118 @@ def check_client_server_inference(
     # Check that both quantized and de-quantized (+ post-processed) results from the server are
     # matching the ones from the dec model
     check_float_array_equal(y_pred, y_pred_dev)
+
+
+def check_client_server_tfhers_inference(
+    x_test, model, key_dir, check_array_equal, check_float_array_equal
+):
+    """Test the client server interface API.
+
+    This test expects that the given model has been trained and compiled in development. It
+    basically replicates a production-like interaction and checks that results are on matching the
+    development model.
+    """
+    # Create a new network
+    disk_network = OnDiskNetwork()
+
+    # Save development files
+    fhe_model_dev = FHEModelDev(path_dir=disk_network.dev_dir.name, model=model)
+    fhe_model_dev.save(mode="inference")
+
+    # Send necessary files to server and client
+    disk_network.dev_send_clientspecs_and_modelspecs_to_client()
+    disk_network.dev_send_model_to_server()
+
+    # Load the client
+    fhe_model_client = FHEModelClient(
+        path_dir=disk_network.client_dir.name,
+        key_dir=key_dir,
+    )
+    fhe_model_client.load()
+
+    # Load the server
+    fhe_model_server = FHEModelServer(path_dir=disk_network.server_dir.name)
+    fhe_model_server.load()
+
+    # Client side : Generate all keys and serialize the evaluation keys for the server
+    evaluation_keys, tfhers_evaluation_keys = fhe_model_client.get_serialized_evaluation_keys(
+        include_tfhers_key=True
+    )
+
+    # Client side : Quantize, encrypt and serialize the data
+    q_x_encrypted_serialized = fhe_model_client.quantize_encrypt_serialize(x_test)
+
+    # Server side: Run the model over encrypted data
+    q_y_pred_encrypted_serialized = fhe_model_server.run(q_x_encrypted_serialized, evaluation_keys)
+
+    # Client side : Decrypt, de-quantize and post-process the result
+    q_y_pred = fhe_model_client.deserialize_decrypt(*to_tuple(q_y_pred_encrypted_serialized))
+    y_pred = fhe_model_client.deserialize_decrypt_dequantize(
+        *to_tuple(q_y_pred_encrypted_serialized)
+    )
+
+    q_x_test = model.quantize_input(x_test)
+
+    # If the model class doesn't have _encrypt_run_decrypt_internal it's a QuantizedModule
+    # and doesn't support tfhe-rs interop
+    if getattr(model, "_encrypt_run_decrypt_internal", False):
+        q_y_pred_dev = model._encrypt_run_decrypt_internal(  # pylint: disable=protected-access
+            q_x_test
+        )
+    else:
+        assert isinstance(model, QuantizedModule)
+        q_y_pred_dev = model.fhe_circuit.encrypt_run_decrypt(q_x_test)
+
+    y_pred_dev = model.dequantize_output(q_y_pred_dev)
+    y_pred_dev = model.post_processing(y_pred_dev)
+
+    # Export intermediate files for TFHE-rs Rust inference ===
+    with open("evalkeys_tfhers.bin", "wb") as k, open("prediction_non_preprocessed.bin", "wb") as i:
+        k.write(tfhers_evaluation_keys)
+        i.write(q_y_pred_encrypted_serialized[0])
+
+    # Execute the post-processing using TFHE-rs
+    # The Rust binary simply multiplies each output value by 2
+    subprocess.run(
+        [
+            "cargo",
+            "run",
+            "--manifest-path",
+            "tests/deployment/Cargo.toml",
+            "--release",
+            "--",
+            "evalkeys_tfhers.bin",
+            "prediction_non_preprocessed.bin",
+            "tfhers_result.bin",
+        ],
+        check=True,
+    )
+
+    with open("tfhers_result.bin", "rb") as f:
+        tfhers_postproc_bytes = f.read()
+
+    tfhers_y_pred_server = fhext.decrypt_radix(
+        blob=tfhers_postproc_bytes,
+        shape=(1, 4),
+        bitwidth=8,
+        is_signed=True,
+        secret_key=fhe_model_client.get_tfhers_secret_key(),
+    )
+
+    print(f"\n\n{tfhers_y_pred_server=} ----------- {tfhers_y_pred_server.shape}")
+    print(f"{y_pred=} ---------- {y_pred.shape}")
+    print(f"{y_pred_dev=} ---------- {y_pred_dev.shape}")
+    print(f"{q_y_pred=} ---------- {q_y_pred.shape}")
+    print(f"{q_y_pred_dev=} ---------- {q_y_pred_dev.shape}")
+
+    check_array_equal(q_y_pred, q_y_pred_dev)
+
+    # Check that both quantized and de-quantized (+ post-processed) results from the server are
+    # matching the ones from the dec model
+    check_float_array_equal(y_pred, y_pred_dev)
+
+    # Check that Rust post-processing (×2) matches expected output
+    check_array_equal(tfhers_y_pred_server, y_pred_dev * -2)
 
 
 def check_input_compression(model, fhe_circuit_compressed, is_torch, **compilation_kwargs):
@@ -664,7 +778,7 @@ def get_fitted_weights(
 
     # Client side : Generate all keys and serialize the evaluation keys for the server
     if fhe_client is not None:
-        evaluation_keys, _ = fhe_client.get_serialized_evaluation_keys()
+        evaluation_keys = fhe_client.get_serialized_evaluation_keys()
 
     # Server side: Fit the model over encrypted data using the training FHE circuit
     weights_enc, bias_enc = fhe_training_run(
