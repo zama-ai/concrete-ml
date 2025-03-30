@@ -39,24 +39,23 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     // Input file paths
-    let serverkey_key_path = &args[1];     // e.g., "evalkeys_tfhers.bin"
-    let input_path = &args[2];             // e.g., "prediction_non_preprocessed.bin"
-    let output_path = &args[3];            // e.g., "tfhers_sign_result.bin"
+    let serverkey_key_path = &args[1];
+    let input_path = &args[2];
+    let output_path = &args[3];
 
     // Load and set the server's evaluation key
     let serverkey_key = load_serverkey(&serverkey_key_path)?;
     set_server_key(serverkey_key.clone());
-
 
     // Deserialize encrypted input values
     let serialized_list = fs::read(input_path)?;
     let mut serialized_data = Cursor::new(serialized_list);
     let encrypted_values: Vec<FheInt8> = bincode::deserialize_from(&mut serialized_data).unwrap();
 
-    // Multiply by 1
+    // Mod 2
     let response: Vec<FheInt8> = encrypted_values
     .iter()
-    .map(|val| val * 2)
+    .map(|val| val % 2)
     .collect();
 
     // Serialize the encrypted response
@@ -64,5 +63,3 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
-
-
