@@ -418,6 +418,12 @@ jobs:
 
           make setup_env
 
+      - name: Installer Rust via rustup
+        run: |
+          curl https://sh.rustup.rs -sSf | sh -s -- -y
+          source $HOME/.cargo/env
+          rustc --version
+    
       # macOS builds are already long, so we decide not to use --weekly on them, it could be
       # changed. Remark also that, for mac, due to unexpected issues with GitHub, we have a
       # slightly different way to launch pytest

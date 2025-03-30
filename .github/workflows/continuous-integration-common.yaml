@@ -201,12 +201,6 @@ jobs:
 
           make setup_env
 
-      - name: Install Rust
-        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
-        with:
-          toolchain: stable
-          override: true
-          
       - name: Check actionlint
         run:
           make actionlint
