@@ -4,8 +4,7 @@ import json
 import os
 import tempfile
 import zipfile
-from functools import partial, reduce
-from operator import mul
+from functools import partial
 from pathlib import Path
 from shutil import copyfile
 
