@@ -2,7 +2,6 @@
 
 import json
 import os
-import subprocess
 import tempfile
 import zipfile
 from functools import partial, reduce
@@ -10,7 +9,6 @@ from operator import mul
 from pathlib import Path
 from shutil import copyfile
 
-import concrete_ml_extensions as fhext
 import numpy
 import pytest
 from torch import nn
@@ -365,10 +363,6 @@ def check_client_server_inference(
         ciphertext_format: Specifies the ciphertext backend format. Default to
         CiphertextFormat.CONCRETE.
     """
-
-    def get_flat_shape(shape):
-        """Preserve the batch dimension and flatten the remaining dimensions."""
-        return (shape[0], reduce(mul, shape[1:], 1))
 
     # Create a new network
     disk_network = OnDiskNetwork()
