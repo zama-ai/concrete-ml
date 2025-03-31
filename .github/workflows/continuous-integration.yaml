@@ -424,6 +424,9 @@ jobs:
           source $HOME/.cargo/env
           rustc --version
     
+      - name: Add cargo to PATH
+        run: echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
       # macOS builds are already long, so we decide not to use --weekly on them, it could be
       # changed. Remark also that, for mac, due to unexpected issues with GitHub, we have a
       # slightly different way to launch pytest
