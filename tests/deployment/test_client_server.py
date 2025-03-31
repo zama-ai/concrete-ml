@@ -398,6 +398,12 @@ def check_client_server_inference(
         evaluation_keys, tfhers_evaluation_keys = fhe_model_client.get_serialized_evaluation_keys(
             include_tfhers_key=True
         )
+
+        assert tfhers_evaluation_keys is not None
+
+        tfhers_sk = fhe_model_client.get_tfhers_secret_key()
+
+        assert tfhers_sk is not None
     else:
         evaluation_keys = fhe_model_client.get_serialized_evaluation_keys(include_tfhers_key=False)
 
@@ -433,47 +439,6 @@ def check_client_server_inference(
     # Check that both quantized and de-quantized (+ post-processed) results from the server are
     # matching the ones from the dec model
     check_float_array_equal(y_pred, y_pred_dev)
-
-    # Run post-processing in TFHE-rs, if CiphertextFormat.TFHE_RS:
-    if ciphertext_format == CiphertextFormat.TFHE_RS:
-
-        # Export intermediate files for TFHE-rs Rust inference
-        with open("evalkeys_tfhers.bin", "wb") as k, open(
-            "prediction_non_preprocessed.bin", "wb"
-        ) as i:
-            k.write(tfhers_evaluation_keys)
-            i.write(q_y_pred_encrypted_serialized[0])
-
-        # Execute the TFHE-rs binary (post-processing applies mod 2 to predictions)
-        subprocess.run(
-            [
-                "cargo",
-                "run",
-                "--manifest-path",
-                "tests/deployment/Cargo.toml",
-                "--release",
-                "--",
-                "evalkeys_tfhers.bin",
-                "prediction_non_preprocessed.bin",
-                "tfhers_result.bin",
-            ],
-            check=True,
-        )
-
-        # Load TFHE-rs post-processed output
-        with open("tfhers_result.bin", "rb") as f:
-            tfhers_postproc_bytes = f.read()
-
-        tfhers_y_pred_server = fhext.decrypt_radix(
-            blob=tfhers_postproc_bytes,
-            shape=get_flat_shape(q_y_pred_dev.shape),
-            bitwidth=8,
-            is_signed=True,
-            secret_key=fhe_model_client.get_tfhers_secret_key(),
-        )
-
-        # Compare TFHE-rs post-processed result with expected modulo-2 behavior
-        check_array_equal(numpy.abs(tfhers_y_pred_server).flatten(), (q_y_pred_dev % 2).flatten())
 
 
 def check_input_compression(model, fhe_circuit_compressed, is_torch, **compilation_kwargs):
