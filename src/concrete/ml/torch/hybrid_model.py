@@ -956,7 +956,7 @@ class HybridFHEModelServer:  # pragma:no cover
             self.modules[model_name][module_name][str(input_shape)]["path"] / "client.zip"
         ).resolve()
         if not path_to_client.exists():
-            raise ValueError("Could not find client.")
+            raise ValueError(f"Could not find client at path: {path_to_client}. Check if the model was compiled correctly for the given parameters.")
         return path_to_client
 
     def add_key(

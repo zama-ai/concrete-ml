@@ -99,8 +99,9 @@ if __name__ == "__main__":
     decrypted_predictions = []
     for result in grequests.map(inferences):
         if result is None:
-            raise ValueError("Result is None, probably due to a crash on the server side.")
+            raise ValueError("Server response is None. This likely indicates a crash or timeout on the server side. Check server logs for details.")
         assert result.status_code == STATUS_OK
+        print("OK!")
 
         encrypted_result = result.content
         decrypted_prediction = client.deserialize_decrypt_dequantize(encrypted_result)[0]
