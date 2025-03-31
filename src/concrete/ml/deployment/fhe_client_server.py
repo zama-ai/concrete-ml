@@ -299,7 +299,12 @@ class FHEModelDev:
         if isinstance(mode, str):
             mode_lower = mode.lower()
             if not DeploymentMode.is_valid(mode_lower):
-                raise ValueError("Mode must be either 'inference' or 'training'")
+                raise ValueError(
+                    (
+                        f"Invalid deployment mode: '{mode}'. "
+                        "Mode must be either 'inference' or 'training'"
+                    )
+                )
             mode = DeploymentMode(mode_lower)
 
         # Get fhe_circuit based on the mode

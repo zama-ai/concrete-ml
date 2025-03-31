@@ -6,7 +6,13 @@ import os
 import requests
 
 if "KEY_FOR_COMMUNITY_DISCOURSE" not in os.environ:
-    raise Exception("please get a key KEY_FOR_COMMUNITY_DISCOURSE in your environment")
+    raise Exception(
+        (
+            "Missing required environment variable "
+            "'KEY_FOR_COMMUNITY_DISCOURSE'. Please set this API "
+            "key in your environment to access community discourse data."
+        )
+    )
 
 key_for_community_discourse = os.environ["KEY_FOR_COMMUNITY_DISCOURSE"]
 
