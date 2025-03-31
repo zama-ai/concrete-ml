@@ -16,7 +16,7 @@ jobs:
   # if a build is needed for other version of Python, or even other platforms (ARM, M1).
   launch-ami-build:
     name: Launch AMI build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
 
       # Just a way to check that if triggered by workflow_dispatch the tag exists

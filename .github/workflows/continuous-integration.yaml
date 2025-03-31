@@ -299,8 +299,8 @@ jobs:
     name: Single Python Version (Linux)
     needs: [matrix-preparation]
     # Run in a clean container
-    #container:
-    #  image: ubuntu:20.04
+    # container:
+    #  image: ubuntu:24.04
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(format('{{"include":{0}}}', needs.matrix-preparation.outputs.linux-matrix)) }}

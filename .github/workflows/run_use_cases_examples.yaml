@@ -13,7 +13,7 @@ env:
 jobs:
   start-runner-linux:
     name: Start SLAB runner
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     outputs:
       label-38: ${{ steps.start-slab-runner-38.outputs.label }}
       slab-instance-id-38: ${{ steps.start-slab-runner-38.outputs.slab-instance-id || '' }}
@@ -44,7 +44,7 @@ jobs:
     needs: [start-runner-linux]
     runs-on: ${{ needs.start-runner-linux.outputs.label-38 }}
     container:
-      image: ubuntu:20.04
+      image: ubuntu:24.04
     defaults:
       run:
         shell: bash
@@ -84,7 +84,7 @@ jobs:
   stop-runner-linux:
     name: Stop EC2 runner
     needs: [run-use-case-examples, start-runner-linux]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     if: ${{ always() && (needs.start-runner-linux.result != 'skipped') }}
     steps:
       - name: Configure AWS credentials
@@ -113,7 +113,7 @@ jobs:
         stop-runner-linux,
       ]
     name: Send Slack notification
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 

@@ -33,7 +33,7 @@ jobs:
       matrix:
         config:
           - os_name: linux
-            os: ubuntu-latest
+            os: ubuntu-24.04
           - os_name: mac_silicon
             os: macos-latest-xlarge
           - os_name: mac_intel
@@ -46,7 +46,7 @@ jobs:
           - ${{ inputs.mac_intel }}
         exclude:
           - triggerLinux: false
-            config: {os_name: linux, os: ubuntu-latest}
+            config: {os_name: linux, os: ubuntu-24.04}
           - triggerMacSilicon: false
             config: {os_name: mac_silicon, os: macos-latest-xlarge}
           - triggerMacIntel: false
@@ -105,7 +105,7 @@ jobs:
 
   # Push the updates license files, as a PR or directly to the branch
   push_licenses:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [update_licenses]
     if: always()
     steps:

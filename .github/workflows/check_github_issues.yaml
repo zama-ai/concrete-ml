@@ -25,7 +25,7 @@ jobs:
     timeout-minutes: 5
     # Using the regular Ubuntu 20.04 version recently started to raise related to grub-efi-amd64-signed
     # More info : https://github.com/orgs/community/discussions/47863
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     defaults:
       run:
         shell: bash
