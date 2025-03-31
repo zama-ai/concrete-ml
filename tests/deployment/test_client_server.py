@@ -216,7 +216,12 @@ def test_client_server_tfhers_sklearn_inference(
 
     # Check client/server FHE predictions vs the FHE predictions of the dev model
     check_client_server_inference(
-        x_test, model, key_dir, check_array_equal, check_float_array_equal
+        x_test,
+        model,
+        key_dir,
+        check_array_equal,
+        check_float_array_equal,
+        ciphertext_format=CiphertextFormat.TFHE_RS,
     )
 
 
@@ -335,14 +340,29 @@ def check_client_server_files(model, mode="inference"):
 
 
 def check_client_server_inference(
-    x_test, model, key_dir, check_array_equal, check_float_array_equal
+    x_test,
+    model,
+    key_dir,
+    check_array_equal,
+    check_float_array_equal,
+    ciphertext_format=CiphertextFormat.CONCRETE,
 ):
     """Test the client server interface API.
 
     This test expects that the given model has been trained and compiled in development. It
     basically replicates a production-like interaction and checks that results are on matching the
     development model.
+
+    Args:
+        x_test: Input test data.
+        model: Trained and compiled model.
+        key_dir: Path to key directory.
+        check_array_equal: Function to compare arrays with integer values.
+        check_float_array_equal: Function to compare arrays with float values.
+        ciphertext_format: Specifies the ciphertext backend format. Default to
+        CiphertextFormat.CONCRETE.
     """
+
     # Create a new network
     disk_network = OnDiskNetwork()
 
@@ -366,7 +386,19 @@ def check_client_server_inference(
     fhe_model_server.load()
 
     # Client side : Generate all keys and serialize the evaluation keys for the server
-    evaluation_keys = fhe_model_client.get_serialized_evaluation_keys()
+    if ciphertext_format == CiphertextFormat.TFHE_RS:
+
+        evaluation_keys, tfhers_evaluation_keys = fhe_model_client.get_serialized_evaluation_keys(
+            include_tfhers_key=True
+        )
+
+        assert tfhers_evaluation_keys is not None
+
+        tfhers_sk = fhe_model_client.get_tfhers_secret_key()
+
+        assert tfhers_sk is not None
+    else:
+        evaluation_keys = fhe_model_client.get_serialized_evaluation_keys(include_tfhers_key=False)
 
     # Client side : Quantize, encrypt and serialize the data
     q_x_encrypted_serialized = fhe_model_client.quantize_encrypt_serialize(x_test)
@@ -380,7 +412,6 @@ def check_client_server_inference(
         *to_tuple(q_y_pred_encrypted_serialized)
     )
 
-    # Dev side: Predict using the model and circuit from development
     q_x_test = model.quantize_input(x_test)
 
     # If the model class doesn't have _encrypt_run_decrypt_internal it's a QuantizedModule

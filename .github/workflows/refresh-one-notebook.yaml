@@ -8,6 +8,7 @@ on:
         type: choice
         description: Notebook file name
         options:
+        - AuthenticationWithDecisionTree
         - CifarInFhe
         - CifarInFheWithSmallerAccumulators
         - CifarQuantizationAwareTraining
@@ -59,6 +60,7 @@ env:
   SLAB_PROFILE: m6i
   # --- refresh_notebooks_list.py: refresh list of notebook paths currently available [START] ---
   # --- do not edit, auto generated part by `make refresh_notebooks_list` ---
+  AuthenticationWithDecisionTree: "use_case_examples/tfhers_interoperability/AuthenticationWithDecisionTree.ipynb" 
   CifarInFhe: "use_case_examples/cifar/cifar_brevitas_finetuning/CifarInFhe.ipynb" 
   CifarInFheWithSmallerAccumulators: "use_case_examples/cifar/cifar_brevitas_finetuning/CifarInFheWithSmallerAccumulators.ipynb" 
   CifarQuantizationAwareTraining: "use_case_examples/cifar/cifar_brevitas_finetuning/CifarQuantizationAwareTraining.ipynb" 
