@@ -99,7 +99,10 @@ jobs:
             $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
           apt-get update
           apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
-          apt-get install -y python3-venv make git git-lfs binutils python3-pip
+          apt-get install -y python3-venv make git git-lfs binutils
+          python3 -m venv .venv
+          source venv/bin/activate
+          pip install -U pip setuptools
           pip install -U "huggingface_hub[cli]"
 
       - name: Checkout Code
@@ -109,6 +112,7 @@ jobs:
 
       - name: Run One Use Case Example Script
         run: |
+          source .venv/bin/activate
           huggingface-cli login --token ${{ secrets.LLAMA_HF_TOKEN }}
           USE_CASE=${{ github.event.inputs.use_case }}
           make run_one_use_case_example USE_CASE=$USE_CASE
@@ -117,6 +121,7 @@ jobs:
       - name: Pull latest changes
         if: ${{ github.event.inputs.push_changes == 'true' }}
         run: |
+          source .venv/bin/activate
           git pull -X theirs
 
       # If the target branch is main or a release branch, a Pull Request is opened for everyone to 
