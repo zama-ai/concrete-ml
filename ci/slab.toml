@@ -42,6 +42,13 @@ environment_name = "canada"
 image_name = "Ubuntu Server 22.04 LTS R535 CUDA 12.2"
 flavor_name = "n3-H100x1"
 
+[backend.aws.l40_fallback]
+region = "eu-west-3"
+image_id = "ami-0be33931bc16f7a85"
+instance_type = "c6i.24xlarge"
+subnet_id = "subnet-a029b7ed"
+security_group = ["sg-0bf1c1d79c97bc88f"]
+
 [backend.hyperstack.l40_fallback]
 environment_name = "canada"
 image_name = "Ubuntu Server 22.04 LTS R535 CUDA 12.2"
