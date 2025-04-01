@@ -10,19 +10,19 @@ The process involves the following steps:
 
 **On the developer side**:
 
-- Training the decision tree model on  clear data
-- Compile the model to an FHE circuit using the TFHE-rs ciphertext format
-- Deploy the model using Concrete ML APIs, to know more about it please refer: [Client-Server Guide](../../docs/guides/client_server.md) and the [Client-Server Notebook](../../docs/advanced_examples/ClientServer.ipynb)
+1. Train the decision tree model on  clear data
+1. Compile the model to an FHE circuit using the TFHE-rs ciphertext format
+1. Deploy the model using Concrete ML APIs. To know more about it, please refer to the  [Client-Server Guide](../../docs/guides/client_server.md) and the [Client-Server Notebook](../../docs/advanced_examples/ClientServer.ipynb)
 
-**On the Client Side**:
+**On the client Side**:
 
 - Encrypt the client's information using a private key and send it to the server.
 
 **On the server side**:
 
-- Use the Concrete ML to predict whether the client's information is valid. If the prediction is positive, the user is authenticated; otherwise, authentication is denied.
-- Use TFHE-rs for the post-processing part to generate a random token (known only to the server) and multiply it by the output of the decision.
-- Return the result, the encrypted token if the user is authenticated; otherwise, an encrypted zero vector.
+1. Use the Concrete ML to predict whether the client's information is valid. If the prediction is positive, the user is authenticated; otherwise, authentication is denied.
+1. Use TFHE-rs for the post-processing part to generate a random token (known only to the server) and multiply it by the output of the decision.
+1. Return the result, the encrypted token if the user is authenticated; otherwise, an encrypted zero vector.
 
 **On the client side**:
 
