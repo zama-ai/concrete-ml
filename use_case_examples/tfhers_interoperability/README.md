@@ -20,7 +20,7 @@ The process involves the following steps:
 
 **On the server side**:
 
-1. Use the Concrete ML to predict whether the client's information is valid. If the prediction is positive, the user is authenticated; otherwise, authentication is denied.
+1. Use Concrete ML to predict whether the client's information is valid. If the prediction is positive, the user is authenticated; otherwise, authentication is denied.
 1. Use TFHE-rs for the post-processing part to generate a random token (known only to the server) and multiply it by the output of the decision.
 1. Return the result, the encrypted token if the user is authenticated; otherwise, an encrypted zero vector.
 
