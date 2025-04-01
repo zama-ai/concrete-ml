@@ -99,9 +99,9 @@ jobs:
             $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
           apt-get update
           apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
-          apt-get install -y python3-venv make git git-lfs binutils
+          apt-get install -y python3-venv make git git-lfs binutils python3-pip 
           python3 -m venv .venv
-          source venv/bin/activate
+          source .venv/bin/activate
           pip install -U pip setuptools
           pip install -U "huggingface_hub[cli]"
 
