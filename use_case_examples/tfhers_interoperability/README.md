@@ -1,0 +1,48 @@
+# Private Authentification in FHE
+
+This folder contains an example that shows how to combine Concrete ML (CML) and TFHE-rs workflows through a privacy-preserving, server-side authentication scenario. In this example, access to a remote server is granted via a token, only if the client's encrypted information meets specific criteria. The returned token thus serves as proof of successful authentication — all without ever exposing any sensitive data.
+
+## Overview
+
+To determine whether the client meets the specified requirements, the problem is treated as a classification task. In this example, a decision tree model is used for that purpose and CML handles the encrypted inference part, while training is performed on clear data.
+
+The process involves the following steps:
+
+**On the developer side**:
+
+- Training the decesion tree model on  clear data
+- Compile the model to an FHE circuit using the TFHE-rs ciphertext format
+- Deploy the model using CML APIs, to know more about it please refer: [Client-Server Guide](../../docs/guides/client_server.md) and the [Client-Server Notebook](../../docs/advanced_examples/ClientServer.ipynb)
+
+**On the Client Side**:
+
+- Encrypt the client's information using a private key and send it to the server.
+
+**On the server side**:
+
+- Use the CML library to predict whether the client's information is valid. If the prediction is positive, the user is accepted; otherwise, authentication is denied.
+- Use the TFHE-rs library for the post-processing part to generate a random token (known only to the server) and multiply it by the output of the decesion..
+- Return the Result: If the user is accepted, return the encrypted token. Otherwise, return an encrypted vector of zeros.
+
+**On the client side**:
+
+- Decrypt the server's response and send it back to the server to finalize the authentication process.
+
+## Installation
+
+- First, create a virtual env and activate it:
+
+<!--pytest-codeblocks:skip-->
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+```
+
+- Then, install required packages:
+
+<!--pytest-codeblocks:skip-->
+
+```bash
+pip install -r requirements.txt --ignore-installed
+```
