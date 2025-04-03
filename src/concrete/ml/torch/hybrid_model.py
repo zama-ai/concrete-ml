@@ -655,6 +655,10 @@ class HybridFHEModel:
                         keep_onnx=False,
                     )
 
+                    # Update executor for all remote modules
+                    for module in self.remote_modules.values():
+                        module.executor = self.executor
+
                     vals = self.private_q_modules[name].quant_layers_dict.values()
                     _, q_op = next(iter(vals))
                     const_inp = q_op.constant_inputs[1]  # Get the weights, the bias is in [2]
