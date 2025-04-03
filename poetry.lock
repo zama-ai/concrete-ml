@@ -837,31 +837,31 @@ test = ["pytest"]
 
 [[package]]
 name = "concrete-ml-extensions"
-version = "0.1.8"
+version = "0.1.9"
 description = "Private matrix multiplication library using fully homomorphic encryption"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "concrete_ml_extensions-0.1.8-cp310-cp310-macosx_10_12_x86_64.whl", hash = "sha256:a7e736e5a842c1b703ce4db3d34027e2a069f447210e7ae1fd69ccb73d178654"},
-    {file = "concrete_ml_extensions-0.1.8-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:e7aef38450a0b3f2979c442b8a536ce0099a9ee8aa0843a6f3753206177aa742"},
-    {file = "concrete_ml_extensions-0.1.8-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:4e6ced4178a7969f857bd312ff45f0497fd437afe3a84f900cedeff8c0ded53d"},
-    {file = "concrete_ml_extensions-0.1.8-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e8384c0d61e00841559d42b78d5adbb038a5a0a2beb2632f1799412f329d4287"},
-    {file = "concrete_ml_extensions-0.1.8-cp311-cp311-macosx_10_12_x86_64.whl", hash = "sha256:31b0deb29c131869f64c4e7de78051933f590592d4bdf89019f97ac0d2f8ffcf"},
-    {file = "concrete_ml_extensions-0.1.8-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:fdae956347979b2bd8abe134e96364ea36032fd5217b681ea882517c475b2df0"},
-    {file = "concrete_ml_extensions-0.1.8-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:6c24728cbd3a05732d8a7778aa3db8a517afa8170521792f904567e64f183c6b"},
-    {file = "concrete_ml_extensions-0.1.8-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1592b3c81517d27c2790e3fe5b27129be4a73b05cbd5407fc6ca569814371934"},
-    {file = "concrete_ml_extensions-0.1.8-cp312-cp312-macosx_10_12_x86_64.whl", hash = "sha256:7cbd3a1aa4fd67ac132191ebcc196dfcb6f22d4cacb25f1e3368adfa8763b5e7"},
-    {file = "concrete_ml_extensions-0.1.8-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:15e6cc00ff331ff2dc212351fafc3e49fb1226c95e0e90e38102dbcef8ed8add"},
-    {file = "concrete_ml_extensions-0.1.8-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:c4bebd0d79100eb7f4b34d2b77a8e0db31e84080f9f86a99da1f3d1b354567d0"},
-    {file = "concrete_ml_extensions-0.1.8-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d649bf6bfd70e646b259a88d53e20a7ef284dd3fc7bde2e55aaf1403a568b5f8"},
-    {file = "concrete_ml_extensions-0.1.8-cp38-cp38-macosx_10_12_x86_64.whl", hash = "sha256:396292f72cc0d733ee4ffe78ceeede197e25a6efcd9f852342b77b0c6ae4a08a"},
-    {file = "concrete_ml_extensions-0.1.8-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:15a7ed87e97a64c87cae217d43927d1f24d3b22137a4f1c8c8f92cd173f24f24"},
-    {file = "concrete_ml_extensions-0.1.8-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:3cc452742e448ea356798022045abc268d1c38fe5f01dca514b0f252c297cd75"},
-    {file = "concrete_ml_extensions-0.1.8-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b279616458bf1963eb952f8156156198f32a5ffcfa43b1142fed0219b1db8b02"},
-    {file = "concrete_ml_extensions-0.1.8-cp39-cp39-macosx_10_12_x86_64.whl", hash = "sha256:dc9274d5960da54fb726a3e03b00caa5a7d7471e2f836bb37f9a4e70fe595db3"},
-    {file = "concrete_ml_extensions-0.1.8-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:9fb78fd9e18567bb5f532e28d0b296e70c2d6e624bb1a945010cb5524d1663ba"},
-    {file = "concrete_ml_extensions-0.1.8-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:57f7113c08a0a86b1e1ce4bc587e5df13387a229b8b81ac5327395c0040a41fd"},
-    {file = "concrete_ml_extensions-0.1.8-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0fa9d166294c19325b890eea4ca5d2f6167fcb8650315dda9257b0868cd49867"},
+    {file = "concrete_ml_extensions-0.1.9-cp310-cp310-macosx_10_12_x86_64.whl", hash = "sha256:9531fa4648f928927c9073b95500461f01e1c102dce37adedb9c8c1fc7c7f56a"},
+    {file = "concrete_ml_extensions-0.1.9-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:9b4670fdc37881db6cf611aa231dab588a3ecf5f5fd41abc18b69640f622573d"},
+    {file = "concrete_ml_extensions-0.1.9-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:892934f658a81d93eca5f29b3e89b0c7ae2cde6e8422db158163ad459728092d"},
+    {file = "concrete_ml_extensions-0.1.9-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:9555dc615e0de0a7017040273d6a0e32b839981abb5ec764c9699372bd7dafb3"},
+    {file = "concrete_ml_extensions-0.1.9-cp311-cp311-macosx_10_12_x86_64.whl", hash = "sha256:7c216d48856524f0a72747a03524c4f185d1ec7056689e07de37d28a9011878e"},
+    {file = "concrete_ml_extensions-0.1.9-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:694a0736b7f3e1870affd0f71ff4b8fbb32694ee171ca176b679ddb7fe21ff88"},
+    {file = "concrete_ml_extensions-0.1.9-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:5a88f608684317b10d0c120933ac0f777c4f5b444bc093fcaaf5a61e89764df7"},
+    {file = "concrete_ml_extensions-0.1.9-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:58198eb4316f5420f870af8e8922bf85a8833f8f34bcad43e43a5af9cea87617"},
+    {file = "concrete_ml_extensions-0.1.9-cp312-cp312-macosx_10_12_x86_64.whl", hash = "sha256:21f6aa84fab6e343cd0f226dce25c3122374801565556ca80ba308075fb865b7"},
+    {file = "concrete_ml_extensions-0.1.9-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:8d5056de065c7f3c65e2661c6a9ea8a945da2205987c5aa0c415b640b5fbba35"},
+    {file = "concrete_ml_extensions-0.1.9-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:53f2ef47f37e02bfd316d85757c3c2b4189ef093177222fef1f04ffdce079737"},
+    {file = "concrete_ml_extensions-0.1.9-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:045e604a6fac27eb4148e5c5a66bce10a1520e56916a3ce7a5dc857065889b4c"},
+    {file = "concrete_ml_extensions-0.1.9-cp38-cp38-macosx_10_12_x86_64.whl", hash = "sha256:b40bc182fa08fea796432add35150a41d2db5f0c0e0850cac1efdbd8bae124a6"},
+    {file = "concrete_ml_extensions-0.1.9-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:021b6bf7be8088e535e3b0fc0a3ac4ece72178def028a728d69bf92682ae59e7"},
+    {file = "concrete_ml_extensions-0.1.9-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:d245567a80b568482a82ba8767f16a741a25930ad8c8e7640741679195e1621c"},
+    {file = "concrete_ml_extensions-0.1.9-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:3339ce00f66018f9ce4949b11f6a38e5f578d34d360c5c3db49a417491d54fb4"},
+    {file = "concrete_ml_extensions-0.1.9-cp39-cp39-macosx_10_12_x86_64.whl", hash = "sha256:b223c1f3d00cd4edad99c3fdc8f207e9552881041fd527238ce589553fdcc796"},
+    {file = "concrete_ml_extensions-0.1.9-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:69f2beaa3fb2b24b45671d39e0c3db7a00e7ecff7cd837c4938154e21d70719b"},
+    {file = "concrete_ml_extensions-0.1.9-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:2420a4f8a47e5ad8c39b04605b92219ea68b4a47ef966c570e6ace6ff5036cb7"},
+    {file = "concrete_ml_extensions-0.1.9-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c16d4a21dd47def34b6df2c3648ff6d2704f031762b7700561da5bd9464116af"},
 ]
 
 [[package]]
@@ -7572,4 +7572,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.1,<3.13"
-content-hash = "3a348d2af01d0be82d9ba8fbac2effa564fb4b008b5008962e8eb5d76d66fbfc"
+content-hash = "fb29fc13a2d360514e4ceb3a55bf20a12e20239f2720f97aac1dae40b95e2eb4"
