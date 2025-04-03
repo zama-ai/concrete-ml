@@ -19,7 +19,7 @@ from .base import BaseTreeClassifierMixin, BaseTreeRegressorMixin
 class XGBClassifier(BaseTreeClassifierMixin):
     """Implements the XGBoost classifier.
 
-    See https://xgboost.readthedocs.io/en/stable/python/python_api.html#module-xgboost.sklearn
+    See https://xgboost.readthedocs.io/en/release_3.0.0/python/python_api.html
     for more information about the parameters used.
     """
 
@@ -278,7 +278,7 @@ class XGBClassifier(BaseTreeClassifierMixin):
 class XGBRegressor(BaseTreeRegressorMixin):
     """Implements the XGBoost regressor.
 
-    See https://xgboost.readthedocs.io/en/stable/python/python_api.html#module-xgboost.sklearn
+    See https://xgboost.readthedocs.io/en/release_3.0.0/python/python_api.html
     for more information about the parameters used.
     """
 
