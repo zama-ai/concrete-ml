@@ -14,7 +14,7 @@ ______________________________________________________________________
 
 Implements the XGBoost classifier.
 
-See https://xgboost.readthedocs.io/en/stable/python/python_api.html#module-xgboost.sklearn for more information about the parameters used.
+See https://xgboost.readthedocs.io/en/release_3.0.0/python/python_api.html for more information about the parameters used.
 
 <a href="../../../src/concrete/ml/sklearn/xgb.py#L31"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
@@ -161,7 +161,7 @@ ______________________________________________________________________
 
 Implements the XGBoost regressor.
 
-See https://xgboost.readthedocs.io/en/stable/python/python_api.html#module-xgboost.sklearn for more information about the parameters used.
+See https://xgboost.readthedocs.io/en/release_3.0.0/python/python_api.html for more information about the parameters used.
 
 <a href="../../../src/concrete/ml/sklearn/xgb.py#L290"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 

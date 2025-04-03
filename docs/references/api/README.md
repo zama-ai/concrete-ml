@@ -62,6 +62,7 @@
 
 - [`decoder.ConcreteDecoder`](./concrete.ml.common.serialization.decoder.md#class-concretedecoder): Custom json decoder to handle non-native types found in serialized Concrete ML objects.
 - [`encoder.ConcreteEncoder`](./concrete.ml.common.serialization.encoder.md#class-concreteencoder): Custom json encoder to handle non-native types found in serialized Concrete ML objects.
+- [`utils.CiphertextFormat`](./concrete.ml.common.utils.md#class-ciphertextformat): Type of ciphertext used as input/output for a model.
 - [`utils.FheMode`](./concrete.ml.common.utils.md#class-fhemode): Enum representing the execution mode.
 - [`utils.HybridFHEMode`](./concrete.ml.common.utils.md#class-hybridfhemode): Simple enum for different modes of execution of HybridModel.
 - [`fhe_client_server.DeploymentMode`](./concrete.ml.deployment.fhe_client_server.md#class-deploymentmode): Mode for the FHE API.
@@ -416,3 +417,4 @@
 - [`lora.get_remote_names`](./concrete.ml.torch.lora.md#function-get_remote_names): Get names of modules to be executed remotely.
 - [`lora.grad_to`](./concrete.ml.torch.lora.md#function-grad_to): Move parameter gradient to device.
 - [`lora.optimizer_to`](./concrete.ml.torch.lora.md#function-optimizer_to): Move optimizer object to device.
+- [`lora.setup_logger`](./concrete.ml.torch.lora.md#function-setup_logger): Set up a logger that logs to both console and a file.

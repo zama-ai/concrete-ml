@@ -12,7 +12,28 @@ This module contains classes for LoRA (Low-Rank Adaptation) FHE training and cus
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/lora.py#L27"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/lora.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `setup_logger`
+
+```python
+setup_logger(log_file: str, level=20)
+```
+
+Set up a logger that logs to both console and a file.
+
+**Args:**
+
+- <b>`log_file`</b> (str):  The path to the log file.
+- <b>`level`</b> (int):  The logging level.
+
+**Returns:**
+
+- <b>`logging.Logger`</b>:  The logger instance.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/torch/lora.py#L67"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `grad_to`
 
@@ -29,7 +50,7 @@ Move parameter gradient to device.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/lora.py#L38"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/lora.py#L78"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `optimizer_to`
 
@@ -46,7 +67,7 @@ Move optimizer object to device.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/lora.py#L455"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/lora.py#L668"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_remote_names`
 
@@ -70,7 +91,7 @@ Get names of modules to be executed remotely.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/lora.py#L55"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/lora.py#L95"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `LoraTraining`
 
@@ -78,7 +99,7 @@ LoraTraining module for fine-tuning with LoRA in a hybrid model setting.
 
 This class is designed to enable Low-Rank Adaptation (LoRA) fine-tuning in a hybrid model context. It allows selective execution of forward and backward passes in FHE.
 
-The class replaces standard linear layers with custom layers that are compatible with LoRA and FHE operations. It provides mechanisms to toggle between calibration and optimization modes.
+The class replaces standard linear layers with custom layers that are compatible with LoRA and FHE operations.
 
 **Args:**
 
@@ -86,7 +107,7 @@ The class replaces standard linear layers with custom layers that are compatible
 - <b>`n_layers_to_skip_for_backprop`</b> (int):  Number of initial linear layers to keep as standard  layers. Since the first layer doesn't need backpropagation (no previous layer to  update), we typically skip 1 layer. Defaults to 1.
 - <b>`loss_fn`</b> (callable, optional):  Loss function to compute the loss. If None, the model  is expected to return a loss.
 
-<a href="../../../src/concrete/ml/torch/lora.py#L75"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/lora.py#L114"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -96,7 +117,7 @@ __init__(model, n_layers_to_skip_for_backprop=1, loss_fn=None)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/lora.py#L113"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/lora.py#L152"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `assert_has_lora_layers`
 
@@ -116,7 +137,7 @@ Assert that the model contains LoRA layers.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/lora.py#L195"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/lora.py#L226"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -139,12 +160,14 @@ A tuple containing the original (unscaled) loss and None.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/lora.py#L266"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/lora.py#L297"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `process_inputs`
 
 ```python
-process_inputs(inputs: Any) → Tuple[Tensor, Tensor]
+process_inputs(
+    inputs: Any
+) → Tuple[Union[Tensor, NoneType], Union[Tensor, NoneType]]
 ```
 
 Process training inputs such as labels and attention mask.
@@ -159,7 +182,7 @@ Process training inputs such as labels and attention mask.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/lora.py#L141"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/lora.py#L180"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `replace_layers_with_custom`
 
@@ -179,7 +202,7 @@ Replace linear layers with custom ones.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/lora.py#L99"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/lora.py#L138"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `set_loss_scaling_factor`
 
@@ -197,29 +220,18 @@ This ensures that gradients are correctly averaged over multiple mini-batches wh
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/lora.py#L187"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `toggle_calibrate`
-
-```python
-toggle_calibrate(enable: bool = True)
-```
-
-Toggle calibration mode.
-
-**Args:**
-
-- <b>`enable`</b> (bool):  Whether to enable calibration mode.
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/torch/lora.py#L298"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/lora.py#L330"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `LoraTrainer`
 
 Trainer class for LoRA fine-tuning with FHE support.
 
-This class handles the training loop, optimizer, scheduler, and integrates with the hybrid model.
+This class handles:
+
+- Training loop
+- Periodic logging and evaluation
+- Loss tracking
+- Integration with hybrid FHE model
 
 **Args:**
 
@@ -229,8 +241,13 @@ This class handles the training loop, optimizer, scheduler, and integrates with 
 - <b>`lr_scheduler`</b> (optional):  Learning rate scheduler.
 - <b>`training_args`</b> (dict):  Training arguments.
 - <b>`n_layers_to_skip_for_backprop`</b> (int):  Number of initial linear layers to keep as standard  layers. Since the first layer doesn't need backpropagation (no previous layer to  update), we typically skip 1 layer. Defaults to 1.
+- <b>`eval_loader`</b> (DataLoader, optional):  DataLoader for evaluation data.
+- <b>`eval_metric_fn`</b> (callable, optional):  Function(model, eval_loader) -> dict of metrics.
+- <b>`logging_steps`</b> (int, optional):  Log loss every N training steps. Defaults to 1.
+- <b>`eval_steps`</b> (int, optional):  Evaluate on eval set every N training steps. Defaults to 10.
+- <b>`train_log_path`</b> (str, optional):  Path to a log file for training. Defaults to "training.log".
 
-<a href="../../../src/concrete/ml/torch/lora.py#L315"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/lora.py#L356"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -241,18 +258,24 @@ __init__(
     loss_fn=None,
     lr_scheduler=None,
     training_args=None,
-    n_layers_to_skip_for_backprop=1
+    n_layers_to_skip_for_backprop=1,
+    eval_loader: Optional[DataLoader] = None,
+    eval_metric_fn: Optional[Callable] = None,
+    logging_steps: int = 1,
+    eval_steps: int = 10,
+    train_log_path: str = 'training.log',
+    checkpoint_dir: str = None
 )
 ```
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/lora.py#L354"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/lora.py#L416"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
 ```python
-compile(inputset, n_bits=8)
+compile(inputset, n_bits=8, use_dynamic_quantization=True)
 ```
 
 Compile the hybrid model with the given input set.
@@ -261,10 +284,71 @@ Compile the hybrid model with the given input set.
 
 - <b>`inputset`</b> (tuple):  Input set for compilation.
 - <b>`n_bits`</b> (int):  Bit width for quantization.
+- <b>`use_dynamic_quantization`</b> (bool):  Whether to use dynamic quantization.
+
+**Returns:**
+
+- <b>`Tuple[int, int]`</b>:  The epoch and global step of the latest checkpoint if found,  else (0, 0).
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/lora.py#L446"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/lora.py#L659"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `get_gradient_stats`
+
+```python
+get_gradient_stats()
+```
+
+Return recorded gradient statistics.
+
+**Returns:**
+
+- <b>`Dict[str, List[float]]`</b>:  Gradient statistics per layer over time.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/torch/lora.py#L624"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `get_training_losses`
+
+```python
+get_training_losses()
+```
+
+Return all recorded training losses.
+
+**Returns:**
+
+- <b>`List[float]`</b>:  All recorded training losses.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/torch/lora.py#L487"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `load_checkpoint`
+
+```python
+load_checkpoint(checkpoint_path: str)
+```
+
+Load a training checkpoint and restore model, optimizer, and lr_scheduler.
+
+**Args:**
+
+- <b>`checkpoint_path`</b> (str):  Path to the checkpoint file.
+
+**Returns:**
+
+- <b>`Tuple[int, int]`</b>:  The epoch and global step of the checkpoint.
+
+**Raises:**
+
+- <b>`FileNotFoundError`</b>:  If the checkpoint file is not found.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/torch/lora.py#L632"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `save_and_clear_private_info`
 
@@ -280,14 +364,31 @@ Save the model and remove private information.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/lora.py#L365"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/lora.py#L464"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `save_checkpoint`
+
+```python
+save_checkpoint(epoch: int, global_step: int)
+```
+
+Save a training checkpoint.
+
+**Args:**
+
+- <b>`epoch`</b> (int):  The current epoch number.
+- <b>`global_step`</b> (int):  The current global step number.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/torch/lora.py#L515"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `train`
 
 ```python
 train(
     train_loader: DataLoader,
-    num_epochs: int = 10,
+    num_epochs: int = 1,
     fhe: str = 'simulate',
     device: str = 'cpu'
 )
