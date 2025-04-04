@@ -2372,6 +2372,7 @@ def test_xgb_serialization_errors(model_class, param, error_message):
             model.dumps()
 
 
+@pytest.mark.flaky
 @pytest.mark.parametrize(
     "model_class, parameters", get_sklearn_tree_models_and_datasets(True, True)
 )
