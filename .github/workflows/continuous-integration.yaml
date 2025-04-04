@@ -315,6 +315,7 @@ jobs:
       python_version: ${{ matrix.python_version }}
       gh_event_name: ${{ github.event_name }}
       inp_event_name: ${{ inputs.event_name }}
+      release_skip_tests: ${{ inputs.release_skip_tests }}
       manual_call: ${{ inputs.manual_call || false }}
     secrets: inherit
 
