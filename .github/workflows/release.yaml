@@ -8,7 +8,7 @@ on:
         description: "Skip tests (only if approved by CML team!)"
         type: boolean
         required: false
-        default: true
+        default: false
 
   # Releases are also allowed to be automatically triggered once the release preparation
   # pull-request is merged in main (major/minor releases or release candidates) or in a release
@@ -90,10 +90,21 @@ jobs:
           backend: aws
           profile: ${{ env.SLAB_PROFILE }}
 
+  # The caller workflow's job (here 'release-tests') does not need to run on the current runner as
+  # the reusable workflow (here 'continuous-integration.yaml') uses its own runner
+  release-tests:
+    name: Run tests
+    if: ${{ !inputs.skip_tests }}
+    needs: [start-runner-linux]
+    uses: ./.github/workflows/continuous-integration.yaml
+    secrets: inherit
+    with:
+      event_name: "release"
+
   # Check that everything is up to date and run all non-flaky tests on different Python versions
   release-checks:
     name: Install deps and run checks
-    needs: [start-runner-linux]
+    needs: [start-runner-linux, release-tests]
     runs-on: ${{ needs.start-runner-linux.outputs.label }}
     defaults:
       run:
@@ -232,17 +243,6 @@ jobs:
         if:  env.IS_RC == 'false' && env.IS_PATCH == 'false'
         run: |
           ./script/actions_utils/check_branch_not_remote.sh --branch_name "${{ env.RELEASE_BRANCH_NAME }}"
-
-  # The caller workflow's job (here 'release-tests') does not need to run on the current runner as
-  # the reusable workflow (here 'continuous-integration.yaml') uses its own runner
-  release-tests:
-    name: Run tests
-    if: ${{ !inputs.skip_tests }}
-    needs: [start-runner-linux, release-checks]
-    uses: ./.github/workflows/continuous-integration.yaml
-    secrets: inherit
-    with:
-      event_name: "release"
 
   release-pushes:
     name: Push new tag and branch
