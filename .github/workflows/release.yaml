@@ -302,6 +302,10 @@ jobs:
   release-package:
     name: Release package and artifacts
     needs: [start-runner-linux, release-checks, release-pushes]
+    if: |
+      always() &&
+      needs.release-checks.result == 'success' &&
+      needs.release-pushes.result == 'success'
     outputs:
       report: ${{ steps.report.outputs.report || 'Did not run.' }}
     runs-on: ${{ needs.start-runner-linux.outputs.label }}
