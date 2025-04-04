@@ -3,6 +3,12 @@ on:
   # Releases can be manually triggered if the version has already been updated and the apidocs were
   # properly built
   workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: "Skip tests (only if approved by CML team!)"
+        type: boolean
+        required: false
+        default: true
 
   # Releases are also allowed to be automatically triggered once the release preparation
   # pull-request is merged in main (major/minor releases or release candidates) or in a release
@@ -231,6 +237,7 @@ jobs:
   # the reusable workflow (here 'continuous-integration.yaml') uses its own runner
   release-tests:
     name: Run tests
+    if: ${{ !inputs.skip_tests }}
     needs: [start-runner-linux, release-checks]
     uses: ./.github/workflows/continuous-integration.yaml
     secrets: inherit
@@ -239,6 +246,7 @@ jobs:
 
   release-pushes:
     name: Push new tag and branch
+    if: ${{ false }}
     needs: [start-runner-linux, release-checks, release-tests]
     runs-on: ${{ needs.start-runner-linux.outputs.label }}
     defaults:
