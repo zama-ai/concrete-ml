@@ -237,12 +237,12 @@ jobs:
   # the reusable workflow (here 'continuous-integration.yaml') uses its own runner
   release-tests:
     name: Run tests
-    if: ${{ !inputs.skip_tests }}
     needs: [start-runner-linux]
     uses: ./.github/workflows/continuous-integration.yaml
     secrets: inherit
     with:
       event_name: "release"
+      release_skip_tests: ${{ inputs.skip_tests }}
 
   release-pushes:
     name: Push new tag and branch

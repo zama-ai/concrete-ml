@@ -20,6 +20,12 @@ on:
         options:
           - pr
 
+      release_skip_tests:
+        description: "Skip tests in release"
+        required: true
+        type: boolean
+        default: false
+
       linux_python_versions:
         description: "Space separated list of python versions (3.8, 3.9, 3.10, 3.11, 3.12 are supported) to launch on linux"
         required: false

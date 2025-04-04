@@ -10,7 +10,10 @@ on:
         type: string
         required: true
       inp_event_name:
-        type: string
+        type: string        
+        required: true
+      release_skip_tests:
+        type: boolean
         required: true
       manual_call:
         type: boolean
@@ -441,7 +444,7 @@ jobs:
                 || steps.changed-files-in-pr.outputs.makefile_any_changed == 'true'
               )
             )
-            || fromJSON(env.IS_WORKFLOW_DISPATCH)
+            || (fromJSON(env.IS_WORKFLOW_DISPATCH) && !inputs.release_skip_tests)
             || fromJSON(env.IS_WEEKLY)
           )
           && steps.conformance.outcome == 'success'
@@ -517,7 +520,7 @@ jobs:
         if: |
           fromJSON(env.IS_PR)
           && steps.changed-files-in-pr.outcome == 'success'
-          && steps.pytest.outcome == 'skipped'
+          && (steps.pytest.outcome == 'skipped' && !inputs.release_skip_tests)
           && steps.changed-files-in-pr.outputs.tests_any_changed == 'true'
           && steps.conformance.outcome == 'success'
           && !cancelled()
@@ -588,7 +591,7 @@ jobs:
                 || steps.changed-files-in-pr.outputs.makefile_any_changed == 'true'
               )
             )
-            || fromJSON(env.IS_WORKFLOW_DISPATCH)
+            || (fromJSON(env.IS_WORKFLOW_DISPATCH) && !inputs.release_skip_tests)
           )
           && steps.conformance.outcome == 'success'
           && !cancelled()
