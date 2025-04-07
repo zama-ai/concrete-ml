@@ -23,3 +23,4 @@ jobs:
     secrets: inherit
     with:
       event_name: "weekly"
+      release_skip_tests: false
