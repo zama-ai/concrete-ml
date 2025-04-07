@@ -4,6 +4,12 @@ This document explains the essential cryptographic terms and the important conce
 
 Concrete ML is built on top of Concrete, which enables the conversion from NumPy programs into FHE circuits.
 
+## Table of Contents
+
+1. [Lifecycle of a Concrete ML model](#lifecycle-of-a-concrete-ml-model)
+1. [Cryptography concepts](#cryptography-concepts)
+1. [Model accuracy considerations under FHE constraints](#model-accuracy-considerations-under-fhe-constraints)
+
 ## Lifecycle of a Concrete ML model
 
 With Concrete ML, you can train a model on clear or encrypted data, then deploy it to predict on encrypted inputs. During deployment, data can be pre-processed while being encrypted. Therefore, data stay encrypted during the entire lifecycle of the machine learning model, with some limitations.
@@ -39,6 +45,8 @@ You can find examples of the model development workflow [here](../tutorials/ml_e
    - A private encryption key to encrypt/decrypt their data and results
    - A public evaluation key for the model's FHE evaluation on the server.
 
+1. **Ciphertext formats** The server-side application can be configured to accept different types of ciphertexts from the client, depending on the type of application. See [Ciphertext formats](#ciphertext-formats) for more details.
+
 You can find an example of the model deployment workflow [here](../advanced_examples/ClientServer.ipynb).
 
 ## Cryptography concepts
@@ -59,7 +67,24 @@ Concrete ML and Concrete abstract the details of the underlying cryptography sch
 
 - **Programmable Boostrapping (PBS)** : Programmable Bootstrapping enables the homomorphic evaluation of any function of a ciphertext, with a controlled level of noise. Learn more about PBS in [this paper](https://eprint.iacr.org/2021/091).
 
+- **Ciphertext formats**: To represent FHE ML model input and output integer values, Concrete ML can use the default _Concrete_ ciphertext format or the block-based _TFHE-rs radix_ format. The _Concrete_ format is optimized for performance, while the _TFHE-rs radix_ format supports larger values, is forward-compatible and is compatible with Blockchain applications.
+
 For a deeper understanding of the cryptography behind the Concrete stack, refer to the [whitepaper on TFHE and Programmable Boostrapping](https://whitepaper.zama.ai/) or [this series of blogs](https://www.zama.ai/post/tfhe-deep-dive-part-1).
+
+## Ciphertext formats
+
+Two different types of ciphertexts are usable by Concrete ML for model input/outputs.
+
+1. By default Concrete ML uses _Concrete_ LWE ciphertexts with crypto-system parameters that are determined based on the ML model. Furthermore, these parameters may vary between different versions of Concrete ML. Thus, the encryption crypto-parameters may change at any point. Some implications are:
+
+   - Typically, a server-side application provides the client with its encryption cryptographic parameters.
+   - When the application is updated, the client downloads the new cryptographic parameters.
+   - Ciphertexts encrypted with a set of cryptographic parameters can not be re-used for a model compiled with different cryptographic parameters
+
+1. Concrete ML supports _TFHE-rs radix_ ciphertexts, with a universal parameter set that is forward compatible. Therefore:
+
+   - Ciphertexts encrypted with the universal cryptographic parameters can be used at any point in the future with any ML model.
+   - In this setting, a conversion layer is added to the ML model. This conversion may imply a 4-5x slowdown for model latency.
 
 ## Model accuracy considerations under FHE constraints
 

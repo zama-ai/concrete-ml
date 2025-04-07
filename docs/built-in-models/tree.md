@@ -26,6 +26,12 @@ For a formal explanation of the mechanisms that enable FHE-compatible decision t
 Using the maximum depth parameter of decision trees and tree-ensemble models strongly increases the number of nodes in the trees. Therefore, we recommend using the XGBoost models which achieve better performance with lower depth.
 {% endhint %}
 
+## Ciphertext format compatibility
+
+The `DecisionTreeClassifier`, `RandomForestClassifier`, and `XGBClassifier` support [TFHE-rs radix ciphertexts](../getting-started/concepts.md#ciphertext-formats) when `n_bits` is set to 8. The other tree-based models, or different `n_bits` configurations only support _Concrete_ ciphertexts.
+
+To compile a model to use _TFHE-rs ciphertexts_ as inputs and outputs, set `ciphertext_mode=CiphertextFormat.TFHE-RS` in the `compile` call.
+
 ## Pre-trained models
 
 You can convert an already trained scikit-learn tree-based model to a Concrete ML one by using the [`from_sklearn_model`](../references/api/concrete.ml.sklearn.base.md#classmethod-from_sklearn_model) method.
