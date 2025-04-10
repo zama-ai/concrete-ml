@@ -62,7 +62,7 @@ import numpy as np
 fhe_directory = '/tmp/fhe_client_server_files/'
 
 # Initialize the Decision Tree model
-model = DecisionTreeClassifier()
+model = DecisionTreeClassifier(n_bits=8)
 
 # Generate some random data for training
 X = np.random.rand(100, 20)
@@ -101,6 +101,43 @@ result = client.deserialize_decrypt_dequantize(encrypted_result)
 - **From Server to Client:** `encrypted_result`.
 
 These objects are serialized into bytes to streamline the data transfer between the client and server.
+
+#### Ciphertext formats and keys
+
+Two types of ciphertext formats are [available in Concrete ML](../getting-started/concepts.md#ciphertext-formats) and both are available for deployment. To use the _TFHE-rs radix_ format, pass the `ciphertext_format` option to the compilation call as follows:
+
+<!--pytest-codeblocks:cont-->
+
+```python
+from concrete.ml.common.utils import CiphertextFormat
+model.compile(X, ciphertext_format=CiphertextFormat.TFHE_RS)
+
+fhe_directory = '/tmp/fhe_client_server_files_tfhers/'
+
+# Setup the development environment
+dev = FHEModelDev(path_dir=fhe_directory, model=model)
+dev.save()
+
+# Setup the client
+client = FHEModelClient(path_dir=fhe_directory, key_dir="/tmp/keys_client_tfhers")
+serialized_evaluation_keys, tfhers_evaluation_keys = client.get_serialized_evaluation_keys(include_tfhers_key=True)
+
+# Client pre-processes new data
+X_new = np.random.rand(1, 20)
+encrypted_data = client.quantize_encrypt_serialize(X_new)
+
+# Setup the server
+server = FHEModelServer(path_dir=fhe_directory)
+server.load()
+
+# Server processes the encrypted data
+encrypted_result = server.run(encrypted_data, serialized_evaluation_keys)
+
+# Client decrypts the result
+result = client.deserialize_decrypt_dequantize(encrypted_result[0])
+```
+
+In the example above, a second evaluation key is obtained in the `tfhers_evaluation_keys` variable. This key can be loaded by TFHE-rs Rust programs to perform further computation on the model output ciphertexts.
 
 ## Serving
 

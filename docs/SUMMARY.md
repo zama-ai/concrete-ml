@@ -18,6 +18,11 @@
 - [Encrypted dataframe](built-in-models/encrypted_dataframe.md)
 - [Encrypted training](built-in-models/training.md)
 
+## LLMs
+
+- [Inference](llm/inference.md)
+- [Encrypted fine-tuning](llm/lora_training.md)
+
 ## Deep Learning
 
 - [Using Torch](deep-learning/torch_support.md)
@@ -25,7 +30,6 @@
 - [Step-by-step guide](deep-learning/fhe_friendly_models.md)
 - [Debugging models](deep-learning/fhe_assistant.md)
 - [Optimizing inference](deep-learning/optimizing_inference.md)
-- [Encrypted fine-tuning](deep-learning/lora_training.md)
 
 ## Guides
 
