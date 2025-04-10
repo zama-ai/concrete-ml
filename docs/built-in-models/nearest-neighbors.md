@@ -6,6 +6,10 @@ This document introduces the nearest neighbors non-parametric classification mod
 | :---------------------------------------------------------------------------------------------------: | --------------------------------------------------------------------------------------------------------------------- |
 | [KNeighborsClassifier](../references/api/concrete.ml.sklearn.neighbors.md#class-kneighborsclassifier) | [KNeighborsClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html) |
 
+## Ciphertext format compatibility
+
+These models only support _Concrete_ ciphertexts. See [the ciphertexts format](../getting-started/concepts.md#ciphertext-formats) documentation for more details.
+
 ## Example
 
 ```python

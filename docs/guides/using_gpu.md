@@ -7,10 +7,10 @@ a model is compiled for CUDA, executing it on a non-CUDA-enabled machine will ra
 
 ## Support
 
-| Feature     | Built-in models | Custom models | Deployment | DataFrame |
-| ----------- | --------------- | ------------- | ---------- | --------- |
-| GPU support | ✅              | ✅            | ✅         | ❌        |
-|             |                 |               |            |           |
+| Feature     | Built-in models | Deep NNs and LLMs | Deployment | DataFrame |
+| ----------- | --------------- | ----------------- | ---------- | --------- |
+| GPU support | ✅              | ✅                | ✅         | ❌        |
+|             |                 |                   |            |           |
 
 {% hint style="warning" %}
 When compiling a model for GPU, the model is assigned GPU-specific crypto-system parameters. These parameters are more constrained than the CPU-specific ones.
@@ -28,6 +28,10 @@ little speedup or even a slowdown compared to execution
 on a desktop CPU.
 
 ## Prerequisites
+
+### Built-in models and deep NNs
+
+This section pertains to models that are compiled using the `sklearn`-style built-in model classes or that are compiled using `compile_torch_model` or `compile_brevitas_qat_model`.
 
 To use the CUDA-enabled backend, install the GPU-enabled Concrete compiler:
 
@@ -65,3 +69,12 @@ To compile a model for CUDA, simply supply the `device='cuda'` argument to its c
 
 - For built-in models, use `.compile` function.
 - For custom models, use either`compile_torch_model` or `compile_brevitas_qat_model`.
+
+## LLMs
+
+This section pertains to models that are compiled with `HybridFHEModel`.
+
+The models compiled as described in [the LLM section](../llm/inference.md) will
+use GPU acceleration if a GPU is available on the machine where the models
+are executed. No specific compilation configuration is required to enable GPU
+execution for these models.

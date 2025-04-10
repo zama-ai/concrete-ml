@@ -192,6 +192,10 @@ def process_file(file_str: str, do_open_problematic_files=False):
         ("eg., ", [], []),  # use e.g.,
         ("Lora", [], []),  # use LoRA
         ("LORA", [], []),  # use LoRA
+        ("TFHE-RS", [], []),  # Use TFHE-rs
+        ("TFHE_RS", ["TFHE_RS"], [".py"]),  # Use TFHE-rs
+        ("TFHErs", [], []),  # Use TFHE-rs
+        ("TFHRES", [], []),  # Use TFHE-rs
     ]
     # For later
     #   "We" or "Our", or more generally, passive form

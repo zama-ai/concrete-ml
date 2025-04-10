@@ -17,6 +17,10 @@ See the [deployment](#deployment) section for more details.
 Training on encrypted data provides the highest level of privacy but is slower than training on clear data. Federated learning is an alternative approach, where data privacy can be ensured by using a trusted gradient aggregator, coupled with optional _differential privacy_ instead of encryption. Concrete ML can import models trained through federated learning using 3rd party tools. All model types are supported - linear, tree-based and neural networks - through the [`from_sklearn_model` function](linear.md#pre-trained-models) and the [`compile_torch_model`](../deep-learning/torch_support.md) function.
 {% endhint %}
 
+## Ciphertext format compatibility
+
+These models only support _Concrete_ ciphertexts. See [the ciphertexts format](../getting-started/concepts.md#ciphertext-formats) documentation for more details.
+
 ## Example
 
 The [logistic regression training](../advanced_examples/LogisticRegressionTraining.ipynb) example shows logistic regression training on encrypted data in action.
