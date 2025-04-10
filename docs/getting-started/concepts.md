@@ -76,16 +76,21 @@ For a deeper understanding of the cryptography behind the Concrete stack, refer 
 
 Two different types of ciphertexts are usable by Concrete ML for model input/outputs.
 
-1. By default Concrete ML uses _Concrete_ LWE ciphertexts with crypto-system parameters that are determined based on the ML model. Furthermore, these parameters may vary between different versions of Concrete ML. Thus, the encryption crypto-parameters may change at any point. Some implications are:
+1. _Concrete_ LWE ciphertexts (default):
 
-   - Typically, a server-side application provides the client with its encryption cryptographic parameters.
-   - When the application is updated, the client downloads the new cryptographic parameters.
-   - Ciphertexts encrypted with a set of cryptographic parameters can not be re-used for a model compiled with different cryptographic parameters
+   By default, Concrete ML uses Concrete LWE ciphertexts with crypto-system parameters that are tailored to each ML model. These parameters may vary between different versions of Concrete ML. Thus, the encryption crypto-parameters may change at any point. Some implications are:
 
-1. Concrete ML supports _TFHE-rs radix_ ciphertexts, with a universal parameter set that is forward compatible. Therefore:
+- Typically, a server-side application provides the client with its encryption cryptographic parameters.
+- When the application is updated, the client downloads the new cryptographic parameters.
+- Ciphertexts encrypted with a set of cryptographic parameters can not be re-used for a model compiled with different cryptographic parameters
 
-   - Ciphertexts encrypted with the universal cryptographic parameters can be used at any point in the future with any ML model.
-   - In this setting, a conversion layer is added to the ML model. This conversion may imply a 4-5x slowdown for model latency.
+2. _TFHE-rs radix_ ciphertexts:
+
+   Concrete ML also supports \_TFHE-rs radix _ ciphertexts, which rely on a universal and forward-compatible parameter set. Therefore:
+   In this setting, a conversion layer is added to the ML model, potentially resulting in a 4–5× latency overhead.
+
+- Ciphertexts encrypted with the universal cryptographic parameters can be used at any point in the future with any ML model.
+- In this setting, a conversion layer is added to the ML model. This conversion may imply a 4-5x slowdown for model latency.
 
 ## Model accuracy considerations under FHE constraints
 
