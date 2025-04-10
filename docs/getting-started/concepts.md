@@ -8,6 +8,7 @@ Concrete ML is built on top of Concrete, which enables the conversion from NumPy
 
 1. [Lifecycle of a Concrete ML model](#lifecycle-of-a-concrete-ml-model)
 1. [Cryptography concepts](#cryptography-concepts)
+1. [Ciphertext formats](#ciphertext-formats)
 1. [Model accuracy considerations under FHE constraints](#model-accuracy-considerations-under-fhe-constraints)
 
 ## Lifecycle of a Concrete ML model
@@ -67,7 +68,7 @@ Concrete ML and Concrete abstract the details of the underlying cryptography sch
 
 - **Programmable Boostrapping (PBS)** : Programmable Bootstrapping enables the homomorphic evaluation of any function of a ciphertext, with a controlled level of noise. Learn more about PBS in [this paper](https://eprint.iacr.org/2021/091).
 
-- **Ciphertext formats**: To represent FHE ML model input and output integer values, Concrete ML can use the default _Concrete_ ciphertext format or the block-based _TFHE-rs radix_ format. The _Concrete_ format is optimized for performance, while the _TFHE-rs radix_ format supports larger values, is forward-compatible and is compatible with Blockchain applications.
+- **Ciphertext formats**: To represent encrypted values, Concrete ML offers two options: the default Concrete ciphertext format, which is supported by all ML models and highly optimized for performance, or the block-based TFHE-rs radix format, which supports larger values, is forward-compatible, and suitable for Blockchain applications, but is limited to certain types of ML models.
 
 For a deeper understanding of the cryptography behind the Concrete stack, refer to the [whitepaper on TFHE and Programmable Boostrapping](https://whitepaper.zama.ai/) or [this series of blogs](https://www.zama.ai/post/tfhe-deep-dive-part-1).
 
