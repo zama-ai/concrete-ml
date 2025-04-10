@@ -10,7 +10,7 @@ Concrete ML is an open source, privacy-preserving, machine learning framework ba
 
 ## Key features
 
-- **Model inference on encrypted data**: Concrete ML converts models such as decision trees, LLMs, neural networks, etc.. to predict on encrypted data. The models that are converted can be trained on clear or on encrypted data.
+- **Model inference on encrypted data**: Concrete ML converts models such as decision trees, LLMs, neural networks, etc.. to predict on encrypted data. Those models can be trained either on clear data or on encrypted data.
 
 - **Training on encrypted data**: FHE is an encryption technique that allows computing directly on encrypted data, without needing to decrypt it. With FHE, you can build private-by-design applications without compromising on features. Learn more about FHE in [this introduction](https://www.zama.ai/post/tfhe-deep-dive-part-1) or join the [FHE.org](https://fhe.org) community.
 
