@@ -26,6 +26,10 @@ In addition to predicting on encrypted data, the following models  support train
 
 |       [SGDClassifier](../references/api/concrete.ml.sklearn.linear_model.md#class-sgdclassifier)       |                           [SGDClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html)                           |
 
+## Ciphertext format compatibility
+
+These models only support _Concrete_ ciphertexts. See [the ciphertexts format](../getting-started/concepts.md#ciphertext-formats) documentation for more details.
+
 ## Quantization parameters
 
 The `n_bits` parameter controls the bit-width of the inputs and weights of the linear models. Linear models do not use table lookups and thus allows weight and inputs to be high precision integers.

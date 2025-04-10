@@ -23,6 +23,10 @@ Good quantization parameter values are critical to make models [respect FHE cons
 Using `nn.ReLU` as the activation function benefits from an optimization where [quantization uses powers-of-two scales](../explanations/quantization.md#quantization-special-cases). This results in much faster inference times in FHE, thanks to a TFHE primitive that performs fast division by powers of two.
 {% endhint %}
 
+## Ciphertext format compatibility
+
+These models only support _Concrete_ ciphertexts. See [the ciphertexts format](../getting-started/concepts.md#ciphertext-formats) documentation for more details.
+
 ## Example
 
 To create an instance of a Fully Connected Neural Network (FCNN), you need to instantiate one of the `NeuralNetClassifier` and `NeuralNetRegressor` classes and configure a number of parameters that are passed to their constructor.
