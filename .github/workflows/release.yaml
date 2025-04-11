@@ -504,6 +504,7 @@ jobs:
         if: ${{ success() && !cancelled() }}
         run: |
           echo "Running sanity check for ${PRIVATE_RELEASE_IMG_GIT_TAG}"
+          chmod -R 777 ./docker/release_resources
           docker run --rm -v "$(pwd)"/docker/release_resources:/data \
           "${PRIVATE_RELEASE_IMG_GIT_TAG}" /bin/bash -c "python ./sanity_check.py"
 
