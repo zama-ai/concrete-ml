@@ -237,7 +237,7 @@ jobs:
           && steps.install-deps.outcome == 'success'
           && steps.make-pcc.outcome == 'success'
           && !cancelled()
-        uses: tj-actions/changed-files@d6e91a2266cdb9d62096cebf1e8546899c6aa18f # v45.0.6
+        uses: tj-actions/changed-files@9934ab3fdf63239da75d9e0fbd339c48620c72c4 # v45.0.6
         with:
           files_yaml: |
             src:
