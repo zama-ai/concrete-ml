@@ -73,6 +73,7 @@ def pytest_addoption(parser):
 def pytest_configure(config):
     """Update pytest configuration."""
     config.addinivalue_line("markers", "flaky: mark test or module as flaky")
+    config.addinivalue_line("markers", "gpu: mark test or module that requires GPU")
 
 
 def pytest_collection_modifyitems(config, items):
