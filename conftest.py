@@ -17,6 +17,7 @@ from concrete.fhe.mlir.utils import MAXIMUM_TLU_BIT_WIDTH
 from sklearn.datasets import make_classification, make_regression
 from sklearn.metrics import accuracy_score
 
+import concrete
 from concrete.ml.common.utils import (
     SUPPORTED_FLOAT_TYPES,
     all_values_are_floats,
@@ -73,6 +74,7 @@ def pytest_addoption(parser):
 def pytest_configure(config):
     """Update pytest configuration."""
     config.addinivalue_line("markers", "flaky: mark test or module as flaky")
+    config.addinivalue_line("markers", "use_gpu: mark test or module that requires GPU")
 
 
 def pytest_collection_modifyitems(config, items):
@@ -282,17 +284,33 @@ def is_weekly_option(request):
 
 
 @pytest.fixture
-def get_device_for_compilation(request):
-    """Get the hardware device to compile circuits in tests."""
+def get_device():
+    """Select the computation device (CPU or CUDA GPU) based on environment and availability.
 
-    def get_device_for_compilation_impl(fhe_mode):
-        use_gpu = request.config.getoption("--use_gpu")
-        device_for_tests = "cuda" if use_gpu else "cpu"
-        if fhe_mode == "execute":
-            return device_for_tests
-        return "cpu"
+    Raises:
+        AssertionError: If `POETRY_RUN_GPU_TESTS` flag is set but the GPU is not available or
+            not properly configured.
 
-    return get_device_for_compilation_impl
+    Returns:
+        str: "cuda" if GPU mode is enforced and validated, otherwise "cpu".
+    """
+
+    force_cuda = os.getenv("POETRY_RUN_GPU_TESTS") == "1"
+
+    if force_cuda:
+        assert concrete.compiler.check_gpu_available(), "[Concrete] GPU required but not detected."
+        assert concrete.compiler.check_gpu_enabled(), "[Concrete] GPU detected but not enabled."
+        assert torch.cuda.is_available(), "[PyTorch] CUDA not available."
+        return "cuda"
+    return "cpu"
+
+
+@pytest.fixture()
+def enforce_gpu_determinism():
+    print(f"CUBLAS_WORKSPACE_CONFIG = {os.environ.get('CUBLAS_WORKSPACE_CONFIG')}")
+    os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
+    print(f"CUBLAS_WORKSPACE_CONFIG = {os.environ.get('CUBLAS_WORKSPACE_CONFIG')}")
+    torch.use_deterministic_algorithms(True, warn_only=True)
 
 
 # Method is not ideal as some MLIR can contain TLUs but not the associated graph

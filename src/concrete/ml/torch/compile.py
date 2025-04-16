@@ -76,6 +76,7 @@ def build_quantized_module(
     rounding_threshold_bits: Union[None, int, Dict[str, Union[str, int]]] = None,
     reduce_sum_copy=False,
     keep_onnx: Optional[bool] = True,
+    device: str = "cpu",
 ) -> QuantizedModule:
     """Build a quantized module from a Torch or ONNX model.
 
@@ -98,6 +99,7 @@ def build_quantized_module(
             bit-width propagation
         keep_onnx (bool): keep the onnx model inside the QuantizedModule. Set to False
             to save memory. Keeping the onnx model is useful for debugging
+        device (str): FHE compilation device, can be either 'cpu' or 'cuda'.
 
     Returns:
         QuantizedModule: The resulting QuantizedModule.
@@ -116,9 +118,9 @@ def build_quantized_module(
     # When we have integer inputs, we can keep them as integers.
     dummy_input_for_tracing = tuple(
         (
-            torch.from_numpy(val[[0], ::]).float()
+            torch.from_numpy(val[[0], ::]).float().to(device)
             if val.dtype == numpy.float64
-            else torch.from_numpy(val[[0], ::])
+            else torch.from_numpy(val[[0], ::]).to(device)
         )
         for val in inputset_as_numpy_tuple
     )
@@ -233,6 +235,7 @@ def _compile_torch_or_onnx_model(
         n_bits=n_bits,
         rounding_threshold_bits=rounding_threshold_bits,
         reduce_sum_copy=reduce_sum_copy,
+        device=device,
     )
 
     # Check that p_error or global_p_error is not set in both the configuration and in the direct
@@ -342,6 +345,11 @@ def compile_torch_model(
         "The compile_torch_model was called on a torch.nn.Module that contains "
         "Brevitas quantized layers. These models must be imported "
         "using compile_brevitas_qat_model instead.",
+    )
+
+    assert_true(
+        (model_device := str(next(torch_model.parameters()).device)).startswith(device),
+        f"❌ Device mismatch: Model is on {model_device}, but 'device' param is {device}",
     )
 
     return _compile_torch_or_onnx_model(
@@ -509,7 +517,7 @@ def compile_brevitas_qat_model(
     )
 
     dummy_input_for_tracing = tuple(
-        torch.from_numpy(val[[0], ::]).float() for val in inputset_as_numpy_tuple
+        torch.from_numpy(val[[0], ::]).float().to(device) for val in inputset_as_numpy_tuple
     )
 
     output_onnx_file_path = Path(

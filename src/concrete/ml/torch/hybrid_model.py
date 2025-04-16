@@ -617,6 +617,10 @@ class HybridFHEModel:
         # We do a forward pass where we accumulate inputs to use for compilation
         self.set_fhe_mode(HybridFHEMode.CALIBRATE)
 
+        # Set correct device
+        x = x.to(device)
+        self.model = self.model.to(device)
+
         # Run the model to get the calibration data
         self.model(x)
 
@@ -627,7 +631,8 @@ class HybridFHEModel:
             assert isinstance(remote_module, RemoteModule)
 
             assert remote_module.calibration_data is not None
-            calibration_data_tensor = torch.cat(remote_module.calibration_data, dim=0)
+            calibration_data_tensor = torch.cat(remote_module.calibration_data, dim=0).to(device)
+            self.private_modules[name] = self.private_modules[name].to(device)
 
             if has_any_qnn_layers(self.private_modules[name]):
                 self.private_q_modules[name] = compile_brevitas_qat_model(
@@ -653,6 +658,7 @@ class HybridFHEModel:
                         n_bits=n_bits,
                         rounding_threshold_bits=rounding_threshold_bits,
                         keep_onnx=False,
+                        device=device,
                     )
 
                     # Update executor for all remote modules
@@ -674,6 +680,7 @@ class HybridFHEModel:
                         rounding_threshold_bits=rounding_threshold_bits,
                         configuration=configuration,
                         p_error=p_error,
+                        device=device,
                     )
 
             self.remote_modules[name].private_q_module = self.private_q_modules[name]

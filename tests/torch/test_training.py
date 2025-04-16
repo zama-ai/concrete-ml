@@ -1,6 +1,7 @@
 """Tests for FHE training."""
 
 import numpy
+import pytest
 import torch
 from sklearn import datasets
 from sklearn.linear_model import LogisticRegression
@@ -36,7 +37,15 @@ def initialize_parameters(n_batch, n_features, n_targets, min_val=-3.0, max_val=
 
 
 def train_and_evaluate_model(
-    x_train, y_train, x_test, y_test, batch_size, iteration, model, model_type="torch"
+    x_train,
+    y_train,
+    x_test,
+    y_test,
+    batch_size,
+    iteration,
+    model,
+    model_type="torch",
+    device="cpu",
 ):
     """
     Train and evaluate the given model, supporting both torch and quantized models.
@@ -85,7 +94,8 @@ def train_and_evaluate_model(
     return accuracy_score(y_test[:min_length], predictions[:min_length])
 
 
-def test_sgd_training_manual():
+@pytest.mark.use_gpu
+def test_sgd_training_manual(get_device):
     """Trains a logistic regression with SGD in torch and quantized."""
     # Train on the bias when multi output is available in concrete
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4131
@@ -107,7 +117,15 @@ def test_sgd_training_manual():
 
     # Train and evaluate custom logistic regression model
     accuracy_torch = train_and_evaluate_model(
-        x_train, y_train, x_test, y_test, batch_size, iteration, model, model_type="torch"
+        x_train,
+        y_train,
+        x_test,
+        y_test,
+        batch_size,
+        iteration,
+        model,
+        model_type="torch",
+        device=get_device,
     )
 
     # Train and evaluate sklearn logistic regression model
@@ -119,7 +137,15 @@ def test_sgd_training_manual():
     ), "Torch accuracy should be within 1% of sklearn's."
 
     accuracy_q_module = train_and_evaluate_model(
-        x_train, y_train, x_test, y_test, batch_size, iteration, model, model_type="quantized"
+        x_train,
+        y_train,
+        x_test,
+        y_test,
+        batch_size,
+        iteration,
+        model,
+        model_type="quantized",
+        device=get_device,
     )
 
     # Quantized accuracy should match torch
