@@ -494,14 +494,12 @@ jobs:
 
         - name: Check GPU availability
           if: ${{ !cancelled() }}
-          uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
-          with:
-            mode: run
-            profile: gpu_ciprofile
-            command: |
-              which nvidia-smi || echo "nvidia-smi not found"
-              nvidia-smi || echo "GPU drivers not working"
+          run: |
+            echo "Checking for GPU..."
+            which nvidia-smi || echo "nvidia-smi not found"
+            nvidia-smi || echo "GPU drivers not working"
 
+                        
   # gpu-tests:
   #   name: GPU tests (Python ${{ matrix.python_version }})
   #   needs: [start-runner-gpu-linux]
