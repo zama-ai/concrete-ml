@@ -470,6 +470,16 @@ jobs:
             aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             aws-region: ${{ secrets.AWS_REGION }}
 
+        - name: Who am I?
+          run: aws sts get-caller-identity
+
+        - name: AMI visibility from CI role
+          run: |
+            set -e
+            aws ec2 describe-images \
+              --image-ids ami-0a11c737d1878a48e \
+              --region us-east-1
+            
         - name: Start SLAB GPU runner
           id: start-slab-runner
           if: ${{ !cancelled() }}
