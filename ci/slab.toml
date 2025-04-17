@@ -28,7 +28,7 @@ subnet_id = "subnet-a029b7ed"
 security_group= ["sg-0bf1c1d79c97bc88f", ]
 
 [backend.aws.gpu_ciprofile]
-region = "eu-west-1"
+region = "us-west-2"
 image_id = "ami-073c16319d43c83fc"
 instance_type = "p3.2xlarge"
 
