@@ -477,7 +477,7 @@ jobs:
           run: |
             set -e
             aws ec2 describe-images \
-              --image-ids ami-0a11c737d1878a48e \
+              --image-ids ami-09c5a0b202e775ff5 \
               --region us-east-1
             
         - name: Start SLAB GPU runner
