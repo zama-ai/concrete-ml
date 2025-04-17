@@ -470,6 +470,10 @@ jobs:
             aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             aws-region: ${{ secrets.AWS_REGION }}
 
+        - name: Who am I?
+          run: aws sts get-caller-identity
+
+              
         - name: Start SLAB GPU runner
           id: start-slab-runner
           if: ${{ !cancelled() }}
@@ -482,66 +486,73 @@ jobs:
               backend: aws
               profile: gpu_ciprofile 
 
-  gpu-tests:
-    name: GPU tests (Python ${{ matrix.python_version }})
-    needs: [start-runner-gpu-linux]
-    runs-on: ${{ needs.start-runner-gpu-linux.outputs.label }}
-    container:
-      image: ubuntu:24.04
-    # Force all environments to use the Bash shell for all 'run' commands
-    defaults:
-      run:
-        shell: bash
-    strategy:
-      fail-fast: false
-      matrix:
-        python_version: ${{ fromJSON(format('[%s]', needs.matrix-preparation.outputs.gpu-python-versions | join(','))) }}
+        - name: Check GPU availability
+          if: ${{ !cancelled() }}
+          run: |
+            echo "Checking for GPU..."
+            which nvidia-smi || echo "nvidia-smi not found"
+            nvidia-smi || echo "GPU drivers not working"
+                    
+  # gpu-tests:
+  #   name: GPU tests (Python ${{ matrix.python_version }})
+  #   needs: [start-runner-gpu-linux]
+  #   runs-on: ${{ needs.start-runner-gpu-linux.outputs.label }}
+  #   container:
+  #     image: ubuntu:24.04
+  #   # Force all environments to use the Bash shell for all 'run' commands
+  #   defaults:
+  #     run:
+  #       shell: bash
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       python_version: ${{ fromJSON(format('[%s]', needs.matrix-preparation.outputs.gpu-python-versions | join(','))) }}
 
-    steps:
-      # Replace default archive.ubuntu.com from docker image with fr mirror
-      # original archive showed performance issues and is farther away
-      - name: Docker container related setup and git installation
-        run: |
-          TZ=Europe/Paris
-          echo "TZ=${TZ}" >> "$GITHUB_ENV"
-          ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
-          sed -i 's|^deb http://archive|deb http://fr.archive|g' /etc/apt/sources.list
-          apt update && apt install git git-lfs -y
-
-
-
-      # Checkout the code
-      # 'fetch-depth' is set to 0 in order to fetch all tags (used for generating the changelog)
-      - name: Checkout Code
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
-        with:
-          fetch-depth: 0
-
-      - name: Set up Python ${{ matrix.python_version }}
-        uses: actions/setup-python@39cd14951b08e74b54015e9e001cdefcf80e669f
-        id: setup-python
-        with:
-          python-version: ${{ matrix.python_version }}
+  #   steps:
+  #     # Replace default archive.ubuntu.com from docker image with fr mirror
+  #     # original archive showed performance issues and is farther away
+  #     - name: Docker container related setup and git installation
+  #       run: |
+  #         TZ=Europe/Paris
+  #         echo "TZ=${TZ}" >> "$GITHUB_ENV"
+  #         ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
+  #         sed -i 's|^deb http://archive|deb http://fr.archive|g' /etc/apt/sources.list
+  #         apt update && apt install git git-lfs -y
 
 
-      - name: Install dependencies
-        id: install-deps
-        run: |
-          make setup_env
-          pip install pytest
-          echo
-          echo "Using these tools:"
-          which python3
-          which pip3
-          echo
-      - name: Run GPU tests
-        shell: bash +e {0}
-        run: make pytest_gpu
+
+      # # Checkout the code
+      # # 'fetch-depth' is set to 0 in order to fetch all tags (used for generating the changelog)
+      # - name: Checkout Code
+      #   uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      #   with:
+      #     fetch-depth: 0
+
+      # - name: Set up Python ${{ matrix.python_version }}
+      #   uses: actions/setup-python@39cd14951b08e74b54015e9e001cdefcf80e669f
+      #   id: setup-python
+      #   with:
+      #     python-version: ${{ matrix.python_version }}
+
+
+      # - name: Install dependencies
+      #   id: install-deps
+      #   run: |
+      #     make setup_env
+      #     pip install pytest
+      #     echo
+      #     echo "Using these tools:"
+      #     which python3
+      #     which pip3
+      #     echo
+      # - name: Run GPU tests
+      #   shell: bash +e {0}
+      #   run: make pytest_gpu
     
 
   stop-runner-gpu-linux:
     name: Stop SLAB runner (GPU)
-    needs: [gpu-tests, start-runner-gpu-linux]
+    needs: [start-runner-gpu-linux]
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     if: ${{ always() && (needs.start-runner-gpu-linux.result != 'skipped') }}

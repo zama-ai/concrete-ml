@@ -27,6 +27,13 @@ instance_type = "c5.4xlarge"
 subnet_id = "subnet-a029b7ed"
 security_group= ["sg-0bf1c1d79c97bc88f", ]
 
+[backend.aws.gpu_ciprofile]
+region = "us-east-1"
+image_id = "ami-09c5a0b202e775ff5"
+instance_type = "g4dn.2xlarge"
+docker_runtime = "nvidia"
+gpu            = true       
+
 [backend.aws.big-cpu]
 region = "eu-west-1"
 image_id = "ami-0898af27b3e2421d8"
