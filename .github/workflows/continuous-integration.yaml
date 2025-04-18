@@ -456,6 +456,7 @@ jobs:
   start-runner-gpu-linux:
       needs: [matrix-preparation]
       name: Start GPU SLAB runner
+      # ce label n'a plus aucune importance une fois que le runner SLAB est lancé.
       runs-on: ubuntu-24.04
       timeout-minutes: 15
       outputs:
@@ -494,9 +495,9 @@ jobs:
   GPU-tests:
     name: Run GPU tests (Python ${{ matrix.python_version }})
     runs-on: ${{ needs.start-runner-gpu-linux.outputs.label }}
-    needs: start-runner-gpu-linux
     container:
-      image: ubuntu:24.04
+      image: nvidia/cuda:12.3.2-runtime-ubuntu24.04
+    needs: start-runner-gpu-linux
     strategy:
       matrix:
         python_version: [3.8, 3.12]
