@@ -502,8 +502,8 @@ jobs:
         python-version: [3.8, 3.12]
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      # - name: Checkout code
+      #   uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
 
       - name: Set up Python ${{ matrix.python-version }}
