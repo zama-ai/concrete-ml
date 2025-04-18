@@ -486,13 +486,18 @@ jobs:
               backend: aws
               profile: gpu_ciprofile 
 
-        - name: Check GPU availability
-          if: ${{ !cancelled() }}
-          run: |
-            echo "Checking for GPU..."
-            which nvidia-smi
-            nvidia-smi
-                    
+  GPU-availability:
+    name: GPU Tests
+    runs-on: ${{ needs.start-runner-gpu-linux.outputs.label }}
+    needs: start-runner-gpu-linux
+    steps:
+      - name: Check GPU availability
+        run: |
+          echo "Checking for GPU..."
+          which nvidia-smi || echo "nvidia-smi not found"
+          nvidia-smi || echo "nvidia-smi failed"
+
+          
   # gpu-tests:
   #   name: GPU tests (Python ${{ matrix.python_version }})
   #   needs: [start-runner-gpu-linux]
