@@ -498,8 +498,7 @@ jobs:
             echo "Checking for GPU..."
             which nvidia-smi || echo "nvidia-smi not found"
             nvidia-smi || echo "GPU drivers not working"
-
-                        
+                    
   # gpu-tests:
   #   name: GPU tests (Python ${{ matrix.python_version }})
   #   needs: [start-runner-gpu-linux]
