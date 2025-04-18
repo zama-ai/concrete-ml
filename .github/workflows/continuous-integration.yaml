@@ -473,14 +473,6 @@ jobs:
         - name: Who am I?
           run: aws sts get-caller-identity
 
-        - name: SSH debug (temporaire)
-          uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
-          with:
-            mode: run
-            # …inputs habituels…
-            profile: gpu_ciprofile
-            command: |
-              sudo nvidia-smi    
               
         - name: Start SLAB GPU runner
           id: start-slab-runner
