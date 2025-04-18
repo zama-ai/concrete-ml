@@ -496,7 +496,7 @@ jobs:
     name: Run GPU tests (Python ${{ matrix.python_version }})
     runs-on: ${{ needs.start-runner-gpu-linux.outputs.label }}
     container:
-      image: nvidia/cuda:12.3.2-runtime-ubuntu24.04
+      image: ubuntu:24.04 
     needs: start-runner-gpu-linux
     strategy:
       matrix:
