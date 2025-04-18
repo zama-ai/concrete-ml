@@ -32,6 +32,7 @@ region = "us-east-1"
 image_id = "ami-09c5a0b202e775ff5"
 instance_type = "g4dn.2xlarge"
 docker_runtime = "nvidia"
+runtime = "nvidia"
 gpu            = true       
 
 [backend.aws.big-cpu]
