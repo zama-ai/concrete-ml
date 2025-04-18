@@ -138,6 +138,7 @@ def run_hybrid_llm_test(
                 assert "client.zip" in files and "server.zip" in files
 
 
+# @pytest.mark.gpu
 # Dependency 'huggingface-hub' raises a 'FutureWarning' from version 0.23.0 when calling the
 # 'from_pretrained' method
 @pytest.mark.filterwarnings("ignore::FutureWarning")
@@ -182,6 +183,7 @@ def test_gpt2_hybrid_mlp(
     )
 
 
+# @pytest.mark.gpu
 def test_hybrid_brevitas_qat_model():
     """Test GPT2 hybrid."""
     n_bits = 3

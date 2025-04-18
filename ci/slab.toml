@@ -29,10 +29,8 @@ security_group= ["sg-0bf1c1d79c97bc88f", ]
 
 [backend.aws.gpu_ciprofile]
 region = "us-east-1"
-image_id = "ami-09c5a0b202e775ff5"
-instance_type = "g4dn.2xlarge"
-docker_runtime = "nvidia"
-gpu            = true       
+image_id = "ami-0c2e815dbef0da3a2"
+instance_type = "g4dn.8xlarge"
 
 [backend.aws.big-cpu]
 region = "eu-west-1"

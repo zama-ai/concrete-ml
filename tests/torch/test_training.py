@@ -85,6 +85,7 @@ def train_and_evaluate_model(
     return accuracy_score(y_test[:min_length], predictions[:min_length])
 
 
+# @pytest.mark.gpu
 def test_sgd_training_manual():
     """Trains a logistic regression with SGD in torch and quantized."""
     # Train on the bias when multi output is available in concrete
