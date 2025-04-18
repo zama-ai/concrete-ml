@@ -492,12 +492,12 @@ jobs:
           nvidia-smi || echo "nvidia-smi failed"
 
   GPU-tests:
-    name: Run GPU tests (Python ${{ matrix.python-version }})
+    name: Run GPU tests (Python ${{ matrix.python_version }})
     runs-on: ${{ needs.start-runner-gpu-linux.outputs.label }}
     needs: start-runner-gpu-linux
     strategy:
       matrix:
-        python-version: [3.8, 3.12]
+        python_version: [3.8, 3.12]
 
     steps:
       - name: Checkout code
