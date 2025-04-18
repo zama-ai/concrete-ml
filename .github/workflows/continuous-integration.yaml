@@ -481,7 +481,7 @@ jobs:
               profile: gpu_ciprofile 
 
   GPU-availability:
-    name: GPU-availability
+    name: GPU Availability
     runs-on: ${{ needs.start-runner-gpu-linux.outputs.label }}
     needs: start-runner-gpu-linux
     steps:
@@ -503,11 +503,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python_version }}
         uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
         continue-on-error: true
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: ${{ matrix.python_version }}
 
       - name: Install dependencies
         id: install-deps
