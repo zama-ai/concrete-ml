@@ -1433,6 +1433,7 @@ def check_sum_for_tree_based_models(
         array_allclose_and_same_shape(fhe_sum_predict_fhe, non_fhe_sum_predict_fhe)
 
 
+@pytest.mark.gpu
 # Neural network models are skipped for this test
 # The `fit_benchmark` function of QNNs returns a QAT model and a FP32 model that is similar
 # in structure but trained from scratch. Furthermore, the `n_bits` setting

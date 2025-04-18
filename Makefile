@@ -844,3 +844,18 @@ check_symlinks:
 		echo "Bad symlinks found: " && echo $$(find . -xtype l) && \
 		exit 1; \
 	fi
+
+.PHONY: pytest_gpu  # Run only tests that require a GPU
+pytest_gpu:
+	@echo "Collecting GPU tests..."
+
+	@TESTS=$$(poetry run pytest -m "gpu" --collect-only -q); \
+	if [ -z "$$TESTS" ]; then \
+		echo "No tests marked @pytest.mark.gpu found."; \
+		exit 1; \
+	else \
+		echo "Tests found:"; \
+		echo "$$TESTS"; \
+		echo "Running GPU tests only..."; \
+		poetry run pytest -m "gpu" -q --color=yes --durations=20; \
+	fi
