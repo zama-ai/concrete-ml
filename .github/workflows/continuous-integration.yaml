@@ -473,13 +473,15 @@ jobs:
         - name: Who am I?
           run: aws sts get-caller-identity
 
-        - name: AMI visibility from CI role
-          run: |
-            set -e
-            aws ec2 describe-images \
-              --image-ids ami-09c5a0b202e775ff5 \
-              --region us-east-1
-            
+        - name: SSH debug (temporaire)
+          uses: zama-ai/slab-github-runner@... 
+          with:
+            mode: run
+            # …inputs habituels…
+            profile: gpu_ciprofile
+            command: |
+              sudo nvidia-smi       # <- devrait afficher la V100 / A10 / etc.
+              
         - name: Start SLAB GPU runner
           id: start-slab-runner
           if: ${{ !cancelled() }}
