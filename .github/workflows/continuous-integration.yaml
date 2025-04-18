@@ -512,6 +512,10 @@ jobs:
       - name: Install dependencies
         id: install-deps
         run: |
+          apt-get update
+          apt-get install -y sudo python3-pip curl
+          pip install pipx
+          pipx ensurepath
           ./script/make_utils/setup_os_deps.sh
 
           # Which Python version is active 
