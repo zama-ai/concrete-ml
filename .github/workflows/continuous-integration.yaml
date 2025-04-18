@@ -495,12 +495,8 @@ jobs:
   GPU-tests:
     name: Run GPU tests (Python ${{ matrix.python_version }})
     runs-on: ${{ needs.start-runner-gpu-linux.outputs.label }}
-    defaults:
-      run:
-        shell: bash
-    container:
-      image: ubuntu:24.04
-      options: --gpus all      
+
+
     needs: start-runner-gpu-linux
     strategy:
       matrix:
@@ -515,6 +511,18 @@ jobs:
         continue-on-error: true
         with:
           python-version: ${{ matrix.python_version }}
+
+      - name: Build & run in Ubuntu container with GPU
+        shell: bash
+        run: |
+          # 1) Pull l'image Ubuntu
+          docker pull ubuntu:24.04
+  
+          # 2) Lancer un conteneur qui monte le workspace et expose le GPU
+          docker run --rm --gpus all \
+            -v "${{ github.workspace }}":/workspace \
+            -w /workspace \
+            ubuntu:24.04 bash -lc "
 
       - name: Install dependencies
         id: install-deps
