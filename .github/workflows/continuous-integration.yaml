@@ -508,7 +508,6 @@ jobs:
 
       - name: Set up Python ${{ matrix.python_version }}
         uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
-        continue-on-error: true
         with:
           python-version: ${{ matrix.python_version }}
 
