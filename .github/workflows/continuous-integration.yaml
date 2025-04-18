@@ -497,24 +497,39 @@ jobs:
     name: Run GPU tests (Python ${{ matrix.python-version }})
     runs-on: ${{ needs.start-runner-gpu-linux.outputs.label }}
     needs: start-runner-gpu-linux
-
     strategy:
       matrix:
         python-version: [3.8, 3.12]
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v692973e3d937129bcbf40652eb9f2f61becf3332
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
-      # - name: Install dependencies with Poetry
-      #   run: |
-      #     pip install poetry
-      #     poetry install
+      - name: Install dependencies
+        id: install-deps
+        run: |
+          ./script/make_utils/setup_os_deps.sh
+
+          # Which Python version is active 
+          which python3
+          which pip3
+
+          # PATH update
+          PATH="/usr/local/opt/make/libexec/gnubin:$PATH"
+          echo "PATH=${PATH}" >> "$GITHUB_ENV"
+
+          echo
+          echo "Using these tools:"
+          which python3
+          which pip3
+          echo
+
+          make setup_env
 
       - name: 🚀 Run GPU test suite
         run: make tests_gpu
