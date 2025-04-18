@@ -461,7 +461,7 @@ jobs:
         label: ${{ steps.start-slab-runner.outputs.label }}
       steps:
         - name: Checkout Code
-          uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+          uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
         - name: Configure AWS credentials
           uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
@@ -504,6 +504,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
