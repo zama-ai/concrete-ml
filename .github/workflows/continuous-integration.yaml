@@ -454,7 +454,7 @@ jobs:
   # ----------------
   start-runner-gpu-linux:
       needs: [matrix-preparation]
-      name: Start SLAB runner (GPU)
+      name: Start GPU SLAB runner
       runs-on: ubuntu-24.04
       timeout-minutes: 15
       outputs:
@@ -469,10 +469,6 @@ jobs:
             aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
             aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             aws-region: ${{ secrets.AWS_REGION }}
-
-        - name: Who am I?
-          run: aws sts get-caller-identity
-
               
         - name: Start SLAB GPU runner
           id: start-slab-runner
@@ -497,7 +493,34 @@ jobs:
           which nvidia-smi || echo "nvidia-smi not found"
           nvidia-smi || echo "nvidia-smi failed"
 
-          
+  GPU-tests:
+    name: Run GPU tests (Python ${{ matrix.python-version }})
+    runs-on: ${{ needs.start-runner-gpu-linux.outputs.label }}
+    needs: start-runner-gpu-linux
+
+    strategy:
+      matrix:
+        python-version: [3.8, 3.12]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v692973e3d937129bcbf40652eb9f2f61becf3332
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # - name: Install dependencies with Poetry
+      #   run: |
+      #     pip install poetry
+      #     poetry install
+
+      - name: 🚀 Run GPU test suite
+        run: make tests_gpu
+
+
+
   # gpu-tests:
   #   name: GPU tests (Python ${{ matrix.python_version }})
   #   needs: [start-runner-gpu-linux]
