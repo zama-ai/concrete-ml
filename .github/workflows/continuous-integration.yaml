@@ -514,6 +514,7 @@ jobs:
       - name: Build & run in Ubuntu container with GPU
         shell: bash
         run: |
+          set -x
           # 1) Pull l'image Ubuntu
           docker pull ubuntu:24.04
   
