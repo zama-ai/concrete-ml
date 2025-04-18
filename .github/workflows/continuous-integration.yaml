@@ -495,6 +495,9 @@ jobs:
   GPU-tests:
     name: Run GPU tests (Python ${{ matrix.python_version }})
     runs-on: ${{ needs.start-runner-gpu-linux.outputs.label }}
+    defaults:
+      run:
+        shell: bash
     container:
       image: ubuntu:24.04
       options: --gpus all      
