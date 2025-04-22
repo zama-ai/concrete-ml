@@ -616,9 +616,12 @@ class BaseEstimator:
         else:
             assert ciphertext_format == CiphertextFormat.TFHE_RS
             assert_true(
-                isinstance(self, BaseTreeEstimatorMixin)
-                and is_classifier_or_partial_classifier(self)
-                and self.input_quantizers[0].n_bits == 8,
+                (
+                    isinstance(self, BaseTreeEstimatorMixin)
+                    or isinstance(self, SklearnLinearClassifierMixin)
+                )
+                and is_classifier_or_partial_classifier(self),
+                #                and self.input_quantizers[0].n_bits == 8,
                 (
                     "TFHE-rs ciphertext inputs/outputs is only "
                     "supported for 8-bit tree-based classifiers: "
@@ -651,10 +654,11 @@ class BaseEstimator:
             # Get the default crypto-parmas to use with TFHE-rs
             crypto_params = json.loads(fhext.get_crypto_params_radix())  # pylint: disable=no-member
 
+            input_bitwidth = 8 if self.input_quantizers[0].n_bits <= 8 else 16
             # FIXME: better handle the bitwidth here
             # setting to 8, but actual one could be lower
             dtype_spec = tfhers.get_type_from_params_dict(  # pylint: disable=no-member
-                crypto_params, is_signed, 8
+                crypto_params, is_signed, input_bitwidth
             )  # pylint: disable=no-member
             dtype = partial(tfhers.TFHERSInteger, dtype_spec)
             inputset = (dtype(v) for v in inputset)
@@ -720,21 +724,26 @@ class BaseEstimator:
         if self._tfhers_bridge is None:
             return self.fhe_circuit.encrypt_run_decrypt(*inputs)
 
-        sk, _, lwe_sk = fhext.keygen_radix()  # pylint: disable=no-member
+        if self.tfhers_sk is None:
+            sk, _, lwe_sk = fhext.keygen_radix()  # pylint: disable=no-member
 
-        self.tfhers_sk = sk
+            self.tfhers_sk = sk
 
-        input_idx_to_key = {0: lwe_sk}
-        self._tfhers_bridge.keygen_with_initial_keys(  # pylint: disable=no-member
-            input_idx_to_key_buffer=input_idx_to_key
-        )
+            input_idx_to_key = {0: lwe_sk}
+            self._tfhers_bridge.keygen_with_initial_keys(  # pylint: disable=no-member
+                input_idx_to_key_buffer=input_idx_to_key
+            )
 
         input_is_signed = self.input_quantizers[0].is_signed
+        input_bitwidth = self.input_quantizers[0].n_bits
 
         encrypt_dtype = numpy.int8 if input_is_signed else numpy.uint8
+        if input_bitwidth > 8:
+            encrypt_dtype = numpy.int16 if input_is_signed else numpy.uint16
+
         output_0 = self.fhe_circuit.graph.ordered_outputs()[0]
         output_is_signed = output_0.inputs[0].dtype.is_signed
-        output_bitwidth = output_0.inputs[0].dtype.bit_width
+        output_bitwidth = 8 if output_0.inputs[0].dtype.bit_width <= 8 else 16
 
         assert self.tfhers_sk is not None
 

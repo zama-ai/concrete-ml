@@ -2374,7 +2374,9 @@ def test_xgb_serialization_errors(model_class, param, error_message):
 
 @pytest.mark.flaky
 @pytest.mark.parametrize(
-    "model_class, parameters", get_sklearn_tree_models_and_datasets(True, True)
+    "model_class, parameters",
+    get_sklearn_tree_models_and_datasets(True, True)
+    + get_sklearn_linear_models_and_datasets(False, True),
 )
 @pytest.mark.parametrize("n_bits", [4, 8, 12])
 def test_tfhers_inputs_outputs_trees(model_class, parameters, n_bits, load_data):
@@ -2391,7 +2393,7 @@ def test_tfhers_inputs_outputs_trees(model_class, parameters, n_bits, load_data)
 
     # If the model is not supported or if the n_bits is not supported
     # an error is raised
-    if not n_bits == 8 or is_regressor_or_partial_regressor(model_class):
+    if is_regressor_or_partial_regressor(model_class):
         with pytest.raises(AssertionError, match=".*supported for 8-bit tree-based.*"):
             model.compile(x, ciphertext_format=CiphertextFormat.TFHE_RS)
         return
@@ -2400,7 +2402,12 @@ def test_tfhers_inputs_outputs_trees(model_class, parameters, n_bits, load_data)
     # TFHE-rs input/outputs then to concrete again
     model.compile(x)
 
+    import time
+
     y_pred_concrete = model.predict(fhe_test_data, fhe="execute")
+    start = time.time()
+    y_pred_concrete = model.predict(fhe_test_data, fhe="execute")
+    print(f"Concrete time: {time.time() - start}")
 
     model.compile(x, ciphertext_format=CiphertextFormat.TFHE_RS)
 
@@ -2409,6 +2416,9 @@ def test_tfhers_inputs_outputs_trees(model_class, parameters, n_bits, load_data)
 
     # Run the model in FHE for TFHE-rs inputs/outputs
     y_pred_tfhers = model.predict(fhe_test_data, fhe="execute")
+    start = time.time()
+    y_pred_tfhers = model.predict(fhe_test_data, fhe="execute")
+    print(f"TFHErs time: {time.time() - start}")
 
     model.compile(x)
 
