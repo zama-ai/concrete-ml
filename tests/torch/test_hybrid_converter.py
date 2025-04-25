@@ -1,5 +1,6 @@
 """Tests for the hybrid model converter."""
 
+import os
 import sys
 import tempfile
 from pathlib import Path
@@ -259,6 +260,9 @@ def test_hybrid_glwe_correctness(n_hidden, use_dynamic_quantization, n_bits, get
         y_train = torch.tensor(y_train, dtype=torch.long).to(device)
         y_test = torch.tensor(y_test, dtype=torch.long).to(device)
         return x_train, x_test, y_train, y_test
+
+    os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
+    torch.use_deterministic_algorithms(True)
 
     # Generate random data with n_hidden features and n_hidden classes
     # keeping input and output dimensions equal to n_hidden.
