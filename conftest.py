@@ -284,7 +284,7 @@ def is_weekly_option(request):
 
 
 @pytest.fixture
-def get_device_for_compilation():
+def get_device():
     """Select the computation device (CPU or CUDA GPU) based on environment and availability.
 
     Raises:
