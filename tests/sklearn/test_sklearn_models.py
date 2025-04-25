@@ -1772,7 +1772,6 @@ def test_predict_correctness(
     verbose=True,
 ):
     """Test prediction correctness between clear quantized and FHE simulation or execution."""
-    print("*****************", get_device)
 
     # KNN can only be compiled with small quantization bit numbers for now
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979

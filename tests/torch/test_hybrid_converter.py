@@ -183,8 +183,8 @@ def test_gpt2_hybrid_mlp(
     )
 
 
-# @pytest.mark.gpu
-def test_hybrid_brevitas_qat_model():
+@pytest.mark.use_gpu
+def test_hybrid_brevitas_qat_model(get_device):
     """Test GPT2 hybrid."""
     n_bits = 3
     input_shape = 32
@@ -202,7 +202,8 @@ def test_hybrid_brevitas_qat_model():
     model(inputs)
     assert isinstance(model, torch.nn.Module)
     hybrid_model = HybridFHEModel(model, module_names="sub_module")
-    hybrid_model.compile_model(x=inputs)
+    print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$", get_device)
+    hybrid_model.compile_model(x=inputs, device=get_device)
 
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_dir_path = Path(temp_dir)
@@ -241,21 +242,22 @@ def test_invalid_model():
         HybridFHEModel(invalid_model, module_names="sub_module")
 
 
+@pytest.mark.use_gpu
 @pytest.mark.parametrize("use_dynamic_quantization, n_bits", [(True, 8), (False, 10)])
 @pytest.mark.parametrize("n_hidden", [256, 512, 2048])
-def test_hybrid_glwe_correctness(n_hidden, use_dynamic_quantization, n_bits):
+def test_hybrid_glwe_correctness(n_hidden, use_dynamic_quantization, n_bits, get_device):
     """Tests that the GLWE backend produces correct results for the hybrid model."""
 
     num_samples = 200
 
-    def prepare_data(x, y, test_size=0.1, random_state=42):
+    def prepare_data(x, y, device, test_size=0.1, random_state=42):
         x_train, x_test, y_train, y_test = train_test_split(
             x, y, test_size=test_size, random_state=random_state
         )
-        x_train = torch.tensor(x_train, dtype=torch.float32)
-        x_test = torch.tensor(x_test, dtype=torch.float32)
-        y_train = torch.tensor(y_train, dtype=torch.long)
-        y_test = torch.tensor(y_test, dtype=torch.long)
+        x_train = torch.tensor(x_train, dtype=torch.float32).to(device)
+        x_test = torch.tensor(x_test, dtype=torch.float32).to(device)
+        y_train = torch.tensor(y_train, dtype=torch.long).to(device)
+        y_test = torch.tensor(y_test, dtype=torch.long).to(device)
         return x_train, x_test, y_train, y_test
 
     # Generate random data with n_hidden features and n_hidden classes
@@ -266,7 +268,7 @@ def test_hybrid_glwe_correctness(n_hidden, use_dynamic_quantization, n_bits):
     # Prepare data
     x1_train, x1_test, y1_train, y1_test = prepare_data(x1_data, y1_data)
 
-    model = FCSmall(n_hidden, torch.nn.ReLU, hidden=n_hidden)
+    model = FCSmall(n_hidden, torch.nn.ReLU, hidden=n_hidden).to(get_device)
     optimizer = torch.optim.Adam(model.parameters())
 
     num_epochs = 100
@@ -285,7 +287,7 @@ def test_hybrid_glwe_correctness(n_hidden, use_dynamic_quantization, n_bits):
         if isinstance(p, torch.nn.Linear):
             param_names.append(k)
 
-    y_torch = model(x1_test).detach().numpy()
+    y_torch = model(x1_test).detach().cpu().numpy()
     hybrid_local = HybridFHEModel(model, param_names)
 
     # This internal flag tells us whether all the layers
@@ -296,7 +298,10 @@ def test_hybrid_glwe_correctness(n_hidden, use_dynamic_quantization, n_bits):
     assert is_pure_linear == should_use_glwe
 
     hybrid_local.compile_model(
-        x1_train, n_bits=n_bits, use_dynamic_quantization=use_dynamic_quantization
+        x1_train,
+        n_bits=n_bits,
+        use_dynamic_quantization=use_dynamic_quantization,
+        device=get_device,
     )
 
     y_qm = hybrid_local(x1_test, fhe="disable").numpy()

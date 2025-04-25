@@ -298,9 +298,9 @@ def get_device():
     force_cuda = os.getenv("POETRY_RUN_GPU_TESTS") == "1"
     print("============================================")
     print(f"POETRY_RUN_GPU_TESTS={os.getenv('POETRY_RUN_GPU_TESTS')}, {force_cuda=}")
-    print(concrete.compiler.check_gpu_available(), "[Concrete] GPU required but not detected.")
-    print(concrete.compiler.check_gpu_enabled(), "[Concrete] GPU detected but not enabled.")
-    print(torch.cuda.is_available(), "[PyTorch] CUDA not available.")
+    print(concrete.compiler.check_gpu_available())
+    print(concrete.compiler.check_gpu_enabled())
+    print(torch.cuda.is_available())
 
     if force_cuda:
         assert concrete.compiler.check_gpu_available(), "[Concrete] GPU required but not detected."
