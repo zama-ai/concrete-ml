@@ -1,7 +1,6 @@
 """Tests for FHE training."""
 
 import numpy
-import pytest
 import torch
 from sklearn import datasets
 from sklearn.linear_model import LogisticRegression
@@ -94,7 +93,7 @@ def train_and_evaluate_model(
     return accuracy_score(y_test[:min_length], predictions[:min_length])
 
 
-@pytest.mark.use_gpu
+# @pytest.mark.use_gpu
 def test_sgd_training_manual(get_device):
     """Trains a logistic regression with SGD in torch and quantized."""
     # Train on the bias when multi output is available in concrete

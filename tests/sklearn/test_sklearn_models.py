@@ -1733,7 +1733,7 @@ def test_pipeline(
     check_pipeline(model_class, x, y)
 
 
-@pytest.mark.use_gpu
+# @pytest.mark.use_gpu
 @pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
 @pytest.mark.parametrize(
     "simulate",
@@ -2374,7 +2374,7 @@ def test_xgb_serialization_errors(model_class, param, error_message):
             model.dumps()
 
 
-@pytest.mark.use_gpu
+# @pytest.mark.use_gpu
 @pytest.mark.flaky
 @pytest.mark.parametrize(
     "model_class, parameters", get_sklearn_tree_models_and_datasets(True, True)

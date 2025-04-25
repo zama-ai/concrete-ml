@@ -296,11 +296,6 @@ def get_device():
     """
 
     force_cuda = os.getenv("POETRY_RUN_GPU_TESTS") == "1"
-    print("============================================")
-    print(f"POETRY_RUN_GPU_TESTS={os.getenv('POETRY_RUN_GPU_TESTS')}, {force_cuda=}")
-    print(concrete.compiler.check_gpu_available())
-    print(concrete.compiler.check_gpu_enabled())
-    print(torch.cuda.is_available())
 
     if force_cuda:
         assert concrete.compiler.check_gpu_available(), "[Concrete] GPU required but not detected."
@@ -308,6 +303,12 @@ def get_device():
         assert torch.cuda.is_available(), "[PyTorch] CUDA not available."
         return "cuda"
     return "cpu"
+
+
+@pytest.fixture()
+def enforce_gpu_determinism():
+    os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
+    torch.use_deterministic_algorithms(True)
 
 
 # Method is not ideal as some MLIR can contain TLUs but not the associated graph
