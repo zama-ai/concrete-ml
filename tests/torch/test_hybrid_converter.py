@@ -250,7 +250,7 @@ def test_hybrid_glwe_correctness(n_hidden, use_dynamic_quantization, n_bits, get
 
     num_samples = 200
 
-    def prepare_data(x, y, device, test_size=0.1, random_state=42):
+    def prepare_data(x, y, test_size=0.1, random_state=42, device="cpu"):
         x_train, x_test, y_train, y_test = train_test_split(
             x, y, test_size=test_size, random_state=random_state
         )
@@ -266,7 +266,7 @@ def test_hybrid_glwe_correctness(n_hidden, use_dynamic_quantization, n_bits, get
     y1_data = numpy.random.randint(0, n_hidden, size=num_samples)  # n_hidden classes
 
     # Prepare data
-    x1_train, x1_test, y1_train, y1_test = prepare_data(x1_data, y1_data)
+    x1_train, x1_test, y1_train, y1_test = prepare_data(x1_data, y1_data, device=get_device)
 
     model = FCSmall(n_hidden, torch.nn.ReLU, hidden=n_hidden).to(get_device)
     optimizer = torch.optim.Adam(model.parameters())
