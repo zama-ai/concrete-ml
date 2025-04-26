@@ -67,7 +67,7 @@ class OnDiskNetwork:
 
 # This is a known flaky test
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4014
-# @pytest.mark.gpu
+# @pytest.mark.use_gpu
 @pytest.mark.flaky
 @pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
 @pytest.mark.parametrize("n_bits", [2])
@@ -80,6 +80,7 @@ def test_client_server_sklearn_inference(
     check_is_good_execution_for_cml_vs_circuit,
     check_array_equal,
     check_float_array_equal,
+    get_device,
 ):
     """Test the client-server interface for built-in models' inference."""
 
@@ -119,6 +120,7 @@ def test_client_server_sklearn_inference(
     compilation_kwargs = {
         "X": x_train,
         "configuration": default_configuration,
+        "device": get_device,
     }
 
     # Compile the model

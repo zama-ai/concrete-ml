@@ -454,6 +454,7 @@ jobs:
   # ----------------
   start-runner-gpu-linux:
       needs: [matrix-preparation]
+      permissions: {}
       name: Start GPU SLAB runner
       # This label is irrelevant once the SLAB runner starts.
       runs-on: ubuntu-24.04
@@ -481,32 +482,21 @@ jobs:
               backend: aws
               profile: gpu_ciprofile 
 
-  GPU-availability:
-    name: GPU Availability
-    runs-on: ${{ needs.start-runner-gpu-linux.outputs.label }}
-    needs: start-runner-gpu-linux
+  # GPU-availability:
+  #   name: GPU Availability
+  #   runs-on: ${{ needs.start-runner-gpu-linux.outputs.label }}
+  #   needs: start-runner-gpu-linux
     
-    steps:
-      - name: Check GPU availability
-        run: |
-          echo "Checking for GPU..."
-          which nvidia-smi || echo "nvidia-smi not found"
-          nvidia-smi || echo "nvidia-smi failed"
-          nvcc --version || echo "nvcc --version failed"
-
-      - name: Check OS information
-        run: |
-          echo "Checking for machine OS information..."
-          cat /etc/os-release
-      - name: Check pre-installed python version
-        run: |
-          echo "Python3 version: $(python3 --version 2>&1)"
-
+  #   steps:
+  #     - name: Check GPU availability
+  #       run: |
+  #         echo "Checking for GPU..."
+  #         nvidia-smi || echo "nvidia-smi failed"
 
   GPU-tests:
     name: Run GPU tests (Python ${{ matrix.python_version }})
     runs-on: ${{ needs.start-runner-gpu-linux.outputs.label }}
-    needs: [start-runner-gpu-linux, GPU-availability]
+    needs: [start-runner-gpu-linux]
     strategy:
       matrix:
         python_version: [3.8]
@@ -566,7 +556,8 @@ jobs:
 
   stop-runner-gpu-linux:
     name: Stop SLAB runner (GPU)
-    needs: [start-runner-gpu-linux, GPU-tests, GPU-availability]
+    needs: [start-runner-gpu-linux, GPU-tests]
+    permissions: {}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     if: ${{ always() && (needs.start-runner-gpu-linux.result != 'skipped') }}

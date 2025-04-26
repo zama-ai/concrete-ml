@@ -2392,8 +2392,6 @@ def test_tfhers_inputs_outputs_trees(model_class, parameters, n_bits, load_data,
     # Fit the model to create the equivalent sklearn model
     model.fit(x, y)
 
-    print("*****************", get_device)
-
     # If the model is not supported or if the n_bits is not supported
     # an error is raised
     if not n_bits == 8 or is_regressor_or_partial_regressor(model_class):

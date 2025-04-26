@@ -45,6 +45,7 @@ def run_hybrid_llm_test(
     transformers_installed: bool,
     glwe_backend_installed: bool,
     monkeypatch: pytest.MonkeyPatch,
+    get_device: str,
 ):
     """Run the test for any model with its private module names."""
 
@@ -70,6 +71,7 @@ def run_hybrid_llm_test(
             n_bits=9,
             rounding_threshold_bits=8,
             configuration=configuration,
+            device=get_device,
         )
     except RuntimeError as error:
         # Skip test if NoParametersFound error occurs
@@ -138,7 +140,7 @@ def run_hybrid_llm_test(
                 assert "client.zip" in files and "server.zip" in files
 
 
-# @pytest.mark.gpu
+@pytest.mark.use_gpu
 # Dependency 'huggingface-hub' raises a 'FutureWarning' from version 0.23.0 when calling the
 # 'from_pretrained' method
 @pytest.mark.filterwarnings("ignore::FutureWarning")
@@ -159,15 +161,17 @@ def test_gpt2_hybrid_mlp(
     transformers_installed,
     glwe_backend_installed,
     monkeypatch,
+    get_device,
+    enforce_gpu_determinism,
 ):
     """Test GPT2 hybrid."""
 
     # Get GPT2 from Hugging Face
     model_name = "gpt2"
-    model = GPT2LMHeadModel.from_pretrained(model_name)
+    model = GPT2LMHeadModel.from_pretrained(model_name).to(get_device)
     tokenizer = GPT2Tokenizer.from_pretrained(model_name)
     prompt = "A long time ago,"
-    input_ids = tokenizer.encode(prompt, return_tensors="pt")
+    input_ids = tokenizer.encode(prompt, return_tensors="pt").to(get_device)
 
     # Run the test with using a single module in FHE
     assert isinstance(model, torch.nn.Module)
@@ -180,11 +184,13 @@ def test_gpt2_hybrid_mlp(
         transformers_installed,
         glwe_backend_installed,
         monkeypatch,
+        get_device,
     )
 
 
-# @pytest.mark.use_gpu
-def test_hybrid_brevitas_qat_model(get_device):
+@pytest.mark.use_gpu
+@pytest.mark.filterwarnings("ignore:.*kthvalue CUDA does not have a deterministic implementation.*")
+def test_hybrid_brevitas_qat_model(get_device, enforce_gpu_determinism):
     """Test GPT2 hybrid."""
     n_bits = 3
     input_shape = 32
@@ -268,8 +274,6 @@ def test_hybrid_glwe_correctness(
 
     # Prepare data
     x1_train, x1_test, y1_train, y1_test = prepare_data(x1_data, y1_data, device=get_device)
-    
-    print(x1_train.device(), x1_test.device())
 
     model = FCSmall(n_hidden, torch.nn.ReLU, hidden=n_hidden).to(get_device)
     optimizer = torch.optim.Adam(model.parameters())
@@ -277,13 +281,11 @@ def test_hybrid_glwe_correctness(
     num_epochs = 100
     model.train()
     for _ in range(num_epochs):
-        print('la')
         optimizer.zero_grad()
         outputs = model(x1_train)
         loss = torch.nn.functional.cross_entropy(outputs, y1_train)
         loss.backward()
         optimizer.step()
-        print('ici')
 
     model.eval()
 
@@ -293,7 +295,7 @@ def test_hybrid_glwe_correctness(
             param_names.append(k)
 
     y_torch = model(x1_test).detach().cpu().numpy()
-    hybrid_local = HybridFHEModel(model, param_names).to(get_device)
+    hybrid_local = HybridFHEModel(model, param_names)
 
     # This internal flag tells us whether all the layers
     # were linear and were replaced with the GLWE backend
@@ -308,7 +310,7 @@ def test_hybrid_glwe_correctness(
         use_dynamic_quantization=use_dynamic_quantization,
         device=get_device,
     )
-    print(f"{x1_test.device=} - {get_device=}")
+
     y_qm = hybrid_local(x1_test, fhe="disable").cpu().numpy()
     y_hybrid_torch = hybrid_local(x1_test, fhe="torch").detach().cpu().numpy()
 
