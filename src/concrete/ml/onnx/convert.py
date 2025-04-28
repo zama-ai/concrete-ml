@@ -149,8 +149,6 @@ def get_equivalent_numpy_forward_from_torch(
 
     arguments = list(inspect.signature(torch_module.forward).parameters)
 
-    is_cuda = next(torch_module.parameters()).is_cuda
-
     # Export to ONNX
     torch.onnx.export(
         torch_module,
@@ -158,7 +156,7 @@ def get_equivalent_numpy_forward_from_torch(
         str(output_onnx_file_path),
         opset_version=OPSET_VERSION_FOR_ONNX_EXPORT,
         input_names=arguments,
-        do_constant_folding=(not torch_module.training) and (not is_cuda),
+        # do_constant_folding=(not torch_module.training) and (not is_cuda),
     )
     equivalent_onnx_model = onnx.load_model(str(output_onnx_file_path))
 

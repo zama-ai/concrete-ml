@@ -514,7 +514,6 @@ def compile_brevitas_qat_model(
     """
     inputset_as_numpy_tuple = tuple(
         convert_torch_tensor_or_numpy_array_to_numpy_array(val) for val in to_tuple(torch_inputset)
-        
     )
 
     dummy_input_for_tracing = tuple(

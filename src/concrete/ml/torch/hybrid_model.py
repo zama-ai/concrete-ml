@@ -620,8 +620,6 @@ class HybridFHEModel:
         # Set correct device
         x = x.to(device)
         self.model = self.model.to(device)
-        
-        print(device, x.device)
 
         # Run the model to get the calibration data
         self.model(x)
@@ -629,7 +627,6 @@ class HybridFHEModel:
         self.configuration = configuration
 
         for name in tqdm(self.module_names, desc="Compiling FHE layers"):
-
             remote_module = self._get_module_by_name(self.model, name)
             assert isinstance(remote_module, RemoteModule)
 
@@ -637,9 +634,6 @@ class HybridFHEModel:
 
             calibration_data_tensor = torch.cat(remote_module.calibration_data, dim=0).to(device)
             self.private_modules[name] = self.private_modules[name].to(device)
-            print(calibration_data_tensor.device, )
-            print(next(self.private_modules[name].parameters()).device)
-
 
             if has_any_qnn_layers(self.private_modules[name]):
                 self.private_q_modules[name] = compile_brevitas_qat_model(
@@ -652,7 +646,6 @@ class HybridFHEModel:
                     device=device,
                 )
             else:
-
                 # If all layers are linear and the GLWE backend is available
                 # then simply quantize the model without compiling with
                 # Concrete Python.
@@ -680,7 +673,6 @@ class HybridFHEModel:
                     if not use_dynamic_quantization:
                         const_inp.values = const_inp.qvalues.astype(numpy.float32)
                     const_inp.qvalues = const_inp.qvalues.astype(numpy.int16)
-
                 else:
                     self.private_q_modules[name] = compile_torch_model(
                         self.private_modules[name],
