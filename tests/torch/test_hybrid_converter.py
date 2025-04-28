@@ -162,7 +162,7 @@ def test_gpt2_hybrid_mlp(
     glwe_backend_installed,
     monkeypatch,
     get_device,
-    enforce_gpu_determinism,
+    enforce_gpu_determinism,  # pylint: disable=unused-argument
 ):
     """Test GPT2 hybrid."""
 
@@ -190,7 +190,9 @@ def test_gpt2_hybrid_mlp(
 
 # # # @pytest.mark.use_gpu
 @pytest.mark.filterwarnings("ignore:.*kthvalue CUDA does not have a deterministic implementation.*")
-def test_hybrid_brevitas_qat_model(get_device, enforce_gpu_determinism):
+def test_hybrid_brevitas_qat_model(
+    get_device, enforce_gpu_determinism
+):  # pylint: disable=unused-argument
     """Test GPT2 hybrid."""
     n_bits = 3
     input_shape = 32
@@ -252,7 +254,7 @@ def test_invalid_model():
 @pytest.mark.parametrize("n_hidden", [256, 512, 2048])
 def test_hybrid_glwe_correctness(
     n_hidden, use_dynamic_quantization, n_bits, get_device, enforce_gpu_determinism
-):
+):  # pylint: disable=unused-argument
     """Tests that the GLWE backend produces correct results for the hybrid model."""
 
     num_samples = 200
