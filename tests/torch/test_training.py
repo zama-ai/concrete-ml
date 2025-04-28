@@ -105,7 +105,7 @@ def train_and_evaluate_model(
 
 
 @pytest.mark.use_gpu
-def test_sgd_training_manual(get_device):
+def test_sgd_training_manual(get_device, enforce_gpu_determinism):
     """Trains a logistic regression with SGD in torch and quantized."""
     # Train on the bias when multi output is available in concrete
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4131
