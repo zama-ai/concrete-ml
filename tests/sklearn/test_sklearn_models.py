@@ -33,7 +33,6 @@ import tempfile
 import warnings
 from typing import Any, Dict, List
 
-import concrete.compiler
 import numpy
 import pandas
 import pytest
