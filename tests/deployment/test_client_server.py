@@ -67,7 +67,7 @@ class OnDiskNetwork:
 
 # This is a known flaky test
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4014
-@pytest.mark.use_gpu
+# @pytest.mark.use_gpu
 @pytest.mark.flaky
 @pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
 @pytest.mark.parametrize("n_bits", [2])
