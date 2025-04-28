@@ -307,9 +307,8 @@ def get_device():
 
 @pytest.fixture()
 def enforce_gpu_determinism():
-    print(f"CUBLAS_WORKSPACE_CONFIG = {os.environ.get('CUBLAS_WORKSPACE_CONFIG')}")
+    """Pytest fixture to enforce deterministic behavior on GPU operations."""
     os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
-    print(f"CUBLAS_WORKSPACE_CONFIG = {os.environ.get('CUBLAS_WORKSPACE_CONFIG')}")
     torch.use_deterministic_algorithms(True, warn_only=True)
 
 
