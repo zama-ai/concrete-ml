@@ -140,7 +140,7 @@ def run_hybrid_llm_test(
                 assert "client.zip" in files and "server.zip" in files
 
 
-# # @pytest.mark.use_gpu
+@pytest.mark.use_gpu
 # Dependency 'huggingface-hub' raises a 'FutureWarning' from version 0.23.0 when calling the
 # 'from_pretrained' method
 @pytest.mark.filterwarnings("ignore::FutureWarning")
@@ -188,7 +188,7 @@ def test_gpt2_hybrid_mlp(
     )
 
 
-# # # @pytest.mark.use_gpu
+@pytest.mark.use_gpu
 @pytest.mark.filterwarnings("ignore:.*kthvalue CUDA does not have a deterministic implementation.*")
 def test_hybrid_brevitas_qat_model(
     get_device, enforce_gpu_determinism
@@ -249,7 +249,7 @@ def test_invalid_model():
         HybridFHEModel(invalid_model, module_names="sub_module")
 
 
-# # @pytest.mark.use_gpu
+@pytest.mark.use_gpu
 @pytest.mark.parametrize("use_dynamic_quantization, n_bits", [(True, 8), (False, 10)])
 @pytest.mark.parametrize("n_hidden", [256, 512, 2048])
 def test_hybrid_glwe_correctness(
