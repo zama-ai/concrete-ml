@@ -52,14 +52,14 @@ def train_and_evaluate_model(
     """
     x_train_batches, y_train_batches = create_batches(x_train, y_train, batch_size, iteration)
     x_test_batches, _ = create_batches(x_test, y_test, batch_size, iteration)
-    
+
     x_train_batches = x_train_batches.to(device)
     y_train_batches = y_train_batches.to(device)
     x_test_batches = x_test_batches.to(device)
 
     n_features = x_train_batches.shape[2]
     weights, bias = initialize_parameters(1, n_features, 1)
-    
+
     weights = weights.to(device)
     bias = bias.to(device)
 
@@ -81,7 +81,7 @@ def train_and_evaluate_model(
             n_bits=n_bits,
             device=device,
         )
-        trained_weights = weights.detach().numpy()
+        trained_weights = weights.detach().cpu().numpy()
         for i in range(iteration):
             trained_weights = q_module.forward(
                 x_train_batches.detach().cpu().numpy()[[i]],
@@ -95,7 +95,7 @@ def train_and_evaluate_model(
         batch_predictions = model.predict(
             x_test_batches[[i]],
             torch.tensor(trained_weights, dtype=torch.float32, device=device),
-            bias.to(device)
+            bias.to(device),
         ).round()
         predictions.append(batch_predictions)
     predictions = torch.cat(predictions).cpu().numpy().flatten()
@@ -109,9 +109,9 @@ def test_sgd_training_manual(get_device, enforce_gpu_determinism):
     """Trains a logistic regression with SGD in torch and quantized."""
     # Train on the bias when multi output is available in concrete
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4131
-    
+
     print("test_sgd_training_manual", get_device)
-    
+
     # Load and preprocess the dataset
     x, y = datasets.load_breast_cancer(return_X_y=True)
     x_train, x_test, y_train, y_test = train_test_split(
