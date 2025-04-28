@@ -81,7 +81,7 @@ def train_and_evaluate_model(
             n_bits=n_bits,
             device=device,
         )
-        trained_weights = weights.detach().numpy()
+        trained_weights = weights.detach().cpu().numpy()
         for i in range(iteration):
             trained_weights = q_module.forward(
                 x_train_batches.detach().cpu().numpy()[[i]],
