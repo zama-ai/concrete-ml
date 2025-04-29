@@ -2421,7 +2421,7 @@ def test_tfhers_inputs_outputs_trees(model_class, parameters, n_bits, load_data,
 @pytest.mark.parametrize(
     "model_class, parameters", get_sklearn_tree_models_and_datasets(True, True)
 )
-def test_tfhers_trees_non_8b_not_working(model_class, parameters, load_data, device):
+def test_tfhers_trees_non_8b_not_working(model_class, parameters, load_data):
     """Check that non-supported configs for tree models for TFHE-rs inputs raise an exception."""
     n_bits = 4
 
@@ -2430,7 +2430,7 @@ def test_tfhers_trees_non_8b_not_working(model_class, parameters, load_data, dev
     model.fit(x, y)
 
     with pytest.raises(AssertionError, match=".*supported for 8-bit tree-based.*"):
-        model.compile(x, ciphertext_format=CiphertextFormat.TFHE_RS, device=device)
+        model.compile(x, ciphertext_format=CiphertextFormat.TFHE_RS)
 
 
 @pytest.mark.parametrize(
