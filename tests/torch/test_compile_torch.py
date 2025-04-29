@@ -453,7 +453,7 @@ def test_compile_torch_or_onnx_networks(
     get_and_compile,
     check_is_good_execution_for_cml_vs_circuit,
     is_weekly_option,
-    get_device_for_compilation,
+    get_device,
 ):
     """Test the different model architecture from torch numpy."""
 
@@ -476,7 +476,7 @@ def test_compile_torch_or_onnx_networks(
         check_is_good_execution_for_cml_vs_circuit=check_is_good_execution_for_cml_vs_circuit,
         verbose=False,
         get_and_compile=get_and_compile,
-        device=get_device_for_compilation("simulate" if simulate else "execute"),
+        device=get_device,
     )
 
 
