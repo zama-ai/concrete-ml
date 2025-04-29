@@ -347,11 +347,6 @@ def compile_torch_model(
         "using compile_brevitas_qat_model instead.",
     )
 
-    assert_true(
-        (model_device := str(next(torch_model.parameters()).device)).startswith(device),
-        f"❌ Device mismatch: Model is on {model_device}, but 'device' param is {device}",
-    )
-
     return _compile_torch_or_onnx_model(
         torch_model,
         torch_inputset,
