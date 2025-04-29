@@ -618,7 +618,8 @@ class HybridFHEModel:
         self.set_fhe_mode(HybridFHEMode.CALIBRATE)
 
         # Set correct device
-        x = x.to(device)
+        if isinstance(x, torch.Tensor):
+            x = x.to(device)
         self.model = self.model.to(device)
 
         # Run the model to get the calibration data
