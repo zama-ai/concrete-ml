@@ -85,12 +85,12 @@ def test_data_processing_invalid_input(input_type, load_data):
             _ = data_calibration_processing(data=x, targets=y, n_sample=1)
 
 
-def test_cuda_compilation_warnings(get_device_for_compilation):
+def test_cuda_compilation_warnings(get_device):
     """Test that cuda compilation options are correctly handled."""
 
     # If testing on a CUDA enabled machine, there will be no warnings
     # there's nothing to test
-    if get_device_for_compilation("execute") == "cuda":
+    if "cuda" in get_device:
         if not check_gpu_enabled():
             raise AssertionError(
                 "Trying to run CUDA test on a non-CUDA machine. "

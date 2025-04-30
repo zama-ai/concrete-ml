@@ -1732,6 +1732,7 @@ def test_pipeline(
     check_pipeline(model_class, x, y)
 
 
+@pytest.mark.use_gpu
 @pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
 @pytest.mark.parametrize(
     "simulate",
@@ -1764,7 +1765,7 @@ def test_predict_correctness(
     n_bits,
     load_data,
     default_configuration,
-    get_device_for_compilation,
+    get_device,
     check_is_good_execution_for_cml_vs_circuit,
     is_weekly_option,
     verbose=True,
@@ -1789,7 +1790,7 @@ def test_predict_correctness(
     model.compile(
         x,
         default_configuration,
-        device=get_device_for_compilation("simulate" if simulate else "execute"),
+        device=get_device,
     )
 
     if verbose:
@@ -2372,12 +2373,13 @@ def test_xgb_serialization_errors(model_class, param, error_message):
             model.dumps()
 
 
+@pytest.mark.use_gpu
 @pytest.mark.flaky
 @pytest.mark.parametrize(
     "model_class, parameters", get_sklearn_tree_models_and_datasets(True, True)
 )
 @pytest.mark.parametrize("n_bits", [4, 8, 12])
-def test_tfhers_inputs_outputs_trees(model_class, parameters, n_bits, load_data):
+def test_tfhers_inputs_outputs_trees(model_class, parameters, n_bits, load_data, get_device):
     """Check that 8b tree-based classifiers work with TFHE-rs inputs/outputs."""
 
     x, y = get_dataset(model_class, parameters, n_bits, load_data, True)
@@ -2393,16 +2395,16 @@ def test_tfhers_inputs_outputs_trees(model_class, parameters, n_bits, load_data)
     # an error is raised
     if not n_bits == 8 or is_regressor_or_partial_regressor(model_class):
         with pytest.raises(AssertionError, match=".*supported for 8-bit tree-based.*"):
-            model.compile(x, ciphertext_format=CiphertextFormat.TFHE_RS)
+            model.compile(x, ciphertext_format=CiphertextFormat.TFHE_RS, device=get_device)
         return
 
     # Check that we can first compile to Concrete, then to
     # TFHE-rs input/outputs then to concrete again
-    model.compile(x)
+    model.compile(x, device=get_device)
 
     y_pred_concrete = model.predict(fhe_test_data, fhe="execute")
 
-    model.compile(x, ciphertext_format=CiphertextFormat.TFHE_RS)
+    model.compile(x, ciphertext_format=CiphertextFormat.TFHE_RS, device=get_device)
 
     with pytest.raises(ValueError, match="Simulation with TFHE-rs ciphertext.*"):
         model.predict(fhe_test_data, fhe="simulate")
@@ -2410,7 +2412,7 @@ def test_tfhers_inputs_outputs_trees(model_class, parameters, n_bits, load_data)
     # Run the model in FHE for TFHE-rs inputs/outputs
     y_pred_tfhers = model.predict(fhe_test_data, fhe="execute")
 
-    model.compile(x)
+    model.compile(x, device=get_device)
 
     # Check correctness with TFHE-rs inputs/outputs
     assert numpy.all(y_pred_tfhers == y_pred_concrete)

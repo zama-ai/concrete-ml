@@ -1,6 +1,7 @@
 """Tests for FHE training."""
 
 import numpy
+import pytest
 import torch
 from sklearn import datasets
 from sklearn.linear_model import LogisticRegression
@@ -36,7 +37,15 @@ def initialize_parameters(n_batch, n_features, n_targets, min_val=-3.0, max_val=
 
 
 def train_and_evaluate_model(
-    x_train, y_train, x_test, y_test, batch_size, iteration, model, model_type="torch"
+    x_train,
+    y_train,
+    x_test,
+    y_test,
+    batch_size,
+    iteration,
+    model,
+    model_type="torch",
+    device="cpu",
 ):
     """
     Train and evaluate the given model, supporting both torch and quantized models.
@@ -44,8 +53,15 @@ def train_and_evaluate_model(
     x_train_batches, y_train_batches = create_batches(x_train, y_train, batch_size, iteration)
     x_test_batches, _ = create_batches(x_test, y_test, batch_size, iteration)
 
+    x_train_batches = x_train_batches.to(device)
+    y_train_batches = y_train_batches.to(device)
+    x_test_batches = x_test_batches.to(device)
+
     n_features = x_train_batches.shape[2]
     weights, bias = initialize_parameters(1, n_features, 1)
+
+    weights = weights.to(device)
+    bias = bias.to(device)
 
     if model_type == "torch":
         trained_weights = weights
@@ -53,7 +69,7 @@ def train_and_evaluate_model(
             trained_weights = model.forward(
                 x_train_batches[[i]], y_train_batches[[i]], trained_weights, bias
             )
-        trained_weights = trained_weights.detach().numpy()
+        trained_weights = trained_weights.detach().cpu().numpy()
     elif model_type == "quantized":
         n_bits = 24
 
@@ -63,32 +79,40 @@ def train_and_evaluate_model(
             model,
             torch_inputset=(x_train_batches, y_train_batches, weights_compile, bias_compile),
             n_bits=n_bits,
+            device=device,
         )
-        trained_weights = weights.detach().numpy()
+        trained_weights = weights.detach().cpu().numpy()
         for i in range(iteration):
             trained_weights = q_module.forward(
-                x_train_batches.detach().numpy()[[i]],
-                y_train_batches.detach().numpy()[[i]],
+                x_train_batches.detach().cpu().numpy()[[i]],
+                y_train_batches.detach().cpu().numpy()[[i]],
                 trained_weights,
-                bias.detach().numpy(),
+                bias.detach().cpu().numpy(),
             )
 
     predictions = []
     for i in range(x_test_batches.shape[0]):
         batch_predictions = model.predict(
-            x_test_batches[[i]], torch.tensor(trained_weights, dtype=torch.float32), bias
+            x_test_batches[[i]],
+            torch.tensor(trained_weights, dtype=torch.float32, device=device),
+            bias.to(device),
         ).round()
         predictions.append(batch_predictions)
-    predictions = torch.cat(predictions).numpy().flatten()
+    predictions = torch.cat(predictions).cpu().numpy().flatten()
 
     min_length = min(len(predictions), len(y_test))
     return accuracy_score(y_test[:min_length], predictions[:min_length])
 
 
-def test_sgd_training_manual():
+@pytest.mark.use_gpu
+def test_sgd_training_manual(
+    get_device, enforce_gpu_determinism
+):  # pylint: disable=unused-argument
     """Trains a logistic regression with SGD in torch and quantized."""
     # Train on the bias when multi output is available in concrete
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4131
+
+    print("test_sgd_training_manual", get_device)
 
     # Load and preprocess the dataset
     x, y = datasets.load_breast_cancer(return_X_y=True)
@@ -100,14 +124,22 @@ def test_sgd_training_manual():
     )
 
     # Define torch model
-    model = ManualLogisticRegressionTraining(learning_rate=1)
+    model = ManualLogisticRegressionTraining(learning_rate=1).to(get_device)
 
     # Define batch size and number of iterations
     batch_size, iteration = 32, 100
 
     # Train and evaluate custom logistic regression model
     accuracy_torch = train_and_evaluate_model(
-        x_train, y_train, x_test, y_test, batch_size, iteration, model, model_type="torch"
+        x_train,
+        y_train,
+        x_test,
+        y_test,
+        batch_size,
+        iteration,
+        model,
+        model_type="torch",
+        device=get_device,
     )
 
     # Train and evaluate sklearn logistic regression model
@@ -119,7 +151,15 @@ def test_sgd_training_manual():
     ), "Torch accuracy should be within 1% of sklearn's."
 
     accuracy_q_module = train_and_evaluate_model(
-        x_train, y_train, x_test, y_test, batch_size, iteration, model, model_type="quantized"
+        x_train,
+        y_train,
+        x_test,
+        y_test,
+        batch_size,
+        iteration,
+        model,
+        model_type="quantized",
+        device=get_device,
     )
 
     # Quantized accuracy should match torch
