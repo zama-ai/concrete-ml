@@ -100,7 +100,7 @@ def main():
         # Unpack the results
         result = grequests.map(inferences)[0]
         if result is None:
-            raise ValueError("Result is None, probably due to a crash on the server side.")
+            raise ValueError("Server response is None. This likely indicates a crash or timeout on the server side. Check server logs for details.")
         assert result.status_code == STATUS_OK
         print("OK!")
 
