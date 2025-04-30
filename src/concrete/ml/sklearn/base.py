@@ -520,7 +520,7 @@ class BaseEstimator:
         graph = c.trace(inputset)
 
         output_dtype = graph.ordered_outputs()[0].output.dtype
-        output_bitwidth = output_dtype.bit_width
+        output_bitwidth = 8 if output_dtype.bit_width <= 8 else 16
         output_signed = output_dtype.is_signed
         crypto_params = json.loads(fhext.get_crypto_params_radix())  # pylint: disable=no-member
         out_dtype_spec = tfhers.get_type_from_params_dict(  # pylint: disable=no-member
@@ -747,6 +747,14 @@ class BaseEstimator:
 
         assert self.tfhers_sk is not None
 
+        # Get the default crypto-parmas to use with TFHE-rs
+        crypto_params = json.loads(fhext.get_crypto_params_radix())  # pylint: disable=no-member
+
+        dtype_spec = tfhers.get_type_from_params_dict(  # pylint: disable=no-member
+            crypto_params, input_is_signed, input_bitwidth
+        )  # pylint: disable=no-member
+        bridge_dtype = partial(tfhers.TFHERSInteger, dtype_spec)
+
         tfhers_x = tuple(
             [
                 self._tfhers_bridge.import_value(
@@ -756,6 +764,7 @@ class BaseEstimator:
                 for idx in range(len(inputs))
             ]
         )
+
         result = self.fhe_circuit.server.run(
             tfhers_x, evaluation_keys=self.fhe_circuit.client.evaluation_keys
         )
@@ -766,6 +775,8 @@ class BaseEstimator:
         assert len(out_shapes) == 1
         func_name = list(out_shapes.keys())[0]
         shape = out_shapes[func_name][0]
+        if len(shape) == 1:
+            shape = (1, shape[0])
 
         # The output bitwidth for trees should be the same as the input one
         result_np = fhext.decrypt_radix(
@@ -2075,10 +2086,11 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         assert self._weight_quantizer is not None, self._is_not_fitted_error_message()
 
         # Quantizing weights and inputs makes an additional term appear in the inference function
-        y_pred = q_X @ self._q_weights - self._weight_quantizer.zero_point * numpy.sum(
+        y_pred = q_X  @ self._q_weights - self._weight_quantizer.zero_point * numpy.sum(
             q_X, axis=1, keepdims=True
         )
-        y_pred += self._q_bias
+        y_pred += self._q_bias        
+        y_pred = numpy.sum(q_X, axis=1, keepdims=True)
         return y_pred
 
 

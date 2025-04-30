@@ -52,6 +52,11 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from torch import nn
 
+from concrete.fhe import tfhers
+import concrete.fhe as fhe
+import concrete_ml_extensions as fhext
+from functools import partial
+
 from concrete.ml.common.serialization.dumpers import dump, dumps
 from concrete.ml.common.serialization.loaders import load, loads
 from concrete.ml.common.utils import (
@@ -2378,14 +2383,14 @@ def test_xgb_serialization_errors(model_class, param, error_message):
     get_sklearn_tree_models_and_datasets(True, True)
     + get_sklearn_linear_models_and_datasets(False, True),
 )
-@pytest.mark.parametrize("n_bits", [4, 8, 12])
+@pytest.mark.parametrize("n_bits", [2, 3, 4, 5, 6, 7, 8, 12])
 def test_tfhers_inputs_outputs_trees(model_class, parameters, n_bits, load_data):
     """Check that 8b tree-based classifiers work with TFHE-rs inputs/outputs."""
 
     x, y = get_dataset(model_class, parameters, n_bits, load_data, True)
 
     # Use a single example in FHE to make the test fast enough for the CI
-    fhe_test_data = x[0:1, :]
+    fhe_test_data = x[0:10, :]
 
     model = instantiate_model_generic(model_class, n_bits=n_bits)
     # Fit the model to create the equivalent sklearn model
@@ -2400,22 +2405,20 @@ def test_tfhers_inputs_outputs_trees(model_class, parameters, n_bits, load_data)
 
     # Check that we can first compile to Concrete, then to
     # TFHE-rs input/outputs then to concrete again
+    import time
     model.compile(x)
 
-    import time
-
-    y_pred_concrete = model.predict(fhe_test_data, fhe="execute")
     start = time.time()
     y_pred_concrete = model.predict(fhe_test_data, fhe="execute")
     print(f"Concrete time: {time.time() - start}")
 
     model.compile(x, ciphertext_format=CiphertextFormat.TFHE_RS)
+    print(model.fhe_circuit.mlir)
 
     with pytest.raises(ValueError, match="Simulation with TFHE-rs ciphertext.*"):
         model.predict(fhe_test_data, fhe="simulate")
 
     # Run the model in FHE for TFHE-rs inputs/outputs
-    y_pred_tfhers = model.predict(fhe_test_data, fhe="execute")
     start = time.time()
     y_pred_tfhers = model.predict(fhe_test_data, fhe="execute")
     print(f"TFHErs time: {time.time() - start}")
@@ -2455,3 +2458,71 @@ def test_tfhers_cml_models_not_working(model_class, parameters, load_data):
 
     with pytest.raises(AssertionError, match=".*supported for 8-bit tree-based.*"):
         model.compile(x, ciphertext_format=CiphertextFormat.TFHE_RS)
+
+
+@pytest.mark.parametrize("n_bits", [2, 4, 6, 7])
+@pytest.mark.parametrize("signed_b", [True, False] )
+@pytest.mark.parametrize("signed_a", [True, False] )
+def test_tfhers_simple_dot_circuit(n_bits, signed_a, signed_b):
+
+    low_b = -(2 ** (n_bits - 1)) if signed_b else 0  # randint low value is included
+    high_b = (
+        2 ** (n_bits - 1) if signed_b else 2**n_bits
+    )  # randint high value is not included
+
+    low_a = -(2 ** (n_bits - 1)) if signed_a else 0  # randint low value is included
+    high_a = (
+        2 ** (n_bits - 1) if signed_a else 2**n_bits
+    )  # randint high value is not included
+
+    inner_size = 4
+
+    # Signed values must be processed for the weights, so
+    # we generate signed int64. This is also used to compute
+    # the max bits
+    a = numpy.random.randint(low_a, high_a, size=(1, inner_size), dtype=numpy.int64)
+    b = numpy.random.randint(
+        low_b, high_b, size=(inner_size, 1), dtype=numpy.int64
+    )
+
+    crypto_params = json.loads(fhext.get_crypto_params_radix())  # pylint: disable=no-member
+
+    input_is_signed = signed_a or signed_b
+    input_bitwidth = 8 if n_bits <= 8 else 16
+    dtype_spec = tfhers.get_type_from_params_dict(  # pylint: disable=no-member
+        crypto_params, input_is_signed, input_bitwidth
+    )  # pylint: disable=no-member
+
+    dtype = partial(tfhers.TFHERSInteger, dtype_spec)
+    inputset = (dtype(a[0,:]), ) #, dtype(b[:,i])) for i in range(1) )
+
+    max_value = numpy.max(numpy.abs(a @ b))
+    output_bits = int(numpy.ceil(numpy.log2(max_value + 1)))
+    output_is_signed = signed_a or signed_b
+    output_bitwidth = 8 if output_bits <= 8 else 16
+
+    dtype_spec_out = tfhers.get_type_from_params_dict(  # pylint: disable=no-member
+        crypto_params, signed_a or signed_b, output_bitwidth
+    )  # pylint: disable=no-member
+
+    def concrete_dot_with_clear(x):
+        x = tfhers.to_native(x)
+        dot = x @ b
+        return tfhers.from_native(dot, dtype_spec_out)
+
+    compiler = fhe.Compiler(concrete_dot_with_clear, {"x": "encrypted"})
+    fhe_circuit = compiler.compile(inputset)
+
+    tfhers_x = (
+        dtype_spec.encode(a.reshape((-1,))),
+    )
+
+    print(fhe_circuit.mlir)
+    result = fhe_circuit.encrypt_run_decrypt(
+        *tfhers_x
+    )
+
+    result_np = dtype_spec_out.decode(result)
+
+    ref = numpy.squeeze(a @ b)
+    assert result_np == ref

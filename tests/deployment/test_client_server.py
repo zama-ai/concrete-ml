@@ -202,8 +202,8 @@ def test_client_server_tfhers_sklearn_inference(
     }
 
     if not (
-        is_model_class_in_a_list(model_class, _get_sklearn_tree_models())
-        and is_classifier_or_partial_classifier(model_class)
+#        is_model_class_in_a_list(model_class, _get_sklearn_tree_models()) and 
+        is_classifier_or_partial_classifier(model_class)
     ):
         with pytest.raises(AssertionError, match=".* is only supported for 8-bit tree-based.*"):
             model.compile(**compilation_kwargs)
