@@ -138,7 +138,7 @@ jobs:
       # If the target branch is another branch, the current branch is automatically merged into it
       - name: Push changes into the current branch
         if: ${{ github.event.inputs.push_changes == 'true' && github.ref_name != 'main' && !(startsWith(github.ref_name , 'release/')) }}
-        uses: stefanzweifel/git-auto-commit-action@e348103e9026cc0eee72ae06630dbe30c8bf7a79 #v5.1.0
+        uses: stefanzweifel/git-auto-commit-action@b863ae1933cb653a53c021fe36dbb774e1fb9403 #v5.2.0
         with:
           commit_message: "chore: refresh notebook(s) for use case ${{ github.event.inputs.use_case }}"
           add_options: '-u'
