@@ -15,7 +15,7 @@ on:
           required: false
           default: '["3.8"]'
         event_name:
-          description: 'Label affiché dans les logs'
+          description: 'Show logs'
           required: false
           default: 'manual'
   
