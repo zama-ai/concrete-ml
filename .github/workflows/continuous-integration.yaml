@@ -542,15 +542,13 @@ jobs:
         run: |
           # Show CP version
           poetry run pip show concrete-python || echo "concrete-python not installed"
-          poetry run pip uninstall -y concrete-python
+          CONCRETE_WITH_VERSION=$(pip freeze | grep concrete-python)
 
-          
-          # poetry run pip install --extra-index-url https://pypi.zama.ai/gpu concrete-python
-          poetry run pip install --extra-index-url https://pypi.zama.ai/gpu concrete-python==2.10.0
+          poetry run pip uninstall -y concrete-python
+          poetry run pip install --extra-index-url https://pypi.zama.ai/gpu $CONCRETE_WITH_VERSION
 
           # Show new CP version
           poetry run pip show concrete-python || echo "concrete-python not installed"
-
 
       - name: 🚀 Run GPU Tests
         run: |
