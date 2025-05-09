@@ -9,7 +9,7 @@ on:
           type: string
         python_version:
           type: string
-          required: true  
+          required: true
 env:
   SLAB_PROFILE: gpu_ciprofile
 
