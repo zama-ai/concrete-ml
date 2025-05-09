@@ -854,8 +854,6 @@ pytest_gpu:
 		echo "No tests marked @pytest.mark.use_gpu found."; \
 		exit 1; \
 	else \
-		echo "Tests found:"; \
-		echo "$$TESTS"; \
 		echo "Running GPU tests only..."; \
-		env POETRY_RUN_GPU_TESTS=1 poetry run pytest -m "use_gpu" -vvs --color=yes --durations=20; \
+		env POETRY_RUN_GPU_TESTS=1 poetry run pytest -m "use_gpu" -v --color=yes --durations=0; \
 	fi
