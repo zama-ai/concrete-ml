@@ -15,7 +15,8 @@ env:
 
 jobs:
   start-runner-gpu-linux:
-    permissions: {}
+    permissions:
+      contents: read
     name: Start GPU SLAB runner
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -44,15 +45,15 @@ jobs:
           backend: aws
           profile: ${{ env.SLAB_PROFILE }}
 
-  GPU-availability:
-    name: GPU Availability
-    runs-on: ${{ needs.start-runner-gpu-linux.outputs.label }}
-    needs: start-runner-gpu-linux
-    steps:
-      - name: Check GPU availability
-        run: |
-          echo "Checking for GPU..."
-          nvidia-smi || echo "nvidia-smi failed"
+#   GPU-availability:
+#     name: GPU Availability
+#     runs-on: ${{ needs.start-runner-gpu-linux.outputs.label }}
+#     needs: start-runner-gpu-linux
+#     steps:
+#       - name: Check GPU availability
+#         run: |
+#           echo "Checking for GPU..."
+#           nvidia-smi || echo "nvidia-smi failed"
 
   GPU-tests:
     name: Run GPU tests (Python ${{ matrix.python_version }})

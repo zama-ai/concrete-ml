@@ -454,8 +454,8 @@ jobs:
   # ----------------
   gpu-tests-ci:
     name: Run GPU tests in CI
-    uses: ./.github/workflows/gpu-tests.yaml
     needs: [matrix-preparation]
+    uses: ./.github/workflows/gpu-tests.yaml
     with:
       event_name: ${{ github.event_name }}
   # -------------
