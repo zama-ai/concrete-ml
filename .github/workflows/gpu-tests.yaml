@@ -7,18 +7,9 @@ on:
           description: "Event that triggers the workflow"
           required: true
           type: string
-  
-    workflow_dispatch:
-      inputs:
-        python_versions:
-          description: 'JSON array ex : ["3.8","3.12"]'
-          required: false
-          default: '["3.8"]'
-        event_name:
-          description: 'Show logs'
-          required: false
-          default: 'manual'
-  
+        python_version:
+          type: string
+          required: true  
 env:
   SLAB_PROFILE: gpu_ciprofile
 
@@ -65,14 +56,11 @@ jobs:
 #           nvidia-smi || echo "nvidia-smi failed"
 
   GPU-tests:
-    name: Run GPU tests (Python ${{ matrix.python_version }})
+    name: Run GPU tests (Python ${{ inputs.python_version }})
     runs-on: ${{ needs.start-runner-gpu-linux.outputs.label }}
     needs: [start-runner-gpu-linux]
     permissions:
       contents: read
-    strategy:
-      matrix:
-        python_version: [3.8]
     steps:
       - name: Set Home
         run: |
@@ -92,11 +80,11 @@ jobs:
         run: |
           git lfs pull --include "tests/data/**, src/concrete/ml/pandas/_client_server_files/**" --exclude  ""
 
-      - name: Set up Python ${{ matrix.python_version }}
+      - name: Set up Python ${{ inputs.python_version }}
         uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
         id: setup-python
         with:
-          python-version: ${{ matrix.python_version }}
+          python-version: ${{ inputs.python_version }}
 
       - name: Install Deps
         id: install-deps

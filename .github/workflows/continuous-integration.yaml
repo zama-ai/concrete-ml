@@ -455,9 +455,13 @@ jobs:
   gpu-tests-ci:
     name: Run GPU tests in CI
     needs: [matrix-preparation]
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(format('{{"include":{0}}}', needs.matrix-preparation.outputs.linux-matrix)) }}
     uses: ./.github/workflows/gpu-tests.yaml
     with:
       event_name: ${{ github.event_name }}
+      python_version: ${{ matrix.python_version }}
     secrets: inherit
   # -------------
 
