@@ -15,7 +15,6 @@ env:
 
 jobs:
   start-runner-gpu-linux:
-    needs: [matrix-preparation]
     permissions: {}
     name: Start GPU SLAB runner
     runs-on: ubuntu-24.04
