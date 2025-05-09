@@ -462,6 +462,8 @@ jobs:
     with:
       event_name: ${{ github.event_name }}
       python_version: ${{ matrix.python_version }}
+      gh_event_name: ${{ github.event_name }}
+      inp_event_name: ${{ inputs.event_name }}
     secrets: inherit
   # -------------
 

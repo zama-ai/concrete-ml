@@ -4,22 +4,126 @@ on:
     workflow_call:
       inputs:
         event_name:
-          description: "Event that triggers the workflow"
-          required: true
           type: string
+          required: true
         python_version:
           type: string
           required: true
+        gh_event_name:
+          type: string
+          required: true
+        inp_event_name:
+          type: string
+          required: true
+
+    # workflow_dispatch:
+    #    inputs:
+    #     event_name:
+    #         description: "Event that triggers the workflow"
+    #         required: true
+    #         type: choice
+    #         default: pr
+    #         options:
+    #             - pr
+    #     linux_python_versions:
+    #         description: "Space separated list of python versions (3.8, 3.9, 3.10, 3.11, 3.12 are supported) to launch on linux"
+    #         required: false
+    #         type: string
+    #         default: "3.8"
+        
+    #     macos_python_versions:
+    #         description: "Space separated list of python versions (3.8, 3.9, 3.10, 3.11, 3.12 are supported) to launch on macos (intel)"
+    #         required: false
+    #         type: string
+    #         default: "3.8"
+        
+    #     manual_call:
+    #         description: "Do not uncheck this!"
+    #         type: boolean
+    #         required: false
+    #         default: true
+
 env:
   SLAB_PROFILE: gpu_ciprofile
+  IS_WEEKLY: ${{ inputs.event_name == 'weekly' }}
+  IS_PR: ${{ inputs.gh_event_name == 'pull_request' && inputs.inp_event_name != 'release' }}
 
 jobs:
+  detect-changes:
+    name: Detect changed files
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    if: inputs.gh_event_name == 'pull_request' && inputs.inp_event_name != 'release'
+    outputs:
+      src_changed:   ${{ steps.changed-files.outputs.src_any_changed }}
+      tests_changed: ${{ steps.changed-files.outputs.tests_any_changed }}
+      deps_changed:  ${{ steps.changed-files.outputs.dependencies_any_changed }}
+      conftest_changed: ${{ steps.changed-files.outputs.conftest_any_changed }}
+      makefile_changed: ${{ steps.changed-files.outputs.makefile_any_changed }}
+    steps:
+      - name: Checkout code for diff
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Detect modifications
+        id: changed-files
+        uses: tj-actions/changed-files@5426ecc3f5c2b10effaefbd374f0abdc6a571b2f # v45.0.6
+        with:
+          files_yaml: |
+            src:
+              - src/**
+              - '!src/concrete/ml/version.py'
+            tests:
+              - 'tests/**/test_*.py'
+            tests_utils:
+              - tests/data/**
+              - src/concrete/ml/pytest/**
+            determinism:
+              - tests/seeding/test_seeding.py
+            docs:
+              - docs/**
+              - '*.md'
+              - LICENSE
+            use_cases:
+              - use_case_examples/**
+            codeblocks:
+              - '**.md'
+              - '!.*/**'
+              - '!docs/_*/**'
+              - '!docs/SUMMARY.md'
+              - '!docs/references/api/**.md'
+            dependencies:
+              - deps_licenses/licenses_linux_user.txt.md5
+            conftest:
+              - conftest.py
+            makefile:
+              - Makefile
+      - name: Print detected change flags
+        run: |
+          echo "src_changed=${{ steps.changed-files.outputs.src_any_changed }}"
+          echo "tests_changed=${{ steps.changed-files.outputs.tests_any_changed }}"
+          echo "deps_changed=${{ steps.changed-files.outputs.dependencies_any_changed }}"
+          echo "conftest_changed=${{ steps.changed-files.outputs.conftest_any_changed }}"
+          echo "makefile_changed=${{ steps.changed-files.outputs.makefile_any_changed }}"
+          echo "gh_event_name=${{ inputs.gh_event_name }}"
+          echo "inp_event_name=${{ inputs.inp_event_name }}"
+          echo "env.IS_WEEKLY=${{ env.IS_WEEKLY }}"
+          echo "env.IS_PR=${{ env.IS_PR }}"
+
   start-runner-gpu-linux:
     permissions:
       contents: read
     name: Start GPU SLAB runner
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    needs: [detect-changes]
+    if: |
+      inputs.gh_event_name != 'pull_request' ||
+      needs.detect-changes.outputs.src_changed == 'true' ||
+      needs.detect-changes.outputs.tests_changed == 'true' ||
+      needs.detect-changes.outputs.deps_changed == 'true' ||
+      needs.detect-changes.outputs.conftest_changed == 'true' ||
+      needs.detect-changes.outputs.makefile_changed == 'true'
     outputs:
       label: ${{ steps.start-slab-runner.outputs.label }}
     steps:
@@ -48,7 +152,7 @@ jobs:
 #   GPU-availability:
 #     name: GPU Availability
 #     runs-on: ${{ needs.start-runner-gpu-linux.outputs.label }}
-#     needs: start-runner-gpu-linux
+#     needs: [start-runner-gpu-linux]
 #     steps:
 #       - name: Check GPU availability
 #         run: |
@@ -67,10 +171,16 @@ jobs:
           echo "Set HOME=$(pwd)"
           echo "HOME=$(pwd)" >> $GITHUB_ENV
 
-      - name: Disable LFS download by default
+      - name: Install Git-LFS
         run: |
           apt-get update
           apt-get install git-lfs
+
+      # By default, `git clone` downloads all LFS files, which we want to avoid in CIs other than
+      # weekly ones (which also test notebooks)
+      - name: Disable LFS download by default
+        if: ${{ !fromJSON(env.IS_WEEKLY) }}
+        run: |
           git lfs install --skip-smudge
 
       - name: Checkout code
