@@ -1,7 +1,5 @@
 name: GPU CI Pipeline
 
-# This reusable workflow expects the parent to provide a job named matrix-preparation.
-
 on:
   workflow_call:
     inputs:
@@ -9,7 +7,16 @@ on:
         description: "Event that triggers the workflow"
         required: true
         type: string
-
+  workflow_dispatch:
+    inputs:
+        python_versions:
+          description: 'JSON array ex : ["3.8","3.12"]'
+          required: false
+          default: '["3.8"]'
+        event_name:
+          description: 'Label affiché dans les logs'
+          required: false
+          default: 'manual'
 env:
   SLAB_PROFILE: gpu_ciprofile
 
