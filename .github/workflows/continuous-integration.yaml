@@ -543,7 +543,6 @@ jobs:
           # Show CP version
           poetry run pip show concrete-python || echo "concrete-python not installed"
           CONCRETE_WITH_VERSION=$(poetry run pip freeze | grep concrete-python)
-          echo $CONCRETE_WITH_VERSION
 
           poetry run pip uninstall -y concrete-python
           poetry run pip install --extra-index-url https://pypi.zama.ai/gpu $CONCRETE_WITH_VERSION
