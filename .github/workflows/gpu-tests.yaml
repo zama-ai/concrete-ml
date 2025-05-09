@@ -70,12 +70,12 @@ jobs:
 
         steps:
             - name: Set Home
-            run: |
+              run: |
                 echo "Set HOME=$(pwd)"
                 echo "HOME=$(pwd)" >> $GITHUB_ENV
 
             - name: Disable LFS download by default
-            run: |
+              run: |
 
                 apt-get update
                 apt-get install git-lfs
@@ -83,28 +83,28 @@ jobs:
                 git lfs install --skip-smudge
 
             - name: Checkout code
-            uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+              uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
             - name: Pull LFS files
-            run: |
+              run: |
                 git lfs pull --include "tests/data/**, src/concrete/ml/pandas/_client_server_files/**" --exclude  ""
 
             - name: Set up Python ${{ matrix.python_version }}
-            uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
-            id: setup-python
-            with:
+              uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+              id: setup-python
+              with:
                 python-version: ${{ matrix.python_version }}
 
             - name: Install Deps
-            id: install-deps
-            run: |
+              id: install-deps
+              run: |
                 echo "Using these tools: $(which python3), $(which pip3)"      
                 ./script/make_utils/setup_os_deps.sh
                 make setup_env
 
             - name: Install GPU concrete-python
-            id: install-gpu-concrete-python
-            run: |
+              id: install-gpu-concrete-python
+              run: |
                 # Show CP version
                 poetry run pip show concrete-python || echo "concrete-python not installed"
                 CONCRETE_WITH_VERSION=$(poetry run pip freeze | grep concrete-python)
@@ -116,7 +116,7 @@ jobs:
                 poetry run pip show concrete-python || echo "concrete-python not installed"
 
             - name: 🚀 Run GPU Tests
-            run: |
+              run: |
                 make pytest_gpu
 
     stop-runner-gpu-linux:
