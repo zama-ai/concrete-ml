@@ -1,14 +1,15 @@
 name: GPU CI Pipeline
 
 on:
-  workflow_call:
-    inputs:
-      event_name:
-        description: "Event that triggers the workflow"
-        required: true
-        type: string
-  workflow_dispatch:
-    inputs:
+    workflow_call:
+      inputs:
+        event_name:
+          description: "Event that triggers the workflow"
+          required: true
+          type: string
+  
+    workflow_dispatch:
+      inputs:
         python_versions:
           description: 'JSON array ex : ["3.8","3.12"]'
           required: false
@@ -17,6 +18,7 @@ on:
           description: 'Label affiché dans les logs'
           required: false
           default: 'manual'
+  
 env:
   SLAB_PROFILE: gpu_ciprofile
 
