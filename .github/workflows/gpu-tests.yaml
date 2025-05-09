@@ -12,6 +12,7 @@ on:
           required: true
 env:
   SLAB_PROFILE: gpu_ciprofile
+  IS_WEEKLY: ${{ inputs.event_name == 'weekly' }}
 
 jobs:
   start-runner-gpu-linux:
@@ -67,10 +68,11 @@ jobs:
           echo "Set HOME=$(pwd)"
           echo "HOME=$(pwd)" >> $GITHUB_ENV
 
+      # By default, `git clone` downloads all LFS files, which we want to avoid in CIs other than
+      # weekly ones (which also test notebooks)
       - name: Disable LFS download by default
+        if: ${{ !fromJSON(env.IS_WEEKLY) }}
         run: |
-          apt-get update
-          apt-get install git-lfs
           git lfs install --skip-smudge
 
       - name: Checkout code
