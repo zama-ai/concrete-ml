@@ -458,6 +458,7 @@ jobs:
     uses: ./.github/workflows/gpu-tests.yaml
     with:
       event_name: ${{ github.event_name }}
+    secrets: inherit
   # -------------
 
   decide-slack-report:
