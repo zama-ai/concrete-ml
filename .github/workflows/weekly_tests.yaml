@@ -19,6 +19,7 @@ jobs:
   weekly-tests:
     name: Run weekly tests
     if: ${{ github.repository == 'zama-ai/concrete-ml' }}
+    permissions: {}
     uses: ./.github/workflows/continuous-integration.yaml
     secrets: inherit
     with:
