@@ -1,47 +1,48 @@
-name: GPU CI Pipeline
+name: GPU CI Tests
 
 on:
-    workflow_call:
-      inputs:
-        event_name:
-          type: string
-          required: true
-        python_version:
-          type: string
-          required: true
-        gh_event_name:
-          type: string
-          required: true
-        inp_event_name:
-          type: string
-          required: true
+  workflow_call:
+    inputs:
+      event_name:
+        type: string
+        required: true
+      python_version:
+        type: string
+        required: true
+      gh_event_name:
+        type: string
+        required: true
+      inp_event_name:
+        type: string
+        required: true
 
-    workflow_dispatch:
-       inputs:
-        event_name:
-            description: "Event that triggers the workflow"
-            required: true
-            type: choice
-            default: pr
-            options:
-                - pr
-        linux_python_versions:
-            description: "Space separated list of python versions (3.8, 3.9, 3.10, 3.11, 3.12 are supported) to launch on linux"
-            required: false
-            type: string
-            default: "3.8"
-        
-        macos_python_versions:
-            description: "Space separated list of python versions (3.8, 3.9, 3.10, 3.11, 3.12 are supported) to launch on macos (intel)"
-            required: false
-            type: string
-            default: "3.8"
-        
-        manual_call:
-            description: "Do not uncheck this!"
-            type: boolean
-            required: false
-            default: true
+  workflow_dispatch:
+    inputs:
+      event_name:
+        description: "Event that triggers the workflow"
+        required: true
+        type: choice
+        default: pr
+        options:
+          - pr
+
+      linux_python_versions:
+        description: "Space separated list of python versions (3.8, 3.9, 3.10, 3.11, 3.12 are supported) to launch on linux"
+        required: false
+        type: string
+        default: "3.8"
+
+      macos_python_versions:
+        description: "Space separated list of python versions (3.8, 3.9, 3.10, 3.11, 3.12 are supported) to launch on macos (intel)"
+        required: false
+        type: string
+        default: "3.8"
+
+      manual_call:
+        description: "Do not uncheck this!"
+        type: boolean
+        required: false
+        default: true
 
 env:
   SLAB_PROFILE: gpu_ciprofile
@@ -144,16 +145,6 @@ jobs:
           job-secret: ${{ secrets.JOB_SECRET }}
           backend: aws
           profile: ${{ env.SLAB_PROFILE }}
-
-#   GPU-availability:
-#     name: GPU Availability
-#     runs-on: ${{ needs.start-runner-gpu-linux.outputs.label }}
-#     needs: [start-runner-gpu-linux]
-#     steps:
-#       - name: Check GPU availability
-#         run: |
-#           echo "Checking for GPU..."
-#           nvidia-smi || echo "nvidia-smi failed"
 
   GPU-tests:
     name: Run GPU tests (Python ${{ inputs.python_version }})

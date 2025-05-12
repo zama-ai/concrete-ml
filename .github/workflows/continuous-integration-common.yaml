@@ -269,14 +269,6 @@ jobs:
             makefile:
               - Makefile
 
-      - name: Debug changed files outputs
-        run: |
-          echo "determinism_any_changed=${{ steps.changed-files-in-pr.outputs.determinism_any_changed }}"
-          echo "src_any_changed=${{ steps.changed-files-in-pr.outputs.src_any_changed }}"
-          echo "dependencies_any_changed=${{ steps.changed-files-in-pr.outputs.dependencies_any_changed }}"
-          echo "conftest_any_changed=${{ steps.changed-files-in-pr.outputs.conftest_any_changed }}"
-          echo "makefile_any_changed=${{ steps.changed-files-in-pr.outputs.makefile_any_changed }}"
-
       # Run determinism test if:
       # - during weekly or release CI, as well as when the CI has been triggered manually (through
       # GitHub's Action interface)
