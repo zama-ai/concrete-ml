@@ -53,7 +53,6 @@ jobs:
     name: Detect changed files
     runs-on: ubuntu-latest
     permissions: {}
-    if: ${{ fromJSON(env.IS_PR) || fromJSON(env.IS_WEEKLY)  }}
     outputs:
       src_changed:   ${{ steps.changed-files.outputs.src_any_changed }}
       tests_changed: ${{ steps.changed-files.outputs.tests_any_changed }}
