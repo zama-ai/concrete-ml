@@ -52,8 +52,7 @@ jobs:
   detect-changes:
     name: Detect changed files
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    permissions: {}
     if: inputs.gh_event_name == 'pull_request' && inputs.inp_event_name != 'release'
     outputs:
       src_changed:   ${{ steps.changed-files.outputs.src_any_changed }}
@@ -111,8 +110,6 @@ jobs:
           echo "env.IS_PR=${{ env.IS_PR }}"
 
   start-runner-gpu-linux:
-    permissions:
-      contents: read
     name: Start GPU SLAB runner
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -163,8 +160,7 @@ jobs:
     name: Run GPU tests (Python ${{ inputs.python_version }})
     runs-on: ${{ needs.start-runner-gpu-linux.outputs.label }}
     needs: [start-runner-gpu-linux]
-    permissions:
-      contents: read
+    permissions: {}
     steps:
       - name: Set Home
         run: |
