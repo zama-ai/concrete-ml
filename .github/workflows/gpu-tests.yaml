@@ -16,32 +16,32 @@ on:
           type: string
           required: true
 
-    # workflow_dispatch:
-    #    inputs:
-    #     event_name:
-    #         description: "Event that triggers the workflow"
-    #         required: true
-    #         type: choice
-    #         default: pr
-    #         options:
-    #             - pr
-    #     linux_python_versions:
-    #         description: "Space separated list of python versions (3.8, 3.9, 3.10, 3.11, 3.12 are supported) to launch on linux"
-    #         required: false
-    #         type: string
-    #         default: "3.8"
+    workflow_dispatch:
+       inputs:
+        event_name:
+            description: "Event that triggers the workflow"
+            required: true
+            type: choice
+            default: pr
+            options:
+                - pr
+        linux_python_versions:
+            description: "Space separated list of python versions (3.8, 3.9, 3.10, 3.11, 3.12 are supported) to launch on linux"
+            required: false
+            type: string
+            default: "3.8"
         
-    #     macos_python_versions:
-    #         description: "Space separated list of python versions (3.8, 3.9, 3.10, 3.11, 3.12 are supported) to launch on macos (intel)"
-    #         required: false
-    #         type: string
-    #         default: "3.8"
+        macos_python_versions:
+            description: "Space separated list of python versions (3.8, 3.9, 3.10, 3.11, 3.12 are supported) to launch on macos (intel)"
+            required: false
+            type: string
+            default: "3.8"
         
-    #     manual_call:
-    #         description: "Do not uncheck this!"
-    #         type: boolean
-    #         required: false
-    #         default: true
+        manual_call:
+            description: "Do not uncheck this!"
+            type: boolean
+            required: false
+            default: true
 
 env:
   SLAB_PROFILE: gpu_ciprofile
