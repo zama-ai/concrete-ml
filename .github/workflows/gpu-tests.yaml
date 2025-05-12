@@ -48,6 +48,8 @@ env:
   SLAB_PROFILE: gpu_ciprofile
   IS_WEEKLY: ${{ inputs.event_name == 'weekly' }}
   IS_PR: ${{ inputs.gh_event_name == 'pull_request' && inputs.inp_event_name != 'release' }}
+  EVENT_NAME: ${{ github.event.inputs.event_name || inputs.event_name }}
+  PYTHON_VERSION: ${{ github.event.inputs.python_version || inputs.python_version }}
 
 jobs:
   detect-changes:
@@ -104,8 +106,7 @@ jobs:
           echo "deps_changed=${{ steps.changed-files.outputs.dependencies_any_changed }}"
           echo "conftest_changed=${{ steps.changed-files.outputs.conftest_any_changed }}"
           echo "makefile_changed=${{ steps.changed-files.outputs.makefile_any_changed }}"
-          echo "gh_event_name=${{ inputs.gh_event_name }}"
-          echo "inp_event_name=${{ inputs.inp_event_name }}"
+          echo "event_name=${{ env.EVENT_NAME }}"
           echo "env.IS_WEEKLY=${{ env.IS_WEEKLY }}"
           echo "env.IS_PR=${{ env.IS_PR }}"
 
@@ -116,6 +117,7 @@ jobs:
     needs: [detect-changes]
     if: |
       inputs.gh_event_name != 'pull_request' ||
+      github.event.inputs.event_name != 'pull_request' ||
       needs.detect-changes.outputs.src_changed == 'true' ||
       needs.detect-changes.outputs.tests_changed == 'true' ||
       needs.detect-changes.outputs.deps_changed == 'true' ||
@@ -125,7 +127,7 @@ jobs:
       label: ${{ steps.start-slab-runner.outputs.label }}
     steps:
       - name: Print event name
-        run: echo "This workflow was called with event_name=${{ inputs.event_name }}"
+        run: echo "This workflow was called with event_name=${{ env.EVENT_NAME }}"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722
@@ -147,7 +149,7 @@ jobs:
           profile: ${{ env.SLAB_PROFILE }}
 
   GPU-tests:
-    name: Run GPU tests (Python ${{ inputs.python_version }})
+    name: Run GPU tests (Python ${{ env.PYTHON_VERSION }})
     runs-on: ${{ needs.start-runner-gpu-linux.outputs.label }}
     needs: [start-runner-gpu-linux]
     permissions: {}
@@ -176,11 +178,11 @@ jobs:
         run: |
           git lfs pull --include "tests/data/**, src/concrete/ml/pandas/_client_server_files/**" --exclude  ""
 
-      - name: Set up Python ${{ inputs.python_version }}
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
         id: setup-python
         with:
-          python-version: ${{ inputs.python_version }}
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install Deps
         id: install-deps
