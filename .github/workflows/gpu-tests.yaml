@@ -48,7 +48,9 @@ env:
   SLAB_PROFILE: gpu_ciprofile
   IS_WEEKLY: ${{ inputs.event_name == 'weekly' }}
   IS_PR: ${{ inputs.gh_event_name == 'pull_request' && inputs.inp_event_name != 'release' }}
-  EVENT_NAME: ${{ github.event.inputs.event_name || inputs.event_name }}
+  INP_EVENT_NAME: ${{ inputs.inp_event_name || inputs.gh_event_name }}
+  GH_EVENT_NAME: ${{ inputs.inp_event_name }}
+  EVENT_NAME:  ${{ github.event.inputs.event_name || inputs.inp_event_name || inputs.gh_event_name }}
   PYTHON_VERSION: ${{ github.event.inputs.python_version || inputs.python_version }}
 
 jobs:
@@ -106,7 +108,9 @@ jobs:
           echo "deps_changed=${{ steps.changed-files.outputs.dependencies_any_changed }}"
           echo "conftest_changed=${{ steps.changed-files.outputs.conftest_any_changed }}"
           echo "makefile_changed=${{ steps.changed-files.outputs.makefile_any_changed }}"
-          echo "event_name=${{ env.EVENT_NAME }}"
+          echo "gh_event_name=${{ env.GH_EVENT_NAME }}"
+          echo "inp_event_name=${{ env.INP_EVENT_NAME }}"
+          echo "python=${{ env.PYTHON_VERSION }}"
           echo "env.IS_WEEKLY=${{ env.IS_WEEKLY }}"
           echo "env.IS_PR=${{ env.IS_PR }}"
 
@@ -117,6 +121,7 @@ jobs:
     needs: [detect-changes]
     if: |
       inputs.gh_event_name != 'pull_request' ||
+      inputs.inp_event_name != 'pull_request' ||
       github.event.inputs.event_name != 'pull_request' ||
       needs.detect-changes.outputs.src_changed == 'true' ||
       needs.detect-changes.outputs.tests_changed == 'true' ||
