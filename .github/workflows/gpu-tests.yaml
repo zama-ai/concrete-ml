@@ -46,17 +46,54 @@ on:
 
 env:
   SLAB_PROFILE: gpu_ciprofile
-  IS_WEEKLY: ${{ inputs.event_name == 'weekly' }}
-  IS_PR: ${{ inputs.gh_event_name == 'pull_request' && inputs.inp_event_name != 'release' }}
-  INP_EVENT_NAME: ${{ inputs.inp_event_name || inputs.gh_event_name }}
-  GH_EVENT_NAME: ${{ inputs.inp_event_name }}
-  EVENT_NAME:  ${{ github.event.inputs.event_name || inputs.inp_event_name || inputs.gh_event_name }}
-  PYTHON_VERSION: ${{ github.event.inputs.python_version || inputs.python_version }}
 
 jobs:
+  set-env-vars:
+    runs-on: ubuntu-24.04
+    outputs:
+      IS_WEEKLY: ${{ steps.setenv.outputs.IS_WEEKLY }}
+      IS_PR: ${{ steps.setenv.outputs.IS_PR }}
+      EVENT_NAME: ${{ steps.setenv.outputs.EVENT_NAME }}
+      PYTHON_VERSION: ${{ steps.setenv.outputs.PYTHON_VERSION }}
+    steps:
+      - name: Set environment variables
+        id: setenv
+        run: |
+          echo "IS_WEEKLY=false" >> $GITHUB_OUTPUT
+          echo "IS_PR=false" >> $GITHUB_OUTPUT
+          echo "EVENT_NAME=unknown" >> $GITHUB_OUTPUT
+          echo "PYTHON_VERSION=3.8" >> $GITHUB_OUTPUT
+
+          # EVENT_NAME var.
+          if [[ "${{ github.event.inputs.event_name }}" != "" ]]; then
+            echo "EVENT_NAME=${{ github.event.inputs.event_name }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ inputs.inp_event_name }}" != "" ]]; then
+            echo "EVENT_NAME=${{ inputs.inp_event_name }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ inputs.gh_event_name }}" != "" ]]; then
+            echo "EVENT_NAME=${{ inputs.gh_event_name }}" >> $GITHUB_OUTPUT
+          fi
+
+          # PYTHON_VERSION var.
+          if [[ "${{ github.event.inputs.python_version }}" != "" ]]; then
+            echo "PYTHON_VERSION=${{ github.event.inputs.python_version }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ inputs.python_version }}" != "" ]]; then
+            echo "PYTHON_VERSION=${{ inputs.python_version }}" >> $GITHUB_OUTPUT
+          fi
+
+          # IS_WEEKLY var.
+          if [[ "${{ github.event.inputs.event_name }}" == "weekly" ]]; then
+            echo "IS_WEEKLY=true" >> $GITHUB_OUTPUT
+          fi
+
+          # IS_PR var.
+          if [[ "${{ inputs.gh_event_name }}" == "pull_request" && inputs.inp_event_name != "release" ]]; then
+            echo "IS_PR=true" >> $GITHUB_OUTPUT
+          fi
+
+
   detect-changes:
     name: Detect changed files
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions: {}
     outputs:
       src_changed:   ${{ steps.changed-files.outputs.src_any_changed }}
@@ -118,11 +155,16 @@ jobs:
     name: Start GPU SLAB runner
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    needs: [detect-changes]
+    needs: [detect-changes, set-env-vars]
+
+    env:
+      IS_WEEKLY: ${{ needs.set-env-vars.outputs.IS_WEEKLY }}
+      IS_PR: ${{ needs.set-env-vars.outputs.IS_PR }}
+      EVENT_NAME: ${{ needs.set-env-vars.outputs.EVENT_NAME }}
+      PYTHON_VERSION: ${{ needs.set-env-vars.outputs.PYTHON_VERSION }}
+
     if: |
-      inputs.gh_event_name != 'pull_request' ||
-      inputs.inp_event_name != 'pull_request' ||
-      github.event.inputs.event_name != 'pull_request' ||
+      needs.set-env-vars.outputs.EVENT_NAME != 'pull_request' ||
       needs.detect-changes.outputs.src_changed == 'true' ||
       needs.detect-changes.outputs.tests_changed == 'true' ||
       needs.detect-changes.outputs.deps_changed == 'true' ||
