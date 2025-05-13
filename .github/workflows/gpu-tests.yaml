@@ -16,33 +16,33 @@ on:
         type: string
         required: true
 
-  # workflow_dispatch:
-  #   inputs:
-  #     event_name:
-  #       description: "Event that triggers the workflow"
-  #       required: true
-  #       type: choice
-  #       default: pr
-  #       options:
-  #         - pr
+  workflow_dispatch:
+    inputs:
+      event_name:
+        description: "Event that triggers the workflow"
+        required: true
+        type: choice
+        default: pr
+        options:
+          - pr
 
-  #     linux_python_versions:
-  #       description: "Space separated list of python versions (3.8, 3.9, 3.10, 3.11, 3.12 are supported) to launch on linux"
-  #       required: false
-  #       type: string
-  #       default: "3.8"
+      linux_python_versions:
+        description: "Space separated list of python versions (3.8, 3.9, 3.10, 3.11, 3.12 are supported) to launch on linux"
+        required: false
+        type: string
+        default: "3.8"
 
-  #     macos_python_versions:
-  #       description: "Space separated list of python versions (3.8, 3.9, 3.10, 3.11, 3.12 are supported) to launch on macos (intel)"
-  #       required: false
-  #       type: string
-  #       default: "3.8"
+      macos_python_versions:
+        description: "Space separated list of python versions (3.8, 3.9, 3.10, 3.11, 3.12 are supported) to launch on macos (intel)"
+        required: false
+        type: string
+        default: "3.8"
 
-  #     manual_call:
-  #       description: "Do not uncheck this!"
-  #       type: boolean
-  #       required: false
-  #       default: true
+      manual_call:
+        description: "Do not uncheck this!"
+        type: boolean
+        required: false
+        default: true
 
 env:
   SLAB_PROFILE: gpu_ciprofile
@@ -55,6 +55,7 @@ jobs:
       IS_PR: ${{ steps.setenv.outputs.IS_PR }}
       EVENT_NAME: ${{ steps.setenv.outputs.EVENT_NAME }}
       PYTHON_VERSION: ${{ steps.setenv.outputs.PYTHON_VERSION }}
+
     steps:
       - name: Set environment variables
         id: setenv
@@ -64,32 +65,23 @@ jobs:
           echo "EVENT_NAME=unknown" >> $GITHUB_OUTPUT
           echo "PYTHON_VERSION=3.8" >> $GITHUB_OUTPUT
 
-          # EVENT_NAME var.
-          if [[ "${{ github.event.inputs.event_name }}" != "" ]]; then
-            echo "EVENT_NAME=${{ github.event.inputs.event_name }}" >> $GITHUB_OUTPUT
-          elif [[ "${{ inputs.inp_event_name }}" != "" ]]; then
-            echo "EVENT_NAME=${{ inputs.inp_event_name }}" >> $GITHUB_OUTPUT
-          elif [[ "${{ inputs.gh_event_name }}" != "" ]]; then
-            echo "EVENT_NAME=${{ inputs.gh_event_name }}" >> $GITHUB_OUTPUT
-          fi
+          # Determine EVENT_NAME
+          EVENT_NAME="${{ github.event.inputs.event_name || inputs.inp_event_name || inputs.gh_event_name || 'unknown' }}"
+          echo "EVENT_NAME=$EVENT_NAME" >> $GITHUB_OUTPUT
 
-          # PYTHON_VERSION var.
-          if [[ "${{ github.event.inputs.python_version }}" != "" ]]; then
-            echo "PYTHON_VERSION=${{ github.event.inputs.python_version }}" >> $GITHUB_OUTPUT
-          elif [[ "${{ inputs.python_version }}" != "" ]]; then
-            echo "PYTHON_VERSION=${{ inputs.python_version }}" >> $GITHUB_OUTPUT
-          fi
+          # Determine PYTHON_VERSION
+          PYTHON_VERSION="${{ github.event.inputs.python_version || inputs.python_version || '3.8' }}"
+          echo "PYTHON_VERSION=$PYTHON_VERSION" >> $GITHUB_OUTPUT
 
-          # IS_WEEKLY var.
-          if [[ "${{ github.event.inputs.event_name }}" == "weekly" ]]; then
+          # Determine IS_WEEKLY
+          if [[ "$EVENT_NAME" == "weekly" ]]; then
             echo "IS_WEEKLY=true" >> $GITHUB_OUTPUT
           fi
 
-          # IS_PR var.
-          if [[ "${{ inputs.gh_event_name }}" == "pull_request" && inputs.inp_event_name != "release" ]]; then
+          # Determine IS_PR
+          if [[ "${{ inputs.gh_event_name }}" == "pull_request" && "${{ inputs.inp_event_name }}" != "release" ]]; then
             echo "IS_PR=true" >> $GITHUB_OUTPUT
           fi
-
 
   detect-changes:
     name: Detect changed files
