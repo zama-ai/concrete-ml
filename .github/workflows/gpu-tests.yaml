@@ -143,49 +143,49 @@ jobs:
           echo "env.IS_WEEKLY=${{ needs.set-env-vars.outputs.IS_WEEKLY }}"
           echo "env.IS_PR=${{ needs.set-env-vars.outputs.IS_PR }}"
 
-  # start-runner-gpu-linux:
-  #   name: Start GPU SLAB runner
-  #   runs-on: ubuntu-24.04
-  #   timeout-minutes: 15
-  #   needs: [detect-changes, set-env-vars]
+  start-runner-gpu-linux:
+    name: Start GPU SLAB runner
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    needs: [detect-changes, set-env-vars]
 
-  #   env:
-  #     IS_WEEKLY: ${{ needs.set-env-vars.outputs.IS_WEEKLY }}
-  #     IS_PR: ${{ needs.set-env-vars.outputs.IS_PR }}
-  #     EVENT_NAME: ${{ needs.set-env-vars.outputs.EVENT_NAME }}
-  #     PYTHON_VERSION: ${{ needs.set-env-vars.outputs.PYTHON_VERSION }}
+    env:
+      IS_WEEKLY: ${{ needs.set-env-vars.outputs.IS_WEEKLY }}
+      IS_PR: ${{ needs.set-env-vars.outputs.IS_PR }}
+      EVENT_NAME: ${{ needs.set-env-vars.outputs.EVENT_NAME }}
+      PYTHON_VERSION: ${{ needs.set-env-vars.outputs.PYTHON_VERSION }}
 
-  #   if: |
-  #     needs.set-env-vars.outputs.EVENT_NAME != 'pull_request' ||
-  #     needs.detect-changes.outputs.src_changed == 'true' ||
-  #     needs.detect-changes.outputs.tests_changed == 'true' ||
-  #     needs.detect-changes.outputs.deps_changed == 'true' ||
-  #     needs.detect-changes.outputs.conftest_changed == 'true' ||
-  #     needs.detect-changes.outputs.makefile_changed == 'true'
-  #   outputs:
-  #     label: ${{ steps.start-slab-runner.outputs.label }}
-  #   steps:
-  #     - name: Print event name
-  #       run: echo "This workflow was called with event_name=${{ env.EVENT_NAME }}"
+    if: |
+      needs.set-env-vars.outputs.EVENT_NAME != 'pull_request' ||
+      needs.detect-changes.outputs.src_changed == 'true' ||
+      needs.detect-changes.outputs.tests_changed == 'true' ||
+      needs.detect-changes.outputs.deps_changed == 'true' ||
+      needs.detect-changes.outputs.conftest_changed == 'true' ||
+      needs.detect-changes.outputs.makefile_changed == 'true'
+    outputs:
+      label: ${{ steps.start-slab-runner.outputs.label }}
+    steps:
+      - name: Print event name
+        run: echo "This workflow was called with event_name=${{ needs.set-env-vars.outputs.EVENT_NAME }}"
 
-  #     - name: Configure AWS credentials
-  #       uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722
-  #       with:
-  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #         aws-region: ${{ secrets.AWS_REGION }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-  #     - name: Start SLAB GPU runner
-  #       id: start-slab-runner
-  #       if: ${{ !cancelled() }}
-  #       uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
-  #       with:
-  #         mode: start
-  #         github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
-  #         slab-url: ${{ secrets.SLAB_BASE_URL }}
-  #         job-secret: ${{ secrets.JOB_SECRET }}
-  #         backend: aws
-  #         profile: ${{ env.SLAB_PROFILE }}
+      - name: Start SLAB GPU runner
+        id: start-slab-runner
+        if: ${{ !cancelled() }}
+        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
+        with:
+          mode: start
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          backend: aws
+          profile: ${{ env.SLAB_PROFILE }}
 
   # GPU-tests:
   #   name: Run GPU tests (Python ${{ env.PYTHON_VERSION }})
