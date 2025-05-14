@@ -188,7 +188,7 @@ jobs:
           profile: ${{ env.SLAB_PROFILE }}
 
   # GPU-tests:
-  #   name: Run GPU tests (Python ${{ env.PYTHON_VERSION }})
+  #   name: Run GPU tests (Python ${{ needs.set-env-vars.outputs.PYTHON_VERSION }})
   #   runs-on: ${{ needs.start-runner-gpu-linux.outputs.label }}
   #   needs: [start-runner-gpu-linux]
   #   permissions: {}
@@ -206,7 +206,7 @@ jobs:
   #     # By default, `git clone` downloads all LFS files, which we want to avoid in CIs other than
   #     # weekly ones (which also test notebooks)
   #     - name: Disable LFS download by default
-  #       if: ${{ !fromJSON(env.IS_WEEKLY) }}
+  #       if: ${{ !fromJSON(needs.set-env-vars.outputs.IS_WEEKLY) }}
   #       run: |
   #         git lfs install --skip-smudge
 
@@ -217,11 +217,11 @@ jobs:
   #       run: |
   #         git lfs pull --include "tests/data/**, src/concrete/ml/pandas/_client_server_files/**" --exclude  ""
 
-  #     - name: Set up Python ${{ env.PYTHON_VERSION }}
+  #     - name: Set up Python ${{ needs.set-env-vars.outputs.PYTHON_VERSION }}
   #       uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
   #       id: setup-python
   #       with:
-  #         python-version: ${{ env.PYTHON_VERSION }}
+  #         python-version: ${{ needs.set-env-vars.outputs.PYTHON_VERSION }}
 
   #     - name: Install Deps
   #       id: install-deps
@@ -243,26 +243,26 @@ jobs:
   #       run: |
   #         make pytest_gpu
 
-  # stop-runner-gpu-linux:
-  #   name: Stop SLAB runner (GPU)
-  #   needs: [start-runner-gpu-linux, GPU-tests]
-  #   permissions: {}
-  #   runs-on: ubuntu-24.04
-  #   timeout-minutes: 2
-  #   if: ${{ always() && (needs.start-runner-gpu-linux.result != 'skipped') }}
-  #   steps:
-  #     - name: Configure AWS credentials
-  #       uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722
-  #       with:
-  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #         aws-region: ${{ secrets.AWS_REGION }}
+  stop-runner-gpu-linux:
+    name: Stop SLAB runner (GPU)
+    needs: [start-runner-gpu-linux, GPU-tests]
+    permissions: {}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    if: ${{ always() && (needs.start-runner-gpu-linux.result != 'skipped') }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-  #     - name: Stop SLAB runner
-  #       uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
-  #       with:
-  #         mode: stop
-  #         github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
-  #         slab-url: ${{ secrets.SLAB_BASE_URL }}
-  #         job-secret: ${{ secrets.JOB_SECRET }}
-  #         label: ${{ needs.start-runner-gpu-linux.outputs.label }}
+      - name: Stop SLAB runner
+        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
+        with:
+          mode: stop
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          label: ${{ needs.start-runner-gpu-linux.outputs.label }}
