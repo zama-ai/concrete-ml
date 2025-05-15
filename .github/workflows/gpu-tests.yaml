@@ -1,0 +1,262 @@
+name: GPU CI Tests
+
+on:
+  workflow_call:
+    inputs:
+      event_name:
+        type: string
+        required: true
+      python_version:
+        type: string
+        required: true
+      gh_event_name:
+        type: string
+        required: true
+      inp_event_name:
+        type: string
+        required: true
+
+  workflow_dispatch:
+    inputs:
+      event_name:
+        description: "Event that triggers the workflow"
+        required: true
+        type: choice
+        default: pr
+        options:
+          - pr
+
+      linux_python_versions:
+        description: "Space separated list of python versions (3.8, 3.9, 3.10, 3.11, 3.12 are supported) to launch on linux"
+        required: false
+        type: string
+        default: "3.8"
+
+      macos_python_versions:
+        description: "Space separated list of python versions (3.8, 3.9, 3.10, 3.11, 3.12 are supported) to launch on macos (intel)"
+        required: false
+        type: string
+        default: "3.8"
+
+      manual_call:
+        description: "Do not uncheck this!"
+        type: boolean
+        required: false
+        default: true
+
+env:
+  SLAB_PROFILE: gpu_ciprofile
+
+jobs:
+  set-env-vars:
+    runs-on: ubuntu-24.04
+    outputs:
+      IS_WEEKLY: ${{ steps.setenv.outputs.IS_WEEKLY }}
+      IS_PR: ${{ steps.setenv.outputs.IS_PR }}
+      EVENT_NAME: ${{ steps.setenv.outputs.EVENT_NAME }}
+      PYTHON_VERSION: ${{ steps.setenv.outputs.PYTHON_VERSION }}
+
+    steps:
+      - name: Set environment variables
+        id: setenv
+        run: |
+          echo "IS_WEEKLY=false" >> $GITHUB_OUTPUT
+          echo "IS_PR=false" >> $GITHUB_OUTPUT
+          echo "EVENT_NAME=unknown" >> $GITHUB_OUTPUT
+          echo "PYTHON_VERSION=3.8" >> $GITHUB_OUTPUT
+
+          # Determine EVENT_NAME
+          EVENT_NAME="${{ github.event.inputs.event_name || inputs.inp_event_name || inputs.gh_event_name }}"
+          echo "EVENT_NAME=$EVENT_NAME" >> $GITHUB_OUTPUT
+
+          # Determine PYTHON_VERSION
+          PYTHON_VERSION="${{ github.event.inputs.python_version || inputs.python_version || '3.8' }}"
+          echo "PYTHON_VERSION=$PYTHON_VERSION" >> $GITHUB_OUTPUT
+
+          # Determine IS_WEEKLY
+          if [[ "$EVENT_NAME" == "weekly" ]]; then
+            echo "IS_WEEKLY=true" >> $GITHUB_OUTPUT
+          fi
+
+          # Determine IS_PR
+          if [[ "${{ inputs.gh_event_name }}" == "pull_request" && "${{ inputs.inp_event_name }}" != "release" ]]; then
+            echo "IS_PR=true" >> $GITHUB_OUTPUT
+          fi
+
+  detect-changes:
+    name: Detect changed files
+    runs-on: ubuntu-24.04
+    needs: [set-env-vars]
+    permissions: {}
+    outputs:
+      src_changed:   ${{ steps.changed-files.outputs.src_any_changed }}
+      tests_changed: ${{ steps.changed-files.outputs.tests_any_changed }}
+      deps_changed:  ${{ steps.changed-files.outputs.dependencies_any_changed }}
+      conftest_changed: ${{ steps.changed-files.outputs.conftest_any_changed }}
+      makefile_changed: ${{ steps.changed-files.outputs.makefile_any_changed }}
+    steps:
+      - name: Checkout code for diff
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Detect modifications
+        id: changed-files
+        uses: tj-actions/changed-files@5426ecc3f5c2b10effaefbd374f0abdc6a571b2f # v45.0.6
+        with:
+          files_yaml: |
+            src:
+              - src/**
+              - '!src/concrete/ml/version.py'
+            tests:
+              - 'tests/**/test_*.py'
+            tests_utils:
+              - tests/data/**
+              - src/concrete/ml/pytest/**
+            determinism:
+              - tests/seeding/test_seeding.py
+            docs:
+              - docs/**
+              - '*.md'
+              - LICENSE
+            use_cases:
+              - use_case_examples/**
+            codeblocks:
+              - '**.md'
+              - '!.*/**'
+              - '!docs/_*/**'
+              - '!docs/SUMMARY.md'
+              - '!docs/references/api/**.md'
+            dependencies:
+              - deps_licenses/licenses_linux_user.txt.md5
+            conftest:
+              - conftest.py
+            makefile:
+              - Makefile
+      - name: Print detected change flags
+        run: |
+          echo "src_changed=${{ steps.changed-files.outputs.src_any_changed }}"
+          echo "tests_changed=${{ steps.changed-files.outputs.tests_any_changed }}"
+          echo "deps_changed=${{ steps.changed-files.outputs.dependencies_any_changed }}"
+          echo "conftest_changed=${{ steps.changed-files.outputs.conftest_any_changed }}"
+          echo "makefile_changed=${{ steps.changed-files.outputs.makefile_any_changed }}"
+          echo "event_name=${{ needs.set-env-vars.outputs.EVENT_NAME }}"
+          echo "python=${{ needs.set-env-vars.outputs.PYTHON_VERSION }}"
+          echo "env.IS_WEEKLY=${{ needs.set-env-vars.outputs.IS_WEEKLY }}"
+          echo "env.IS_PR=${{ needs.set-env-vars.outputs.IS_PR }}"
+
+  start-runner-gpu-linux:
+    name: Start GPU SLAB runner
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    needs: [detect-changes, set-env-vars]
+    env:
+      IS_WEEKLY: ${{ needs.set-env-vars.outputs.IS_WEEKLY }}
+      IS_PR: ${{ needs.set-env-vars.outputs.IS_PR }}
+      EVENT_NAME: ${{ needs.set-env-vars.outputs.EVENT_NAME }}
+      PYTHON_VERSION: ${{ needs.set-env-vars.outputs.PYTHON_VERSION }}
+    if: |
+      needs.set-env-vars.outputs.EVENT_NAME != 'pull_request' ||
+      needs.detect-changes.outputs.src_changed == 'true' ||
+      needs.detect-changes.outputs.tests_changed == 'true' ||
+      needs.detect-changes.outputs.deps_changed == 'true' ||
+      needs.detect-changes.outputs.conftest_changed == 'true' ||
+      needs.detect-changes.outputs.makefile_changed == 'true'
+    outputs:
+      label: ${{ steps.start-slab-runner.outputs.label }}
+    steps:
+      - name: Print event name
+        run: echo "This workflow was called with event_name=${{ needs.set-env-vars.outputs.EVENT_NAME }}"
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Start SLAB GPU runner
+        id: start-slab-runner
+        if: ${{ !cancelled() }}
+        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
+        with:
+          mode: start
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          backend: aws
+          profile: ${{ env.SLAB_PROFILE }}
+
+  GPU-tests:
+    name: Run GPU tests (Python ${{ needs.set-env-vars.outputs.PYTHON_VERSION }})
+    runs-on: ${{ needs.start-runner-gpu-linux.outputs.label }}
+    needs: [start-runner-gpu-linux, set-env-vars]
+    permissions: {}
+    steps:
+      - name: Set Home
+        run: |
+          echo "Set HOME=$(pwd)"
+          echo "HOME=$(pwd)" >> $GITHUB_ENV
+      - name: Install Git-LFS
+        run: |
+          apt-get update
+          apt-get install git-lfs
+      # By default, `git clone` downloads all LFS files, which we want to avoid in CIs other than
+      # weekly ones (which also test notebooks)
+      - name: Disable LFS download by default
+        if: ${{ !fromJSON(needs.set-env-vars.outputs.IS_WEEKLY) }}
+        run: |
+          git lfs install --skip-smudge
+
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Pull LFS files
+        run: |
+          git lfs pull --include "tests/data/**, src/concrete/ml/pandas/_client_server_files/**" --exclude  ""
+
+      - name: Set up Python ${{ needs.set-env-vars.outputs.PYTHON_VERSION }}
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        id: setup-python
+        with:
+          python-version: ${{ needs.set-env-vars.outputs.PYTHON_VERSION }}
+
+      - name: Install Deps
+        id: install-deps
+        run: |
+          echo "Using these tools: $(which python3), $(which pip3)"
+          ./script/make_utils/setup_os_deps.sh
+          make setup_env
+
+      - name: Install GPU concrete-python
+        id: install-gpu-concrete-python
+        run: |
+          poetry run pip show concrete-python || echo "concrete-python not installed"
+          CONCRETE_WITH_VERSION=$(poetry run pip freeze | grep concrete-python)
+          poetry run pip uninstall -y concrete-python
+          poetry run pip install --extra-index-url https://pypi.zama.ai/gpu $CONCRETE_WITH_VERSION
+          poetry run pip show concrete-python || echo "concrete-python not installed"
+
+      - name: 🚀 Run GPU Tests
+        run: |
+          make pytest_gpu
+
+  stop-runner-gpu-linux:
+    name: Stop SLAB runner (GPU)
+    needs: [start-runner-gpu-linux, GPU-tests]
+    permissions: {}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    if: ${{ always() && (needs.start-runner-gpu-linux.result != 'skipped') }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Stop SLAB runner
+        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
+        with:
+          mode: stop
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          label: ${{ needs.start-runner-gpu-linux.outputs.label }}

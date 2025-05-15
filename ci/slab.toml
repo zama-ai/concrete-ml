@@ -30,7 +30,7 @@ security_group= ["sg-0bf1c1d79c97bc88f", ]
 [backend.aws.gpu_ciprofile]
 region = "us-east-1"
 image_id = "ami-0c2e815dbef0da3a2"
-instance_type = "g4dn.8xlarge"
+instance_type = "g4dn.4xlarge"
 
 [backend.aws.big-cpu]
 region = "eu-west-1"

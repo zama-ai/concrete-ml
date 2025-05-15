@@ -451,136 +451,20 @@ jobs:
             echo "No flaky tests were reported!"
           fi
 
-  # ----------------
-  start-runner-gpu-linux:
-      needs: [matrix-preparation]
-      permissions: {}
-      name: Start GPU SLAB runner
-      # This label is irrelevant once the SLAB runner starts.
-      runs-on: ubuntu-24.04
-      
-      timeout-minutes: 15
-      outputs:
-        label: ${{ steps.start-slab-runner.outputs.label }}
-      steps:
-        - name: Configure AWS credentials
-          uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722
-          with:
-            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            aws-region: ${{ secrets.AWS_REGION }}
-              
-        - name: Start SLAB GPU runner
-          id: start-slab-runner
-          if: ${{ !cancelled() }}
-          uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
-          with:
-              mode: start
-              github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
-              slab-url: ${{ secrets.SLAB_BASE_URL }}
-              job-secret: ${{ secrets.JOB_SECRET }}
-              backend: aws
-              profile: gpu_ciprofile 
-
-  # GPU-availability:
-  #   name: GPU Availability
-  #   runs-on: ${{ needs.start-runner-gpu-linux.outputs.label }}
-  #   needs: start-runner-gpu-linux
-    
-  #   steps:
-  #     - name: Check GPU availability
-  #       run: |
-  #         echo "Checking for GPU..."
-  #         nvidia-smi || echo "nvidia-smi failed"
-
-  GPU-tests:
-    name: Run GPU tests (Python ${{ matrix.python_version }})
-    runs-on: ${{ needs.start-runner-gpu-linux.outputs.label }}
-    needs: [start-runner-gpu-linux]
-    permissions:
-      contents: read
+  gpu-tests-ci:
+    name: Run GPU tests in CI
+    needs: [matrix-preparation]
     strategy:
-      matrix:
-        python_version: [3.8]
+      fail-fast: false
+      matrix: ${{ fromJSON(format('{{"include":{0}}}', needs.matrix-preparation.outputs.linux-matrix)) }}
+    uses: ./.github/workflows/gpu-tests.yaml
+    with:
+      event_name: ${{ github.event_name }}
+      python_version: ${{ matrix.python_version }}
+      gh_event_name: ${{ github.event_name }}
+      inp_event_name: ${{ inputs.event_name }}
+    secrets: inherit
 
-    steps:
-      - name: Set Home
-        run: |
-          echo "Set HOME=$(pwd)"
-          echo "HOME=$(pwd)" >> $GITHUB_ENV
-
-      - name: Disable LFS download by default
-        run: |
-
-          apt-get update
-          apt-get install git-lfs
-
-          git lfs install --skip-smudge
-
-      - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-
-      - name: Pull LFS files
-        run: |
-          git lfs pull --include "tests/data/**, src/concrete/ml/pandas/_client_server_files/**" --exclude  ""
-
-      - name: Set up Python ${{ matrix.python_version }}
-        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
-        id: setup-python
-        with:
-          python-version: ${{ matrix.python_version }}
-
-      - name: Install Deps
-        id: install-deps
-        run: |
-          echo "Using these tools: $(which python3), $(which pip3)"      
-          ./script/make_utils/setup_os_deps.sh
-          make setup_env
-
-      - name: Install GPU concrete-python
-        id: install-gpu-concrete-python
-        run: |
-          # Show CP version
-          poetry run pip show concrete-python || echo "concrete-python not installed"
-          poetry run pip uninstall -y concrete-python
-
-          
-          # poetry run pip install --extra-index-url https://pypi.zama.ai/gpu concrete-python
-          poetry run pip install --extra-index-url https://pypi.zama.ai/gpu concrete-python==2.10.0
-
-          # Show new CP version
-          poetry run pip show concrete-python || echo "concrete-python not installed"
-
-
-      - name: 🚀 Run GPU Tests
-        run: |
-          make pytest_gpu
-
-  stop-runner-gpu-linux:
-    name: Stop SLAB runner (GPU)
-    needs: [start-runner-gpu-linux, GPU-tests]
-    permissions: {}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 2
-    if: ${{ always() && (needs.start-runner-gpu-linux.result != 'skipped') }}
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Stop SLAB runner
-        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
-        with:
-          mode: stop
-          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
-          slab-url: ${{ secrets.SLAB_BASE_URL }}
-          job-secret: ${{ secrets.JOB_SECRET }}
-          label: ${{ needs.start-runner-gpu-linux.outputs.label }}
-
-# -------------
   decide-slack-report:
     name: Decide Slack report
     runs-on: ubuntu-24.04
