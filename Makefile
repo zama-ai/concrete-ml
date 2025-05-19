@@ -855,5 +855,5 @@ pytest_gpu:
 		exit 1; \
 	else \
 		echo "Running GPU tests only..."; \
-		env POETRY_RUN_GPU_TESTS=1 poetry run pytest -m "use_gpu" -v --color=yes --durations=0; \
+		env POETRY_RUN_GPU_TESTS=1 poetry run pytest -n0 --dist no -m "use_gpu" -v --color=yes --durations=0; \
 	fi
