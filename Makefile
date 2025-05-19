@@ -845,7 +845,7 @@ check_symlinks:
 		exit 1; \
 	fi
 
-.PHONY: pytest_gpu  # Run only tests that require a GPU
+.PHONY: pytest_gpu  # Run sequentially tests that require a GPU
 pytest_gpu:
 	@echo "Collecting GPU tests..."
 
@@ -855,5 +855,6 @@ pytest_gpu:
 		exit 1; \
 	else \
 		echo "Running GPU tests only..."; \
-		env POETRY_RUN_GPU_TESTS=1 poetry run pytest -n0 --dist no -m "use_gpu" -v --color=yes --durations=0; \
+		env POETRY_RUN_GPU_TESTS=1 poetry run pytest -n0 -m "use_gpu" -v --color=yes --durations=0; \
 	fi
+Exécute tous les tests séquentiellement, sans xdist.
