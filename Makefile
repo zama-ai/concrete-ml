@@ -845,7 +845,7 @@ check_symlinks:
 		exit 1; \
 	fi
 
-.PHONY: pytest_gpu  # Run only tests that require a GPU
+.PHONY: pytest_gpu  # Run sequentially tests that require a GPU
 pytest_gpu:
 	@echo "Collecting GPU tests..."
 
@@ -854,8 +854,6 @@ pytest_gpu:
 		echo "No tests marked @pytest.mark.use_gpu found."; \
 		exit 1; \
 	else \
-		echo "Tests found:"; \
-		echo "$$TESTS"; \
 		echo "Running GPU tests only..."; \
-		env POETRY_RUN_GPU_TESTS=1 poetry run pytest -m "use_gpu" -vvs --color=yes --durations=20; \
+		env POETRY_RUN_GPU_TESTS=1 poetry run pytest -n0 --dist no -m "use_gpu" -v --color=yes --durations=0; \
 	fi
