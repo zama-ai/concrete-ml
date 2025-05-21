@@ -23,8 +23,9 @@ jobs:
       # FIXME: We still need to check that it matches a version tag
       # This won't work on automatically triggered based on release
       - name: Checkout Concrete ML Repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
+          persist-credentials: 'false'
           ref: ${{ inputs.version || github.ref_name}}
           fetch-depth: 1
           lfs: false
@@ -32,15 +33,17 @@ jobs:
 
       # To use the files and all
       - name: Checkout Concrete ML Repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
+          persist-credentials: 'false'
           fetch-depth: 1
           lfs: false
           path: "concrete-ml-latest"
 
       - name: Checkout Slab Repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
+          persist-credentials: 'false'
           repository: "zama-ai/slab"
           path: "slab"
           token: ${{ secrets.BOT_TOKEN }}
@@ -57,10 +60,10 @@ jobs:
 
       - name: Trigger build pipeline via Slab
         run: |
-          
+
           CML_VERSION="${{ steps.git_ref.outputs.git-ref }}"
           CML_VERSION="$(echo $CML_VERSION | cut -d 'v' -f 2)"
-          
+
           # This basically takes the files and modifies some values from it
           COMPONENT_USER_DATA="$(cat concrete-ml-latest/ci/aws_ami_build_component.yaml | sed -e 's|\(concrete-ml==\)${CML_VERSION}|\1'${CML_VERSION}'|' -e  's|${AWS_ACCOUNT_ID}|${{ secrets.AWS_ACCOUNT_ID }}|')"
 

@@ -107,7 +107,9 @@ jobs:
       commits_ok: ${{ steps.commit-conformance.outcome == 'success' }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: 'false'
 
       - name: Check commit signatures
         id: check-commit-signatures
@@ -174,7 +176,9 @@ jobs:
       macos-python-versions: ${{ steps.set-matrix.outputs.macos-python-versions }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: 'false'
 
       - name: Set matrix
         id: set-matrix
@@ -374,7 +378,9 @@ jobs:
 
       # Checkout the code
       - name: Checkout Code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: 'false'
 
       # Pull necessary LFS files (and thus avoid downloading files stored for benchmarks, use cases, ...)
       - name: Pull LFS files
@@ -507,7 +513,9 @@ jobs:
       ]
 
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: 'false'
 
       - name: Prepare whole job status
         env:

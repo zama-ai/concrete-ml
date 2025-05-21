@@ -47,8 +47,9 @@ jobs:
 
       # We need to include LFS files as some are needed for building the documentation
       - name: Checkout Code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
+          persist-credentials: 'false'
           ref: ${{ github.ref }}
           token: ${{ secrets.BOT_TOKEN }}
           lfs: true
