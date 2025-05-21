@@ -2,6 +2,9 @@ name: Check GitHub Actions
 on:
   pull_request:
 
+permissions:
+  contents: read
+
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 

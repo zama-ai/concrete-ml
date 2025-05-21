@@ -10,6 +10,10 @@ env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   SLAB_PROFILE: m6i
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   start-runner-linux:
     name: Start SLAB runner

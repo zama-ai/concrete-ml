@@ -14,6 +14,9 @@ concurrency:
   # Cancel the previous build, except on main
   cancel-in-progress: ${{ github.event_name != 'push' || github.ref != 'refs/heads/main' }}
 
+permissions:
+  contents: read
+
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   IS_PR: ${{ github.event_name == 'pull_request' }}

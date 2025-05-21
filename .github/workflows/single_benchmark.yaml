@@ -62,6 +62,9 @@ on:
       INTERNAL_REPO_URL_FOR_MASK:
         description: "Used for masking"
 
+permissions:
+  contents: read
+
 env:
   AGENT_TOOLSDIRECTORY: /opt/hostedtoolcache
   RUNNER_TOOL_CACHE: /opt/hostedtoolcache
@@ -160,7 +163,7 @@ jobs:
 
       # Now we get our most up to date version
       - name: Run the benchmark command
-        # 34 days * 24 hours * 60 minutes 
+        # 34 days * 24 hours * 60 minutes
         # Workflow limit is 35 days
         # No apparent limit on job/step time
         # https://docs.github.com/en/actions/hosting-your-own-runners/about-self-hosted-runners#usage-limits

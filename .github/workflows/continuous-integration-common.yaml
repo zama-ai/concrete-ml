@@ -46,6 +46,9 @@ on:
       INTERNAL_REPO_URL_FOR_MASK:
         required: true
 
+permissions:
+  contents: read
+
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   # The CI can be triggered by the release workflow which itself can be triggered by the merge of a

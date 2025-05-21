@@ -35,6 +35,9 @@ concurrency:
   group: "Release ${{ github.ref }}"
   cancel-in-progress: true
 
+permissions:
+  contents: write
+
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   BRANCH_NAME: ${{ github.ref_name }}

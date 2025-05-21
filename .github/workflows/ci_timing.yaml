@@ -10,6 +10,9 @@ on:
     # Timezone is UTC, so Paris time is +2 during the summer and +1 during winter
     - cron: '0 22 * * 0'
 
+permissions:
+  contents: read
+
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   AGENT_TOOLSDIRECTORY: /opt/hostedtoolcache

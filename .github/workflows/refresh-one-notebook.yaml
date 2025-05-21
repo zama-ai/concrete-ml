@@ -55,6 +55,10 @@ concurrency:
   group: "${{ github.ref }}-${{ github.event_name }}-${{ github.workflow }}-${{ github.event.inputs.notebook }}"
   cancel-in-progress: false
 
+permissions:
+  contents: write
+  pull-requests: write
+
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   SLAB_PROFILE: m6i

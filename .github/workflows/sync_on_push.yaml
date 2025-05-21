@@ -7,16 +7,19 @@ on:
       - 'main'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   sync-repo:
     if: ${{ github.repository == 'zama-ai/concrete-ml' }}
     runs-on: ubuntu-24.04
     steps:
       # Initial action can be found here: https://github.com/wei/git-sync
-      # The issue is that it does not handle new LFS files when pushing, only the ones that are 
-      # already existing ones. We therefore had to fork it and add the feature manually. In 
+      # The issue is that it does not handle new LFS files when pushing, only the ones that are
+      # already existing ones. We therefore had to fork it and add the feature manually. In
       # particular, trying to rewrite the action directly here as a step does not work because of
-      # some authorization issues and thus requires to further investigate on the right 
+      # some authorization issues and thus requires to further investigate on the right
       # configuration to use. This is not needed with external actions like this one as they
       # are specifically allowed in the repository's settings
       - name: git-sync

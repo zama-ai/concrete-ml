@@ -11,6 +11,9 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: read
+
 jobs:
   # This job will trigger a build for Python3.9 only. A matrix strategy needs to be set up
   # if a build is needed for other version of Python, or even other platforms (ARM, M1).

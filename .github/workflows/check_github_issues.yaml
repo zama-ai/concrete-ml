@@ -6,8 +6,11 @@ on:
   schedule:
     - cron: "0 9 * * 1"
 
+permissions:
+  contents: read
+  issues: read
 
-# Using the bot-token here is necessary in order to let the GitHub CI access the internal 
+# Using the bot-token here is necessary in order to let the GitHub CI access the internal
 # repository, where issues are located
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

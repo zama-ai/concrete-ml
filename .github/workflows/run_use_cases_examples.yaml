@@ -1,10 +1,13 @@
 name: Run Use Case Examples
 on:
-  workflow_dispatch: 
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
 
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

@@ -10,6 +10,10 @@ concurrency:
   group: "Prepare Release ${{ github.event.inputs.version }}"
   cancel-in-progress: true
 
+permissions:
+  contents: write
+  pull-requests: write
+
 env:
   BRANCH_NAME: ${{ github.ref_name }}
   BRANCH_IS_MAIN: ${{ github.ref_name == 'main' }}

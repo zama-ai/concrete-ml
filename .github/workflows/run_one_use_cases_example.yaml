@@ -39,6 +39,10 @@ env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   SLAB_PROFILE: l40_fallback
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   start-runner-linux:
     name: Start EC2 runner

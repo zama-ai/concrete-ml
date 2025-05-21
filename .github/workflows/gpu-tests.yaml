@@ -44,6 +44,9 @@ on:
         required: false
         default: true
 
+permissions:
+  contents: read
+
 env:
   SLAB_PROFILE: gpu_ciprofile
 

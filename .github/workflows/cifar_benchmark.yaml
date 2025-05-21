@@ -38,6 +38,9 @@ on:
   # FIXME: Add recurrent launching
   # https://github.com/zama-ai/concrete-ml-internal/issues/1851
 
+permissions:
+  contents: read
+
 # Global environnement variables
 env:
   # Github action url (used by slack notification)

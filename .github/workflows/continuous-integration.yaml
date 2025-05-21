@@ -59,6 +59,9 @@ on:
         required: false
         default: false
 
+permissions:
+  contents: read
+
 concurrency:
   # Add event_name in the group as workflow dispatch means we could run this in addition to other
   # workflows already running on a PR or a merge e.g.
