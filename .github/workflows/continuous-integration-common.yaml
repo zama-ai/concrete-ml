@@ -45,7 +45,10 @@ on:
         required: true
       INTERNAL_REPO_URL_FOR_MASK:
         required: true
-        
+
+permissions:
+  contents: read
+
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   # The CI can be triggered by the release workflow which itself can be triggered by the merge of a
@@ -79,16 +82,18 @@ env:
 
   SLAB_PROFILE: ${{ inputs.inp_event_name == 'weekly' && 'weekly_ciprofile' || 'pr_ciprofile' }}
 
-jobs:  
+jobs:
   start-runner-linux:
     name: Start Slab runner (Linux)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     outputs:
       label: ${{ steps.start-slab-runner.outputs.label }}
-    steps:  
+    steps:
       - name: Checkout Code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: 'false'
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722
@@ -160,8 +165,9 @@ jobs:
       # Checkout the code
       # 'fetch-depth' is set to 0 in order to fetch all tags (used for generating the changelog)
       - name: Checkout Code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
+          persist-credentials: 'false'
           fetch-depth: 0
 
       # Pull necessary LFS files (and thus avoid downloading files stored for benchmarks, use cases, ...)
@@ -524,7 +530,7 @@ jobs:
         run: |
           # Exit immediately if any command fails
           set -e
-          
+
           for file in ${{ steps.changed-files-in-pr.outputs.tests_all_changed_files }}; do
               make pytest_one TEST="$file"
           done

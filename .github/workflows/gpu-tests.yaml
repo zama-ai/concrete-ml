@@ -44,6 +44,9 @@ on:
         required: false
         default: true
 
+permissions:
+  contents: read
+
 env:
   SLAB_PROFILE: gpu_ciprofile
 
@@ -96,7 +99,9 @@ jobs:
       makefile_changed: ${{ steps.changed-files.outputs.makefile_any_changed }}
     steps:
       - name: Checkout code for diff
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: 'false'
 
       - name: Detect modifications
         id: changed-files
@@ -205,7 +210,9 @@ jobs:
           git lfs install --skip-smudge
 
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: 'false'
 
       - name: Pull LFS files
         run: |

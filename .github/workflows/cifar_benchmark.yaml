@@ -38,6 +38,9 @@ on:
   # FIXME: Add recurrent launching
   # https://github.com/zama-ai/concrete-ml-internal/issues/1851
 
+permissions:
+  contents: read
+
 # Global environnement variables
 env:
   # Github action url (used by slack notification)
@@ -81,8 +84,9 @@ jobs:
           echo "::add-mask::${{ secrets.INTERNAL_REPO_URL }}"
 
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
+          persist-credentials: 'false'
           lfs: true
           ref: ${{ github.event.inputs.git-ref }}
 
@@ -120,8 +124,9 @@ jobs:
 
       - name: Alternative Concrete Python Branch Checkout
         if: github.event.inputs.alternative-cp-branch != 'none'
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
+          persist-credentials: 'false'
           path: concrete
           repository: zama-ai/concrete
           ref: ${{ github.event.inputs.alternative-cp-branch }}
@@ -191,7 +196,7 @@ jobs:
         run: |
           # Log the json
           cat to_upload.json | jq
-          
+
           # We need to sleep to avoid log issues
           sleep 1.
 
