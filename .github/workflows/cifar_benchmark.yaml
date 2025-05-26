@@ -1,5 +1,7 @@
 name: CIFAR-10 benchmark CML
 on:
+  schedule:
+    - cron: '0 0 1 * *'
   workflow_dispatch:
     inputs:
       git-ref:
