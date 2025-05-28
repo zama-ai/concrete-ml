@@ -101,10 +101,15 @@ jobs:
   run-benchmark:
     needs: [setup-instances]
     name: Run LLama LoRA Math benchmark on ${{ matrix.device }}
+    continue-on-error: true  # This allows other matrix jobs to continue even if one fails
     strategy:
+      fail-fast: false  # Prevents cancellation of in-progress matrix jobs when one fails
       matrix:
         device: [cpu, gpu]
     runs-on: ${{ matrix.device == 'cpu' && needs.setup-instances.outputs.cpu-runner || needs.setup-instances.outputs.gpu-runner }}
+    outputs:
+      cpu-status: ${{ steps.set-status.outputs.cpu-status }}
+      gpu-status: ${{ steps.set-status.outputs.gpu-status }}
     env:
       PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
       MAX_LENGTH: ${{ github.event.inputs.max_length || '64' }}
@@ -188,6 +193,8 @@ jobs:
           cp -R concrete/frontends/concrete-python/concrete/* .venv/lib/python3.*/site-packages/concrete/
 
       - name: Run Benchmark - LLama LoRA Math Word Problems (${{ matrix.device }})
+        id: run-benchmark
+        continue-on-error: true  # Allow the workflow to continue even if this step fails
         run: |
           source .venv/bin/activate
           
@@ -201,20 +208,47 @@ jobs:
             python3 benchmarks/llama_lora_math_benchmark.py --save-model --device-type gpu
           fi
 
+      - name: Check if metrics exist
+        id: check-metrics
+        if: always()
+        run: |
+          if [ -f "to_upload.json" ]; then
+            echo "metrics-exist=true" >> $GITHUB_OUTPUT
+          else
+            echo "metrics-exist=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Archive metrics
+        if: always() && steps.check-metrics.outputs.metrics-exist == 'true'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: metrics-${{ matrix.device }}.json
           path: to_upload.json
 
+      - name: Check if model exists
+        id: check-model
+        if: always()
+        run: |
+          if [ -d "deployment/llama_lora_finetuned_${{ github.event.inputs.mode }}" ]; then
+            echo "model-exist=true" >> $GITHUB_OUTPUT
+          else
+            echo "model-exist=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Archive fine-tuned model
+        if: always() && steps.check-model.outputs.model-exist == 'true'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: llama_lora_finetuned_${{ github.event.inputs.mode }}_${{ matrix.device }}
           path: deployment/llama_lora_finetuned_${{ github.event.inputs.mode }}
 
       - name: Upload results to benchmark database
-        if: github.event.inputs.alternative-cp-branch == 'none' && github.event.inputs.alternative-cp-wheel-artifact-id == 'none'
+        if: |
+          always() && 
+          steps.check-metrics.outputs.metrics-exist == 'true' &&
+          github.event.inputs.alternative-cp-branch == 'none' && 
+          github.event.inputs.alternative-cp-wheel-artifact-id == 'none'
+        continue-on-error: true  # Don't fail the job if upload fails
         run: |
           # Log the json
           cat to_upload.json | jq
@@ -228,6 +262,16 @@ jobs:
           -H "Content-Type: application/json; charset=UTF-8" \
           -d @to_upload.json \
           -X POST "${{ secrets.NEW_ML_PROGRESS_TRACKER_URL }}experiment"
+
+      - name: Set job status output
+        id: set-status
+        if: always()
+        run: |
+          if [ "${{ matrix.device }}" == "cpu" ]; then
+            echo "cpu-status=${{ steps.run-benchmark.outcome }}" >> $GITHUB_OUTPUT
+          else
+            echo "gpu-status=${{ steps.run-benchmark.outcome }}" >> $GITHUB_OUTPUT
+          fi
 
   teardown-instances:
     name: Teardown EC2 instances
@@ -254,16 +298,33 @@ jobs:
   slack-notification:
     runs-on: ubuntu-24.04
     needs: [run-benchmark]
-    if: github.event.inputs.alternative-cp-branch == 'none' && github.event.inputs.alternative-cp-wheel-artifact-id == 'none'
+    if: |
+      always() && 
+      github.event.inputs.alternative-cp-branch == 'none' && 
+      github.event.inputs.alternative-cp-wheel-artifact-id == 'none'
     steps:
+      - name: Determine overall status
+        id: overall-status
+        run: |
+          # Get the overall job status
+          if [ "${{ needs.run-benchmark.result }}" == "success" ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+            echo "color=good" >> $GITHUB_OUTPUT
+          elif [ "${{ needs.run-benchmark.result }}" == "failure" ]; then
+            echo "status=failure" >> $GITHUB_OUTPUT
+            echo "color=danger" >> $GITHUB_OUTPUT
+          else
+            echo "status=partial" >> $GITHUB_OUTPUT
+            echo "color=warning" >> $GITHUB_OUTPUT
+          fi
+
       - name: Slack Notification
-        if: ${{ always() }}
         continue-on-error: true
         uses: rtCamp/action-slack-notify@c33737706dea87cd7784c687dadc9adf1be59990
         env:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
-          SLACK_COLOR: ${{ needs.run-benchmark.result }}
-          SLACK_MESSAGE: "LLama LoRA Math benchmark - mode: ${{ github.event.inputs.mode }}, fhe: ${{ github.event.inputs.fhe-mode }} (CPU & GPU) - Result: ${{ needs.run-benchmark.result }} (${{ env.ACTION_RUN_URL }})"
+          SLACK_COLOR: ${{ steps.overall-status.outputs.color }}
+          SLACK_MESSAGE: "LLama LoRA Math benchmark - mode: ${{ github.event.inputs.mode }}, fhe: ${{ github.event.inputs.fhe-mode }} (CPU & GPU) - Status: ${{ steps.overall-status.outputs.status }} (${{ env.ACTION_RUN_URL }})"
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
