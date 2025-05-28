@@ -107,7 +107,6 @@ jobs:
     runs-on: ${{ matrix.device == 'cpu' && needs.setup-instances.outputs.cpu-runner || needs.setup-instances.outputs.gpu-runner }}
     env:
       PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
-      HF_TOKEN: ${{ secrets.HF_TOKEN }}  # For accessing LLama models
       MAX_LENGTH: ${{ github.event.inputs.max_length || '64' }}
       BATCH_SIZE: ${{ github.event.inputs.batch_size || '1' }}
       TRAINING_STEPS: ${{ github.event.inputs.training_steps || '5' }}
@@ -183,6 +182,9 @@ jobs:
       - name: Run Benchmark - LLama LoRA Math Word Problems (${{ matrix.device }})
         run: |
           source .venv/bin/activate
+          
+          # Login to Hugging Face
+          huggingface-cli login --token ${{ secrets.LLAMA_HF_TOKEN }}
           
           # Run benchmark with appropriate device flag
           if [ "${{ matrix.device }}" == "cpu" ]; then
