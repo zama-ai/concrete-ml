@@ -61,7 +61,7 @@ env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   AGENT_TOOLSDIRECTORY: /opt/hostedtoolcache
   RUNNER_TOOL_CACHE: /opt/hostedtoolcache
-  SLAB_PROFILE: big-gpu  # GPU profile for LLama
+  SLAB_PROFILE: big-cpu # TODO: add run on GPU profile
 
 # Jobs
 jobs:
