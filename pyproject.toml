@@ -142,6 +142,7 @@ torchvision = [
 ]
 peft = "^0.12.0"
 ipykernel = "^6.29.5"
+py-cpuinfo = ">=8.0.0,<9.0.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

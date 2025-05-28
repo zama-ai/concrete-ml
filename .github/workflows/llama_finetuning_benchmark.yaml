@@ -1,0 +1,227 @@
+name: LLama LoRA Math Word Problems Benchmark CML
+on:
+  schedule:
+    - cron: '0 0 1 * *'
+  workflow_dispatch:
+    inputs:
+      git-ref:
+        description: Repo reference (branch, tag or SHA)
+        default: "main"
+        required: true
+        type: string
+      alternative-cp-wheel-artifact-id:
+        description: Alternative Concrete-Python Wheel Artifact-ID (see https://github.com/zama-ai/concrete/actions/workflows/concrete_python_release.yml)
+        default: "none"
+        required: true
+        type: string
+      alternative-cp-branch:
+        description: Alternative Concrete-Python Branch
+        default: "none"
+        required: true
+        type: string
+      mode:
+        description: Training mode (torch, 7bit, or 16bit)
+        default: "7bit"
+        type: choice
+        options:
+          - "torch"
+          - "7bit"
+          - "16bit"
+      fhe-mode:
+        description: FHE execution mode (disable, simulate, or execute)
+        default: "execute"
+        type: choice
+        options:
+          - "disable"
+          - "simulate"
+          - "execute"
+      max_length:
+        description: Maximum sequence length
+        default: "64"
+        type: string
+        required: true
+      batch_size:
+        description: Batch size for training
+        default: "1"
+        type: string
+        required: true
+      training_steps:
+        description: Number of training steps to run
+        default: "5"
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+# Global environment variables
+env:
+  ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  AGENT_TOOLSDIRECTORY: /opt/hostedtoolcache
+  RUNNER_TOOL_CACHE: /opt/hostedtoolcache
+  SLAB_PROFILE: big-gpu  # GPU profile for LLama
+
+# Jobs
+jobs:
+  setup-ec2:
+    name: Setup EC2 instance
+    runs-on: ubuntu-24.04
+    outputs:
+      runner-name: ${{ steps.start-instance.outputs.label }}
+    steps:
+      - name: Start instance
+        id: start-instance
+        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
+        with:
+          mode: start
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          backend: aws
+          profile: ${{ env.SLAB_PROFILE }}
+
+  run-llama-lora-math:
+    needs: [setup-ec2]
+    name: Run LLama LoRA Math benchmark
+    runs-on: ${{ needs.setup-ec2.outputs.runner-name }}
+    env:
+      PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}  # For accessing LLama models
+    steps:
+      - name: Add masks
+        run: |
+          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
+          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
+          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL }}"
+          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL }}"
+
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: 'false'
+          lfs: true
+          ref: ${{ github.event.inputs.git-ref }}
+
+      - name: Set up Python
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.8"
+
+      - name: Install dependencies
+        id: install-deps
+        run: |
+          apt update
+          apt install --no-install-recommends -y gnome-keyring
+          apt install -y graphviz* graphviz-dev libgraphviz-dev pkg-config python3-dev
+          apt-mark hold docker.io
+          ./script/make_utils/setup_os_deps.sh
+          make setup_env
+
+      - name: Alternative Concrete Python Wheel Download
+        if: github.event.inputs.alternative-cp-wheel-artifact-id != 'none'
+        run: |
+          curl -L \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          -o concrete-python.whl.zip \
+          https://api.github.com/repos/zama-ai/concrete/actions/artifacts/${{ github.event.inputs.alternative-cp-wheel-artifact-id }}/zip
+
+      - name: Alternative Concrete Python Wheel Install
+        if: github.event.inputs.alternative-cp-wheel-artifact-id != 'none'
+        run: |
+          source .venv/bin/activate
+          unzip concrete-python.whl.zip
+          pip install concrete_python-*.whl
+
+      - name: Alternative Concrete Python Branch Checkout
+        if: github.event.inputs.alternative-cp-branch != 'none'
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: 'false'
+          path: concrete
+          repository: zama-ai/concrete
+          ref: ${{ github.event.inputs.alternative-cp-branch }}
+
+      - name: Alternative Concrete Python Branch Source Install
+        if: github.event.inputs.alternative-cp-branch != 'none'
+        run: |
+          cp -R concrete/frontends/concrete-python/concrete/* .venv/lib/python3.*/site-packages/concrete/
+
+      # Run the benchmark script
+      - name: Benchmark - LLama LoRA Math Word Problems
+        run: |
+          source .venv/bin/activate
+          
+          # Set environment variables for the benchmark
+          export MODE=${{ github.event.inputs.mode }}
+          export FHE_MODE=${{ github.event.inputs.fhe-mode }}
+          export MAX_LENGTH=${{ github.event.inputs.max_length }}
+          export BATCH_SIZE=${{ github.event.inputs.batch_size }}
+          export TRAINING_STEPS=${{ github.event.inputs.training_steps }}
+          
+          # Run the benchmark script
+          python3 benchmarks/llama_lora_math_benchmark.py --save-model
+
+      - name: Archive metrics
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: metrics.json
+          path: to_upload.json
+
+      - name: Archive fine-tuned model
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: llama_lora_finetuned_${{ github.event.inputs.mode }}.zip
+          path: deployment/llama_lora_finetuned_${{ github.event.inputs.mode }}
+
+      # Upload results to benchmark database
+      - name: Upload results
+        id: upload-results
+        if: github.event.inputs.alternative-cp-branch == 'none' && github.event.inputs.alternative-cp-wheel-artifact-id == 'none'
+        run: |
+          # Log the json
+          cat to_upload.json | jq
+
+          # We need to sleep to avoid log issues
+          sleep 1.
+
+          # Upload the json to the benchmark database
+          curl --fail-with-body \
+          -H "Authorization: Bearer ${{ secrets.NEW_ML_PROGRESS_TRACKER_TOKEN }}" \
+          -H "Content-Type: application/json; charset=UTF-8" \
+          -d @to_upload.json \
+          -X POST "${{ secrets.NEW_ML_PROGRESS_TRACKER_URL }}experiment"
+
+  teardown-ec2:
+    name: Teardown EC2 instance
+    if: ${{ always() }}
+    needs: [ setup-ec2, run-llama-lora-math ]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Stop instance
+        id: stop-instance
+        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
+        with:
+          mode: stop
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          label: ${{ needs.setup-ec2.outputs.runner-name }}
+
+  slack-notification:
+    runs-on: ubuntu-24.04
+    needs: [run-llama-lora-math]
+    if: github.event.inputs.alternative-cp-branch == 'none' && github.event.inputs.alternative-cp-wheel-artifact-id == 'none'
+    steps:
+      - name: Slack Notification
+        if: ${{ always() }}
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@c33737706dea87cd7784c687dadc9adf1be59990
+        env:
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+          SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
+          SLACK_COLOR: ${{ needs.run-llama-lora-math.result }}
+          SLACK_MESSAGE: "LLama LoRA Math benchmark action - mode: ${{ github.event.inputs.mode }}, fhe: ${{ github.event.inputs.fhe-mode }} (${{ env.ACTION_RUN_URL }}) ended with result: ${{ needs.run-llama-lora-math.result }}"
+          SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
