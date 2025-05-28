@@ -146,7 +146,15 @@ jobs:
           ./script/make_utils/setup_os_deps.sh
           make setup_env
           source .venv/bin/activate
-          pip install torch>=2.0.0 transformers>=4.30.0 datasets>=2.12.0 peft>=0.4.0 tqdm>=4.65.0 numpy>=1.24.0 psutil>=5.9.0 py-cpuinfo>=9.0.0
+          
+          # Install CUDA if running on GPU
+          if [ "${{ matrix.device }}" == "gpu" ]; then
+            pip install torch>=2.0.0+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
+          else
+            pip install torch>=2.0.0
+          fi
+          
+          pip install transformers>=4.30.0 datasets>=2.12.0 peft>=0.4.0 tqdm>=4.65.0 numpy>=1.24.0 psutil>=5.9.0 py-cpuinfo>=9.0.0 accelerate>=1.1.0
 
       - name: Alternative Concrete Python Wheel Download
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.alternative-cp-wheel-artifact-id != 'none'
