@@ -61,18 +61,24 @@ env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   AGENT_TOOLSDIRECTORY: /opt/hostedtoolcache
   RUNNER_TOOL_CACHE: /opt/hostedtoolcache
-  SLAB_PROFILE: big-cpu # TODO: add run on GPU profile
 
 # Jobs
 jobs:
   setup-ec2:
-    name: Setup EC2 instance
+    name: Setup EC2 instances
     runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        device-profile:
+          - { device: "cpu", profile: "big-cpu" }
+          - { device: "gpu", profile: "a10gpu" }
     outputs:
-      runner-name: ${{ steps.start-instance.outputs.label }}
+      cpu-runner-name: ${{ steps.start-cpu-instance.outputs.label }}
+      gpu-runner-name: ${{ steps.start-gpu-instance.outputs.label }}
     steps:
-      - name: Start instance
-        id: start-instance
+      - name: Start CPU instance
+        if: matrix.device-profile.device == 'cpu'
+        id: start-cpu-instance
         uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
         with:
           mode: start
@@ -80,12 +86,27 @@ jobs:
           slab-url: ${{ secrets.SLAB_BASE_URL }}
           job-secret: ${{ secrets.JOB_SECRET }}
           backend: aws
-          profile: ${{ env.SLAB_PROFILE }}
+          profile: ${{ matrix.device-profile.profile }}
+
+      - name: Start GPU instance
+        if: matrix.device-profile.device == 'gpu'
+        id: start-gpu-instance
+        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
+        with:
+          mode: start
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          backend: aws
+          profile: ${{ matrix.device-profile.profile }}
 
   run-llama-lora-math:
     needs: [setup-ec2]
-    name: Run LLama LoRA Math benchmark
-    runs-on: ${{ needs.setup-ec2.outputs.runner-name }}
+    name: Run LLama LoRA Math benchmark on ${{ matrix.device }}
+    strategy:
+      matrix:
+        device: ["cpu", "gpu"]
+    runs-on: ${{ matrix.device == 'cpu' && needs.setup-ec2.outputs.cpu-runner-name || needs.setup-ec2.outputs.gpu-runner-name }}
     env:
       PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
       HF_TOKEN: ${{ secrets.HF_TOKEN }}  # For accessing LLama models
@@ -151,7 +172,7 @@ jobs:
           cp -R concrete/frontends/concrete-python/concrete/* .venv/lib/python3.*/site-packages/concrete/
 
       # Run the benchmark script
-      - name: Benchmark - LLama LoRA Math Word Problems
+      - name: Benchmark - LLama LoRA Math Word Problems (${{ matrix.device }})
         run: |
           source .venv/bin/activate
           
@@ -161,20 +182,25 @@ jobs:
           export MAX_LENGTH=${{ github.event.inputs.max_length }}
           export BATCH_SIZE=${{ github.event.inputs.batch_size }}
           export TRAINING_STEPS=${{ github.event.inputs.training_steps }}
+          export DEVICE_TYPE=${{ matrix.device }}
           
-          # Run the benchmark script
-          python3 benchmarks/llama_lora_math_benchmark.py --save-model
+          # Run the benchmark script with appropriate device flag
+          if [ "${{ matrix.device }}" == "cpu" ]; then
+            python3 benchmarks/llama_lora_math_benchmark.py --save-model --force-cpu
+          else
+            python3 benchmarks/llama_lora_math_benchmark.py --save-model --device-type gpu
+          fi
 
       - name: Archive metrics
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: metrics.json
+          name: metrics-${{ matrix.device }}.json
           path: to_upload.json
 
       - name: Archive fine-tuned model
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: llama_lora_finetuned_${{ github.event.inputs.mode }}.zip
+          name: llama_lora_finetuned_${{ github.event.inputs.mode }}_${{ matrix.device }}.zip
           path: deployment/llama_lora_finetuned_${{ github.event.inputs.mode }}
 
       # Upload results to benchmark database
@@ -196,12 +222,17 @@ jobs:
           -X POST "${{ secrets.NEW_ML_PROGRESS_TRACKER_URL }}experiment"
 
   teardown-ec2:
-    name: Teardown EC2 instance
+    name: Teardown EC2 instances
     if: ${{ always() }}
     needs: [ setup-ec2, run-llama-lora-math ]
     runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        device-info:
+          - { device: "cpu", runner-name: "${{ needs.setup-ec2.outputs.cpu-runner-name }}" }
+          - { device: "gpu", runner-name: "${{ needs.setup-ec2.outputs.gpu-runner-name }}" }
     steps:
-      - name: Stop instance
+      - name: Stop ${{ matrix.device-info.device }} instance
         id: stop-instance
         uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
         with:
@@ -209,7 +240,7 @@ jobs:
           github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
           slab-url: ${{ secrets.SLAB_BASE_URL }}
           job-secret: ${{ secrets.JOB_SECRET }}
-          label: ${{ needs.setup-ec2.outputs.runner-name }}
+          label: ${{ matrix.device-info.runner-name }}
 
   slack-notification:
     runs-on: ubuntu-24.04
@@ -224,6 +255,6 @@ jobs:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: ${{ needs.run-llama-lora-math.result }}
-          SLACK_MESSAGE: "LLama LoRA Math benchmark action - mode: ${{ github.event.inputs.mode }}, fhe: ${{ github.event.inputs.fhe-mode }} (${{ env.ACTION_RUN_URL }}) ended with result: ${{ needs.run-llama-lora-math.result }}"
+          SLACK_MESSAGE: "LLama LoRA Math benchmark action - mode: ${{ github.event.inputs.mode }}, fhe: ${{ github.event.inputs.fhe-mode }} (CPU & GPU) (${{ env.ACTION_RUN_URL }}) ended with result: ${{ needs.run-llama-lora-math.result }}"
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}

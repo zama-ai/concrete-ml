@@ -132,10 +132,18 @@ def value_else_none(value):
     return value
 
 
-def get_device(force_cpu=False):
+def get_device(force_cpu=False, device_type="auto"):
     """Get the best available device"""
-    if force_cpu:
+    if force_cpu or device_type == "cpu":
         return "cpu"
+    
+    if device_type == "gpu":
+        if torch.cuda.is_available():
+            return "cuda"
+        else:
+            raise RuntimeError("GPU requested but CUDA is not available")
+    
+    # Auto mode - detect best available
     if torch.cuda.is_available():
         return "cuda"
     if torch.backends.mps.is_available() and torch.backends.mps.is_built():
@@ -229,7 +237,13 @@ def run_benchmark(args):
     """Run the LLama LoRA fine-tuning benchmark"""
     # Set seed for reproducibility
     set_seed(args.seed)
-    device = get_device(args.force_cpu)
+    device = get_device(args.force_cpu, args.device_type)
+    
+    # Override use_cpu for GPU runs
+    if device == "cuda":
+        args.use_cpu = False
+        if training_args:  # If training_args already created
+            training_args.use_cpu = False
     
     print(f"Device: {device}")
     print(f"Mode: {args.mode}, n_bits: {args.n_bits if args.mode != 'torch' else 'N/A'}")
@@ -323,7 +337,7 @@ def run_benchmark(args):
         per_device_train_batch_size=args.batch_size,
         gradient_accumulation_steps=1,
         save_total_limit=1,
-        use_cpu=args.use_cpu,
+        use_cpu=(device == "cpu"),
         learning_rate=2e-4,
         lr_scheduler_type="linear",
         seed=args.seed,
@@ -529,6 +543,7 @@ def create_benchmark_json(results):
         experiment_name += f"-{config['n_bits']}bit"
     else:
         experiment_name += "-torch"
+    experiment_name += f"-{config['device']}"
 
     # Build metrics
     metrics = []
@@ -633,8 +648,9 @@ def main():
     # Other options
     parser.add_argument("--seed", type=int, default=0,
                         help="Random seed")
-    parser.add_argument("--force-cpu", action="store_true",
-                        help="Force CPU usage even if GPU is available")
+    parser.add_argument("--force-cpu", action="store_true", help="Force CPU usage")
+    parser.add_argument("--device-type", choices=["cpu", "gpu", "auto"], default="auto",
+                    help="Device type to use (cpu, gpu, or auto-detect)")
     parser.add_argument("--save-model", action="store_true",
                         help="Save the fine-tuned model")
     parser.add_argument("--output", default="to_upload.json",
