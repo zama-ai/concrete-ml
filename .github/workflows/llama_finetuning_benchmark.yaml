@@ -108,6 +108,11 @@ jobs:
     env:
       PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
       HF_TOKEN: ${{ secrets.HF_TOKEN }}  # For accessing LLama models
+      MAX_LENGTH: ${{ github.event.inputs.max_length }}
+      BATCH_SIZE: ${{ github.event.inputs.batch_size }}
+      TRAINING_STEPS: ${{ github.event.inputs.training_steps }}
+      MODE: ${{ github.event.inputs.mode }}
+      FHE_MODE: ${{ github.event.inputs.fhe-mode }}
     steps:
       - name: Add masks
         run: |
