@@ -108,11 +108,11 @@ jobs:
     env:
       PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
       HF_TOKEN: ${{ secrets.HF_TOKEN }}  # For accessing LLama models
-      MAX_LENGTH: ${{ github.event.inputs.max_length }}
-      BATCH_SIZE: ${{ github.event.inputs.batch_size }}
-      TRAINING_STEPS: ${{ github.event.inputs.training_steps }}
-      MODE: ${{ github.event.inputs.mode }}
-      FHE_MODE: ${{ github.event.inputs.fhe-mode }}
+      MAX_LENGTH: ${{ github.event.inputs.max_length || '64' }}
+      BATCH_SIZE: ${{ github.event.inputs.batch_size || '1' }}
+      TRAINING_STEPS: ${{ github.event.inputs.training_steps || '5' }}
+      MODE: ${{ github.event.inputs.mode || '7bit' }}
+      FHE_MODE: ${{ github.event.inputs.fhe-mode || 'execute' }}
     steps:
       - name: Add masks
         run: |
@@ -183,14 +183,6 @@ jobs:
       - name: Run Benchmark - LLama LoRA Math Word Problems (${{ matrix.device }})
         run: |
           source .venv/bin/activate
-          
-          # Set environment variables
-          export MODE=${{ github.event.inputs.mode }}
-          export FHE_MODE=${{ github.event.inputs.fhe-mode }}
-          export MAX_LENGTH=${{ github.event.inputs.max_length }}
-          export BATCH_SIZE=${{ github.event.inputs.batch_size }}
-          export TRAINING_STEPS=${{ github.event.inputs.training_steps }}
-          export DEVICE_TYPE=${{ matrix.device }}
           
           # Run benchmark with appropriate device flag
           if [ "${{ matrix.device }}" == "cpu" ]; then
