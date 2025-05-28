@@ -1,7 +1,9 @@
+# TODO: Remove pull_request trigger before merging to main
 name: LLama LoRA Math Word Problems Benchmark CML
 on:
   schedule:
     - cron: '0 0 1 * *'
+  pull_request:
   workflow_dispatch:
     inputs:
       git-ref:
