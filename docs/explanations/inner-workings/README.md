@@ -1,0 +1,3 @@
+# Project architecture
+
+<table data-card-size="large" data-view="cards"><thead><tr><th align="center"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td align="center">Importing ONNX</td><td><a href="onnx_pipeline.md">onnx_pipeline.md</a></td></tr><tr><td align="center">Quantization tools</td><td><a href="quantization_internal.md">quantization_internal.md</a></td></tr><tr><td align="center">FHE op-graph design</td><td><a href="fhe-op-graphs.md">fhe-op-graphs.md</a></td></tr><tr><td align="center">External libraries</td><td><a href="external_libraries.md">external_libraries.md</a></td></tr></tbody></table>
