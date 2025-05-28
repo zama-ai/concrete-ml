@@ -286,7 +286,7 @@ jobs:
           ref: ${{ github.event.inputs.alternative-cp-branch }}
 
       - name: Alternative Concrete Python Branch Source Install
-        if: github.event.inputs.alternative-cp-branch != 'none'
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.alternative-cp-branch != 'none'
         run: |
           cp -R concrete/frontends/concrete-python/concrete/* .venv/lib/python3.*/site-packages/concrete/
 
