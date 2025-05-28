@@ -128,10 +128,15 @@ jobs:
       - name: Install dependencies
         id: install-deps
         run: |
-          apt update
-          apt install --no-install-recommends -y gnome-keyring
-          apt install -y graphviz* graphviz-dev libgraphviz-dev pkg-config python3-dev
-          apt-mark hold docker.io
+          sudo apt-get update -y
+          sudo apt-get install --no-install-recommends -y \
+            gnome-keyring \
+            graphviz \
+            graphviz-dev \
+            libgraphviz-dev \
+            pkg-config \
+            python3-dev
+          sudo apt-mark hold docker.io
           ./script/make_utils/setup_os_deps.sh
           make setup_env
 
@@ -242,15 +247,20 @@ jobs:
       - name: Install dependencies
         id: install-deps
         run: |
-          apt update
-          apt install --no-install-recommends -y gnome-keyring
-          apt install -y graphviz* graphviz-dev libgraphviz-dev pkg-config python3-dev
-          apt-mark hold docker.io
+          sudo apt-get update -y
+          sudo apt-get install --no-install-recommends -y \
+            gnome-keyring \
+            graphviz \
+            graphviz-dev \
+            libgraphviz-dev \
+            pkg-config \
+            python3-dev
+          sudo apt-mark hold docker.io
           ./script/make_utils/setup_os_deps.sh
           make setup_env
 
       - name: Alternative Concrete Python Wheel Download
-        if: github.event.inputs.alternative-cp-wheel-artifact-id != 'none'
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.alternative-cp-wheel-artifact-id != 'none'
         run: |
           curl -L \
           -H "Accept: application/vnd.github+json" \
@@ -260,14 +270,14 @@ jobs:
           https://api.github.com/repos/zama-ai/concrete/actions/artifacts/${{ github.event.inputs.alternative-cp-wheel-artifact-id }}/zip
 
       - name: Alternative Concrete Python Wheel Install
-        if: github.event.inputs.alternative-cp-wheel-artifact-id != 'none'
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.alternative-cp-wheel-artifact-id != 'none'
         run: |
           source .venv/bin/activate
           unzip concrete-python.whl.zip
           pip install concrete_python-*.whl
 
       - name: Alternative Concrete Python Branch Checkout
-        if: github.event.inputs.alternative-cp-branch != 'none'
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.alternative-cp-wheel-artifact-id != 'none'
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: 'false'
