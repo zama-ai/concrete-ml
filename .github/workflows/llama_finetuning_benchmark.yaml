@@ -142,7 +142,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
         with:
-          python-version: "3.11"
+          python-version: "3.10"
 
       - name: Install dependencies
         run: |
@@ -153,11 +153,16 @@ jobs:
             graphviz-dev \
             libgraphviz-dev \
             pkg-config \
-            python3-dev
+            python3-dev \
+            python3.10-venv  # Ensure Python 3.10 venv is available
           sudo apt-mark hold docker.io
           ./script/make_utils/setup_os_deps.sh
           make setup_env
           source .venv/bin/activate
+          
+          # Verify Python version in venv
+          python --version
+          which python
           
           # Upgrade pip and setuptools first
           pip install --upgrade pip setuptools wheel
@@ -169,14 +174,23 @@ jobs:
             pip install torch>=2.0.0
           fi
           
-          # Install core dependencies with specific versions to avoid conflicts
-          pip install transformers>=4.30.0 datasets>=2.12.0 peft>=0.4.0 tqdm>=4.65.0 numpy>=1.24.0 psutil>=5.9.0 py-cpuinfo>=9.0.0
+          # Install accelerate BEFORE other dependencies to ensure correct version
+          pip install 'accelerate>=1.1.0'
           
-          # Install accelerate separately and verify version
-          pip install accelerate>=1.1.0
+          # Install other dependencies
+          pip install 'transformers>=4.30.0' 'datasets>=2.12.0' 'peft>=0.4.0' 'tqdm>=4.65.0' 'numpy>=1.24.0' 'psutil>=5.9.0' 'py-cpuinfo>=9.0.0'
           
-          # Verify accelerate installation
+          # Verify accelerate installation and version
           python -c "import accelerate; print(f'Accelerate version: {accelerate.__version__}')"
+          pip show accelerate
+          
+          # Install any additional requirements from the project
+          if [ -f "requirements.txt" ]; then
+            pip install -r requirements.txt
+          fi
+          
+          # Install concrete-ml requirements
+          pip install -e .
 
       - name: Alternative Concrete Python Wheel Download
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.alternative-cp-wheel-artifact-id != 'none'
