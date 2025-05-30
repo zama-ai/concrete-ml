@@ -119,6 +119,12 @@ jobs:
       MODE: ${{ github.event.inputs.mode || '7bit' }}
       FHE_MODE: ${{ github.event.inputs.fhe-mode || 'execute' }}
     steps:
+      - name: Install git-lfs
+        run: |
+          # Install git-lfs package only - the checkout action will handle initialization
+          curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
+          sudo apt-get install -y git-lfs
+
       - name: Add masks
         run: |
           echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
@@ -136,7 +142,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
         with:
-          python-version: "3.8"
+          python-version: "3.11"
 
       - name: Install dependencies
         run: |
@@ -153,14 +159,24 @@ jobs:
           make setup_env
           source .venv/bin/activate
           
-
+          # Upgrade pip and setuptools first
+          pip install --upgrade pip setuptools wheel
+          
+          # Install PyTorch with appropriate CUDA support
           if [ "${{ matrix.device }}" == "gpu" ]; then
             pip install torch>=2.0.0+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
           else
             pip install torch>=2.0.0
           fi
           
-          pip install transformers>=4.30.0 datasets>=2.12.0 peft>=0.4.0 tqdm>=4.65.0 numpy>=1.24.0 psutil>=5.9.0 py-cpuinfo>=9.0.0 accelerate>=1.1.0
+          # Install core dependencies with specific versions to avoid conflicts
+          pip install transformers>=4.30.0 datasets>=2.12.0 peft>=0.4.0 tqdm>=4.65.0 numpy>=1.24.0 psutil>=5.9.0 py-cpuinfo>=9.0.0
+          
+          # Install accelerate separately and verify version
+          pip install accelerate>=1.1.0
+          
+          # Verify accelerate installation
+          python -c "import accelerate; print(f'Accelerate version: {accelerate.__version__}')"
 
       - name: Alternative Concrete Python Wheel Download
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.alternative-cp-wheel-artifact-id != 'none'
