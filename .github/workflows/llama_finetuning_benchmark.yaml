@@ -101,7 +101,6 @@ jobs:
   run-benchmark:
     needs: [setup-instances]
     name: Run LLama LoRA Math benchmark on ${{ matrix.device }}
-    continue-on-error: true  # This allows other matrix jobs to continue even if one fails
     strategy:
       fail-fast: false  # Prevents cancellation of in-progress matrix jobs when one fails
       matrix:
@@ -152,7 +151,7 @@ jobs:
           make setup_env
           source .venv/bin/activate
           
-          # Install CUDA if running on GPU
+
           if [ "${{ matrix.device }}" == "gpu" ]; then
             pip install torch>=2.0.0+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
           else
@@ -194,7 +193,6 @@ jobs:
 
       - name: Run Benchmark - LLama LoRA Math Word Problems (${{ matrix.device }})
         id: run-benchmark
-        continue-on-error: true  # Allow the workflow to continue even if this step fails
         run: |
           source .venv/bin/activate
           
@@ -248,7 +246,6 @@ jobs:
           steps.check-metrics.outputs.metrics-exist == 'true' &&
           github.event.inputs.alternative-cp-branch == 'none' && 
           github.event.inputs.alternative-cp-wheel-artifact-id == 'none'
-        continue-on-error: true  # Don't fail the job if upload fails
         run: |
           # Log the json
           cat to_upload.json | jq
