@@ -49,7 +49,7 @@ on:
         required: true
       training_steps:
         description: Number of training steps to run
-        default: "5"
+        default: "1"
         type: string
         required: true
 
@@ -147,6 +147,8 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update -y
+          
+          # Install system dependencies
           sudo apt-get install --no-install-recommends -y \
             gnome-keyring \
             graphviz \
@@ -154,13 +156,19 @@ jobs:
             libgraphviz-dev \
             pkg-config \
             python3-dev \
-            python3.10-venv  # Ensure Python 3.10 venv is available
+            python3-pip \
+            python3-venv
+          
+          # Try to install python3.10-venv if available, but don't fail if not
+          sudo apt-get install -y python3.10-venv || true
+          
           sudo apt-mark hold docker.io
           ./script/make_utils/setup_os_deps.sh
           make setup_env
           source .venv/bin/activate
           
           # Verify Python version in venv
+          echo "Python version in venv:"
           python --version
           which python
           

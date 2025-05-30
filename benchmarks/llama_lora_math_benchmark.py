@@ -632,7 +632,7 @@ def main():
                         help="Maximum sequence length")
     parser.add_argument("--batch-size", type=int, default=1,
                         help="Batch size for training")
-    parser.add_argument("--training-steps", type=int, default=5,
+    parser.add_argument("--training-steps", type=int, default=1,
                         help="Number of training steps to run")
     parser.add_argument("--eval-interval", type=int, default=100,
                         help="Steps between evaluations")
