@@ -102,13 +102,15 @@ jobs:
     needs: [setup-instances]
     name: Run LLama LoRA Math benchmark on ${{ matrix.device }}
     strategy:
-      fail-fast: false  # Prevents cancellation of in-progress matrix jobs when one fails
+      fail-fast: false  # IMPORTANT: This ensures parallel execution continues even if one fails
       matrix:
         device: [cpu, gpu]
     runs-on: ${{ matrix.device == 'cpu' && needs.setup-instances.outputs.cpu-runner || needs.setup-instances.outputs.gpu-runner }}
     outputs:
-      cpu-status: ${{ steps.set-status.outputs.cpu-status }}
-      gpu-status: ${{ steps.set-status.outputs.gpu-status }}
+      cpu-status: ${{ steps.set-final-status.outputs.cpu-status }}
+      gpu-status: ${{ steps.set-final-status.outputs.gpu-status }}
+      cpu-has-metrics: ${{ steps.set-final-status.outputs.cpu-has-metrics }}
+      gpu-has-metrics: ${{ steps.set-final-status.outputs.gpu-has-metrics }}
     env:
       PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
       MAX_LENGTH: ${{ github.event.inputs.max_length || '64' }}
@@ -193,6 +195,7 @@ jobs:
 
       - name: Run Benchmark - LLama LoRA Math Word Problems (${{ matrix.device }})
         id: run-benchmark
+        continue-on-error: true  # Allow workflow to continue even if this step fails
         run: |
           source .venv/bin/activate
           
@@ -242,7 +245,7 @@ jobs:
 
       - name: Upload results to benchmark database
         if: |
-          always() && 
+          steps.run-benchmark.outcome == 'success' &&
           steps.check-metrics.outputs.metrics-exist == 'true' &&
           github.event.inputs.alternative-cp-branch == 'none' && 
           github.event.inputs.alternative-cp-wheel-artifact-id == 'none'
@@ -260,15 +263,25 @@ jobs:
           -d @to_upload.json \
           -X POST "${{ secrets.NEW_ML_PROGRESS_TRACKER_URL }}experiment"
 
-      - name: Set job status output
-        id: set-status
+      - name: Set final job status output
+        id: set-final-status
         if: always()
         run: |
+          # Set status for the appropriate device
           if [ "${{ matrix.device }}" == "cpu" ]; then
             echo "cpu-status=${{ steps.run-benchmark.outcome }}" >> $GITHUB_OUTPUT
+            echo "cpu-has-metrics=${{ steps.check-metrics.outputs.metrics-exist }}" >> $GITHUB_OUTPUT
           else
             echo "gpu-status=${{ steps.run-benchmark.outcome }}" >> $GITHUB_OUTPUT
+            echo "gpu-has-metrics=${{ steps.check-metrics.outputs.metrics-exist }}" >> $GITHUB_OUTPUT
           fi
+
+      # This step will fail the job if the benchmark failed, making it red in GitHub UI
+      - name: Check benchmark status
+        if: steps.run-benchmark.outcome == 'failure'
+        run: |
+          echo "Benchmark failed for ${{ matrix.device }}"
+          exit 1
 
   teardown-instances:
     name: Teardown EC2 instances
@@ -300,20 +313,65 @@ jobs:
       github.event.inputs.alternative-cp-branch == 'none' && 
       github.event.inputs.alternative-cp-wheel-artifact-id == 'none'
     steps:
-      - name: Determine overall status
-        id: overall-status
+      - name: Determine detailed status
+        id: detailed-status
         run: |
-          # Get the overall job status
-          if [ "${{ needs.run-benchmark.result }}" == "success" ]; then
-            echo "status=success" >> $GITHUB_OUTPUT
-            echo "color=good" >> $GITHUB_OUTPUT
-          elif [ "${{ needs.run-benchmark.result }}" == "failure" ]; then
-            echo "status=failure" >> $GITHUB_OUTPUT
-            echo "color=danger" >> $GITHUB_OUTPUT
-          else
-            echo "status=partial" >> $GITHUB_OUTPUT
-            echo "color=warning" >> $GITHUB_OUTPUT
+          # Initialize variables
+          OVERALL_STATUS="success"
+          SLACK_COLOR="good"
+          STATUS_DETAILS=""
+          
+          # Check CPU status
+          CPU_STATUS="${{ needs.run-benchmark.outputs.cpu-status }}"
+          if [ -z "$CPU_STATUS" ]; then
+            CPU_STATUS="skipped"
           fi
+          
+          # Check GPU status  
+          GPU_STATUS="${{ needs.run-benchmark.outputs.gpu-status }}"
+          if [ -z "$GPU_STATUS" ]; then
+            GPU_STATUS="skipped"
+          fi
+          
+          # Build status details
+          CPU_EMOJI="✅"
+          GPU_EMOJI="✅"
+          
+          if [ "$CPU_STATUS" == "failure" ]; then
+            CPU_EMOJI="❌"
+            OVERALL_STATUS="partial"
+            SLACK_COLOR="warning"
+          elif [ "$CPU_STATUS" == "skipped" ]; then
+            CPU_EMOJI="⏭️"
+          fi
+          
+          if [ "$GPU_STATUS" == "failure" ]; then
+            GPU_EMOJI="❌"
+            OVERALL_STATUS="partial"
+            SLACK_COLOR="warning"
+          elif [ "$GPU_STATUS" == "skipped" ]; then
+            GPU_EMOJI="⏭️"
+          fi
+          
+          # If both failed, it's a complete failure
+          if [ "$CPU_STATUS" == "failure" ] && [ "$GPU_STATUS" == "failure" ]; then
+            OVERALL_STATUS="failure"
+            SLACK_COLOR="danger"
+          fi
+          
+          STATUS_DETAILS="CPU: $CPU_EMOJI ($CPU_STATUS) | GPU: $GPU_EMOJI ($GPU_STATUS)"
+          
+          # Output results
+          echo "overall-status=$OVERALL_STATUS" >> $GITHUB_OUTPUT
+          echo "slack-color=$SLACK_COLOR" >> $GITHUB_OUTPUT
+          echo "status-details=$STATUS_DETAILS" >> $GITHUB_OUTPUT
+          
+          # Check if any metrics were produced
+          HAS_METRICS="false"
+          if [ "${{ needs.run-benchmark.outputs.cpu-has-metrics }}" == "true" ] || [ "${{ needs.run-benchmark.outputs.gpu-has-metrics }}" == "true" ]; then
+            HAS_METRICS="true"
+          fi
+          echo "has-metrics=$HAS_METRICS" >> $GITHUB_OUTPUT
 
       - name: Slack Notification
         continue-on-error: true
@@ -321,7 +379,13 @@ jobs:
         env:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
-          SLACK_COLOR: ${{ steps.overall-status.outputs.color }}
-          SLACK_MESSAGE: "LLama LoRA Math benchmark - mode: ${{ github.event.inputs.mode }}, fhe: ${{ github.event.inputs.fhe-mode }} (CPU & GPU) - Status: ${{ steps.overall-status.outputs.status }} (${{ env.ACTION_RUN_URL }})"
+          SLACK_COLOR: ${{ steps.detailed-status.outputs.slack-color }}
+          SLACK_MESSAGE: |
+            LLama LoRA Math Benchmark
+            Mode: ${{ github.event.inputs.mode }}, FHE: ${{ github.event.inputs.fhe-mode }}
+            Status: ${{ steps.detailed-status.outputs.status-details }}
+            Overall: ${{ steps.detailed-status.outputs.overall-status }}
+            Metrics uploaded: ${{ steps.detailed-status.outputs.has-metrics }}
+            Run: ${{ env.ACTION_RUN_URL }}
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}

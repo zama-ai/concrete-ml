@@ -39,7 +39,7 @@ instance_type = "hpc7a.96xlarge"
 
 [backend.aws.a10gpu]
 region = "eu-west-1"
-image_id = "ami-0227a749e592c668b"
+image_id = "ami-008948e6640e7d4d0"
 instance_type = "g5.xlarge"
 
 [backend.hyperstack.single-h100]
