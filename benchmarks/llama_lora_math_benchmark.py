@@ -207,12 +207,6 @@ def evaluate_perplexity(model, dataloader, tokenizer, device, prompt=None):
     model.to(device)
     total_loss, total_tokens = 0.0, 0
     
-    # Store original FHE mode and set to disable for evaluation
-    original_fhe_mode = None
-    if hasattr(model, "hybrid_model"):
-        original_fhe_mode = model.hybrid_model.fhe_mode
-        model.hybrid_model.set_fhe_mode("disable")
-    
     for batch in tqdm(dataloader, desc="Evaluating", leave=False):
         with torch.no_grad():
             input_ids = batch["input_ids"].to(device)
@@ -229,10 +223,6 @@ def evaluate_perplexity(model, dataloader, tokenizer, device, prompt=None):
         total_loss += loss.item()
         total_tokens += valid.sum().item()
     
-    # Restore original FHE mode if it was changed
-    if original_fhe_mode is not None:
-        model.hybrid_model.set_fhe_mode(original_fhe_mode)
-    
     perplexity = math.exp(total_loss / total_tokens) if total_tokens > 0 else float("inf")
     
     # Generate response if prompt provided
@@ -248,10 +238,6 @@ def run_benchmark(args):
     # Set seed for reproducibility
     set_seed(args.seed)
     device = get_device(args.force_cpu, args.device_type)
-    
-    # Override use_cpu for GPU runs
-    if device == "cuda":
-        args.use_cpu = False
     
     print(f"Device: {device}")
     print(f"Mode: {args.mode}, n_bits: {args.n_bits if args.mode != 'torch' else 'N/A'}")
@@ -345,7 +331,7 @@ def run_benchmark(args):
         per_device_train_batch_size=args.batch_size,
         gradient_accumulation_steps=1,
         save_total_limit=1,
-        use_cpu=(device == "cpu"),
+        use_cpu=True,  # Always set use_cpu=True for LoraTrainer
         learning_rate=2e-4,
         lr_scheduler_type="linear",
         seed=args.seed,
@@ -450,6 +436,15 @@ def run_benchmark(args):
     # Pre-training evaluation
     print("\n⏱️  Evaluating pre-training model...")
     eval_start = time.time()
+
+    # Log FHE mode before pre-training evaluation
+    if args.mode != "torch" and hasattr(lora_trainer, 'hybrid_model') and lora_trainer.hybrid_model is not None:
+        print(f"INFO: LORA_MATH_BENCHMARK: Pre-eval: Current FHE mode of lora_trainer.hybrid_model is '{lora_trainer.hybrid_model.fhe_mode}'.")
+    elif args.mode == "torch":
+        print(f"INFO: LORA_MATH_BENCHMARK: Pre-eval: Torch mode. No FHE mode management for lora_trainer.")
+    elif hasattr(lora_trainer, 'hybrid_model') and lora_trainer.hybrid_model is None and args.mode != "torch":
+         print(f"INFO: LORA_MATH_BENCHMARK: Pre-eval: Non-torch mode ('{args.mode}') but lora_trainer.hybrid_model is None. No FHE mode to report.")
+
     pre_perplexity, pre_response = evaluate_perplexity(peft_model, eval_dataloader, tokenizer, device, PROMPT)
     timing_results["pre_eval_time"] = time.time() - eval_start
     print(f"Pre-training perplexity: {pre_perplexity:.2f}")
@@ -477,7 +472,33 @@ def run_benchmark(args):
     # Post-training evaluation
     print("\n⏱️  Evaluating post-training model...")
     eval_start = time.time()
+
+    original_fhe_mode_for_post_eval = None
+    # Check if FHE is potentially active (not torch mode and hybrid_model exists)
+    if args.mode != "torch" and hasattr(lora_trainer, 'hybrid_model') and lora_trainer.hybrid_model is not None:
+        original_fhe_mode_for_post_eval = lora_trainer.hybrid_model.fhe_mode
+        print(f"INFO: LORA_MATH_BENCHMARK: Post-eval: FHE mode of lora_trainer.hybrid_model BEFORE change attempt is '{original_fhe_mode_for_post_eval}'.")
+        if original_fhe_mode_for_post_eval != "disable":
+            print(f"INFO: LORA_MATH_BENCHMARK: Post-eval: Original FHE mode was '{original_fhe_mode_for_post_eval}'. Temporarily setting to 'disable'.")
+            lora_trainer.hybrid_model.set_fhe_mode("disable")
+            print(f"INFO: LORA_MATH_BENCHMARK: Post-eval: FHE mode of lora_trainer.hybrid_model AFTER setting to 'disable' is '{lora_trainer.hybrid_model.fhe_mode}'.")
+        else:
+            print(f"INFO: LORA_MATH_BENCHMARK: Post-eval: FHE mode was already 'disable'. No change needed.")
+            original_fhe_mode_for_post_eval = None # Ensures no restoration if it was already disable
+    else:
+        if args.mode == "torch":
+            print(f"INFO: LORA_MATH_BENCHMARK: Post-eval: Torch mode. No FHE mode management for lora_trainer.")
+        elif hasattr(lora_trainer, 'hybrid_model') and lora_trainer.hybrid_model is None and args.mode != "torch":
+            print(f"INFO: LORA_MATH_BENCHMARK: Post-eval: Non-torch mode ('{args.mode}') but lora_trainer.hybrid_model is None. Skipping FHE mode toggle.")
+
     post_perplexity, post_response = evaluate_perplexity(peft_model, eval_dataloader, tokenizer, device, PROMPT)
+
+    # Restore original FHE mode if it was changed
+    if original_fhe_mode_for_post_eval is not None: # Only restore if it was changed from a non-'disable' state
+        print(f"INFO: LORA_MATH_BENCHMARK: Post-eval: Restoring FHE mode to '{original_fhe_mode_for_post_eval}'.")
+        lora_trainer.hybrid_model.set_fhe_mode(original_fhe_mode_for_post_eval)
+        print(f"INFO: LORA_MATH_BENCHMARK: Post-eval: FHE mode of lora_trainer.hybrid_model AFTER restoration is '{lora_trainer.hybrid_model.fhe_mode}'.")
+
     timing_results["post_eval_time"] = time.time() - eval_start
     print(f"Post-training perplexity: {post_perplexity:.2f}")
     print(f"Perplexity improvement: {pre_perplexity - post_perplexity:.2f}")
