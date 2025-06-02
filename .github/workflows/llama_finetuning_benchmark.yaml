@@ -73,7 +73,7 @@ jobs:
           - type: cpu
             profile: big-cpu
           - type: gpu
-            profile: a10gpu
+            profile: gpu_ciprofile
     outputs:
       cpu-runner: ${{ steps.set-outputs.outputs.cpu-runner }}
       gpu-runner: ${{ steps.set-outputs.outputs.gpu-runner }}
@@ -115,7 +115,7 @@ jobs:
       PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
       MAX_LENGTH: ${{ github.event.inputs.max_length || '64' }}
       BATCH_SIZE: ${{ github.event.inputs.batch_size || '1' }}
-      TRAINING_STEPS: ${{ github.event.inputs.training_steps || '5' }}
+      TRAINING_STEPS: ${{ github.event.inputs.training_steps || '1' }}
       MODE: ${{ github.event.inputs.mode || '7bit' }}
       FHE_MODE: ${{ github.event.inputs.fhe-mode || 'execute' }}
     steps:
