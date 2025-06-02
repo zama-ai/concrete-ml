@@ -439,7 +439,10 @@ def run_benchmark(args):
 
     # Log FHE mode before pre-training evaluation
     if args.mode != "torch" and hasattr(lora_trainer, 'hybrid_model') and lora_trainer.hybrid_model is not None:
-        print(f"INFO: LORA_MATH_BENCHMARK: Pre-eval: Current FHE mode of lora_trainer.hybrid_model is '{lora_trainer.hybrid_model.fhe_mode}'.")
+        # Get FHE mode from the first remote module
+        first_remote_module = next(iter(lora_trainer.hybrid_model.remote_modules.values()))
+        current_fhe_mode = first_remote_module.fhe_local_mode.value
+        print(f"INFO: LORA_MATH_BENCHMARK: Pre-eval: Current FHE mode of lora_trainer.hybrid_model is '{current_fhe_mode}'.")
     elif args.mode == "torch":
         print(f"INFO: LORA_MATH_BENCHMARK: Pre-eval: Torch mode. No FHE mode management for lora_trainer.")
     elif hasattr(lora_trainer, 'hybrid_model') and lora_trainer.hybrid_model is None and args.mode != "torch":
@@ -473,15 +476,19 @@ def run_benchmark(args):
     print("\n⏱️  Evaluating post-training model...")
     eval_start = time.time()
 
-    original_fhe_mode_for_post_eval = None
     # Check if FHE is potentially active (not torch mode and hybrid_model exists)
     if args.mode != "torch" and hasattr(lora_trainer, 'hybrid_model') and lora_trainer.hybrid_model is not None:
-        original_fhe_mode_for_post_eval = lora_trainer.hybrid_model.fhe_mode
+        # Get FHE mode from the first remote module
+        first_remote_module = next(iter(lora_trainer.hybrid_model.remote_modules.values()))
+        original_fhe_mode_for_post_eval = first_remote_module.fhe_local_mode.value
         print(f"INFO: LORA_MATH_BENCHMARK: Post-eval: FHE mode of lora_trainer.hybrid_model BEFORE change attempt is '{original_fhe_mode_for_post_eval}'.")
         if original_fhe_mode_for_post_eval != "disable":
             print(f"INFO: LORA_MATH_BENCHMARK: Post-eval: Original FHE mode was '{original_fhe_mode_for_post_eval}'. Temporarily setting to 'disable'.")
             lora_trainer.hybrid_model.set_fhe_mode("disable")
-            print(f"INFO: LORA_MATH_BENCHMARK: Post-eval: FHE mode of lora_trainer.hybrid_model AFTER setting to 'disable' is '{lora_trainer.hybrid_model.fhe_mode}'.")
+            # Get updated FHE mode after setting it
+            first_remote_module = next(iter(lora_trainer.hybrid_model.remote_modules.values()))
+            current_fhe_mode = first_remote_module.fhe_local_mode.value
+            print(f"INFO: LORA_MATH_BENCHMARK: Post-eval: FHE mode of lora_trainer.hybrid_model AFTER setting to 'disable' is '{current_fhe_mode}'.")
         else:
             print(f"INFO: LORA_MATH_BENCHMARK: Post-eval: FHE mode was already 'disable'. No change needed.")
             original_fhe_mode_for_post_eval = None # Ensures no restoration if it was already disable
