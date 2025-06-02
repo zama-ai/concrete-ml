@@ -207,6 +207,12 @@ def evaluate_perplexity(model, dataloader, tokenizer, device, prompt=None):
     model.to(device)
     total_loss, total_tokens = 0.0, 0
     
+    # Store original FHE mode and set to disable for evaluation
+    original_fhe_mode = None
+    if hasattr(model, "hybrid_model"):
+        original_fhe_mode = model.hybrid_model.fhe_mode
+        model.hybrid_model.set_fhe_mode("disable")
+    
     for batch in tqdm(dataloader, desc="Evaluating", leave=False):
         with torch.no_grad():
             input_ids = batch["input_ids"].to(device)
@@ -222,6 +228,10 @@ def evaluate_perplexity(model, dataloader, tokenizer, device, prompt=None):
             )
         total_loss += loss.item()
         total_tokens += valid.sum().item()
+    
+    # Restore original FHE mode if it was changed
+    if original_fhe_mode is not None:
+        model.hybrid_model.set_fhe_mode(original_fhe_mode)
     
     perplexity = math.exp(total_loss / total_tokens) if total_tokens > 0 else float("inf")
     
@@ -242,8 +252,6 @@ def run_benchmark(args):
     # Override use_cpu for GPU runs
     if device == "cuda":
         args.use_cpu = False
-        if training_args:  # If training_args already created
-            training_args.use_cpu = False
     
     print(f"Device: {device}")
     print(f"Mode: {args.mode}, n_bits: {args.n_bits if args.mode != 'torch' else 'N/A'}")
