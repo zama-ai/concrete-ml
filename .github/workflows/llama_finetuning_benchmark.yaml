@@ -268,25 +268,28 @@ jobs:
         id: check-model
         if: always()
         run: |
-          if [ -d "deployment/llama_lora_finetuned_${{ github.event.inputs.mode }}" ]; then
+          MODEL_MODE="${{ env.MODE }}"
+          if [ -d "deployment/llama_lora_finetuned_${MODEL_MODE}" ]; then
             echo "model-exist=true" >> $GITHUB_OUTPUT
+            echo "model-path=deployment/llama_lora_finetuned_${MODEL_MODE}" >> $GITHUB_OUTPUT
           else
             echo "model-exist=false" >> $GITHUB_OUTPUT
+            echo "Model directory not found: deployment/llama_lora_finetuned_${MODEL_MODE}" >&2
           fi
 
       - name: Archive fine-tuned model
         if: always() && steps.check-model.outputs.model-exist == 'true'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: llama_lora_finetuned_${{ github.event.inputs.mode }}_${{ matrix.device }}
-          path: deployment/llama_lora_finetuned_${{ github.event.inputs.mode }}
+          name: llama_lora_finetuned_${{ env.MODE }}_${{ matrix.device }}
+          path: ${{ steps.check-model.outputs.model-path }}
 
       - name: Upload results to benchmark database
         if: |
+          always() &&
           steps.run-benchmark.outcome == 'success' &&
           steps.check-metrics.outputs.metrics-exist == 'true' &&
-          github.event.inputs.alternative-cp-branch == 'none' && 
-          github.event.inputs.alternative-cp-wheel-artifact-id == 'none'
+          (github.event_name != 'workflow_dispatch' || (github.event.inputs.alternative-cp-branch == 'none' && github.event.inputs.alternative-cp-wheel-artifact-id == 'none'))
         run: |
           # Log the json
           cat to_upload.json | jq
@@ -316,9 +319,15 @@ jobs:
 
       # This step will fail the job if the benchmark failed, making it red in GitHub UI
       - name: Check benchmark status
-        if: steps.run-benchmark.outcome == 'failure'
+        if: always() && steps.run-benchmark.outcome == 'failure'
         run: |
           echo "Benchmark failed for ${{ matrix.device }}"
+          echo "Exit code from benchmark: ${{ steps.run-benchmark.conclusion }}"
+          # Log additional debugging info
+          echo "Current directory contents:"
+          ls -la
+          echo "Deployment directory contents (if exists):"
+          ls -la deployment/ || echo "Deployment directory not found"
           exit 1
 
   teardown-instances:
@@ -348,8 +357,7 @@ jobs:
     needs: [run-benchmark]
     if: |
       always() && 
-      github.event.inputs.alternative-cp-branch == 'none' && 
-      github.event.inputs.alternative-cp-wheel-artifact-id == 'none'
+      (github.event_name != 'workflow_dispatch' || (github.event.inputs.alternative-cp-branch == 'none' && github.event.inputs.alternative-cp-wheel-artifact-id == 'none'))
     steps:
       - name: Determine detailed status
         id: detailed-status
@@ -420,7 +428,7 @@ jobs:
           SLACK_COLOR: ${{ steps.detailed-status.outputs.slack-color }}
           SLACK_MESSAGE: |
             LLama LoRA Math Benchmark
-            Mode: ${{ github.event.inputs.mode }}, FHE: ${{ github.event.inputs.fhe-mode }}
+            Mode: ${{ github.event.inputs.mode || '7bit' }}, FHE: ${{ github.event.inputs.fhe-mode || 'execute' }}
             Status: ${{ steps.detailed-status.outputs.status-details }}
             Overall: ${{ steps.detailed-status.outputs.overall-status }}
             Metrics uploaded: ${{ steps.detailed-status.outputs.has-metrics }}
