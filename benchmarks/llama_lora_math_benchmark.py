@@ -23,7 +23,7 @@ import numpy as np
 import psutil
 import torch
 import torch.nn.functional as F
-from datasets import load_dataset
+from datasets import load_dataset  # pylint: disable=import-error
 from peft import LoraConfig, get_peft_model
 from torch.utils.data import DataLoader
 from tqdm import tqdm
