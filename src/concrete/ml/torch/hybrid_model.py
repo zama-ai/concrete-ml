@@ -36,6 +36,10 @@ from .hybrid_backprop_linear import BackwardModuleLinear, ForwardModuleLinear
 def tuple_to_underscore_str(tup: Tuple) -> str:
     """Convert a tuple to a string representation.
 
+    Examples:
+        >>> tuple_to_underscore_str((1, 2, 3))
+        'po_1_2_3_pc'
+
     Args:
         tup (Tuple): a tuple to change into string representation
 
@@ -47,6 +51,10 @@ def tuple_to_underscore_str(tup: Tuple) -> str:
 
 def underscore_str_to_tuple(tup: str) -> Tuple:
     """Convert a a string representation of a tuple to a tuple.
+
+    Examples:
+        >>> underscore_str_to_tuple("po_1_2_3_pc")
+        (1, 2, 3)
 
     Args:
         tup (str): a string representing the tuple
@@ -104,7 +112,23 @@ def convert_conv1d_to_linear(layer_or_module):
 
 # pylint: disable-next=too-many-instance-attributes
 class RemoteModule(nn.Module):
-    """A wrapper class for the modules to be evaluated remotely with FHE."""
+    """A wrapper class for the modules to be evaluated remotely with FHE.
+
+    Args:
+        module (Optional[nn.Module]): The PyTorch module to be wrapped.
+        server_remote_address (Optional[str]): The URL of the remote server.
+        module_name (Optional[str]): Name of the module used by the server.
+        model_name (Optional[str]): Name of the model used by the server.
+        verbose (int): Verbosity level.
+        optimized_linear_execution (bool): Whether to use an optimized GLWE.
+
+        The server must has the following endpoints:
+        - `/list_shapes`: List all shapes supported by the server.
+        - `/get_client`: Get the FHE client for a specific shape.
+        - `/add_key`: Add the evaluation key for a specific shape.
+        - `/compute`: Perform the FHE computation with the encrypted input.
+
+    """
 
     def __init__(
         self,
@@ -169,13 +193,14 @@ class RemoteModule(nn.Module):
 
         # For all supported shape we need to get the FHE client from the server
         shapes = shapes_response.json()
+        shapes = [tuple(shape) for shape in shapes]
         for shape in shapes:
             client_response = requests.get(
                 f"{self.server_remote_address}/get_client",
                 data={
                     "module_name": self.module_name,
                     "model_name": self.model_name,
-                    "input_shape": shape,
+                    "input_shape": str(shape),
                 },
             )
             if client_response.status_code != 200:
@@ -183,11 +208,13 @@ class RemoteModule(nn.Module):
                 raise ValueError(
                     f"Couldn't get client from server:\n{client_response.content.decode('utf-8')}"
                 )
-            path_to_client = self.path_to_clients / tuple_to_underscore_str(ast.literal_eval(shape))
+
+            path_to_client = self.path_to_clients / tuple_to_underscore_str(shape)
             path_to_client.mkdir(exist_ok=True)
-            with open(path_to_client / "client.zip", "wb") as file:
-                file.write(client_response.content)
+            # with open(path_to_client / "client.zip", "wb") as file:
+            #     file.write(client_response.content)
             # Create the client
+
             client = FHEModelClient(
                 path_dir=str(path_to_client.resolve()), key_dir=str(self.path_to_keys.resolve())
             )
@@ -204,7 +231,7 @@ class RemoteModule(nn.Module):
                 data={
                     "module_name": self.module_name,
                     "model_name": self.model_name,
-                    "input_shape": shape,
+                    "input_shape": str(shape),
                 },
                 files={"key": io.BytesIO(initial_bytes=serialized_evaluation_keys)},
             )
@@ -213,7 +240,7 @@ class RemoteModule(nn.Module):
             # We store the key id and the client in the object
             # If we observe memory issues due to this we can always move
             # towards client lazy loading with caching as done on the server.
-            self.clients[shape] = (uid, client)
+            self.clients[str(shape)] = (uid, client)
 
     def _apply(self, fn, recurse=True):
         """Prevent remote modules moving private debug weights to GPU.
@@ -313,29 +340,34 @@ class RemoteModule(nn.Module):
 
         return y
 
-    def remote_call(self, x: torch.Tensor) -> torch.Tensor:  # pragma:no cover
+    def remote_call(self, x: torch.Tensor, device: str = "cpu") -> torch.Tensor:  # pragma:no cover
         """Call the remote server to get the private module inference.
 
         Args:
             x (torch.Tensor): The input tensor.
+            device (str): The device.
 
         Returns:
             torch.Tensor: The result of the FHE computation
         """
         # Store tensor device and move to CPU for FHE encryption
         base_device = x.device
-        x = x.to(device="cpu")
+        x = x.to(device=device)
 
         # We need to iterate over elements in the batch since
         # we don't support batch inference
         inferences: List[numpy.ndarray] = []
+
         for index in range(len(x)):
             # Manage tensor, tensor shape, and encrypt tensor
             clear_input = x[[index], :].detach().numpy()
             input_shape = (1,) + tuple(clear_input.shape)
             repr_input_shape = str(input_shape[1:])
             assert isinstance(clear_input, numpy.ndarray)
-            assert repr_input_shape in self.clients
+            assert repr_input_shape in self.clients, (
+                f"Client with input shape `{repr_input_shape}` not found in `self.clients`. "
+                f"Available keys: `{list(self.clients.keys())}`. "
+            )
             key_id, client = self.clients[repr_input_shape]
             assert client is not None
             encrypted_input = client.quantize_encrypt_serialize(clear_input)
@@ -387,6 +419,8 @@ class HybridFHEModel:
         module_names (Union[str, List[str]]): The module name(s) to replace with FHE server.
         server_remote_address (str): The remote address of the FHE server.
         model_name (str): Model name identifier.
+        optimized_linear_execution (bool): Whether to enable the GLWE backend.
+        Defaults to True. Enabling this feature is highly recommended for optimal performance.
         verbose (int): If logs should be printed when interacting with FHE server.
 
     Raises:
@@ -399,11 +433,13 @@ class HybridFHEModel:
         module_names: Union[str, List[str]],
         server_remote_address: Optional[str] = None,
         model_name: str = "model",
+        optimized_linear_execution: bool = False,  #TODO: reset to True
         verbose: int = 0,
     ):
         if not isinstance(model, torch.nn.Module):
             raise TypeError("The model must be a PyTorch or Brevitas model.")
 
+        self.optimized_linear_execution = optimized_linear_execution
         self.model = model
         self.module_names = [module_names] if isinstance(module_names, str) else module_names
         self.server_remote_address = server_remote_address
@@ -497,7 +533,11 @@ class HybridFHEModel:
         # Validate the FHE mode
         fhe_mode = HybridFHEMode(fhe)
 
-        if has_glwe_backend() and self._has_only_large_linear_layers:
+        if (
+            has_glwe_backend()
+            and self._has_only_large_linear_layers
+            and self.optimized_linear_execution
+        ):
             if fhe_mode == HybridFHEMode.SIMULATE:
                 raise AssertionError(
                     "When the HybridFHEModel is instantiated with only "
@@ -628,6 +668,7 @@ class HybridFHEModel:
         self.configuration = configuration
 
         for name in tqdm(self.module_names, desc="Compiling FHE layers"):
+
             remote_module = self._get_module_by_name(self.model, name)
             assert isinstance(remote_module, RemoteModule)
 
@@ -649,7 +690,11 @@ class HybridFHEModel:
                 # If all layers are linear and the GLWE backend is available
                 # then simply quantize the model without compiling with
                 # Concrete Python.
-                if self._has_only_large_linear_layers and has_glwe_backend():
+                if (
+                    self._has_only_large_linear_layers
+                    and has_glwe_backend()
+                    and self.optimized_linear_execution
+                ):
                     self.executor = GLWELinearLayerExecutor(
                         use_dynamic_quantization=use_dynamic_quantization
                     )
@@ -658,7 +703,7 @@ class HybridFHEModel:
                         calibration_data_tensor,
                         n_bits=n_bits,
                         rounding_threshold_bits=rounding_threshold_bits,
-                        keep_onnx=False,
+                        keep_onnx=True,  #TODO: reset to False
                         device=device,
                     )
 
@@ -896,9 +941,11 @@ class HybridFHEModelServer:  # pragma:no cover
     def check_inputs(self, model_name: str, module_name: Optional[str], input_shape: Optional[str]):
         """Check that the given configuration exist in the compiled models folder.
 
+        This function could be used as an endpoint to check if the module exists
+
         Args:
             model_name (str): name of the model
-            module_name (Optional[str]): name of the module in the model
+            module_name (Optional[str]): name of the module or submodule in the model
             input_shape (Optional[str]): input shape of the module
 
         Raises:
@@ -939,6 +986,8 @@ class HybridFHEModelServer:  # pragma:no cover
     def list_shapes(self, model_name: str, module_name: str):
         """List all modules in a model.
 
+        This function could be used as an endpoint.
+
         Args:
             model_name (str): name of the model
             module_name (str): name of the module in the model
@@ -952,6 +1001,8 @@ class HybridFHEModelServer:  # pragma:no cover
     def get_client(self, model_name: str, module_name: str, input_shape: str):
         """Get client.
 
+        This function could be used as an endpoint.
+
         Args:
             model_name (str): name of the model
             module_name (str): name of the module in the model
@@ -964,6 +1015,7 @@ class HybridFHEModelServer:  # pragma:no cover
             ValueError: if client couldn't be found
         """
         self.check_inputs(model_name, module_name, input_shape)
+
         path_to_client = (
             self.modules[model_name][module_name][str(input_shape)]["path"] / "client.zip"
         ).resolve()
@@ -979,6 +1031,8 @@ class HybridFHEModelServer:  # pragma:no cover
         input_shape: str,
     ):
         """Add public key.
+
+        This function could be used as an endpoint to add a public key.
 
         Arguments:
             key (bytes): public key
@@ -1029,6 +1083,7 @@ class HybridFHEModelServer:  # pragma:no cover
             self.logger.info(f"It took {end - start} seconds to load the circuit")
 
         start = time.time()
+
         encrypted_results = fhe.run(
             serialized_encrypted_quantized_data=model_input,
             serialized_evaluation_keys=key_bytes,
