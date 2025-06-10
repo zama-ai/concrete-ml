@@ -459,7 +459,6 @@ class LoraTrainer:
             if checkpoint_files:
                 latest_checkpoint = str(checkpoint_files[-1])
                 epoch, global_step = self.load_checkpoint(latest_checkpoint)
-        print(";llllq;", inputset)
 
         self.hybrid_model.compile_model(
             copy.deepcopy(inputset),
