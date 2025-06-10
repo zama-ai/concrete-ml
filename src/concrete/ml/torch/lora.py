@@ -350,6 +350,8 @@ class LoraTrainer:
         logging_steps (int, optional): Log loss every N training steps. Defaults to 1.
         eval_steps (int, optional): Evaluate on eval set every N training steps. Defaults to 10.
         train_log_path (str, optional): Path to a log file for training. Defaults to "training.log".
+        lora_training_module (Callable, optional): The LoraTraining module.
+        **hybrid_model_kwargs (dict): Additional keyword arguments passed to the HybridFHEModel.
     """
 
     # pylint: disable=too-many-arguments
@@ -367,7 +369,10 @@ class LoraTrainer:
         eval_steps: int = 10,
         train_log_path: str = "training.log",
         checkpoint_dir: str = None,
+        lora_training_module: Optional[Callable] = None,
+        **hybrid_model_kwargs,
     ):
+
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
         self.training_args = training_args or {}
@@ -380,6 +385,8 @@ class LoraTrainer:
         self.eval_steps = eval_steps
         self.training_losses: List[float] = []
         self.gradient_stats: Dict[str, List[float]] = {}
+
+        self.lora_training_module = lora_training_module
 
         # Set up logging
         self.logger = setup_logger(train_log_path)
@@ -396,17 +403,37 @@ class LoraTrainer:
             ),
         )
 
-        # Create the LoraTraining module
-        self.lora_training_module = LoraTraining(
-            model, n_layers_to_skip_for_backprop=n_layers_to_skip_for_backprop, loss_fn=loss_fn
+        # Define the LoraTraining module
+        if self.lora_training_module is None:
+            # Create the LoraTraining module
+            self.lora_training_module = LoraTraining(
+                model,
+                n_layers_to_skip_for_backprop=n_layers_to_skip_for_backprop,
+                loss_fn=loss_fn,
+            )
+
+        assert_true(
+            isinstance(self.lora_training_module, LoraTraining),
+            "`self.lora_training_module` must be an instance of 'LoraTraining'.",
         )
 
         # Determine modules to be executed remotely
-        self.remote_names = get_remote_names(self.lora_training_module)
+        self.remote_names = hybrid_model_kwargs.pop("module_names", None) or get_remote_names(
+            self.lora_training_module
+        )
+
+        assert_true(
+            isinstance(self.remote_names, List),
+            "`self.remote_names` must be a list of linear layers.",
+        )
+
+        self.logger.info(f"{len(self.remote_names)=} Remote Modules.")
 
         # Create the hybrid model
         self.hybrid_model = HybridFHEModel(
-            self.lora_training_module, module_names=self.remote_names
+            self.lora_training_module,
+            module_names=self.remote_names,
+            **hybrid_model_kwargs,
         )
 
         self.checkpoint_dir = checkpoint_dir
@@ -432,6 +459,7 @@ class LoraTrainer:
             if checkpoint_files:
                 latest_checkpoint = str(checkpoint_files[-1])
                 epoch, global_step = self.load_checkpoint(latest_checkpoint)
+        print(";llllq;", inputset)
 
         self.hybrid_model.compile_model(
             copy.deepcopy(inputset),
@@ -524,7 +552,7 @@ class LoraTrainer:
         Args:
             train_loader (DataLoader): DataLoader for training data.
             num_epochs (int): Number of epochs to train.
-            fhe (str): FHE mode ('disable', 'simulate', 'execute' or 'torch').
+            fhe (str): FHE mode ('disable', 'simulate', 'execute', 'remote', or 'torch').
             device (str): A device string that is compatible with PyTorch, used for
                 client-side computations.
         """
@@ -629,13 +657,15 @@ class LoraTrainer:
         """
         return self.training_losses
 
-    def save_and_clear_private_info(self, path):
+    def save_and_clear_private_info(self, path, via_mlir: bool = True) -> None:
         """Save the model and remove private information.
 
         Args:
             path (str): The path to save the model.
+            via_mlir (bool): if fhe circuits should be serialized using via_mlir option
+                useful for cross-platform (compile on one architecture and run on another)
         """
-        self.hybrid_model.save_and_clear_private_info(path)
+        self.hybrid_model.save_and_clear_private_info(path, via_mlir=via_mlir)
         self.logger.info("Model saved at %s", path)
 
     def _log_gradients(self):
