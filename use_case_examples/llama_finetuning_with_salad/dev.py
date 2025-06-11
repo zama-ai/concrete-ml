@@ -70,8 +70,6 @@ training_args = {
 
 DEVICE = get_device(force_device='cpu')
 
-MODEL_DIR = COMPILED_MODELS_PAH / MODEL_NAME
-
 if __name__ == "__main__":
 
     purge_compiled_model_dir(COMPILED_MODELS_PAH, delete=True)
