@@ -25,6 +25,8 @@ from concrete.ml.torch.lora import LoraTrainer
 from peft import LoraConfig
 from peft import get_peft_model
 
+from peft import AutoPeftModelForCausalLM
+from transformers import Trainer
 
 from datasets import Dataset
 from utils_lora import generate_and_print
@@ -72,8 +74,6 @@ DEVICE = get_device(force_device='cpu')
 
 if __name__ == "__main__":
 
-    purge_compiled_model_dir(COMPILED_MODELS_PAH, delete=True)
-
     ########### Load data-set
     print(f'Load Data...')
     collator = DataCollator(TOKENIZER)
@@ -81,35 +81,12 @@ if __name__ == "__main__":
     train_dataset = load_from_disk(TRAIN_PATH)
     test_dataset = load_from_disk(TEST_PATH)
 
-    ########### Load pre-trained model
+    ########### Load peft model
     print(f'Load pre-trained model...')
-    pretrained_model = AutoModelForCausalLM.from_pretrained(MODEL_NAME).to(DEVICE)
-    pretrained_model.config.pad_token_id = pretrained_model.config.eos_token_id
+    peft_model = AutoPeftModelForCausalLM.from_pretrained("compiled_models/artefact").to(DEVICE)
+    peft_model.config.pad_token_id = peft_model.config.eos_token_id
 
-    # Freeze model weights
-    if FREEZE_WEIGTHS:
-        # Freeze all model parameters
-        for param in pretrained_model.parameters():
-            param.requires_grad = False
-
-    ########## Inject PEFT features
-    # Injecting specific modules to fine-tune a pre-entrainer model
-    # while considerably reducing the number of parameters to be trained
-
-    print(f'Inject PEFT features...')
-    peft_model = get_peft_model(pretrained_model, LoraConfig(**peft_args))
-    peft_model.to(DEVICE)
-
-    # peft_model.save_pretrained(f"{MODEL_DIR}/saved_peft_model/")
-    # TOKENIZER.save_pretrained(f"{MODEL_DIR}/saved_tokenizer/")
-
-
-    ########## Inject LORA trainer features
-    # Injecting specific modules to train a pre-entrainer model using LORQ
-
-    print(f'Inject LORA trainer features...')
-    from transformers import Trainer
-
+    # Mandatory to reload the dataloader + optimizer + lr_scheduler
     hf_trainer = Trainer(
         model=peft_model,
         args=TrainingArguments(**training_args),
@@ -141,24 +118,10 @@ if __name__ == "__main__":
         verbose=True,
     )
 
-    ########## Compilation
+    lora_trainer.hybrid_model.init_client(path_to_clients=PATH_TO_CLIENTS,
+                            path_to_keys=PATH_TO_CLIENTS_KEYS)
 
-    print('Compilation ...')
+    lora_trainer.hybrid_model.set_fhe_mode(HybridFHEMode.REMOTE)
 
-    lora_trainer.compile(get_random_inputset(vocab_size=VOCAB_SIZE, batch_size=BATCH_SIZE, max_length=MAX_LENGTH), n_bits=N_BITS)
-
-    print('Saving models...')
-
-    lora_trainer.save_and_clear_private_info(MODEL_DIR, via_mlir=True)
-    peft_model.save_pretrained(f"{COMPILED_MODELS_PAH}/artefact")
-    pretrained_model.config.save_pretrained(f"{COMPILED_MODELS_PAH}/artefact")
-
-    # artefact/
-    # ├── adapter_config.json    ← config PEFT
-    # ├── adapter_model.bin      ← LoRA weights
-    # ├── config.json            ← (pad_token_id)
-
-    print('<!> Run server.py...')
-    time.sleep(15)
-    print('<!> Connect the client...')
-
+    limited_batches = get_limited_batches(train_dl, 1)
+    lora_trainer.train(limited_batches, fhe="remote", device=DEVICE)

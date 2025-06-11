@@ -798,10 +798,14 @@ class HybridFHEModel:
         clear_private_info(self.model)
 
         # Save the model with a specific filename
-        model_path = path / "model.pth"
+        model_path = path / "model_and_remote.pth"
         # Save the model state dict due to a Brevitas issue
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4572
-        torch.save(self.model.state_dict(), model_path.resolve())
+        data = {
+            "state_dict": self.model.state_dict(),
+            "remote_modules": self.module_names,
+        }
+        torch.save(data, model_path.resolve())
 
         # Save the FHE circuit in the same directory
         self._save_fhe_circuit(path, via_mlir=via_mlir)
