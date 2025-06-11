@@ -7,6 +7,9 @@ COMPILED_MODELS_PAH = Path("compiled_models")
 PATH_TO_CLIENTS = COMPILED_MODELS_PAH / f"meta-llama"
 PATH_TO_CLIENTS_KEYS = COMPILED_MODELS_PAH / f"meta-llama_keys"
 
+MODEL_DIR = COMPILED_MODELS_PAH / 'meta-llama'
+
+
 MAX_LENGTH = 64
 
 N_BITS = 7
