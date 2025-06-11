@@ -63,13 +63,6 @@ training_args = {
     "report_to": "none",
 }
 
-N_BITS = 7
-BATCH_SIZE = 4
-MODE = f"{N_BITS}bit"
-FREEZE_WEIGTHS = True
-TRAIN_LOG_FILE = f"training_log_{MODE}.txt"
-EVAL_RESPONSES_FILE = f"eval_generated_responses_{MODE}.txt"
-PROMPT = "When you multiply a number by 7, it becomes 98. What is that number?\n"
 
 DEVICE = get_device(force_device='cpu')
 
@@ -77,7 +70,7 @@ MODEL_DIR = COMPILED_MODELS_PAH / MODEL_NAME
 
 if __name__ == "__main__":
 
-    purge_compiled_model_dir(COMPILED_MODELS_PAH)
+    purge_compiled_model_dir(COMPILED_MODELS_PAH, delete=True)
 
     ########### Load data-set
     print(f'Load Data...')
@@ -105,10 +98,16 @@ if __name__ == "__main__":
     peft_model = get_peft_model(pretrained_model, LoraConfig(**peft_args))
     peft_model.to(DEVICE)
 
+    peft_model.save_pretrained(f"{MODEL_DIR}/saved_peft_model/")
+    TOKENIZER.save_pretrained(f"{MODEL_DIR}/saved_tokenizer/")
+
+
     ########## Inject LORA trainer features
     # Injecting specific modules to train a pre-entrainer model using LORQ
 
     print(f'Inject LORA trainer features...')
+    from transformers import Trainer
+
     hf_trainer = Trainer(
         model=peft_model,
         args=TrainingArguments(**training_args),
@@ -139,60 +138,9 @@ if __name__ == "__main__":
     ########## Compilation
 
     print('Compilation ...')
+
     lora_trainer.compile(get_random_inputset(vocab_size=VOCAB_SIZE, batch_size=BATCH_SIZE, max_length=MAX_LENGTH), n_bits=N_BITS)
 
     lora_trainer.save_and_clear_private_info(MODEL_DIR, via_mlir=True)
 
-    # TODO <!>
-    # Compile the model for multiple input shapes (i.e., varying context lengths)
-    # because during generation, the model processes input sequences token by token.
-    # As a result, intermediate activations (e.g., hidden states) can have different shapes,
-    # To support this dynamic behavior with FHE execution, we need to compile and store
-    # FHE clients for each possible shape that may occur during the generation loop.
-
-    # Generate random inputset
-
-    # Compile for different shapes
-#     for length in range(6, MAX_LENGTH):
-#         inputset = get_random_inputset(
-#             vocab_size=vocab_size,
-#             batch_size=BATCH_SIZE,
-#             max_length=length
-#         )
-#         print(f"Compiling for block_size={length}, input shape: {inputset['input_ids'].shape}")
-#         print(f'{inputset.keys()=}, {inputset["input_ids"].shape}')
-
-#         lora_trainer = LoraTrainer(
-#             model=deepcopy(peft_model),
-#             optimizer=optimizer,
-#             loss_fn=causal_lm_loss,
-#             lr_scheduler=lr_scheduler,
-#             training_args=training_args,
-#             n_layers_to_skip_for_backprop=3,
-#             eval_loader=eval_dl,
-#             eval_metric_fn=metric_fn,
-#             logging_steps=1,
-#             eval_steps=10,
-#             train_log_path=TRAIN_LOG_FILE,
-#             optimized_linear_execution=False,
-#             server_remote_address="http://0.0.0.0:8000",
-#             model_name=f"{MODEL_NAME}",
-#             verbose=True,
-#             remote_names[:1]
-#         )
-
-#         # Get the names of the remote modules (layers to be converted to FHE)
-#         if length == 0:
-#             print(f"`{len(lora_trainer.remote_names)}` remote modules") # 221 layers
-
-#         lora_trainer.compile(inputset, n_bits=N_BITS, use_dynamic_quantization=True)
-
-#         # (bool): if fhe circuits should be serialized using via_mlir option useful
-#         # for cross-platform (compile on one architecture and run on another)
-#         lora_trainer.save_and_clear_private_info(model_dir, via_mlir=True)
-
-
-
-# # /Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
-# #   warnings.warn('resource_tracker: There appear to be %d '
-# # (.lora-venv) kcelia@MacBook-Pro-de-Celia lora_finetuning %
+    lora_trainer.train(train_dl, fhe="remote", device=DEVICE)
