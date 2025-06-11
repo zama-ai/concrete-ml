@@ -1,5 +1,8 @@
-## Common
-
+import subprocess
+import sys
+import os
+import time
+import signal
 from datasets import load_from_disk
 from tqdm import tqdm
 import math
@@ -9,6 +12,7 @@ from utils_dev import *
 import torch
 from concrete.ml.torch.lora import get_remote_names
 from concrete.ml.torch.hybrid_model import HybridFHEModel
+from concrete.ml.torch.hybrid_model import HybridFHEMode
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers import Trainer
@@ -98,8 +102,8 @@ if __name__ == "__main__":
     peft_model = get_peft_model(pretrained_model, LoraConfig(**peft_args))
     peft_model.to(DEVICE)
 
-    peft_model.save_pretrained(f"{MODEL_DIR}/saved_peft_model/")
-    TOKENIZER.save_pretrained(f"{MODEL_DIR}/saved_tokenizer/")
+    # peft_model.save_pretrained(f"{MODEL_DIR}/saved_peft_model/")
+    # TOKENIZER.save_pretrained(f"{MODEL_DIR}/saved_tokenizer/")
 
 
     ########## Inject LORA trainer features
@@ -133,6 +137,10 @@ if __name__ == "__main__":
         logging_steps=1,
         eval_steps=100,
         train_log_path=TRAIN_LOG_FILE,
+        optimized_linear_execution=False,
+        server_remote_address="http://0.0.0.0:8000",
+        model_name=f"meta-llama",
+        verbose=True,
     )
 
     ########## Compilation
@@ -142,7 +150,17 @@ if __name__ == "__main__":
     lora_trainer.compile(get_random_inputset(vocab_size=VOCAB_SIZE, batch_size=BATCH_SIZE, max_length=MAX_LENGTH), n_bits=N_BITS)
 
     print('Saving models...')
+
     lora_trainer.save_and_clear_private_info(MODEL_DIR, via_mlir=True)
 
-    print('Run server.py')
-    lora_trainer.train(train_dl, fhe="remote", device=DEVICE)
+    print('<!> Run server.py...')
+    time.sleep(15)
+    print('<!> Connect the client...')
+
+    lora_trainer.hybrid_model.init_client(path_to_clients=PATH_TO_CLIENTS,
+                            path_to_keys=PATH_TO_CLIENTS_KEYS)
+
+    lora_trainer.hybrid_model.set_fhe_mode(HybridFHEMode.REMOTE)
+
+    limited_batches = get_limited_batches(train_dl, 1)
+    lora_trainer.train(limited_batches, fhe="remote", device=DEVICE)

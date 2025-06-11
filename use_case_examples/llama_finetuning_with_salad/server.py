@@ -2,7 +2,7 @@ import ast
 import io
 import time
 from typing import Optional
-
+from pathlib import Path
 import uvicorn
 from utils_dev import COMPILED_MODELS_PAH
 from fastapi import FastAPI, Form, HTTPException, UploadFile
@@ -140,10 +140,7 @@ async def compute(
 
 if __name__ == "__main__":
 
-    # COMPILED_MODELS_PAH = Path("compiled_models")
-    # model_dir = COMPILED_MODELS_PAH
-    # key_path = COMPILED_MODELS_PAH
-
+    print(f'📡 [Server.py] {COMPILED_MODELS_PAH=}')
 
     server = HybridFHEModelServer(
         key_path=COMPILED_MODELS_PAH, model_dir=COMPILED_MODELS_PAH, logger=None
