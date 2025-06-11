@@ -954,10 +954,11 @@ class HybridFHEModelServer:  # pragma:no cover
         if model_name not in self.modules:
             raise ValueError(
                 f"provided names '{model_name}' does not match any known name",
+                f"{list(self.modules.keys())}"
             )
         if module_name is not None and module_name not in self.modules[model_name]:
             raise ValueError(
-                f"provided names '{module_name}' does not match any known name"
+                f"provided submodule '{module_name}' does not match any known name"
                 f"{list(self.modules[model_name].keys())}",
             )
         if (
