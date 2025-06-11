@@ -9,3 +9,11 @@ PATH_TO_CLIENTS_KEYS = COMPILED_MODELS_PAH / f"{MODEL_NAME}_keys"
 
 MAX_LENGTH = 64
 
+N_BITS = 7
+BATCH_SIZE = 4
+MODE = f"{N_BITS}bit"
+FREEZE_WEIGTHS = True
+TRAIN_LOG_FILE = f"training_log_{MODE}.txt"
+EVAL_RESPONSES_FILE = f"eval_generated_responses_{MODE}.txt"
+PROMPT = "When you multiply a number by 7, it becomes 98. What is that number?\n"
+

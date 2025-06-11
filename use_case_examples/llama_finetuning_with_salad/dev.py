@@ -141,6 +141,8 @@ if __name__ == "__main__":
 
     lora_trainer.compile(get_random_inputset(vocab_size=VOCAB_SIZE, batch_size=BATCH_SIZE, max_length=MAX_LENGTH), n_bits=N_BITS)
 
+    print('Saving models...')
     lora_trainer.save_and_clear_private_info(MODEL_DIR, via_mlir=True)
 
+    print('Run server.py')
     lora_trainer.train(train_dl, fhe="remote", device=DEVICE)
