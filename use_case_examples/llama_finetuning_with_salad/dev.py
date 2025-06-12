@@ -158,7 +158,5 @@ if __name__ == "__main__":
     # ├── adapter_model.bin      ← LoRA weights
     # ├── config.json            ← (pad_token_id)
 
-    print('<!> Run server.py...')
-    time.sleep(15)
-    print('<!> Connect the client...')
+    print('<!> Now run server.py...')
 
