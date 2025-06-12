@@ -1,6 +1,7 @@
 """Implement the conversion of a torch model to a hybrid fhe/torch inference."""
 
 # pylint: disable=too-many-lines
+import pickle
 import ast
 import io
 import sys
@@ -438,7 +439,6 @@ class HybridFHEModel:
     ):
         if not isinstance(model, torch.nn.Module):
             raise TypeError("The model must be a PyTorch or Brevitas model.")
-
         self.optimized_linear_execution = optimized_linear_execution
         self.model = model
         self.module_names = [module_names] if isinstance(module_names, str) else module_names
@@ -650,6 +650,7 @@ class HybridFHEModel:
             use_dynamic_quantization (bool): If True, use dynamic quantization;
                 otherwise, use static quantization. (only for GLWE backend)
         """
+
         assert (
             has_glwe_backend() or not use_dynamic_quantization
         ), "Dynamic quantization requires GLWE backend"
@@ -805,7 +806,12 @@ class HybridFHEModel:
             "state_dict": self.model.state_dict(),
             "remote_modules": self.module_names,
         }
+
         torch.save(data, model_path.resolve())
+
+        with open(path / 'my_remote_model.pth', 'wb') as f:
+            pickle.dump(self.model, f)
+
 
         # Save the FHE circuit in the same directory
         self._save_fhe_circuit(path, via_mlir=via_mlir)
@@ -823,7 +829,6 @@ class HybridFHEModel:
         """
         for module in self.remote_modules.values():
             module.fhe_local_mode = HybridFHEMode(hybrid_fhe_mode)
-
 
 class LoggerStub:  # pragma:no cover
     """Placeholder type for a typical logger like the one from loguru."""
@@ -1100,3 +1105,21 @@ class HybridFHEModelServer:  # pragma:no cover
             self.logger.info(f"Results size is {len(encrypted_results)/(1024**2)} Mb")
         start = time.time()
         return encrypted_results
+
+
+# class HybridFHEModelClient:
+#     pass
+
+#        model_path = path / "model_and_remote.pth"
+#         # Save the model state dict due to a Brevitas issue
+#         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4572
+#         data = {
+#             "state_dict": self.model.state_dict(),
+#             "remote_modules": self.module_names,
+#             # model_name
+#         }
+
+#     peft_model.load(state_dict)
+#     # charger un base model
+
+
