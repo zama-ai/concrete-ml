@@ -135,28 +135,18 @@ if __name__ == "__main__":
         logging_steps=1,
         eval_steps=100,
         train_log_path=TRAIN_LOG_FILE,
-        optimized_linear_execution=False,
+        optimized_linear_execution=True,
         server_remote_address="http://0.0.0.0:8000",
         model_name=f"meta-llama",
         verbose=True,
     )
 
-    ########## Compilation
-
+    # ########## Compilation
     print('Compilation ...')
-
-    lora_trainer.compile(get_random_inputset(vocab_size=VOCAB_SIZE, batch_size=BATCH_SIZE, max_length=MAX_LENGTH), n_bits=N_BITS)
+    inputset = get_random_inputset(vocab_size=VOCAB_SIZE, batch_size=BATCH_SIZE, max_length=MAX_LENGTH)
+    lora_trainer.compile(inputset, n_bits=N_BITS)
 
     print('Saving models...')
-
-    lora_trainer.save_and_clear_private_info(MODEL_DIR, via_mlir=True)
-    peft_model.save_pretrained(f"{COMPILED_MODELS_PAH}/artefact")
-    pretrained_model.config.save_pretrained(f"{COMPILED_MODELS_PAH}/artefact")
-
-    # artefact/
-    # ├── adapter_config.json    ← config PEFT
-    # ├── adapter_model.bin      ← LoRA weights
-    # ├── config.json            ← (pad_token_id)
+    lora_trainer.save_and_clear_private_info(MODEL_DIR)
 
     print('<!> Now run server.py...')
-

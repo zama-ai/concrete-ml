@@ -434,7 +434,7 @@ class HybridFHEModel:
         module_names: Union[str, List[str]],
         server_remote_address: Optional[str] = None,
         model_name: str = "model",
-        optimized_linear_execution: bool = False,  #TODO: reset to True
+        optimized_linear_execution: bool = True,
         verbose: int = 0,
     ):
         if not isinstance(model, torch.nn.Module):
@@ -651,6 +651,8 @@ class HybridFHEModel:
                 otherwise, use static quantization. (only for GLWE backend)
         """
 
+        self.use_glwe = False
+
         assert (
             has_glwe_backend() or not use_dynamic_quantization
         ), "Dynamic quantization requires GLWE backend"
@@ -696,6 +698,7 @@ class HybridFHEModel:
                     and has_glwe_backend()
                     and self.optimized_linear_execution
                 ):
+                    self.use_glwe = True
                     self.executor = GLWELinearLayerExecutor(
                         use_dynamic_quantization=use_dynamic_quantization
                     )
@@ -759,14 +762,27 @@ class HybridFHEModel:
                 model_module_shape_path = model_module_path / tuple_to_underscore_str(
                     input_shapes[0]
                 )
-                model_dev = FHEModelDev(
-                    str(model_module_shape_path.resolve()),
-                    self.private_q_modules[module_name],
-                )
-                model_dev.save(via_mlir=via_mlir)
+
+                if self.use_glwe:
+                    prefix = module_name + ".private_module"
+                    matching_keys = [k for k in self.model.state_dict().keys() if k.startswith(prefix)]
+                    assert len(matching_keys) == 1
+                    private_remote_weights = self.model.state_dict()[matching_keys[0]]
+
+                    # Ensure target directories exist
+                    server_path = Path(f'{model_module_shape_path.resolve()}/server')
+                    server_path.mkdir(parents=True, exist_ok=True)
+                    torch.save(private_remote_weights, server_path / "remote_weights.pth")
+
+                else:
+                    model_dev = FHEModelDev(
+                        str(model_module_shape_path.resolve()),
+                        self.private_q_modules[module_name],
+                    )
+                    model_dev.save(via_mlir=via_mlir)
 
     def save_and_clear_private_info(self, path: Path, via_mlir=True):
-        """Save the PyTorch model to the provided path and also saves the corresponding FHE circuit.
+        """Save the PyTorch model to the provided path and also saves the corresponding FHE circuit
 
         Args:
             path (Path): The directory where the model and the FHE circuit will be saved.
@@ -776,8 +792,11 @@ class HybridFHEModel:
         path = Path(path)
         path.mkdir(parents=True, exist_ok=True)
 
+        # Save the FHE circuit in the same directory
+        self._save_fhe_circuit(path, via_mlir=via_mlir)
+
         # Save the complete model (including private info) for the developer
-        complete_model_path = path / "complete_model.pth"
+        complete_model_path = path / "full_model.pth"
         torch.save(self.model.state_dict(), complete_model_path.resolve())
 
         def clear_private_info(module):
@@ -799,22 +818,10 @@ class HybridFHEModel:
         clear_private_info(self.model)
 
         # Save the model with a specific filename
-        model_path = path / "model_and_remote.pth"
+        model_path = path / "client_model.pth"
         # Save the model state dict due to a Brevitas issue
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4572
-        data = {
-            "state_dict": self.model.state_dict(),
-            "remote_modules": self.module_names,
-        }
-
-        torch.save(data, model_path.resolve())
-
-        with open(path / 'my_remote_model.pth', 'wb') as f:
-            pickle.dump(self.model, f)
-
-
-        # Save the FHE circuit in the same directory
-        self._save_fhe_circuit(path, via_mlir=via_mlir)
+        torch.save(self.model.state_dict(), model_path.resolve())
 
     def publish_to_hub(self):
         """Allow the user to push the model and FHE required files to HF Hub."""
