@@ -4,6 +4,14 @@
 
 This project executes the ResNet18 image classification model using Fully Homomorphic Encryption (FHE) with Concrete ML. The model is adapted for FHE compatibility and tested on a small subset of imagenet images.
 
+## Hybrid FHE Implementation
+
+The project includes a hybrid FHE implementation (`resnet_hybrid_fhe.py`) that executes specific layers in FHE mode while keeping others in clear text. This approach significantly reduces execution time while maintaining model accuracy. The hybrid implementation:
+
+- Executes all linear and convolutional layers (except the first conv layer) in FHE mode
+- Uses 8-bit quantization for inputs with higher bit-width outputs
+- Achieves equivalent accuracy to the clear text model
+
 ## ResNet18
 
 The ResNet18 model is adapted from torchvision the original https://github.com/pytorch/vision/blob/main/torchvision/models/resnet.py where the adaptive average pooling layer `AdaptiveAvgPool2d` (not yet supported by Concrete ML) is replaced with a standard `AvgPool2d` layer as follows:
@@ -113,6 +121,7 @@ Summary of the ImageNet results:
 | 6/6      | 0.05    | 55%      | 78%            | 56 min         | GPU    |
 | 6/6      | 0.05    | 55%      | 78%            | 1 h 31 min     | CPU    |
 | 7/7      | 0.05    | **66%**  | **87%**        | **2 h 12 min** | CPU    |
+| 8/hybrid | -       | 67%      | 87%            | 12 min         | CPU    |
 
 6/6 `n_bits` configuration: {"model_inputs": 8, "op_inputs": 6, "op_weights": 6, "model_outputs": 9}
 
