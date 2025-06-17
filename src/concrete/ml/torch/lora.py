@@ -420,7 +420,7 @@ class LoraTrainer:
         # Determine modules to be executed remotely
         self.remote_names = hybrid_model_kwargs.pop("module_names", None) or get_remote_names(
             self.lora_training_module
-        )[:7]
+        )[:2]
 
         assert_true(
             isinstance(self.remote_names, List),
@@ -555,6 +555,7 @@ class LoraTrainer:
             device (str): A device string that is compatible with PyTorch, used for
                 client-side computations.
         """
+
         self.hybrid_model.model.to(device)
         optimizer_to(self.optimizer, device)
 

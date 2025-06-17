@@ -118,10 +118,17 @@ if __name__ == "__main__":
         verbose=True,
     )
 
-    lora_trainer.hybrid_model.init_client(path_to_clients=PATH_TO_CLIENTS,
-                            path_to_keys=PATH_TO_CLIENTS_KEYS)
+    MODEL_ROOT = Path("compiled_models/meta-llama")
 
-    lora_trainer.hybrid_model.set_fhe_mode(HybridFHEMode.REMOTE)
+    client_model_state_dict = torch.load(MODEL_ROOT / "client_model.pth")
 
-    limited_batches = get_limited_batches(train_dl, 1)
-    lora_trainer.train(limited_batches, fhe="remote", device=DEVICE)
+    print(client_model_state_dict)
+
+
+    # lora_trainer.hybrid_model.init_client(path_to_clients=PATH_TO_CLIENTS,
+    #                         path_to_keys=PATH_TO_CLIENTS_KEYS)
+
+    # lora_trainer.hybrid_model.set_fhe_mode(HybridFHEMode.REMOTE)
+
+    # limited_batches = get_limited_batches(train_dl, 1)
+    # lora_trainer.train(limited_batches, fhe="remote", device=DEVICE)

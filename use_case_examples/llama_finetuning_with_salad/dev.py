@@ -1,4 +1,5 @@
 import subprocess
+import argparse
 import sys
 import os
 import time
@@ -72,7 +73,20 @@ DEVICE = get_device(force_device='cpu')
 
 if __name__ == "__main__":
 
-    purge_compiled_model_dir(COMPILED_MODELS_PAH, delete=True)
+    parser = argparse.ArgumentParser(description="LORA fine-tuning with FHE options")
+    parser.add_argument(
+        "--optimized_linear_execution",
+        default=True,
+    )
+    parser.add_argument(
+        "--save_compiled_model",
+        default=True,
+    )
+    args = parser.parse_args()
+
+    purge_compiled_model_dir(COMPILED_MODELS_PAH, delete=args.save_compiled_model)
+
+    print(f'Using: {args.optimized_linear_execution=}')
 
     ########### Load data-set
     print(f'Load Data...')
@@ -135,18 +149,51 @@ if __name__ == "__main__":
         logging_steps=1,
         eval_steps=100,
         train_log_path=TRAIN_LOG_FILE,
-        optimized_linear_execution=True,
+        optimized_linear_execution=args.optimized_linear_execution,
         server_remote_address="http://0.0.0.0:8000",
         model_name=f"meta-llama",
         verbose=True,
     )
 
-    # ########## Compilation
+    ########## Compilation
+
     print('Compilation ...')
     inputset = get_random_inputset(vocab_size=VOCAB_SIZE, batch_size=BATCH_SIZE, max_length=MAX_LENGTH)
     lora_trainer.compile(inputset, n_bits=N_BITS)
 
-    print('Saving models...')
-    lora_trainer.save_and_clear_private_info(MODEL_DIR)
+    if args.save_compiled_model:
+        print('Saving models...')
+        lora_trainer.save_and_clear_private_info(MODEL_DIR, via_mlir=True)
+
+        peft_model.save_pretrained(f"{COMPILED_MODELS_PAH}/artefact")
+        pretrained_model.config.save_pretrained(f"{COMPILED_MODELS_PAH}/artefact")
+
+    # artefact/
+    # ├── adapter_config.json    ← config PEFT
+    # ├── adapter_model.bin      ← LoRA weights
+    # ├── config.json            ← (pad_token_id)
 
     print('<!> Now run server.py...')
+
+    # Init the client
+    print('init_client...')
+    if args.optimized_linear_execution:
+        PATH_TO_CLIENTS = COMPILED_MODELS_PAH / "client"
+    else:
+        PATH_TO_CLIENTS = COMPILED_MODELS_PAH / 'meta-llama'
+    lora_trainer.hybrid_model.init_client(
+        path_to_clients=PATH_TO_CLIENTS,
+        path_to_keys=PATH_TO_CLIENTS_KEYS
+    )
+
+    lora_trainer.hybrid_model.set_fhe_mode(HybridFHEMode.REMOTE)
+
+    limited_batches = get_limited_batches(train_dl, 5)
+    print(f'Number of batches: {len(limited_batches)}')
+    print(f'Number of batches: {limited_batches[0]['input_ids'].shape}')
+    lora_trainer.train(limited_batches, fhe="remote", device=DEVICE)
+
+
+    #
+
+
