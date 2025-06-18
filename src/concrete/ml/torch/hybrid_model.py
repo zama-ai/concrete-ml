@@ -551,111 +551,104 @@ class RemoteModule(nn.Module):
             # Convert quantized data to numpy arrays for encryption.
             x_q_int = x_q.long().cpu().numpy().astype(numpy.int64).astype(numpy.uint64)
 
-            # Ensure x_q_int is 3D.
-            if x_q_int.ndim == 2:
-                x_q_int = numpy.expand_dims(x_q_int, 0)
-
-            # Iterate over the tokens ? or send all the inputs at once
             # Encypt the input
-            for idx, q_x_sample in enumerate(x_q_int):
-                print(f'🐞 -------------- {q_x_sample.shape=}')
-                ciphertext =fhext.encrypt_matrix(  # pylint: disable=no-member
-                    pkey=self.executor.private_key,
-                    crypto_params=self.executor.glwe_crypto_params,
-                    data=q_x_sample,
-                )
+            ciphertext =fhext.encrypt_matrix(  # pylint: disable=no-member
+                pkey=self.executor.private_key,
+                crypto_params=self.executor.glwe_crypto_params,
+                data=x_q_int,
+            )
 
-                ciphertext_serialized = ciphertext.serialize()
+            ciphertext_serialized = ciphertext.serialize()
 
-                # Send the input to the server
-                print(f'🐞 -------------- {self.uid=}')
-                print(f'🐞 -------------- {self.private_remote_weights_path=}')
+            # Send the input to the server
+            print(f'🐞 -------------- {self.uid=}')
+            print(f'🐞 -------------- {self.private_remote_weights_path=}')
 
-                response = requests.post(
-                    f"{self.server_remote_address}/send_encrypted_input",
-                    files={
-                        "encrypted_input": io.BytesIO(ciphertext_serialized),
-                    },
-                    data={
-                        "uid": str(self.uid),
-                        "linear_layer_name_path": str(self.private_remote_weights_path)
-                    }
-                )
-                assert response.status_code == 200
-                print(f"✅✅✅ Data Sent")
+            response = requests.post(
+                f"{self.server_remote_address}/send_encrypted_input",
+                files={
+                    "encrypted_input": io.BytesIO(ciphertext_serialized),
+                },
+                data={
+                    "uid": str(self.uid),
+                    "linear_layer_name_path": str(self.private_remote_weights_path)
+                }
+            )
+            assert response.status_code == 200
+            print(f"✅✅✅ Data Sent")
 
-                print('Starting inference ...')
-                response = requests.post(
-                    url=f"{self.server_remote_address}/compute",
-                    data={
-                        "uid": str(self.uid),
-                        "linear_layer_name_path": str(self.private_remote_weights_path)
-                    },
-                    stream=True,
-                )
-                assert response.status_code == 200
-                print(f"✅✅✅ FHE successully computed")
+            print('Starting inference ...')
+            response = requests.post(
+                url=f"{self.server_remote_address}/compute",
+                data={
+                    "uid": str(self.uid),
+                    "linear_layer_name_path": str(self.private_remote_weights_path)
+                },
+                stream=True,
+            )
+            assert response.status_code == 200
+            print(f"✅✅✅ FHE successully computed")
 
-                output_path = f"{self.private_remote_weights_path}/encrypted_output_from_server.bin"
-                with open(output_path, "wb") as f:
-                    for chunk in response.iter_content(chunk_size=4096):
-                        if chunk:
-                            f.write(chunk)
-                    print(f"📥 Encrypted bundle saved at {output_path}")
+            output_path = f"{self.private_remote_weights_path}/encrypted_output_from_server.bin"
+            with open(output_path, "wb") as f:
+                for chunk in response.iter_content(chunk_size=4096):
+                    if chunk:
+                        f.write(chunk)
+                print(f"📥 Encrypted bundle saved at {output_path}")
 
-                bundle = numpy.load(output_path)
-                encrypted_result = bundle["encrypted_result"].tobytes()
-                weight_scale = torch.tensor(bundle["weight_scale"], dtype=torch.float32, device=device)
-                weight_zp    = torch.tensor(bundle["weight_zp"], dtype=torch.float32, device=device)
-                sum_w        = torch.tensor(bundle["sum_w"], dtype=torch.float32, device=device)
-                weight_shape = tuple(bundle["weight_shape"])
-                bias         = torch.tensor(bundle["bias"], device=device) if "bias" in bundle else None
+            bundle = numpy.load(output_path)
+            encrypted_result = bundle["encrypted_result"].tobytes()
+            weight_scale = torch.tensor(bundle["weight_scale"], dtype=torch.float32, device=device)
+            weight_zp    = torch.tensor(bundle["weight_zp"], dtype=torch.float32, device=device)
+            sum_w        = torch.tensor(bundle["sum_w"], dtype=torch.float32, device=device)
+            weight_shape = tuple(bundle["weight_shape"])
+            bias         = torch.tensor(bundle["bias"], device=device) if "bias" in bundle else None
 
 
-                print(f'🐞 -------------- {weight_shape=}')
-                print(f'🐞 -------------- {weight_scale=}')
-                print(f'🐞 -------------- {weight_zp=}')
-                print(f'🐞 -------------- {sum_w=}')
-                print(f'🐞 -------------- {type(bias)=}')
+            print(f'🐞 -------------- {weight_shape=}')
+            print(f'🐞 -------------- {weight_scale=}')
+            print(f'🐞 -------------- {weight_zp=}')
+            print(f'🐞 -------------- {sum_w=}')
+            print(f'🐞 -------------- {type(bias)=}')
 
-                num_valid_glwe_values_in_last_ciphertext = (
-                    weight_shape[1] % self.executor.poly_size or self.executor.poly_size
-                )
-                print(f'{num_valid_glwe_values_in_last_ciphertext=} - {self.executor.poly_size=}')
+            num_valid_glwe_values_in_last_ciphertext = (
+                weight_shape[1] % self.executor.poly_size or self.executor.poly_size
+            )
+            print(f'{num_valid_glwe_values_in_last_ciphertext=} - {self.executor.poly_size=}')
 
-                encrypted_result = fhext.CompressedResultEncryptedMatrix.deserialize(encrypted_result)
+            encrypted_result = fhext.CompressedResultEncryptedMatrix.deserialize(encrypted_result)
 
-                q_result = fhext.decrypt_matrix(  # pylint: disable=no-member
-                                encrypted_result,
-                                self.executor.private_key,
-                                self.executor.glwe_crypto_params,
-                                num_valid_glwe_values_in_last_ciphertext,
-                            )
+            q_result = fhext.decrypt_matrix(  # pylint: disable=no-member
+                            encrypted_result,
+                            self.executor.private_key,
+                            self.executor.glwe_crypto_params,
+                            num_valid_glwe_values_in_last_ciphertext,
+                        )
 
-                q_result = q_result.astype(numpy.int64)
+            q_result = q_result.astype(numpy.int64)
 
-                print(f"✅✅✅ Output decrypted")
-                print(f'🐞 -------------- {q_result.shape=}, {type(q_result)=}')
-                result_tensor = torch.tensor(q_result, device=device, dtype=torch.long)
-                print(f'🐞 -------------- {result_tensor.shape=}, {type(result_tensor)=}')
+            print(f"✅✅✅ Output decrypted")
+            print(f'🐞 -------------- {q_result.shape=}, {type(q_result)=}')
+            result_tensor = torch.tensor(q_result, device=device, dtype=torch.long)
+            print(f'🐞 -------------- {result_tensor.shape=}, {type(result_tensor)=}')
 
-                out_tensor = _apply_correction_and_dequantize(
-                    result_tensor, x_q, x_zp, weight_zp, sum_w, weight_shape[0], x_scale, weight_scale
-                )
-                print(f"✅✅✅ Output Dequantized")
-                out_tensor = (
-                    out_tensor.view(*original_shape[:-1], -1) if original_shape[:-1] else out_tensor
-                )
-                assert (
-                    original_shape[:-1] == out_tensor.shape[:-1]
-                ), "Original shape and output shape do not match"
-                print(f'🐞 -------------- {out_tensor.shape=}, {type(out_tensor)=}')
+            out_tensor = _apply_correction_and_dequantize(
+                result_tensor, x_q, x_zp, weight_zp, sum_w, weight_shape[0], x_scale, weight_scale
+            )
+            print(f"✅✅✅ Output Dequantized")
+            out_tensor = (
+                out_tensor.view(*original_shape[:-1], -1) if original_shape[:-1] else out_tensor
+            )
+            assert (
+                original_shape[:-1] == out_tensor.shape[:-1]
+            ), "Original shape and output shape do not match"
+            print(f'🐞 -------------- {out_tensor.shape=}, {type(out_tensor)=}')
 
-                out_tensor = _add_bias(out_tensor, bias, 'cpu')
-                print(f"✅✅✅ Bias added")
+            out_tensor = _add_bias(out_tensor, bias, 'cpu')
+            print(f"✅✅✅ Bias added")
 
-                inferences.append(out_tensor.detach().cpu().numpy())
-                print('🐞 --------------', out_tensor.shape)
+            inferences.append(out_tensor.detach().cpu().numpy())
+            print('🐞 --------------', out_tensor.shape)
 
         print(f"🐞 -------------- {len(inferences)=}, {type(inferences)=}")
         return torch.Tensor(numpy.array(inferences)).to(device=base_device)
