@@ -328,6 +328,8 @@ class RemoteModule(nn.Module):
             # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4672
             # assert self.executor is None, "Remote optimized linear layers are not yet implemented"
             if self.executor:
+                print('-----> 🚀🚀🚀🚀🚀🚀 remote_glwe_call', x.shape)
+                print(x)
                 y = self.remote_glwe_call(x)
             else:
                 y = self.remote_call(x)
@@ -798,8 +800,6 @@ class HybridFHEModel:
             if fhe_mode in (HybridFHEMode.EXECUTE, HybridFHEMode.REMOTE, HybridFHEMode.DISABLE):
                 # Initialize executor only if not already done
                 self.executor = self.executor or GLWELinearLayerExecutor()
-
-                print(f"\n📡 [HybridFHEModel] Keys: {self.executor.private_key is not None=}")
 
                 # Generate keys only if needed and not already done
                 if fhe_mode != HybridFHEMode.DISABLE and self.executor.private_key is None:
