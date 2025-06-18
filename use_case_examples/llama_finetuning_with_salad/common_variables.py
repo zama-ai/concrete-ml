@@ -2,13 +2,12 @@
 from pathlib import Path
 
 MODEL_NAME = "meta-llama/Llama-3.2-1B"
-COMPILED_MODELS_PAH = Path("compiled_models")
+COMPILED_MODELS_PATH = Path("compiled_models")
 
-PATH_TO_CLIENTS = COMPILED_MODELS_PAH / f"meta-llama"
-PATH_TO_CLIENTS_KEYS = COMPILED_MODELS_PAH / f"meta-llama_keys"
+PATH_TO_CLIENTS = COMPILED_MODELS_PATH / f"meta-llama"
+PATH_TO_CLIENTS_KEYS = COMPILED_MODELS_PATH / f"meta-llama_keys"
 
-MODEL_DIR = COMPILED_MODELS_PAH / 'meta-llama'
-
+MODEL_DIR = COMPILED_MODELS_PATH / 'meta-llama'
 
 MAX_LENGTH = 64
 
