@@ -63,16 +63,16 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     purge_compiled_model_dir(COMPILED_MODELS_PATH, delete=args.save_compiled_model)
-    print(f"🧠 Fine-tuning with {args.optimized_linear_execution=}")
+    print(f"--> Fine-tuning with {args.optimized_linear_execution=}")
 
     # --------------------- [1] Load Data ---------------------
-    print(f'Load Data...')
+    print(f'--> Load Data...')
     collator = DataCollator(TOKENIZER)
     train_dataset = load_from_disk(TRAIN_PATH)
     test_dataset = load_from_disk(TEST_PATH)
 
     # --------------------- [2] Load Pretrained Model ---------------------
-    print(f'Load pre-trained model...')
+    print(f'--> Load pre-trained model...')
     pretrained_model = AutoModelForCausalLM.from_pretrained(MODEL_NAME).to(DEVICE)
     pretrained_model.config.pad_token_id = pretrained_model.config.eos_token_id
 
@@ -83,12 +83,12 @@ if __name__ == "__main__":
     # --------------------- [3] Inject LoRA ---------------------
     # Injecting specific modules to fine-tune a pre-entrainer model
     # while considerably reducing the number of parameters to be trained
-    print(f'Inject PEFT features...')
+    print(f'--> Inject PEFT features...')
     peft_model = get_peft_model(pretrained_model, LoraConfig(**PEFT_ARGS)).to(DEVICE)
 
     # --------------------- [4] HuggingFace Trainer ---------------------
     # Injecting specific modules to train a pre-entrainer model using LORQ
-    print(f'Inject HF trainer features...')
+    print(f'--> Inject HF trainer features...')
     hf_trainer = Trainer(
         model=peft_model,
         args=TrainingArguments(**TRAINING_ARGS),
@@ -102,7 +102,7 @@ if __name__ == "__main__":
     optimizer, lr_scheduler = hf_trainer.optimizer, hf_trainer.lr_scheduler
 
     # --------------------- [5] CML LoraTrainer ---------------------
-    print("Inject CML LoraTrainer features...")
+    print("--> Inject CML LoraTrainer features...")
     lora_trainer = LoraTrainer(
         model=peft_model,
         optimizer=optimizer,
@@ -122,31 +122,26 @@ if __name__ == "__main__":
     )
 
     # --------------------- [6] Compilation ---------------------
-    print('Compilation ...')
+    print('--> Compilation ...')
     inputset = get_random_inputset(vocab_size=VOCAB_SIZE, batch_size=BATCH_SIZE, max_length=MAX_LENGTH)
     lora_trainer.compile(inputset, n_bits=N_BITS)
 
     if args.save_compiled_model:
-        print("Saving compiled models...")
+        print("--> Saving compiled models...")
         lora_trainer.save_and_clear_private_info(MODEL_DIR, via_mlir=True)
         peft_model.save_pretrained(COMPILED_MODELS_PATH / "artefact")
         pretrained_model.config.save_pretrained(COMPILED_MODELS_PATH / "artefact")
 
-    # artefact/
-    # ├── adapter_config.json    ← config PEFT
-    # ├── adapter_model.bin      ← LoRA weights
-    # ├── config.json            ← (pad_token_id)
-
-    print("<!> Now run `server_<compilation_type>.py`...")
+    print("--> <!> Now run `server_<compilation_type>.py`...")
 
     # --------------------- [7] Init Client ---------------------
-    print("Init FHE client...")
+    print("--> Init FHE client...")
     client_path = COMPILED_MODELS_PATH / ("client" if args.optimized_linear_execution else "meta-llama")
     lora_trainer.hybrid_model.init_client(path_to_clients=client_path, path_to_keys=PATH_TO_CLIENTS_KEYS)
     lora_trainer.hybrid_model.set_fhe_mode(HybridFHEMode.REMOTE)
 
     # --------------------- [8] Fine-tuning ---------------------
-    print("Running FHE remote training...")
+    print("--> Running FHE remote training...")
     limited_batches = get_limited_batches(train_dl, 5)
     lora_trainer.train(limited_batches, fhe="remote", device=DEVICE)
 
