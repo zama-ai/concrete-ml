@@ -3,6 +3,7 @@ import argparse
 import sys
 import os
 import time
+import json
 import signal
 from datasets import load_from_disk
 from tqdm import tqdm
@@ -188,12 +189,12 @@ if __name__ == "__main__":
 
     lora_trainer.hybrid_model.set_fhe_mode(HybridFHEMode.REMOTE)
 
-    limited_batches = get_limited_batches(train_dl, 1)
+    limited_batches = get_limited_batches(train_dl, 5)
     print(f'Number of batches: {len(limited_batches)}')
     print(f'Number of batches: {limited_batches[0]['input_ids'].shape}')
     lora_trainer.train(limited_batches, fhe="remote", device=DEVICE)
 
 
-
+    #
 
 

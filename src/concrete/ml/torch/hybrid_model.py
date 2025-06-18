@@ -1,7 +1,6 @@
 """Implement the conversion of a torch model to a hybrid fhe/torch inference."""
 
 # pylint: disable=too-many-lines
-import json
 import pickle
 import ast
 import io
@@ -240,6 +239,8 @@ class RemoteModule(nn.Module):
                 files={"key": io.BytesIO(initial_bytes=serialized_evaluation_keys)},
             )
             assert response.status_code == 200, response.content.decode("utf-8")
+            print(f"✅✅✅ Key added")
+
             uid = response.json()["uid"]
             # We store the key id and the client in the object
             # If we observe memory issues due to this we can always move
@@ -459,7 +460,6 @@ class RemoteModule(nn.Module):
 
             return x_q, x_scale, x_zp, original_shape
 
-
         def _apply_correction_and_dequantize(
             raw: torch.Tensor,
             x_q: torch.Tensor,
@@ -546,6 +546,7 @@ class RemoteModule(nn.Module):
         print('🐞🔹 -------------- Batch size:', x.shape, type(x))
         # Iterate over each element in the batch
         for index in range(len(x)):
+            print('\n\n\n\n\n\n\n\n\n\n\n')
             # x.shape -> 1, 64, 2048 (batch_size, sequence_length (nb token), hidden_size)
             # Manage tensor, tensor shape, and encrypt tensor
             # (1, 64, 2048)
@@ -607,15 +608,15 @@ class RemoteModule(nn.Module):
                     },
                     stream=True,
                 )
-                assert response.status_code == 200, 'FHE computation failed'
-                print(f"✅✅✅ Inference done")
-                # Sauvegarde le fichier npz reçu
-                output_path = "client/encrypted_result_from_server.bin"
+                assert response.status_code == 200
+                print(f"✅✅✅ FHE successully computed")
+
+                output_path = f"{self.private_remote_weights_path}/encrypted_output_from_server.bin"
                 with open(output_path, "wb") as f:
                     for chunk in response.iter_content(chunk_size=4096):
                         if chunk:
                             f.write(chunk)
-                print(f"📥 Encrypted bundle saved to {output_path}")
+                    print(f"📥 Encrypted bundle saved at {output_path}")
 
                 bundle = numpy.load(output_path)
                 encrypted_result = bundle["encrypted_result"].tobytes()
@@ -628,12 +629,16 @@ class RemoteModule(nn.Module):
                 if "bias" in bundle:
                     bias = torch.tensor(bundle["bias"], dtype=torch.float32, device=device)
 
-                print(f'🐞 -------------- {type(weight_shape)=}')
-                print(f'🐞 -------------- {type(weight_scale)=}')
-                print(f'🐞 -------------- {type(weight_zp)=}')
-                print(f'🐞 -------------- {type(sum_w)=}')
+                print(f'🐞 -------------- {weight_shape=}')
+                print(f'🐞 -------------- {weight_scale=}')
+                print(f'🐞 -------------- {weight_zp=}')
+                print(f'🐞 -------------- {sum_w=}')
+                print(f'🐞 -------------- {type(bias)=}')
 
-                num_valid_glwe_values_in_last_ciphertext = (weight_shape[1] % self.executor.poly_size or self.executor.poly_size)
+                num_valid_glwe_values_in_last_ciphertext = (
+                    weight_shape[1] % self.executor.poly_size or self.executor.poly_size
+                )
+
                 print(f'{num_valid_glwe_values_in_last_ciphertext=} - {self.executor.poly_size=}')
 
                 encrypted_result = fhext.CompressedResultEncryptedMatrix.deserialize(encrypted_result)
@@ -647,32 +652,32 @@ class RemoteModule(nn.Module):
 
                 q_result = q_result.astype(numpy.int64)
 
+                print(f"✅✅✅ Output decrypted")
+                print(f'🐞 -------------- {q_result.shape=}, {type(q_result)=}')
                 result_tensor = torch.tensor(q_result, device=device, dtype=torch.long)
-                k = weight_shape[0]
-                print('🐞 --------------', result_tensor.shape)
-
+                print(f'🐞 -------------- {result_tensor.shape=}, {type(result_tensor)=}')
 
                 out_tensor = _apply_correction_and_dequantize(
-                    result_tensor, x_q, x_zp, weight_zp, sum_w, k, x_scale, weight_scale
+                    result_tensor, x_q, x_zp, weight_zp, sum_w, weight_shape[0], x_scale, weight_scale
                 )
-                print('🐞 --------------', out_tensor.shape)
-
-                # Reshape the output tensor to match the original shape
+                print(f"✅✅✅ Output Dequantized")
                 out_tensor = (
                     out_tensor.view(*original_shape[:-1], -1) if original_shape[:-1] else out_tensor
                 )
-
                 assert (
                     original_shape[:-1] == out_tensor.shape[:-1]
                 ), "Original shape and output shape do not match"
-                print('🐞 --------------', out_tensor.shape)
+                print(f'🐞 -------------- {out_tensor.shape=}, {type(out_tensor)=}')
+
 
                 # Add bias to the output tensor if present.
                 out_tensor = _add_bias(out_tensor, bias, 'cpu')
+                print(f"✅✅✅ Bias added")
 
                 inferences.append(out_tensor.detach().cpu().numpy())
                 print('🐞 --------------', out_tensor.shape)
-        # Concatenate results and move them back to proper device
+
+        print(f"🐞 -------------- {len(inferences)=}, {type(inferences)=}")
         return torch.Tensor(numpy.array(inferences)).to(device=base_device)
 
 
@@ -1003,6 +1008,7 @@ class HybridFHEModel:
                     and has_glwe_backend()
                     and self.optimized_linear_execution
                 ):
+                    print('🐞 -------------- Using GLWE backend for quantization')
                     self.use_glwe = True
                     self.executor = GLWELinearLayerExecutor(
                         use_dynamic_quantization=use_dynamic_quantization
@@ -1103,7 +1109,7 @@ class HybridFHEModel:
                         "transpose_inputs2": quantized_linear_op.attrs.get("transB", False),
                         "bias":len(quantized_layer[1].constant_inputs) > 1,
                     }
-
+                    import json
                     with open(server_path / "information.json", "w") as f:
                         json.dump(info, f)
 

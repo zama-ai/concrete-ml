@@ -1,7 +1,8 @@
+import json
 import ast
 import io
 import uuid
-import json
+
 import torch
 import numpy
 import time
@@ -177,16 +178,18 @@ async def compute(
         has_bias = info.get("bias", False)
 
     private_remote_weights = torch.load(remote_weights_path)
-    print(f"📥 private_remote_weights loaded {private_remote_weights.shape=}")
-    private_remote_bias    = None
+    print(f"📥 --------------  private_remote_weights loaded {private_remote_weights.shape=}")
+
+    private_remote_bias = None
     if has_bias:
         assert remote_bias_path.exists(), "Bias file specified but not found"
         private_remote_bias = torch.load(remote_bias_path)
         print(f"📥 private_remote_bias loaded {private_remote_bias.shape=}")
 
-    weight_q, weight_scale, weight_zp, sum_w = _per_channel_weight_quantization(private_remote_weights, 'cpu')
 
+    weight_q, weight_scale, weight_zp, sum_w = _per_channel_weight_quantization(private_remote_weights, 'cpu')
     weight_q_int = weight_q.long().cpu().numpy().astype(numpy.int64).astype(numpy.uint64)
+    print(f'🐞 -------------- {weight_q_int.shape=}')
 
     encrypted_result = fhext.matrix_multiplication(
         encrypted_matrix=encrypted_input,
@@ -198,20 +201,29 @@ async def compute(
             binary_file.write(encrypted_result.serialize())
             print(f"📤 encrypted_result saved ({len(encrypted_result.serialize())} bytes)")
 
-    def result_stream():
-        buffer = io.BytesIO()
+    save_dict = {
+    "encrypted_result": encrypted_result.serialize(),
+    "weight_scale": weight_scale.cpu().numpy(),
+    "weight_zp": weight_zp.cpu().numpy(),
+    "sum_w": sum_w.cpu().numpy(),
+    "weight_shape": numpy.array(weight_q.shape, dtype=numpy.int32),
+    "transpose_inputs1": numpy.array([transpose_inputs1], dtype=numpy.bool_),
+    "transpose_inputs2": numpy.array([transpose_inputs2], dtype=numpy.bool_),
+        }
+    if private_remote_bias is not None:
+        save_dict["bias"] = private_remote_bias.cpu().numpy()
 
-        save_dict = {
-        "encrypted_result": encrypted_result.serialize(),
-        "weight_scale": weight_scale.cpu().numpy(),
-        "weight_zp": weight_zp.cpu().numpy(),
-        "sum_w": sum_w.cpu().numpy(),
-        "weight_shape": numpy.array(weight_q.shape, dtype=numpy.int32),
-        "transpose_inputs1": numpy.array([transpose_inputs1], dtype=numpy.bool_),
-        "transpose_inputs2": numpy.array([transpose_inputs2], dtype=numpy.bool_),
-            }
-        if private_remote_bias is not None:
-            save_dict["bias"] = private_remote_bias.cpu().numpy()
+
+    print(f"🐞 -------------- {weight_scale=}")
+    print(f"🐞 -------------- {weight_zp=}")
+    print(f"🐞 -------------- {sum_w=}")
+    print(f"🐞 -------------- {weight_q.shape=}")
+
+
+    def result_stream():
+        chunk_size = 4096
+
+        buffer = io.BytesIO()
         numpy.savez_compressed(buffer, **save_dict)
         buffer.seek(0)
 
@@ -222,13 +234,10 @@ async def compute(
                 break
             yield chunk
 
-
     return StreamingResponse(
         result_stream(),
         media_type="application/octet-stream",
-        headers={
-            "Content-Disposition": "attachment; filename=encrypted_result_bundle.npz",
-        }
+        headers={"Content-Disposition": f"attachment; filename=encrypted_result_bundle.bin"}
     )
 
 if __name__ == "__main__":
