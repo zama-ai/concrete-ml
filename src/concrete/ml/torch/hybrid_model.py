@@ -516,37 +516,21 @@ class RemoteModule(nn.Module):
                 scale_product = x_scale * weight_scale.view(1, 1, -1)
             return acc.float() * scale_product
 
-
         def _add_bias(
             out_tensor: torch.Tensor, bias: torch.Tensor, device: torch.device
         ) -> torch.Tensor:
-            """Add bias to the output tensor if present.
-
-            Args:
-                out_tensor: The tensor to add bias to
-                bias: The bias tensor to add
-                device: The device to place the bias tensor on
-
-            Returns:
-                torch.Tensor: Tensor with bias added
-            """
-            if bias is not None:
-                out_tensor += bias
-            return out_tensor
+            return out_tensor + bias if bias is not None else out_tensor
 
 
         # Store tensor device and move to CPU for FHE encryption
         base_device = x.device
         x = x.to(device=device)
-
-        # We need to iterate over elements in the batch since
-        # we don't support batch inference
         inferences: List[numpy.ndarray] = []
 
-        print('🐞🔹 -------------- Batch size:', x.shape, type(x))
+        print('🐞 -------------- Batch size:', x.shape, type(x))
         # Iterate over each element in the batch
         for index in range(len(x)):
-            print('\n\n\n\n\n\n\n\n\n\n\n')
+            print(f'\n\nSample_{index}:\n')
             # x.shape -> 1, 64, 2048 (batch_size, sequence_length (nb token), hidden_size)
             # Manage tensor, tensor shape, and encrypt tensor
             # (1, 64, 2048)
@@ -572,8 +556,7 @@ class RemoteModule(nn.Module):
             # Iterate over the tokens ? or send all the inputs at once
             # Encypt the input
             for idx, q_x_sample in enumerate(x_q_int):
-                print(f'🐞🔹 -------------- {q_x_sample.shape=}')
-
+                print(f'🐞 -------------- {q_x_sample.shape=}')
                 ciphertext =fhext.encrypt_matrix(  # pylint: disable=no-member
                     pkey=self.executor.private_key,
                     crypto_params=self.executor.glwe_crypto_params,
@@ -584,7 +567,7 @@ class RemoteModule(nn.Module):
 
                 # Send the input to the server
                 print(f'🐞 -------------- {self.uid=}')
-                print(f'🐞📁 -------------- {self.private_remote_weights_path=}')
+                print(f'🐞 -------------- {self.private_remote_weights_path=}')
 
                 response = requests.post(
                     f"{self.server_remote_address}/send_encrypted_input",
@@ -624,10 +607,8 @@ class RemoteModule(nn.Module):
                 weight_zp    = torch.tensor(bundle["weight_zp"], dtype=torch.float32, device=device)
                 sum_w        = torch.tensor(bundle["sum_w"], dtype=torch.float32, device=device)
                 weight_shape = tuple(bundle["weight_shape"])
+                bias         = torch.tensor(bundle["bias"], device=device) if "bias" in bundle else None
 
-                bias = None
-                if "bias" in bundle:
-                    bias = torch.tensor(bundle["bias"], dtype=torch.float32, device=device)
 
                 print(f'🐞 -------------- {weight_shape=}')
                 print(f'🐞 -------------- {weight_scale=}')
@@ -638,7 +619,6 @@ class RemoteModule(nn.Module):
                 num_valid_glwe_values_in_last_ciphertext = (
                     weight_shape[1] % self.executor.poly_size or self.executor.poly_size
                 )
-
                 print(f'{num_valid_glwe_values_in_last_ciphertext=} - {self.executor.poly_size=}')
 
                 encrypted_result = fhext.CompressedResultEncryptedMatrix.deserialize(encrypted_result)
@@ -669,8 +649,6 @@ class RemoteModule(nn.Module):
                 ), "Original shape and output shape do not match"
                 print(f'🐞 -------------- {out_tensor.shape=}, {type(out_tensor)=}')
 
-
-                # Add bias to the output tensor if present.
                 out_tensor = _add_bias(out_tensor, bias, 'cpu')
                 print(f"✅✅✅ Bias added")
 
@@ -897,7 +875,6 @@ class HybridFHEModel:
         path_to_clients.mkdir(exist_ok=True)
 
         if self.use_glwe:
-            print(path_to_clients.parent / "client_model.pth")
             self.client_model_state_dict = torch.load(Path('client') / "client_model.pth")
             self.executor = self.executor or GLWELinearLayerExecutor()
             if self.executor.private_key is None:
@@ -911,7 +888,7 @@ class HybridFHEModel:
                 # Save the keys
                 with (path_to_clients / "public_evaluation_key.serverKey").open("wb") as binary_file:
                     binary_file.write(serialized_ckey)
-                    print(f"\n📡 [init_client] Adding keys: {self.server_remote_address}/add_key")
+                    print(f"📡 [init_client] Adding keys: {self.server_remote_address}/add_key")
 
                 response = requests.post(
                     f"{self.server_remote_address}/add_key",
@@ -922,13 +899,10 @@ class HybridFHEModel:
                 uid = response.json()["uid"]
                 for module_name in self.remote_modules:
                     self.remote_modules[module_name].uid = uid
-
-                print(f"\n📡 [init_client] Key added with UID: {uid}")
-
+                print(f"📡 [init_client] Key added with UID: {uid}")
             else:
-                print("\n📡 [init_client] Keys already generated, skipping key generation for GLWE backend.")
+                print("📡 [init_client] Keys already generated, skipping key generation for GLWE backend.")
         else:
-
             for module_name, module in self.remote_modules.items():
                 path_to_client = path_to_clients / module_name
                 path_to_client.mkdir(exist_ok=True)
@@ -1109,7 +1083,6 @@ class HybridFHEModel:
 
                     with open(server_path / "information.json", "w") as f:
                         json.dump(info, f)
-
 
                 else:
                     model_dev = FHEModelDev(str(model_module_path), private_q_module)
