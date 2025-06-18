@@ -1,7 +1,7 @@
 """Implement the conversion of a torch model to a hybrid fhe/torch inference."""
 
 # pylint: disable=too-many-lines
-import pickle
+import json
 import ast
 import io
 import sys
@@ -1058,67 +1058,61 @@ class HybridFHEModel:
         """
 
         model_path = Path(path)
-        for i, module_name in enumerate(self.module_names):
+        for module_name in self.module_names:
             onnx_model = self.private_q_modules[module_name].onnx_model
+            private_q_module = self.private_q_modules[module_name]
 
             if onnx_model is not None:
                 input_shapes = [
                     tuple(elt.dim_value for elt in onnx_input.type.tensor_type.shape.dim)
                     for onnx_input in onnx_model.graph.input
                 ]
-
                 assert len(input_shapes) == 1, "Multi-input circuits not supported yet"
-                model_module_path = model_path.resolve() / module_name
-                model_module_path.mkdir(exist_ok=True)
-                model_module_shape_path = model_module_path / tuple_to_underscore_str(
-                    input_shapes[0]
-                )
+
+                shape_str = tuple_to_underscore_str(input_shapes[0])
+                model_module_path = (path / module_name / shape_str).resolve()
+                model_module_path.mkdir(parents=True, exist_ok=True)
 
                 if self.use_glwe:
-                    prefix = module_name + ".private_module"
+                    # Extract and save private weights
+                    prefix = f"{module_name}.private_module"
                     matching_keys = [k for k in self.model.state_dict().keys() if k.startswith(prefix)]
-                    assert len(matching_keys) == 1
+                    assert len(matching_keys) == 1, f"Expected 1 match for `{prefix}`, found `{len(matching_keys)}`"
                     private_remote_weights = self.model.state_dict()[matching_keys[0]]
 
                     # Ensure target directories exist
-                    server_path = Path(f'{model_module_shape_path.resolve()}/server')
+                    server_path = model_module_path / "server"
                     server_path.mkdir(parents=True, exist_ok=True)
-
                     self.remote_modules[module_name].private_remote_weights_path = server_path
-
                     torch.save(private_remote_weights, server_path / "remote_weights.pth")
 
-                    # print('🐞 --------------', self.private_q_modules[module_name].quant_layers_dict.values(), 'private_q_modules[module_name]')
-
-                    layers_in_module = list(self.private_q_modules[module_name].quant_layers_dict.values())
-                    assert len(layers_in_module) == 1, "Expected exactly one linear layer in QuantizedModule"
+                    # Extract quantized layer
+                    layers_in_module = list(private_q_module.quant_layers_dict.values())
+                    assert len(layers_in_module) == 1, "Expected exactly one linear layer in `QuantizedModule`"
                     quantized_linear_op = layers_in_module[0][1]
                     assert quantized_linear_op.supported_by_linear_backend()
-
-
-
-
                     _, quantized_layer = next(iter(self.private_q_modules[module_name].quant_layers_dict.items()))
-                    if len(quantized_layer[1].constant_inputs) > 1:
+
+                    # Save bias if present
+                    has_bias = len(quantized_layer[1].constant_inputs) > 1
+                    if has_bias:
                         bias = list(quantized_layer[1].constant_inputs.values())[1].values
                         bias = torch.from_numpy(bias).to('cpu')
                         torch.save(bias, server_path / "remote_bias.pth")
 
+                    # Save GLWE metadata
                     info = {
                         "transpose_inputs1": quantized_linear_op.attrs.get("transA", False),
                         "transpose_inputs2": quantized_linear_op.attrs.get("transB", False),
-                        "bias":len(quantized_layer[1].constant_inputs) > 1,
+                        "bias": has_bias,
                     }
-                    import json
+
                     with open(server_path / "information.json", "w") as f:
                         json.dump(info, f)
 
 
                 else:
-                    model_dev = FHEModelDev(
-                        str(model_module_shape_path.resolve()),
-                        self.private_q_modules[module_name],
-                    )
+                    model_dev = FHEModelDev(str(model_module_path), private_q_module)
                     model_dev.save(via_mlir=via_mlir)
 
     def save_and_clear_private_info(self, path: Path, via_mlir=True):
