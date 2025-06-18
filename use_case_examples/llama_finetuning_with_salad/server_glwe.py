@@ -1,7 +1,7 @@
 import ast
 import io
 import uuid
-
+import json
 import torch
 import numpy
 import time
@@ -150,7 +150,9 @@ async def compute(
     dest_dir = Path(linear_layer_name_path)
     encrypted_input_path = dest_dir / "encrypted_input.bin"
     remote_weights_path = dest_dir / "remote_weights.pth"
+    remote_bias_path = dest_dir / "remote_bias.pth"
     encrypted_result_path = dest_dir / "encrypted_result.bin"
+    remote_information_path = dest_dir / "information.json"
 
     if not encrypted_input_path.exists():
         raise HTTPException(status_code=404, detail=f"File not found: {encrypted_input_path}")
@@ -163,23 +165,29 @@ async def compute(
         print(f"📥 encrypted_input loaded ({len(encrypted_input)} bytes)")
         encrypted_input = fhext.EncryptedMatrix.deserialize(encrypted_input)
 
-
-    private_remote_weights = torch.load(remote_weights_path)
-
-    print(f"📥 private_remote_weights loaded {private_remote_weights.shape=}")
-    # [2048, 2048]
-
-
     with open(SERVER_EVAL_KEY_PATH, "rb") as binary_file:
         serialized_ckey = binary_file.read()
         compression_key = fhext.deserialize_compression_key(serialized_ckey)
         print("🔐 Server key deserialized and set.", type(compression_key))
 
+    with open(remote_information_path, "r") as f:
+        info = json.load(f)
+        transpose_inputs1 = info.get("transpose_inputs1", False)
+        transpose_inputs2 = info.get("transpose_inputs2", False)
+        has_bias = info.get("bias", False)
+
+    private_remote_weights = torch.load(remote_weights_path)
+    print(f"📥 private_remote_weights loaded {private_remote_weights.shape=}")
+    private_remote_bias    = None
+    if has_bias:
+        assert remote_bias_path.exists(), "Bias file specified but not found"
+        private_remote_bias = torch.load(remote_bias_path)
+        print(f"📥 private_remote_bias loaded {private_remote_bias.shape=}")
+
     weight_q, weight_scale, weight_zp, sum_w = _per_channel_weight_quantization(private_remote_weights, 'cpu')
 
     weight_q_int = weight_q.long().cpu().numpy().astype(numpy.int64).astype(numpy.uint64)
 
-    print(weight_q_int.shape[1], 'poulfff')
     encrypted_result = fhext.matrix_multiplication(
         encrypted_matrix=encrypted_input,
         data=weight_q_int,
@@ -188,18 +196,39 @@ async def compute(
 
     with open(encrypted_result_path, "wb") as binary_file:
             binary_file.write(encrypted_result.serialize())
-
-    print(f"📤 encrypted_result saved ({len(encrypted_result.serialize())} bytes)")
+            print(f"📤 encrypted_result saved ({len(encrypted_result.serialize())} bytes)")
 
     def result_stream():
+        buffer = io.BytesIO()
+
+        save_dict = {
+        "encrypted_result": encrypted_result.serialize(),
+        "weight_scale": weight_scale.cpu().numpy(),
+        "weight_zp": weight_zp.cpu().numpy(),
+        "sum_w": sum_w.cpu().numpy(),
+        "weight_shape": numpy.array(weight_q.shape, dtype=numpy.int32),
+        "transpose_inputs1": numpy.array([transpose_inputs1], dtype=numpy.bool_),
+        "transpose_inputs2": numpy.array([transpose_inputs2], dtype=numpy.bool_),
+            }
+        if private_remote_bias is not None:
+            save_dict["bias"] = private_remote_bias.cpu().numpy()
+        numpy.savez_compressed(buffer, **save_dict)
+        buffer.seek(0)
+
         chunk_size = 4096
-        for i in range(0, len(encrypted_result.serialize()), chunk_size):
-            yield encrypted_result.serialize()[i:i+chunk_size]
+        while True:
+            chunk = buffer.read(chunk_size)
+            if not chunk:
+                break
+            yield chunk
+
 
     return StreamingResponse(
         result_stream(),
         media_type="application/octet-stream",
-        headers={"Content-Disposition": f"attachment; filename=encrypted_result.bin"}
+        headers={
+            "Content-Disposition": "attachment; filename=encrypted_result_bundle.npz",
+        }
     )
 
 if __name__ == "__main__":

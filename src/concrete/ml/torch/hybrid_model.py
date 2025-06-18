@@ -1,6 +1,7 @@
 """Implement the conversion of a torch model to a hybrid fhe/torch inference."""
 
 # pylint: disable=too-many-lines
+import json
 import pickle
 import ast
 import io
@@ -458,6 +459,82 @@ class RemoteModule(nn.Module):
 
             return x_q, x_scale, x_zp, original_shape
 
+
+        def _apply_correction_and_dequantize(
+            raw: torch.Tensor,
+            x_q: torch.Tensor,
+            x_zp: torch.Tensor,
+            weight_zp: torch.Tensor,
+            sum_w: torch.Tensor,
+            k: int,
+            x_scale: torch.Tensor,
+            weight_scale: torch.Tensor,
+        ) -> torch.Tensor:
+            """Apply zero-point correction and de-quantize the result.
+
+            Args:
+                raw: Raw matrix multiplication result
+                x_q: Quantized input
+                x_zp: Input zero point
+                weight_zp: Weight zero point
+                sum_w: Sum of weights
+                k: Input dimension
+                x_scale: Input scale
+                weight_scale: Weight scale
+
+            Returns:
+                torch.Tensor: Dequantized result
+            """
+            # Compute sum of quantized input values.
+            sum_x = x_q.sum(dim=-1, keepdim=True).long()
+
+            assert raw.dim() == 2 or raw.dim() == 3, "Unsupported raw tensor dimension."
+
+            # Broadcast weight quantization parameters.
+            if raw.dim() == 2:
+                # raw shape: (N, out_dim)
+                weight_zp_broadcast = weight_zp.view(1, -1)
+                sum_w_broadcast = sum_w.view(1, -1)
+            else:
+                # raw shape: (batch, n_rows, out_dim)
+                weight_zp_broadcast = weight_zp.view(1, 1, -1)
+                sum_w_broadcast = sum_w.view(1, 1, -1)
+
+            # Apply correction:
+            #   raw - [weight_zp * sum_x + x_zp * sum_w - x_zp * weight_zp * k]
+            correction = (
+                (weight_zp_broadcast * sum_x)
+                + (x_zp * sum_w_broadcast)
+                - (x_zp * weight_zp_broadcast * k)
+            )
+            acc = raw - correction
+
+            # Dequantize
+            if raw.dim() == 2:
+                scale_product = x_scale * weight_scale.view(1, -1)
+            else:  # raw.dim() == 3
+                scale_product = x_scale * weight_scale.view(1, 1, -1)
+            return acc.float() * scale_product
+
+
+        def _add_bias(
+            out_tensor: torch.Tensor, bias: torch.Tensor, device: torch.device
+        ) -> torch.Tensor:
+            """Add bias to the output tensor if present.
+
+            Args:
+                out_tensor: The tensor to add bias to
+                bias: The bias tensor to add
+                device: The device to place the bias tensor on
+
+            Returns:
+                torch.Tensor: Tensor with bias added
+            """
+            if bias is not None:
+                out_tensor += bias
+            return out_tensor
+
+
         # Store tensor device and move to CPU for FHE encryption
         base_device = x.device
         x = x.to(device=device)
@@ -466,7 +543,7 @@ class RemoteModule(nn.Module):
         # we don't support batch inference
         inferences: List[numpy.ndarray] = []
 
-        print('batch size:', len(x))
+        print('🐞🔹 -------------- Batch size:', x.shape, type(x))
         # Iterate over each element in the batch
         for index in range(len(x)):
             # x.shape -> 1, 64, 2048 (batch_size, sequence_length (nb token), hidden_size)
@@ -494,8 +571,7 @@ class RemoteModule(nn.Module):
             # Iterate over the tokens ? or send all the inputs at once
             # Encypt the input
             for idx, q_x_sample in enumerate(x_q_int):
-                print(f'{q_x_sample=}')
-                print(f'{q_x_sample.shape=}')
+                print(f'🐞🔹 -------------- {q_x_sample.shape=}')
 
                 ciphertext =fhext.encrypt_matrix(  # pylint: disable=no-member
                     pkey=self.executor.private_key,
@@ -506,7 +582,8 @@ class RemoteModule(nn.Module):
                 ciphertext_serialized = ciphertext.serialize()
 
                 # Send the input to the server
-                print(f'{self.uid=} - {self.private_remote_weights_path=}')
+                print(f'🐞 -------------- {self.uid=}')
+                print(f'🐞📁 -------------- {self.private_remote_weights_path=}')
 
                 response = requests.post(
                     f"{self.server_remote_address}/send_encrypted_input",
@@ -519,6 +596,7 @@ class RemoteModule(nn.Module):
                     }
                 )
                 assert response.status_code == 200
+                print(f"✅✅✅ Data Sent")
 
                 print('Starting inference ...')
                 response = requests.post(
@@ -529,21 +607,36 @@ class RemoteModule(nn.Module):
                     },
                     stream=True,
                 )
-                assert response.status_code == 200
-                serialized_encrypted_result = response.content
-
+                assert response.status_code == 200, 'FHE computation failed'
+                print(f"✅✅✅ Inference done")
+                # Sauvegarde le fichier npz reçu
                 output_path = "client/encrypted_result_from_server.bin"
                 with open(output_path, "wb") as f:
-                    f.write(serialized_encrypted_result)
-                    print(f"Encrypted result saved to {output_path}")
+                    for chunk in response.iter_content(chunk_size=4096):
+                        if chunk:
+                            f.write(chunk)
+                print(f"📥 Encrypted bundle saved to {output_path}")
 
-                num_valid_glwe_values_in_last_ciphertext = (
-                    2048 % self.executor.poly_size or self.executor.poly_size
-                )
+                bundle = numpy.load(output_path)
+                encrypted_result = bundle["encrypted_result"].tobytes()
+                weight_scale = torch.tensor(bundle["weight_scale"], dtype=torch.float32, device=device)
+                weight_zp    = torch.tensor(bundle["weight_zp"], dtype=torch.float32, device=device)
+                sum_w        = torch.tensor(bundle["sum_w"], dtype=torch.float32, device=device)
+                weight_shape = tuple(bundle["weight_shape"])
 
+                bias = None
+                if "bias" in bundle:
+                    bias = torch.tensor(bundle["bias"], dtype=torch.float32, device=device)
+
+                print(f'🐞 -------------- {type(weight_shape)=}')
+                print(f'🐞 -------------- {type(weight_scale)=}')
+                print(f'🐞 -------------- {type(weight_zp)=}')
+                print(f'🐞 -------------- {type(sum_w)=}')
+
+                num_valid_glwe_values_in_last_ciphertext = (weight_shape[1] % self.executor.poly_size or self.executor.poly_size)
                 print(f'{num_valid_glwe_values_in_last_ciphertext=} - {self.executor.poly_size=}')
 
-                encrypted_result = fhext.CompressedResultEncryptedMatrix.deserialize(serialized_encrypted_result)
+                encrypted_result = fhext.CompressedResultEncryptedMatrix.deserialize(encrypted_result)
 
                 q_result = fhext.decrypt_matrix(  # pylint: disable=no-member
                                 encrypted_result,
@@ -552,33 +645,33 @@ class RemoteModule(nn.Module):
                                 num_valid_glwe_values_in_last_ciphertext,
                             )
 
-                print(q_result.shape, 'q_result shape')
+                q_result = q_result.astype(numpy.int64)
 
-                # result_buffer[idx, :] = q_result.astype(numpy.int64)
-
-            # result_tensor = torch.tensor(result_buffer, device=device, dtype=torch.long)
-            # k = weight_q.shape[0]
-            # out_tensor = self._apply_correction_and_dequantize(
-            #     result_tensor, x_q, x_zp, weight_zp, sum_w, k, x_scale, weight_scale
-            # )
-
-            # out_tensor = (
-            #     out_tensor.view(*original_shape[:-1], -1) if original_shape[:-1] else out_tensor
-            # )
-
-            # assert (
-            #     original_shape[:-1] == out_tensor.shape[:-1]
-            # ), "Original shape and output shape do not match"
-            # _, quantized_layer = next(iter(q_module.quant_layers_dict.items()))
-            # out_tensor = self._add_bias(out_tensor, quantized_layer, device)
-            # return out_tensor
+                result_tensor = torch.tensor(q_result, device=device, dtype=torch.long)
+                k = weight_shape[0]
+                print('🐞 --------------', result_tensor.shape)
 
 
-            # Compute the inference using FHE server
+                out_tensor = _apply_correction_and_dequantize(
+                    result_tensor, x_q, x_zp, weight_zp, sum_w, k, x_scale, weight_scale
+                )
+                print('🐞 --------------', out_tensor.shape)
 
-            # decrypted_prediction = client.deserialize_decrypt_dequantize(encrypted_result)[0]
-            # inferences.append(decrypted_prediction)
+                # Reshape the output tensor to match the original shape
+                out_tensor = (
+                    out_tensor.view(*original_shape[:-1], -1) if original_shape[:-1] else out_tensor
+                )
 
+                assert (
+                    original_shape[:-1] == out_tensor.shape[:-1]
+                ), "Original shape and output shape do not match"
+                print('🐞 --------------', out_tensor.shape)
+
+                # Add bias to the output tensor if present.
+                out_tensor = _add_bias(out_tensor, bias, 'cpu')
+
+                inferences.append(out_tensor.detach().cpu().numpy())
+                print('🐞 --------------', out_tensor.shape)
         # Concatenate results and move them back to proper device
         return torch.Tensor(numpy.array(inferences)).to(device=base_device)
 
@@ -988,6 +1081,32 @@ class HybridFHEModel:
                     self.remote_modules[module_name].private_remote_weights_path = server_path
 
                     torch.save(private_remote_weights, server_path / "remote_weights.pth")
+
+                    # print('🐞 --------------', self.private_q_modules[module_name].quant_layers_dict.values(), 'private_q_modules[module_name]')
+
+                    layers_in_module = list(self.private_q_modules[module_name].quant_layers_dict.values())
+                    assert len(layers_in_module) == 1, "Expected exactly one linear layer in QuantizedModule"
+                    quantized_linear_op = layers_in_module[0][1]
+                    assert quantized_linear_op.supported_by_linear_backend()
+
+
+
+
+                    _, quantized_layer = next(iter(self.private_q_modules[module_name].quant_layers_dict.items()))
+                    if len(quantized_layer[1].constant_inputs) > 1:
+                        bias = list(quantized_layer[1].constant_inputs.values())[1].values
+                        bias = torch.from_numpy(bias).to('cpu')
+                        torch.save(bias, server_path / "remote_bias.pth")
+
+                    info = {
+                        "transpose_inputs1": quantized_linear_op.attrs.get("transA", False),
+                        "transpose_inputs2": quantized_linear_op.attrs.get("transB", False),
+                        "bias":len(quantized_layer[1].constant_inputs) > 1,
+                    }
+
+                    with open(server_path / "information.json", "w") as f:
+                        json.dump(info, f)
+
 
                 else:
                     model_dev = FHEModelDev(
