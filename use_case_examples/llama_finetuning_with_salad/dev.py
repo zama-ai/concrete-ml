@@ -132,16 +132,20 @@ if __name__ == "__main__":
         peft_model.save_pretrained(COMPILED_MODELS_PATH / "artefact")
         pretrained_model.config.save_pretrained(COMPILED_MODELS_PATH / "artefact")
 
-    print("--> <!> Now run `server_<compilation_type>.py`...")
+    mode = 'remote'
 
-    # --------------------- [7] Init Client ---------------------
-    print("--> Init FHE client...")
-    client_path = COMPILED_MODELS_PATH / ("client" if args.optimized_linear_execution else "meta-llama")
-    lora_trainer.hybrid_model.init_client(path_to_clients=client_path, path_to_keys=PATH_TO_CLIENTS_KEYS)
-    lora_trainer.hybrid_model.set_fhe_mode(HybridFHEMode.REMOTE)
+    if mode == 'remote':
+        print("--> <!> Now run `server_<compilation_type>.py`...")
+
+        # --------------------- [7] Init Client ---------------------
+        print("--> Init FHE client...")
+        client_path = COMPILED_MODELS_PATH / ("client" if args.optimized_linear_execution else "meta-llama")
+        lora_trainer.hybrid_model.init_client(path_to_clients=client_path, path_to_keys=PATH_TO_CLIENTS_KEYS)
+        lora_trainer.hybrid_model.set_fhe_mode(HybridFHEMode.REMOTE)
 
     # --------------------- [8] Fine-tuning ---------------------
     print("--> Running FHE remote training...")
-    limited_batches = get_limited_batches(train_dl, 5)
-    lora_trainer.train(limited_batches, fhe="remote", device=DEVICE)
+    limited_batches = get_limited_batches(train_dl, 1)
+
+    lora_trainer.train(limited_batches, fhe=mode, device=DEVICE)
 

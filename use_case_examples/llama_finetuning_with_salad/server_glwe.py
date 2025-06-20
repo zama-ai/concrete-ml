@@ -1,3 +1,4 @@
+import numpy as np
 import io
 import json
 import uuid
@@ -51,6 +52,7 @@ async def add_key(key: UploadFile):
 async def send_data(
     encrypted_input: UploadFile = File(...),
     linear_layer_name_path: str = Form(...),
+    mode: str = Form(...),
     uid: Optional[str] = Form(None)
 ):
     """Save an encrypted input tensor to disk."""
@@ -61,7 +63,12 @@ async def send_data(
     dest_path = Path(linear_layer_name_path)
     dest_path.mkdir(parents=True, exist_ok=True)
 
-    with (dest_path / FILENAME_INPUT).open("wb") as f:
+    if mode == 'remote':
+        path = dest_path / FILENAME_INPUT
+    else:
+        path = dest_path / "input_plain.npy"
+
+    with path.open("wb") as f:
         f.write(content)
 
     return {"message": "Data received successfully", "uid": uid}
@@ -86,14 +93,17 @@ def _per_channel_weight_quantization(weight: numpy.ndarray, device: torch.device
 
     w_min_vals, _ = weight_float.min(dim=0, keepdim=True)
     w_max_vals, _ = weight_float.max(dim=0, keepdim=True)
+    print('--------======------')
+    print(f'{w_min_vals=}, {w_max_vals=}')
 
     weight_scale = (w_max_vals - w_min_vals) / (q_max - q_min)
     # Avoid division by zero.
     weight_scale = torch.where(
         (w_max_vals > w_min_vals), weight_scale, torch.ones_like(weight_scale)
     )
+    print(f'{weight_scale.shape=}')
     weight_scale = weight_scale.squeeze(-1)  # shape: (out_dim,)
-
+    print(f'{weight_scale.shape=}')
     # Quantization
     weight_zp = torch.round(q_min - w_min_vals / weight_scale).to(torch.float32)
 
@@ -108,6 +118,7 @@ def _per_channel_weight_quantization(weight: numpy.ndarray, device: torch.device
 @app.post("/compute")
 async def compute(
     uid: str = Form(),
+    mode: str = Form(),
     linear_layer_name_path: str = Form(...),
 ):
     """Computes the FHE matmul over encrypted input."""
@@ -121,13 +132,17 @@ async def compute(
     path_bias = model_dir / FILENAME_BIAS
     path_info = model_dir / FILENAME_INFO
     path_result = model_dir / FILENAME_RESULT
+    path_disable_result = model_dir / 'input_plain.npy'
 
-    for p in [path_input, path_weights, path_info]:
+    for p in [path_weights, path_info]:
         if not p.exists():
             raise HTTPException(status_code=404, detail=f"Missing file: {p}")
 
-    with path_input.open("rb") as f:
-        encrypted_input = fhext.EncryptedMatrix.deserialize(f.read())
+    if mode != 'remote':
+        clear_input = np.load(path_disable_result)
+    else:
+        with path_input.open("rb") as f:
+            encrypted_input = fhext.EncryptedMatrix.deserialize(f.read())
 
     with KEY_PATH.open("rb") as f:
         compression_key = fhext.deserialize_compression_key(f.read())
@@ -147,24 +162,57 @@ async def compute(
     if bias is not None:
         print(f"📥 Bias loaded: {bias.shape=}")
 
+    print(f"🐞 -------------- {weights.shape=}")
 
-    weight_q, weight_scale, weight_zp, sum_w = _per_channel_weight_quantization(weights, device=DEVICE)
+    weight_q, weight_scale, weight_zp, sum_w = _per_channel_weight_quantization(weights.T, device=DEVICE)
     weight_q_int = weight_q.long().cpu().numpy().astype(numpy.int64).astype(numpy.uint64)
 
     print(f"🐞 Quantized weight shape: {weight_q_int.shape}")
 
-    encrypted_result = fhext.matrix_multiplication(
-        encrypted_matrix=encrypted_input,
-        data=weight_q_int,
-        compression_key=compression_key,
-    )
+    print(f"🐞 -------------- {weights.shape=}")
+    print(f"🐞 -------------- {weight_q.shape=}")
+    print(f"🐞 -------------- {weight_q_int.shape=}")
+    print(f'🐞 -------------- {encrypted_input.shape=}')
 
-    with path_result.open("wb") as f:
-        f.write(encrypted_result.serialize())
-        print(f"📤 Encrypted result saved ({len(encrypted_result.serialize())} bytes)")
+    if mode == 'remote':
+        print('**************************')
+
+        encrypted_result = fhext.matrix_multiplication(
+            encrypted_matrix=encrypted_input,
+            data=weight_q_int,
+            compression_key=compression_key,
+        )
+
+        with path_result.open("wb") as f:
+            f.write(encrypted_result.serialize())
+            print(f"📤 Encrypted result saved ({len(encrypted_result.serialize())} bytes)")
+
+    else:
+        print('======================================================')
+        try:
+            print(f"🐞 -------------- {weight_q_int.shape=}")
+            print(f'🐞 -------------- {encrypted_input.shape=}')
+            encrypted_result = encrypted_input @ weight_q_int
+        except:
+
+            weight_q, weight_scale, weight_zp, sum_w = _per_channel_weight_quantization(weights, device=DEVICE)
+            weight_q_int = weight_q.long().cpu().numpy().astype(numpy.int64).astype(numpy.uint64)
+            encrypted_result = encrypted_input @ weight_q_int
+
+        print(f"🐞 -------------- {encrypted_input.shape} @ {weight_q_int.shape} = {encrypted_result.shape}")
+
+
+
+    print(f"🐞 -------------- {weights.shape=}")
+    print(f"🐞 -------------- {weight_q.shape=}")
+    print(f"🐞 -------------- {weight_q_int.shape=}")
+    print(f"🐞 -------------- {weight_scale.shape  =}")
+    print(f"🐞 -------------- {weight_zp.shape     =}")
+    print(f"🐞 -------------- {sum_w.shape         =}")
+
 
     metadata = {
-        "encrypted_result": encrypted_result.serialize(),
+        "encrypted_result": encrypted_result.serialize() if mode == 'remote' else encrypted_result,
         "weight_scale": weight_scale.cpu().numpy(),
         "weight_zp": weight_zp.cpu().numpy(),
         "sum_w": sum_w.cpu().numpy(),
@@ -176,10 +224,7 @@ async def compute(
     if bias is not None:
         metadata["bias"] = bias.cpu().numpy()
 
-    print(f"🐞 -------------- {weight_scale  =}")
-    print(f"🐞 -------------- {weight_zp     =}")
-    print(f"🐞 -------------- {sum_w         =}")
-    print(f"🐞 -------------- {weight_q.shape=}")
+
 
     def result_stream():
         buffer = io.BytesIO()

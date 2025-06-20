@@ -328,8 +328,6 @@ class RemoteModule(nn.Module):
             # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4672
             # assert self.executor is None, "Remote optimized linear layers are not yet implemented"
             if self.executor:
-                print('-----> 🚀🚀🚀🚀🚀🚀 remote_glwe_call', x.shape)
-                print(x)
                 y = self.remote_glwe_call(x)
             else:
                 y = self.remote_call(x)
@@ -509,6 +507,8 @@ class RemoteModule(nn.Module):
                 + (x_zp * sum_w_broadcast)
                 - (x_zp * weight_zp_broadcast * k)
             )
+
+            print(f"🐞 -------------- {raw.shape=} @ {correction.T.shape=}")
             acc = raw - correction
 
             # Dequantize
@@ -551,6 +551,10 @@ class RemoteModule(nn.Module):
             # Convert quantized data to numpy arrays for encryption.
             x_q_int = x_q.long().cpu().numpy().astype(numpy.int64).astype(numpy.uint64)
 
+            path_client = Path(self.private_remote_weights_path) /  'client'
+            path_client.mkdir(parents=True, exist_ok=True)
+            numpy.save(path_client / "quantized_input.npy", x_q_int)
+
             # Encypt the input
             ciphertext =fhext.encrypt_matrix(  # pylint: disable=no-member
                 pkey=self.executor.private_key,
@@ -563,25 +567,35 @@ class RemoteModule(nn.Module):
             # Send the input to the server
             print(f'🐞 -------------- {self.uid=}')
             print(f'🐞 -------------- {self.private_remote_weights_path=}')
+            mode = 'remote-disable'
+
+            if mode == 'remote-disable':
+                buffer = io.BytesIO()
+                numpy.save(buffer, x_q_int)
+                buffer.seek(0)
+            else:
+                buffer = io.BytesIO(ciphertext_serialized)
 
             response = requests.post(
                 f"{self.server_remote_address}/send_encrypted_input",
                 files={
-                    "encrypted_input": io.BytesIO(ciphertext_serialized),
+                    "encrypted_input": buffer,
                 },
                 data={
                     "uid": str(self.uid),
+                    'mode': mode,
                     "linear_layer_name_path": str(self.private_remote_weights_path)
                 }
             )
             assert response.status_code == 200
-            print(f"✅✅✅ Data Sent")
+            print(f"✅✅✅ Data Sent with `{mode=}`")
 
             print('Starting inference ...')
             response = requests.post(
                 url=f"{self.server_remote_address}/compute",
                 data={
                     "uid": str(self.uid),
+                    "mode": mode,
                     "linear_layer_name_path": str(self.private_remote_weights_path)
                 },
                 stream=True,
@@ -597,7 +611,7 @@ class RemoteModule(nn.Module):
                 print(f"📥 Encrypted bundle saved at {output_path}")
 
             bundle = numpy.load(output_path)
-            encrypted_result = bundle["encrypted_result"].tobytes()
+            encrypted_result = bundle["encrypted_result"] if mode == 'remote-disable' else bundle["encrypted_result"].tobytes()
             weight_scale = torch.tensor(bundle["weight_scale"], dtype=torch.float32, device=device)
             weight_zp    = torch.tensor(bundle["weight_zp"], dtype=torch.float32, device=device)
             sum_w        = torch.tensor(bundle["sum_w"], dtype=torch.float32, device=device)
@@ -606,9 +620,9 @@ class RemoteModule(nn.Module):
 
 
             print(f'🐞 -------------- {weight_shape=}')
-            print(f'🐞 -------------- {weight_scale=}')
-            print(f'🐞 -------------- {weight_zp=}')
-            print(f'🐞 -------------- {sum_w=}')
+            print(f'🐞 -------------- {weight_scale.shape=}')
+            print(f'🐞 -------------- {weight_zp.shape=}')
+            print(f'🐞 -------------- {sum_w.shape=}')
             print(f'🐞 -------------- {type(bias)=}')
 
             num_valid_glwe_values_in_last_ciphertext = (
@@ -616,14 +630,17 @@ class RemoteModule(nn.Module):
             )
             print(f'{num_valid_glwe_values_in_last_ciphertext=} - {self.executor.poly_size=}')
 
-            encrypted_result = fhext.CompressedResultEncryptedMatrix.deserialize(encrypted_result)
+            if mode != 'remote-disable':
+                encrypted_result = fhext.CompressedResultEncryptedMatrix.deserialize(encrypted_result)
 
-            q_result = fhext.decrypt_matrix(  # pylint: disable=no-member
-                            encrypted_result,
-                            self.executor.private_key,
-                            self.executor.glwe_crypto_params,
-                            num_valid_glwe_values_in_last_ciphertext,
-                        )
+                q_result = fhext.decrypt_matrix(  # pylint: disable=no-member
+                                encrypted_result,
+                                self.executor.private_key,
+                                self.executor.glwe_crypto_params,
+                                num_valid_glwe_values_in_last_ciphertext,
+                            )
+            else:
+                q_result = encrypted_result
 
             q_result = q_result.astype(numpy.int64)
 
@@ -651,7 +668,12 @@ class RemoteModule(nn.Module):
             print('🐞 --------------', out_tensor.shape)
 
         print(f"🐞 -------------- {len(inferences)=}, {type(inferences)=}")
-        return torch.Tensor(numpy.array(inferences)).to(device=base_device)
+
+        for i in inferences:
+            print('laaa', type(i), i.shape)
+        y = torch.Tensor(numpy.array(inferences)).to(device=base_device)
+        print(y.shape)
+        return y[0]
 
 
 # pylint: disable-next=too-many-instance-attributes
@@ -975,7 +997,7 @@ class HybridFHEModel:
                     and has_glwe_backend()
                     and self.optimized_linear_execution
                 ):
-                    print('🐞 -------------- Using GLWE backend for quantization')
+                    print('🐞 -------------- Using GLWE backend')
                     self.use_glwe = True
                     self.executor = GLWELinearLayerExecutor(
                         use_dynamic_quantization=use_dynamic_quantization
@@ -1025,7 +1047,7 @@ class HybridFHEModel:
         """
 
         model_path = Path(path)
-        for module_name in self.module_names:
+        for i, module_name in enumerate(self.module_names):
             onnx_model = self.private_q_modules[module_name].onnx_model
             private_q_module = self.private_q_modules[module_name]
 
@@ -1051,7 +1073,8 @@ class HybridFHEModel:
                     server_path = model_module_path / "server"
                     server_path.mkdir(parents=True, exist_ok=True)
                     self.remote_modules[module_name].private_remote_weights_path = server_path
-                    torch.save(private_remote_weights, server_path / "remote_weights.pth")
+                    torch.save(private_remote_weights, server_path / f"remote_weights_layer{i}.pth")
+                    print('🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪', i, ':', server_path / "remote_weights.pth", private_remote_weights.shape)
 
                     # Extract quantized layer
                     layers_in_module = list(private_q_module.quant_layers_dict.values())
@@ -1069,6 +1092,8 @@ class HybridFHEModel:
 
                     # Save GLWE metadata
                     info = {
+                        "module_name": str(module_name),
+                        "shape": private_remote_weights.shape,
                         "transpose_inputs1": quantized_linear_op.attrs.get("transA", False),
                         "transpose_inputs2": quantized_linear_op.attrs.get("transB", False),
                         "bias": has_bias,
