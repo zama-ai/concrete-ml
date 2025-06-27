@@ -5,7 +5,8 @@ import uuid
 import torch
 import numpy
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
+from glob import glob
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
@@ -16,14 +17,20 @@ from common_variables import COMPILED_MODELS_PATH
 
 # Path configuration
 
+
 SERVER_DIR = Path(COMPILED_MODELS_PATH) / "server"
 KEY_PATH   = SERVER_DIR / "serialized_key.bin"
 
-FILENAME_INPUT   = "encrypted_input.bin"
-FILENAME_WEIGHTS = "remote_weights.pth"
+ENCRYPTED_FILENAME_INPUT = "encrypted_input.bin"
+CLEAR_FILENAME_INPUT = "input_plain.npy"
+
+ENCRYPTED_FILENAME_OUTPUT  = "encrypted_output.bin"
+CLEAR_FILENAME_OUTPUT  = "clear_output.bin"
+
+FILENAME_WEIGHTS_FORMAT = "remote_weights"
 FILENAME_BIAS    = "remote_bias.pth"
 FILENAME_INFO    = "information.json"
-FILENAME_RESULT  = "encrypted_result.bin"
+
 
 DEVICE = torch.device("cpu" if not torch.cuda.is_available() else "cuda")
 
@@ -51,25 +58,27 @@ async def add_key(key: UploadFile):
 @app.post("/send_encrypted_input")
 async def send_data(
     encrypted_input: UploadFile = File(...),
+    clear_input: Optional[UploadFile] = File(None),
     linear_layer_name_path: str = Form(...),
-    mode: str = Form(...),
     uid: Optional[str] = Form(None)
 ):
     """Save an encrypted input tensor to disk."""
     print(f"📡 [Endpoint `send_encrypted_input`] {uid=}")
-    content = await encrypted_input.read()
-    print(f"📥 Received ciphertext ({len(content)} bytes)")
 
     dest_path = Path(linear_layer_name_path)
     dest_path.mkdir(parents=True, exist_ok=True)
 
-    if mode == 'remote':
-        path = dest_path / FILENAME_INPUT
-    else:
-        path = dest_path / "input_plain.npy"
+    if clear_input is not None:
+        clear_content = await clear_input.read()
+        print(f"📥 Received clear input ({len(clear_content)} bytes)")
+        with (dest_path / CLEAR_FILENAME_INPUT).open("wb") as f:
+            f.write(clear_content)
 
-    with path.open("wb") as f:
-        f.write(content)
+    encrypted_content = await encrypted_input.read()
+    print(f"📥 Received ciphertext ({len(encrypted_content)} bytes)")
+
+    with (dest_path / ENCRYPTED_FILENAME_INPUT).open("wb") as f:
+        f.write(encrypted_content)
 
     return {"message": "Data received successfully", "uid": uid}
 
@@ -117,32 +126,37 @@ def _per_channel_weight_quantization(weight: numpy.ndarray, device: torch.device
 
 @app.post("/compute")
 async def compute(
-    uid: str = Form(),
-    mode: str = Form(),
+    uid: str = Form(...),
+    shape: Tuple[int, int] = Form(...),
     linear_layer_name_path: str = Form(...),
 ):
     """Computes the FHE matmul over encrypted input."""
 
-    print(f"📡 [Endpoint `compute`]")
+    print(f"📡 [Endpoint `compute`] for `{uid=}`")
 
     model_dir = Path(linear_layer_name_path)
 
-    path_input = model_dir / FILENAME_INPUT
-    path_weights = model_dir / FILENAME_WEIGHTS
-    path_bias = model_dir / FILENAME_BIAS
-    path_info = model_dir / FILENAME_INFO
-    path_result = model_dir / FILENAME_RESULT
-    path_disable_result = model_dir / 'input_plain.npy'
+    path_weights = Path(glob(f'{model_dir/FILENAME_WEIGHTS_FORMAT}*')[0])
 
+    path_input = model_dir / ENCRYPTED_FILENAME_INPUT
+    path_disable_result = model_dir / CLEAR_FILENAME_INPUT
+
+    path_bias = model_dir / FILENAME_BIAS
+
+    path_info = model_dir / FILENAME_INFO
+
+    path_output = model_dir / ENCRYPTED_FILENAME_OUTPUT
+
+    print(f"📡 [Endpoint `compute`] for `{uid=}`")
     for p in [path_weights, path_info]:
         if not p.exists():
             raise HTTPException(status_code=404, detail=f"Missing file: {p}")
+    print(f"📡 [Endpoint `compute`] for `{uid=}`")
 
-    if mode != 'remote':
-        clear_input = np.load(path_disable_result)
-    else:
-        with path_input.open("rb") as f:
-            encrypted_input = fhext.EncryptedMatrix.deserialize(f.read())
+    clear_input = np.load(path_disable_result)
+
+    with path_input.open("rb") as f:
+        encrypted_input = fhext.EncryptedMatrix.deserialize(f.read())
 
     with KEY_PATH.open("rb") as f:
         compression_key = fhext.deserialize_compression_key(f.read())
@@ -153,7 +167,7 @@ async def compute(
         transpose_inputs1 = info.get("transpose_inputs1", False)
         transpose_inputs2 = info.get("transpose_inputs2", False)
         has_bias = info.get("bias", False)
-
+        input_n_bits = info.get("input_n_bits", 7)
 
     weights = torch.load(path_weights)
     print(f"📥 Weights loaded: {weights.shape=}")
@@ -162,69 +176,47 @@ async def compute(
     if bias is not None:
         print(f"📥 Bias loaded: {bias.shape=}")
 
-    print(f"🐞 -------------- {weights.shape=}")
-
     weight_q, weight_scale, weight_zp, sum_w = _per_channel_weight_quantization(weights.T, device=DEVICE)
     weight_q_int = weight_q.long().cpu().numpy().astype(numpy.int64).astype(numpy.uint64)
 
-    print(f"🐞 Quantized weight shape: {weight_q_int.shape}")
+    clear_output = clear_input @ weight_q_int
 
-    print(f"🐞 -------------- {weights.shape=}")
-    print(f"🐞 -------------- {weight_q.shape=}")
-    print(f"🐞 -------------- {weight_q_int.shape=}")
-    print(f'🐞 -------------- {encrypted_input.shape=}')
+    encrypted_output = fhext.matrix_multiplication(
+        encrypted_matrix=encrypted_input,
+        data=weight_q_int,
+        compression_key=compression_key,
+    )
+    print(f"📡 -- `input.shape={shape}` vs `{weights.T.shape=}`")
+    print(f"📡 -- {weights.shape=}")
+    print(f"📡 -- {clear_input.shape=}")
+    print(f"📡 -- {weight_q.shape=}")
+    print(f"📡 -- {weight_q_int.shape=}")
+    print(f"📡 -- {weight_scale.shape =}")
+    print(f"📡 -- {weight_zp.shape    =}")
+    print(f"📡 -- {sum_w.shape        =}")
 
-    if mode == 'remote':
-        print('**************************')
+    with (model_dir / ENCRYPTED_FILENAME_OUTPUT).open("wb") as f:
+        f.write(clear_output)
+        print(f"📤 Clear result saved ({len(clear_output)} bytes)")
 
-        encrypted_result = fhext.matrix_multiplication(
-            encrypted_matrix=encrypted_input,
-            data=weight_q_int,
-            compression_key=compression_key,
-        )
-
-        with path_result.open("wb") as f:
-            f.write(encrypted_result.serialize())
-            print(f"📤 Encrypted result saved ({len(encrypted_result.serialize())} bytes)")
-
-    else:
-        print('======================================================')
-        try:
-            print(f"🐞 -------------- {weight_q_int.shape=}")
-            print(f'🐞 -------------- {encrypted_input.shape=}')
-            encrypted_result = encrypted_input @ weight_q_int
-        except:
-
-            weight_q, weight_scale, weight_zp, sum_w = _per_channel_weight_quantization(weights, device=DEVICE)
-            weight_q_int = weight_q.long().cpu().numpy().astype(numpy.int64).astype(numpy.uint64)
-            encrypted_result = encrypted_input @ weight_q_int
-
-        print(f"🐞 -------------- {encrypted_input.shape} @ {weight_q_int.shape} = {encrypted_result.shape}")
-
-
-
-    print(f"🐞 -------------- {weights.shape=}")
-    print(f"🐞 -------------- {weight_q.shape=}")
-    print(f"🐞 -------------- {weight_q_int.shape=}")
-    print(f"🐞 -------------- {weight_scale.shape  =}")
-    print(f"🐞 -------------- {weight_zp.shape     =}")
-    print(f"🐞 -------------- {sum_w.shape         =}")
-
+    with path_output.open("wb") as f:
+        f.write(encrypted_output.serialize())
+        print(f"📤 Encrypted result saved ({len(encrypted_output.serialize())} bytes)")
 
     metadata = {
-        "encrypted_result": encrypted_result.serialize() if mode == 'remote' else encrypted_result,
+        "encrypted_output": encrypted_output.serialize(),
+        "clear_output": clear_output,
         "weight_scale": weight_scale.cpu().numpy(),
         "weight_zp": weight_zp.cpu().numpy(),
         "sum_w": sum_w.cpu().numpy(),
         "weight_shape": numpy.array(weight_q.shape, dtype=numpy.int32),
         "transpose_inputs1": numpy.array([transpose_inputs1], dtype=numpy.bool_),
         "transpose_inputs2": numpy.array([transpose_inputs2], dtype=numpy.bool_),
+        "input_n_bits": info.get("input_n_bits", 7),
     }
 
     if bias is not None:
         metadata["bias"] = bias.cpu().numpy()
-
-
 
     def result_stream():
         buffer = io.BytesIO()
@@ -238,7 +230,6 @@ async def compute(
         media_type="application/octet-stream",
         headers={"Content-Disposition": "attachment; filename=server_response.npz"},
     )
-
 
 if __name__ == "__main__":
     print(f"📡 [Server startup] {COMPILED_MODELS_PATH=}")
