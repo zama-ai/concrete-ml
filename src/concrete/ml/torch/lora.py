@@ -420,14 +420,14 @@ class LoraTrainer:
         # Determine modules to be executed remotely
         self.remote_names = hybrid_model_kwargs.pop("module_names", None) or get_remote_names(
             self.lora_training_module
-        )[:1]
+        )[:20]
 
         assert_true(
             isinstance(self.remote_names, List),
             "`self.remote_names` must be a list of linear layers.",
         )
 
-        self.logger.info(f"{len(self.remote_names)=} Remote Modules.")
+        self.logger.info(f"Processing `{len(self.remote_names)}` Remote Modules.")
 
         # Create the hybrid model
         self.hybrid_model = HybridFHEModel(

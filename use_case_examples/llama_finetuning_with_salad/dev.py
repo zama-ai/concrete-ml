@@ -127,7 +127,7 @@ if __name__ == "__main__":
     lora_trainer.compile(inputset, n_bits=N_BITS)
 
     if args.save_compiled_model:
-        print("--> Saving compiled models...")
+        print(f"--> Saving compiled models at {MODEL_DIR=}...")
         lora_trainer.save_and_clear_private_info(MODEL_DIR, via_mlir=True)
         peft_model.save_pretrained(COMPILED_MODELS_PATH / "artefact")
         pretrained_model.config.save_pretrained(COMPILED_MODELS_PATH / "artefact")

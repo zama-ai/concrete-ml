@@ -17,6 +17,7 @@ from common_variables import COMPILED_MODELS_PATH
 
 # Path configuration
 
+torch.set_printoptions(precision=10, sci_mode=False)
 
 SERVER_DIR = Path(COMPILED_MODELS_PATH) / "server"
 KEY_PATH   = SERVER_DIR / "serialized_key.bin"
@@ -94,16 +95,21 @@ def _per_channel_weight_quantization(weight: numpy.ndarray, device: torch.device
     Returns:
         tuple: Quantized weights, scale, zero point and weight sum
     """
-    # weight_float = torch.from_numpy(weight).to(device)
-    weight_float = weight.to(device)
+
+    print('in _per_channel_weight_quantization: weight', weight.flatten()[:5])
+
+    weight_float = torch.from_numpy(weight).to(device)
+    print('in _per_channel_weight_quantization: weight', weight.flatten()[:5])
+
+    # weight_float = weight.to(device)
     # Get the signed integer range
 
-    q_min, q_max = 0, 2 ** n_bits - 1
+    q_min, q_max = -64, 63 #0, 2 ** n_bits - 1
 
     w_min_vals, _ = weight_float.min(dim=0, keepdim=True)
     w_max_vals, _ = weight_float.max(dim=0, keepdim=True)
     print('--------======------')
-    print(f'{w_min_vals=}, {w_max_vals=}')
+    print(f'{w_min_vals.shape=}, {w_max_vals.shape=}')
 
     weight_scale = (w_max_vals - w_min_vals) / (q_max - q_min)
     # Avoid division by zero.
@@ -136,7 +142,7 @@ async def compute(
 
     model_dir = Path(linear_layer_name_path)
 
-    path_weights = Path(glob(f'{model_dir/FILENAME_WEIGHTS_FORMAT}*')[0])
+    path_weights = Path(glob(f'{model_dir/FILENAME_WEIGHTS_FORMAT}*.npy')[0])
 
     path_input = model_dir / ENCRYPTED_FILENAME_INPUT
     path_disable_result = model_dir / CLEAR_FILENAME_INPUT
@@ -147,16 +153,14 @@ async def compute(
 
     path_output = model_dir / ENCRYPTED_FILENAME_OUTPUT
 
-    print(f"📡 [Endpoint `compute`] for `{uid=}`")
     for p in [path_weights, path_info]:
         if not p.exists():
             raise HTTPException(status_code=404, detail=f"Missing file: {p}")
-    print(f"📡 [Endpoint `compute`] for `{uid=}`")
 
     clear_input = np.load(path_disable_result)
 
     with path_input.open("rb") as f:
-        encrypted_input = fhext.EncryptedMatrix.deserialize(f.read())
+        encrypted_deserialized_input = fhext.EncryptedMatrix.deserialize(f.read())
 
     with KEY_PATH.open("rb") as f:
         compression_key = fhext.deserialize_compression_key(f.read())
@@ -169,23 +173,33 @@ async def compute(
         has_bias = info.get("bias", False)
         input_n_bits = info.get("input_n_bits", 7)
 
-    weights = torch.load(path_weights)
-    print(f"📥 Weights loaded: {weights.shape=}")
+    weights = numpy.load(path_weights)
 
     bias = torch.load(path_bias) if has_bias and path_bias.exists() else None
     if bias is not None:
-        print(f"📥 Bias loaded: {bias.shape=}")
+        print(f"📥📥📥📥📥📥📥 Bias loaded: {bias.shape=}")
 
-    weight_q, weight_scale, weight_zp, sum_w = _per_channel_weight_quantization(weights.T, device=DEVICE)
+    if shape[1] == weights.shape[1]:
+        weights = weights.T
+    else:
+        print(f"📥📥📥📥📥📥📥 Not transposed")
+
+    weight_q, weight_scale, weight_zp, sum_w = _per_channel_weight_quantization(weights, device=DEVICE)
     weight_q_int = weight_q.long().cpu().numpy().astype(numpy.int64).astype(numpy.uint64)
+    print(f"📥 Weights loaded: {path_weights=} - {clear_input.shape=}, {weight_q_int.shape=},")
 
     clear_output = clear_input @ weight_q_int
 
     encrypted_output = fhext.matrix_multiplication(
-        encrypted_matrix=encrypted_input,
+        encrypted_matrix=encrypted_deserialized_input,
         data=weight_q_int,
         compression_key=compression_key,
     )
+
+    encrypted_deserialized_output = encrypted_output.serialize()
+
+    # encrypted_output = encrypted_input
+
     print(f"📡 -- `input.shape={shape}` vs `{weights.T.shape=}`")
     print(f"📡 -- {weights.shape=}")
     print(f"📡 -- {clear_input.shape=}")
@@ -194,17 +208,20 @@ async def compute(
     print(f"📡 -- {weight_scale.shape =}")
     print(f"📡 -- {weight_zp.shape    =}")
     print(f"📡 -- {sum_w.shape        =}")
+    print(f"📡 -- {weights.T.flatten()[:5]=}")
+    print(f"📡 -- {weight_q.flatten()[:5]=}")
+    print(f"📡 -- {weight_q_int.flatten()[:5]=}")
 
     with (model_dir / ENCRYPTED_FILENAME_OUTPUT).open("wb") as f:
         f.write(clear_output)
         print(f"📤 Clear result saved ({len(clear_output)} bytes)")
 
     with path_output.open("wb") as f:
-        f.write(encrypted_output.serialize())
-        print(f"📤 Encrypted result saved ({len(encrypted_output.serialize())} bytes)")
+        f.write(encrypted_deserialized_output)
+        print(f"📤 Encrypted result saved ({len(encrypted_deserialized_output)} bytes)")
 
     metadata = {
-        "encrypted_output": encrypted_output.serialize(),
+        "encrypted_output": encrypted_deserialized_output,
         "clear_output": clear_output,
         "weight_scale": weight_scale.cpu().numpy(),
         "weight_zp": weight_zp.cpu().numpy(),
@@ -212,7 +229,7 @@ async def compute(
         "weight_shape": numpy.array(weight_q.shape, dtype=numpy.int32),
         "transpose_inputs1": numpy.array([transpose_inputs1], dtype=numpy.bool_),
         "transpose_inputs2": numpy.array([transpose_inputs2], dtype=numpy.bool_),
-        "input_n_bits": info.get("input_n_bits", 7),
+        "input_n_bits": input_n_bits,
     }
 
     if bias is not None:

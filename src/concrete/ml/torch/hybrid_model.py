@@ -444,7 +444,7 @@ class RemoteModule(nn.Module):
             else:
                 x_flat = x
 
-            q_min, q_max = -64, 63
+            q_min, q_max = 0, 127
             # q_min = 0, q_max = 127  -> unsigned, with nbits=7
 
             rmin = x_flat.min(dim=1, keepdim=True).values
@@ -534,7 +534,6 @@ class RemoteModule(nn.Module):
         # Iterate over each element in the batch
         # x.shape -> 1, 64, 2048 (batch_size, sequence_length (nb token), hidden_size)
         for index in range(len(x)):
-            print(f'\n\nSample_{index}:\n')
             clear_input = x[[index], :].detach().numpy()
             clear_input = torch.from_numpy(clear_input)
 
@@ -572,14 +571,8 @@ class RemoteModule(nn.Module):
                 }
             )
             assert response.status_code == 200
-            print("✅✅✅ Data Sent")
 
             print('Starting inference ...')
-            print(f'✅✅✅✅✅✅✅✅✅ {clear_input.flatten()[:5]}')
-            print(f'✅✅✅✅✅✅✅✅✅ {x_q_int.shape=}')
-
-            path = glob(f"{self.private_remote_weights_path}/remote_*")[0]
-            print(f'✅✅✅✅✅✅✅✅✅ {path=}')
 
             output_path = f"{self.private_remote_weights_path}/encrypted_output_from_server.bin"
 
@@ -593,13 +586,11 @@ class RemoteModule(nn.Module):
                 stream=True,
             )
             assert response.status_code == 200
-            print(f"✅✅✅ FHE successully computed")
 
             with open(output_path, "wb") as f:
                 for chunk in response.iter_content(chunk_size=4096):
                     if chunk:
                         f.write(chunk)
-                print(f"📥 Encrypted bundle saved at {output_path}")
 
             bundle = numpy.load(output_path)
             encrypted_output = bundle["encrypted_output"].tobytes()
@@ -615,16 +606,15 @@ class RemoteModule(nn.Module):
                 weight_shape[1] % self.executor.poly_size or self.executor.poly_size
             )
 
-            print(f'🐞 -- {self.uid=}')
-            print(f'🐞 -- {self.private_remote_weights_path=}')
-            print(f'🐞 -- {weight_shape=}')
-            print(f'🐞 -- {weight_scale.shape=}')
-            print(f'🐞 -- {weight_zp.shape=}')
-            print(f'🐞 -- {sum_w.shape=}')
-            print(f'🐞 -- {type(bias)=}')
+            # print(f'🐞 -- {self.uid=}')
+            # print(f'🐞 -- {self.private_remote_weights_path=}')
+            # print(f'🐞 -- {weight_shape=}')
+            # print(f'🐞 -- {weight_scale.shape=}')
+            # print(f'🐞 -- {weight_zp.shape=}')
+            # print(f'🐞 -- {sum_w.shape=}')
+            # print(f'🐞 -- {type(bias)=}')
             print(f'🐞 -- {self.executor.poly_size=}')
             print(f'🐞 -- {num_valid_glwe_values_in_last_ciphertext=}')
-            print(f'🐞 -- {input_n_bits=}')
 
             encrypted_deserilized_output = fhext.CompressedResultEncryptedMatrix.deserialize(encrypted_output)
             decrypted_deserialize_output = fhext.decrypt_matrix(  # pylint: disable=no-member
@@ -634,37 +624,34 @@ class RemoteModule(nn.Module):
                             num_valid_glwe_values_in_last_ciphertext,
                         ).astype(numpy.int64)
 
-            print(f'✅✅✅✅✅✅✅✅✅✅✅✅ encrypted_deserialize_output: {decrypted_deserialize_output.flatten()[:5]}')
-            # print(f"✅ Output decrypted and deserialized")
+            print(f'✅✅✅✅✅✅✅✅✅ clear_input: {clear_input.flatten()[:5]}')
+            print(f'✅✅✅✅✅✅✅✅✅ encrypted_deserialize_output: {decrypted_deserialize_output.flatten()[:5]}')
 
-            q_result = clear_output
+            q_result = decrypted_deserialize_output
             result_tensor = torch.tensor(q_result, device=device, dtype=torch.long)
-
-            print(f'🐞 -- {q_result.shape=}, {type(q_result)=}')
-            print(f'🐞 -- {result_tensor.shape=}, {type(result_tensor)=}')
 
             out_tensor = _apply_correction_and_dequantize(
                 result_tensor, x_q, x_zp, weight_zp, sum_w, weight_shape[0], x_scale, weight_scale,
             )
+            print(f'✅✅✅✅✅✅✅✅✅ decrypted_dequantized_output: {out_tensor.flatten()[:5]=}')
 
-            print(f'✅✅✅✅✅✅✅✅✅ {out_tensor.flatten()[:5]=}')
-
-            print(f"✅ Output Dequantized")
             out_tensor = (out_tensor.view(*original_shape[:-1], -1) if original_shape[:-1] else out_tensor)
             assert (original_shape[:-1] == out_tensor.shape[:-1]), "Original shape and output shape do not match"
-            print(f'🐞 -- {out_tensor.shape=}, {type(out_tensor)=}')
 
             out_tensor = _add_bias(out_tensor, bias, 'cpu')
-            print(f'🐞 -- {out_tensor.shape=}, {type(out_tensor)=}')
 
-            print(f'✅✅✅✅✅✅✅✅✅ {out_tensor.flatten()[:5]=}')
+            print(f'✅✅✅✅✅✅✅✅✅ decrypted_dequantized_output + bias: {out_tensor.flatten()[:5]=}')
+            clear_output_dequant = _apply_correction_and_dequantize(
+                torch.tensor(clear_output), x_q, x_zp, weight_zp, sum_w, weight_shape[0], x_scale, weight_scale,
+            )
+            print(f'✅✅✅✅✅✅✅✅✅ clear_dequant_output: {clear_output_dequant.flatten()[:5]=}')
+
+            assert all(clear_output_dequant.flatten() == clear_output_dequant.flatten())
 
             inferences.append(out_tensor.detach().cpu().numpy())
 
-
         y = torch.Tensor(numpy.array(inferences)).to(device=base_device)
-        print(f"🐞 -- {len(inferences)=}")
-        print(f"🐞 -- {y.shape=}")
+
         return y[0]
 
 
@@ -1060,12 +1047,46 @@ class HybridFHEModel:
                     assert len(matching_keys) == 1, f"Expected 1 match for `{prefix}`, found `{len(matching_keys)}`"
                     private_remote_weights = self.model.state_dict()[matching_keys[0]]
 
+
+
+        # layers_in_module = list(q_module.quant_layers_dict.values())
+
+        # print(f'🐞🐞 input {x.flatten()[:5]}')
+
+        # assert len(layers_in_module) == 1, "Expected exactly one linear layer in QuantizedModule"
+
+        # quantized_linear_op = layers_in_module[0][1]
+        # assert quantized_linear_op.supported_by_linear_backend()
+
+        # transpose_inputs1 = quantized_linear_op.attrs.get("transA", False)
+        # transpose_inputs2 = quantized_linear_op.attrs.get("transB", False)
+
+        # # Extract weight parameters.
+        # weight, qweight = self._extract_weight_params(quantized_linear_op, transpose_inputs2)
+
+        #               # Get the weight constant (assumed to be the first constant input).
+        # weight_arr = list(quantized_linear_op.constant_inputs.values())[0]
+        # # Ensure symmetric quantization.
+        # assert weight_arr.quantizer.quant_params.zero_point == 0
+
+        # weight = weight_arr.values
+        # qweight = weight_arr.qvalues.astype(numpy.float32)
+
+        # if transpose_inputs2:
+        #     weight = numpy.transpose(weight)
+        #     qweight = numpy.transpose(qweight)
+        # return weight, qweight
+
+
+
+
                     # Ensure target directories exist
                     server_path = model_module_path / "server"
                     server_path.mkdir(parents=True, exist_ok=True)
                     self.remote_modules[module_name].private_remote_weights_path = server_path
-                    torch.save(private_remote_weights, server_path / f"remote_weights_layer{i}.pth")
-                    # print('🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪🧪', i, ':', server_path / "remote_weights.pth", private_remote_weights.shape)
+                    torch.save(private_remote_weights.double(), server_path / f"remote_weights_layer{i}.pth")
+                    array_to_save = private_remote_weights.cpu().numpy().astype(numpy.float64)
+                    numpy.save(server_path / f"remote_weights_layer{i}.npy", array_to_save)
 
                     # Extract quantized layer
                     layers_in_module = list(private_q_module.quant_layers_dict.values())
