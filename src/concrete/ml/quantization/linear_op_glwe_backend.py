@@ -436,24 +436,18 @@ class GLWELinearLayerExecutor:
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4711
         # Dynamic quantization for weights and input.
         # on the fly for the model weights that should be on the server
-        print(f'🐞🐞 weight {weight.flatten()[:5]}')
         weight_q, weight_scale, weight_zp, sum_w = self._per_channel_weight_quantization(
             weight, q_module, device
         )
-        print(f'🐞🐞 weight_q {weight_q.flatten()[:5]}')
 
         x_q, x_scale, x_zp, original_shape = self._dynamic_input_quantization(
             x, q_module, transpose_inputs1
         )
-        print(f'🐞🐞 x_q {x_q.flatten()[:5]}')
-
 
         # The GLWE backend needs uint64 encoding for both neg/pos values
         # Convert quantized data to numpy arrays for encryption.
         x_q_int = x_q.long().cpu().numpy().astype(numpy.int64).astype(numpy.uint64)
-        print(f'🐞🐞 x_q_int {x_q_int.flatten()[:5]}')
         weight_q_int = weight_q.long().cpu().numpy().astype(numpy.int64).astype(numpy.uint64)
-        print(f'🐞🐞 weight_q_int {weight_q_int.flatten()[:5]}')
 
         # Ensure x_q_int is 3D.
         if x_q_int.ndim == 2:
@@ -462,7 +456,6 @@ class GLWELinearLayerExecutor:
         num_valid_glwe_values_in_last_ciphertext = (
             weight_q_int.shape[1] % self.poly_size or self.poly_size
         )
-        print(f'in glwe {num_valid_glwe_values_in_last_ciphertext=}, {weight_q_int.shape[1]=}, {self.poly_size=}')
 
         batch, n_rows, _ = x_q_int.shape
         result_buffer = numpy.zeros((batch, n_rows, weight_q_int.shape[1]), dtype=numpy.int64)
@@ -490,13 +483,10 @@ class GLWELinearLayerExecutor:
 
         result_tensor = torch.tensor(result_buffer, device=device, dtype=torch.long)
 
-        print(f'🐞🐞 result_tensor {result_tensor.flatten()[:5]}')
         k = weight_q.shape[0]
         out_tensor = self._apply_correction_and_dequantize(
             result_tensor, x_q, x_zp, weight_zp, sum_w, k, x_scale, weight_scale
         )
-        print(f'🐞🐞 out_tensor {out_tensor.flatten()[:5]}')
-
 
         out_tensor = (
             out_tensor.view(*original_shape[:-1], -1) if original_shape[:-1] else out_tensor
@@ -527,8 +517,6 @@ class GLWELinearLayerExecutor:
         """
         layers_in_module = list(q_module.quant_layers_dict.values())
 
-        print(f'🐞🐞 [forward] input {x.flatten()[:5]}')
-
         assert len(layers_in_module) == 1, "Expected exactly one linear layer in QuantizedModule"
 
         quantized_linear_op = layers_in_module[0][1]
@@ -539,9 +527,6 @@ class GLWELinearLayerExecutor:
 
         # Extract weight parameters.
         weight, qweight = self._extract_weight_params(quantized_linear_op, transpose_inputs2)
-        print('🐞🐞 [forward] weight', weight.flatten()[:5])
-        print('🐞🐞 [forward] qweight', qweight.flatten()[:5])
-
 
         if fhe == HybridFHEMode.DISABLE:
             return self._forward_clear(x, q_module, transpose_inputs1, qweight, weight)

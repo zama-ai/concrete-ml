@@ -240,7 +240,6 @@ class RemoteModule(nn.Module):
                 files={"key": io.BytesIO(initial_bytes=serialized_evaluation_keys)},
             )
             assert response.status_code == 200, response.content.decode("utf-8")
-            print(f"✅✅✅ Key added")
 
             uid = response.json()["uid"]
             # We store the key id and the client in the object
@@ -509,7 +508,6 @@ class RemoteModule(nn.Module):
                 - (x_zp * weight_zp_broadcast * k)
             )
 
-            print(f"🐞 -------------- {raw.shape=} @ {correction.T.shape=}")
             acc = raw - correction
 
             # Dequantize
@@ -522,8 +520,6 @@ class RemoteModule(nn.Module):
         def _add_bias(
             out_tensor: torch.Tensor, bias: torch.Tensor, device: torch.device
         ) -> torch.Tensor:
-            if bias:
-                print(f"✅ Bias added")
             return out_tensor + bias if bias is not None else out_tensor
 
         # Store tensor device and move to CPU for FHE encryption
@@ -602,19 +598,11 @@ class RemoteModule(nn.Module):
             bias         = torch.tensor(bundle["bias"], device=device) if "bias" in bundle else None
             input_n_bits = int(bundle["input_n_bits"])
 
+            assert input_n_bits == 7, 'Only 7-bits is supported.'
+
             num_valid_glwe_values_in_last_ciphertext = (
                 weight_shape[1] % self.executor.poly_size or self.executor.poly_size
             )
-
-            # print(f'🐞 -- {self.uid=}')
-            # print(f'🐞 -- {self.private_remote_weights_path=}')
-            # print(f'🐞 -- {weight_shape=}')
-            # print(f'🐞 -- {weight_scale.shape=}')
-            # print(f'🐞 -- {weight_zp.shape=}')
-            # print(f'🐞 -- {sum_w.shape=}')
-            # print(f'🐞 -- {type(bias)=}')
-            print(f'🐞 -- {self.executor.poly_size=}')
-            print(f'🐞 -- {num_valid_glwe_values_in_last_ciphertext=}')
 
             encrypted_deserilized_output = fhext.CompressedResultEncryptedMatrix.deserialize(encrypted_output)
             decrypted_deserialize_output = fhext.decrypt_matrix(  # pylint: disable=no-member
@@ -624,27 +612,21 @@ class RemoteModule(nn.Module):
                             num_valid_glwe_values_in_last_ciphertext,
                         ).astype(numpy.int64)
 
-            print(f'✅✅✅✅✅✅✅✅✅ clear_input: {clear_input.flatten()[:5]}')
-            print(f'✅✅✅✅✅✅✅✅✅ encrypted_deserialize_output: {decrypted_deserialize_output.flatten()[:5]}')
-
             q_result = decrypted_deserialize_output
             result_tensor = torch.tensor(q_result, device=device, dtype=torch.long)
 
             out_tensor = _apply_correction_and_dequantize(
                 result_tensor, x_q, x_zp, weight_zp, sum_w, weight_shape[0], x_scale, weight_scale,
             )
-            print(f'✅✅✅✅✅✅✅✅✅ decrypted_dequantized_output: {out_tensor.flatten()[:5]=}')
 
             out_tensor = (out_tensor.view(*original_shape[:-1], -1) if original_shape[:-1] else out_tensor)
             assert (original_shape[:-1] == out_tensor.shape[:-1]), "Original shape and output shape do not match"
 
             out_tensor = _add_bias(out_tensor, bias, 'cpu')
 
-            print(f'✅✅✅✅✅✅✅✅✅ decrypted_dequantized_output + bias: {out_tensor.flatten()[:5]=}')
             clear_output_dequant = _apply_correction_and_dequantize(
                 torch.tensor(clear_output), x_q, x_zp, weight_zp, sum_w, weight_shape[0], x_scale, weight_scale,
             )
-            print(f'✅✅✅✅✅✅✅✅✅ clear_dequant_output: {clear_output_dequant.flatten()[:5]=}')
 
             assert all(clear_output_dequant.flatten() == clear_output_dequant.flatten())
 
@@ -882,7 +864,6 @@ class HybridFHEModel:
                 # Save the keys
                 with (path_to_clients / "public_evaluation_key.serverKey").open("wb") as binary_file:
                     binary_file.write(serialized_ckey)
-                    print(f"📡 [init_client] Adding keys: {self.server_remote_address}/add_key")
 
                 response = requests.post(
                     f"{self.server_remote_address}/add_key",
@@ -893,9 +874,6 @@ class HybridFHEModel:
                 uid = response.json()["uid"]
                 for module_name in self.remote_modules:
                     self.remote_modules[module_name].uid = uid
-                print(f"📡 [init_client] Key added with UID: {uid}")
-            else:
-                print("📡 [init_client] Keys already generated, skipping key generation for GLWE backend.")
         else:
             for module_name, module in self.remote_modules.items():
                 path_to_client = path_to_clients / module_name
@@ -1046,39 +1024,6 @@ class HybridFHEModel:
                     matching_keys = [k for k in self.model.state_dict().keys() if k.startswith(prefix)]
                     assert len(matching_keys) == 1, f"Expected 1 match for `{prefix}`, found `{len(matching_keys)}`"
                     private_remote_weights = self.model.state_dict()[matching_keys[0]]
-
-
-
-        # layers_in_module = list(q_module.quant_layers_dict.values())
-
-        # print(f'🐞🐞 input {x.flatten()[:5]}')
-
-        # assert len(layers_in_module) == 1, "Expected exactly one linear layer in QuantizedModule"
-
-        # quantized_linear_op = layers_in_module[0][1]
-        # assert quantized_linear_op.supported_by_linear_backend()
-
-        # transpose_inputs1 = quantized_linear_op.attrs.get("transA", False)
-        # transpose_inputs2 = quantized_linear_op.attrs.get("transB", False)
-
-        # # Extract weight parameters.
-        # weight, qweight = self._extract_weight_params(quantized_linear_op, transpose_inputs2)
-
-        #               # Get the weight constant (assumed to be the first constant input).
-        # weight_arr = list(quantized_linear_op.constant_inputs.values())[0]
-        # # Ensure symmetric quantization.
-        # assert weight_arr.quantizer.quant_params.zero_point == 0
-
-        # weight = weight_arr.values
-        # qweight = weight_arr.qvalues.astype(numpy.float32)
-
-        # if transpose_inputs2:
-        #     weight = numpy.transpose(weight)
-        #     qweight = numpy.transpose(qweight)
-        # return weight, qweight
-
-
-
 
                     # Ensure target directories exist
                     server_path = model_module_path / "server"
