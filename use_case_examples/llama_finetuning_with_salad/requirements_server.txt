@@ -1,0 +1,7 @@
+numpy
+uvicorn
+fastapi
+requests
+torch
+python-multipart
+concrete_ml_extensions==0.1.7
