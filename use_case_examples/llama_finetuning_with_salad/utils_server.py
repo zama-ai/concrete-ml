@@ -31,12 +31,14 @@ DEVICE = torch.device("cpu" if not torch.cuda.is_available() else "cuda")
 
 print(f'Device: {DEVICE}')
 
-def fetch_remote_weights(layer_dir: Union[str, Path]) -> Path:
+def fetch_remote_weights(layer_dir: Union[str, Path],
+                         filename_weight_format=FILENAME_WEIGHTS_FORMAT
+    ) -> Path:
     """Fetch remote weights given a layer_dir."""
 
     layer_dir = Path(layer_dir)
 
-    pattern = f"{FILENAME_WEIGHTS_FORMAT}*.{FILENAME_WEIGHTS_EXTENSION}"
+    pattern = f"{filename_weight_format}*.{FILENAME_WEIGHTS_EXTENSION}"
     candidates = list(layer_dir.glob(pattern))
 
     if not candidates:
@@ -92,4 +94,5 @@ def per_channel_weight_quantization(weight: numpy.ndarray, n_bits: int = 7):
     sum_w = weight_q.sum(dim=0)  # sum over the input dimension
 
     return weight_q, weight_scale, weight_zp, sum_w
+
 
