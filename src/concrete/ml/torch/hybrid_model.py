@@ -549,17 +549,18 @@ class RemoteModule(nn.Module):
                 crypto_params=self.executor.glwe_crypto_params,
                 data=x_q_int,
             )
-
             ciphertext_serialized = ciphertext.serialize()
 
             # Send the input to the server
             buffer = io.BytesIO(); numpy.save(buffer, x_q_int); buffer.seek(0)
 
+            print('📦 📦 📦 📦 📦 📦 📦 📦 📦 📦 📦 📦 📦 ')
             response = requests.post(
                 f"{self.server_remote_address}/send_encrypted_input",
                 files={
                     "encrypted_input": io.BytesIO(ciphertext_serialized),
                     "clear_input": buffer,
+
                 },
                 data={
                     "uid": str(self.uid),
@@ -567,12 +568,14 @@ class RemoteModule(nn.Module):
                 }
             )
             assert response.status_code == 200
+            print('📦 📦 📦 📦 📦 📦 📦 📦 📦 📦 📦 📦 📦 ')
 
             print('Starting inference ...')
 
             output_path = f"{self.private_remote_weights_path}/encrypted_output_from_server.bin"
-
+            print('output_path', output_path)
             response = requests.post(
+
                 url=f"{self.server_remote_address}/compute",
                 data={
                     "uid": str(self.uid),
@@ -590,7 +593,6 @@ class RemoteModule(nn.Module):
 
             bundle = numpy.load(output_path)
             encrypted_output = bundle["encrypted_output"].tobytes()
-            clear_output = bundle["clear_output"].astype(numpy.int64)
             weight_scale = torch.tensor(bundle["weight_scale"], dtype=torch.float32, device=device)
             weight_zp    = torch.tensor(bundle["weight_zp"], dtype=torch.float32, device=device)
             sum_w        = torch.tensor(bundle["sum_w"], dtype=torch.float32, device=device)
@@ -624,11 +626,11 @@ class RemoteModule(nn.Module):
 
             out_tensor = _add_bias(out_tensor, bias, 'cpu')
 
-            clear_output_dequant = _apply_correction_and_dequantize(
-                torch.tensor(clear_output), x_q, x_zp, weight_zp, sum_w, weight_shape[0], x_scale, weight_scale,
-            )
+            # clear_output_dequant = _apply_correction_and_dequantize(
+            #     torch.tensor(clear_output), x_q, x_zp, weight_zp, sum_w, weight_shape[0], x_scale, weight_scale,
+            # )
 
-            assert all(clear_output_dequant.flatten() == clear_output_dequant.flatten())
+            # assert all(clear_output_dequant.flatten() == clear_output_dequant.flatten())
 
             inferences.append(out_tensor.detach().cpu().numpy())
 
@@ -1029,9 +1031,9 @@ class HybridFHEModel:
                     server_path = model_module_path / "server"
                     server_path.mkdir(parents=True, exist_ok=True)
                     self.remote_modules[module_name].private_remote_weights_path = server_path
-                    torch.save(private_remote_weights.double(), server_path / f"remote_weights_layer{i}.pth")
+                    # torch.save(private_remote_weights.double(), server_path / f"remote_weights_layer{i}.pth")
                     array_to_save = private_remote_weights.cpu().numpy().astype(numpy.float64)
-                    numpy.save(server_path / f"remote_weights_layer{i}.npy", array_to_save)
+                    # numpy.save(server_path / f"remote_weights_layer{i}.npy", array_to_save)
 
                     # Extract quantized layer
                     layers_in_module = list(private_q_module.quant_layers_dict.values())
@@ -1045,7 +1047,7 @@ class HybridFHEModel:
                     if has_bias:
                         bias = list(quantized_layer[1].constant_inputs.values())[1].values
                         bias = torch.from_numpy(bias).to('cpu')
-                        torch.save(bias, server_path / "remote_bias.pth")
+                        #torch.save(bias, server_path / "remote_bias.pth")
 
                     # Save GLWE metadata
                     info = {

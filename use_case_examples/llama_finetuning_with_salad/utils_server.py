@@ -10,7 +10,7 @@ torch.set_printoptions(precision=10, sci_mode=False)
 
 # Path configuration
 
-COMPILED_MODELS_PATH = Path("compiled_models")
+COMPILED_MODELS_PATH = Path("deployment_float/compiled_models")
 
 SERVER_DIR = Path(COMPILED_MODELS_PATH) / "server"
 KEY_PATH   = SERVER_DIR / "serialized_key.bin"
@@ -22,6 +22,7 @@ ENCRYPTED_FILENAME_OUTPUT  = "encrypted_output.bin"
 CLEAR_FILENAME_OUTPUT  = "clear_output.bin"
 
 FILENAME_WEIGHTS_FORMAT = "remote_weights"
+FILENAME_WEIGHTS_Q_FORMAT = "remote_quantized_weights"
 FILENAME_WEIGHTS_EXTENSION = "npy"
 
 FILENAME_BIAS    = "remote_bias.pth"

@@ -5,7 +5,7 @@ import json
 import uuid
 import torch
 import numpy
-
+from time import time
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -18,6 +18,9 @@ import concrete_ml_extensions as fhext
 from utils_server import *
 
 COMPRESSION_KEY = None
+archive_path = Path("./deployment_float/compiled_models.tar.gz")
+target_dir = Path("./deployment/compiled_models")
+
 app = FastAPI()
 
 @app.post("/add_key")
@@ -36,6 +39,8 @@ async def add_key(key: UploadFile):
         f.write(public_key.serialize())
         print(f"🔐 {uid=}, Server key saved at `{KEY_PATH}`.")
 
+    load_compression_key()
+
     return {"uid": uid}
 
 @app.post("/send_encrypted_input")
@@ -50,6 +55,8 @@ async def send_data(
     print(f"📡 [Endpoint `send_encrypted_input`] - `{uid=}`")
 
     path = Path(linear_layer_name_path)
+    print(f'🔥🔥🔥🔥🔥')
+    print(linear_layer_name_path)
     path.mkdir(parents=True, exist_ok=True)
 
     if clear_input is not None:
@@ -91,37 +98,38 @@ async def compute(
         raise HTTPException(status_code=404, detail=f"The layer `{layer_dir}` does not exist.")
 
     # Build paths
-    path_input = layer_dir / ENCRYPTED_FILENAME_INPUT
-    path_clear_input = layer_dir / CLEAR_FILENAME_INPUT
+    path_encrypted_input = layer_dir / ENCRYPTED_FILENAME_INPUT
     path_bias = layer_dir / FILENAME_BIAS
     path_info = layer_dir / FILENAME_INFO
-    path_encrypted_output = layer_dir / ENCRYPTED_FILENAME_OUTPUT
-    path_clear_output = layer_dir / CLEAR_FILENAME_OUTPUT
+    # path_clear_input = layer_dir / CLEAR_FILENAME_INPUT
+    # path_encrypted_output = layer_dir / ENCRYPTED_FILENAME_OUTPUT
+    # path_clear_output = layer_dir / CLEAR_FILENAME_OUTPUT
+    # path_weights_q = fetch_remote_weights(layer_dir, filename_weight_format='remote_quantized_weights')
     path_weights = fetch_remote_weights(layer_dir)
 
     # Validate required files
-    required_files = [path_weights, path_input, path_info, KEY_PATH]
+    required_files = [path_weights, path_encrypted_input, path_info, KEY_PATH]
     for p in required_files:
         if not p.exists():
             raise HTTPException(status_code=404, detail=f"Missing file: `{p}`")
 
     # Load clear input
-    clear_input = np.load(path_clear_input)
+    # clear_input = np.load(path_clear_input)
 
     # Deserialize encrypted input
     assert hasattr(fhext, "EncryptedMatrix")
     assert hasattr(fhext.EncryptedMatrix, "deserialize")
-    with path_input.open("rb") as f:
+    with path_encrypted_input.open("rb") as f:
         encrypted_deserialized_input = fhext.EncryptedMatrix.deserialize(f.read())
 
     # Load the public compression key
-    compression_key = COMPRESSION_KEY
-    if compression_key is None:
+    if COMPRESSION_KEY is None:
         raise RuntimeError("Compression key not loaded. Did you call `load_compression_key()`?")
 
     # Load metadata
     with path_info.open("r") as f:
         info = json.load(f)
+
     transpose_inputs1 = info.get("transpose_inputs1", False)
     transpose_inputs2 = info.get("transpose_inputs2", False)
     has_bias = info.get("bias", False)
@@ -131,7 +139,6 @@ async def compute(
     sum_w = info.get("insum_wput_n_bits", None)
 
     # Load weights
-    weights = np.load(path_weights)
     weights = np.load(path_weights)
 
     # Load bias if present
@@ -146,8 +153,7 @@ async def compute(
     if shape[1] == weights.shape[1]:
         weights = weights.T
     else:
-        print(f'🔥🔥🔥🔥🔥 No transpose: input.shape: {shape}, weights.shape: {weights.shap}')
-
+        print(f'🔥🔥🔥🔥🔥 No transpose: input.shape: {shape}, weights.shape: {weights.shape}')
 
     # Quantize weights
     weight_q, weight_scale, weight_zp, sum_w = per_channel_weight_quantization(weights)
@@ -158,37 +164,43 @@ async def compute(
         .astype(np.uint64)
     )
 
+    # weight_q_2 = numpy.load(path_weights_q).astype(np.int64).astype(np.uint64)
+    # assert all(weight_q_int.flatten() == weight_q_2.flatten())
+    # assert all(weight_scale.flatten() == weight_scale.flatten())
+    # assert all(weight_zp.flatten() == weight_zp.flatten())
+    # assert all(sum_w.flatten() == sum_w.flatten())
+    # print(f'🔥🔥🔥🔥🔥 (TYPE) {type(weight_q_2)=}, {type(weight_q_int)=}')
+
     # Clear matmul
-    clear_output = clear_input @ weight_q_int
+    # clear_output = clear_input @ weight_q_int
 
     # Encrypted matmul
     encrypted_output = fhext.matrix_multiplication(
         encrypted_matrix=encrypted_deserialized_input,
         data=weight_q_int,
-        compression_key=compression_key,
+        compression_key=COMPRESSION_KEY,
     )
     encrypted_serialized_output = encrypted_output.serialize()
 
-    # Save clear output
-    clear_output_bytes = clear_output.tobytes()
-    with (layer_dir / CLEAR_FILENAME_OUTPUT).open("wb") as f:
-        f.write(clear_output_bytes)
-        print(f"📤 Clear result saved (`{len(clear_output_bytes)}` bytes)")
+    # # Save clear output
+    # clear_output_bytes = clear_output.tobytes()
+    # with (layer_dir / CLEAR_FILENAME_OUTPUT).open("wb") as f:
+    #     f.write(clear_output_bytes)
+    #     print(f"📤 Clear result saved (`{len(clear_output_bytes)}` bytes)")
 
-    # Save encrypted output
-    with path_encrypted_output.open("wb") as f:
-        f.write(encrypted_serialized_output)
-        print(f"📤 Encrypted result saved (`{len(encrypted_serialized_output)}` bytes)")
+    # # Save encrypted output
+    # with path_encrypted_output.open("wb") as f:
+    #     f.write(encrypted_serialized_output)
+    #     print(f"📤 Encrypted result saved (`{len(encrypted_serialized_output)}` bytes)")
 
-    # Save clear output
-    with path_clear_output.open("wb") as f:
-        f.write(clear_output)
-        print(f"📤 Clear result saved (`{len(clear_output)}` bytes)")
+    # # Save clear output
+    # with path_clear_output.open("wb") as f:
+    #     f.write(clear_output)
+    #     print(f"📤 Clear result saved (`{len(clear_output)}` bytes)")
 
     # Prepare metadata
     metadata = {
         "encrypted_output": encrypted_serialized_output,
-        "clear_output": clear_output,
         "weight_scale": weight_scale.cpu().numpy(),
         "weight_zp": weight_zp.cpu().numpy(),
         "sum_w": sum_w.cpu().numpy(),
@@ -217,8 +229,7 @@ async def compute(
 
 
 def extract_archive():
-    archive_path = Path("./deployment/compiled_models.tar.gz")
-    target_dir = Path("./deployment/compiled_models")
+
     if not target_dir.exists():
         print("📦 Extracting compiled_models.tar.gz...")
         with tarfile.open(archive_path, "r:gz") as tar:
@@ -231,6 +242,6 @@ def extract_archive():
 if __name__ == "__main__":
     print(f"📡 [Server startup] - `{COMPILED_MODELS_PATH=}`")
     print(f"📡 [Server startup] -  Extract archive")
-    #extract_archive()
-    load_compression_key()
+    extract_archive()
     uvicorn.run(app, host="127.0.0.1", port=8000)
+
