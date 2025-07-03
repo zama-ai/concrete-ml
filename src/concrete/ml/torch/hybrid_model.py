@@ -1,18 +1,21 @@
 """Implement the conversion of a torch model to a hybrid fhe/torch inference."""
 
 # pylint: disable=too-many-lines
+import csv
 import json
 import ast
 import io
 import sys
 import time
+from datetime import datetime
+
 import uuid
 from abc import abstractmethod
 from collections import defaultdict
 from functools import lru_cache
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple, Union
-
+from time import time
 import numpy
 import requests
 import torch
@@ -522,8 +525,103 @@ class RemoteModule(nn.Module):
         ) -> torch.Tensor:
             return out_tensor + bias if bias is not None else out_tensor
 
+        BENCHMARK_FILE_PATH = Path("client_benchmarks.csv")
+        FILENAME_WEIGHTS_FORMAT = "remote_weights"
+        FILENAME_WEIGHTS_EXTENSION = "npy"
+
+        BENCHMARK_COLUMNS = [
+            "date", "device", "machine", "uid", "layer_name",
+            "input_shape", "remote_weight_shape",
+            "time_encryption_input", "time_serialization_input", "total_send_input_func",
+            "time_deserialization_output", "time_decryption_output", "time_dequantization_output", "total_compute_func",
+            "total_timing"
+            ]
+
+        def init_benchmark_file(reset=False):
+            print('INIIT BENCHMARK')
+            BENCHMARK_FILE_PATH.parent.mkdir(parents=True, exist_ok=True)
+            if reset and BENCHMARK_FILE_PATH.exists():
+                BENCHMARK_FILE_PATH.unlink()
+                print(f"🗑️ Existing benchmark file deleted: `{BENCHMARK_FILE_PATH.resolve()}`")
+
+            if not BENCHMARK_FILE_PATH.exists():
+                with BENCHMARK_FILE_PATH.open("w", newline="") as csvfile:
+                    writer = csv.writer(csvfile, delimiter=";")
+                    writer.writerow(BENCHMARK_COLUMNS)
+
+
+        def save_benchmark_row(
+            data: dict,
+        ):
+            invalid_keys = set(data.keys()) - set(BENCHMARK_COLUMNS)
+            if invalid_keys:
+                raise ValueError(
+                    f"❌ Invalid column(s) in data: {invalid_keys}\n"
+                    f"✅ Allowed columns: {BENCHMARK_COLUMNS}"
+                )
+
+            row = [
+                str(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+                str(DEVICE),
+                str(MACHINE),
+                data.get("uid", ""),
+                data.get("layer_name", ""),
+                data.get("index", ""),
+                data.get("input_shape", ""),
+                data.get("remote_weight_shape", ""),
+
+                data.get("time_encryption_input", ""),
+                data.get("time_serialization_input", ""),
+                data.get("total_send_input_func", ""),
+
+                data.get("time_deserialization_output", ""),
+                data.get("time_decryption_output", ""),
+                data.get("time_deserialization_input", ""),
+                data.get("time_dequantization_output", ""),
+                data.get("total_compute_func", ""),
+            ]
+
+            with BENCHMARK_FILE_PATH.open("a", newline="") as csvfile:
+                writer = csv.writer(csvfile, delimiter=";")
+                writer.writerow(row)
+
+            print(f"✅ Benchmark saved at `{BENCHMARK_FILE_PATH.resolve()}`")
+
+
+        def fetch_remote_weights(layer_dir: Union[str, Path],
+                                filename_weight_format=FILENAME_WEIGHTS_FORMAT
+            ) -> Path:
+            """Fetch remote weights given a layer_dir."""
+
+            layer_dir = Path(layer_dir)
+
+            pattern = f"{filename_weight_format}*.{FILENAME_WEIGHTS_EXTENSION}"
+            candidates = list(layer_dir.glob(pattern))
+
+            if not candidates:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"No weight file matching pattern '{pattern}' in `{layer_dir}`"
+                )
+
+            if len(candidates) > 1:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Multiple weight files matching pattern '{pattern}' in` {layer_dir}`: `{[str(p) for p in candidates]}`"
+                )
+
+            return candidates[0]
+
+
+
+        init_benchmark_file()
+
+        start = time()
         # Store tensor device and move to CPU for FHE encryption
         base_device = x.device
+        DEVICE = base_device
+        MACHINE = 'M4'
+
         x = x.to(device=device)
         inferences: List[numpy.ndarray] = []
 
@@ -544,17 +642,23 @@ class RemoteModule(nn.Module):
 
             # Encypt the input
             assert self.executor.private_key is not None
+            s = time()
             ciphertext =fhext.encrypt_matrix(  # pylint: disable=no-member
                 pkey=self.executor.private_key,
                 crypto_params=self.executor.glwe_crypto_params,
                 data=x_q_int,
             )
+            time_encryption_input = time() - s
+
+            s = time()
             ciphertext_serialized = ciphertext.serialize()
+            time_serialization_input = time() - s
+
 
             # Send the input to the server
             buffer = io.BytesIO(); numpy.save(buffer, x_q_int); buffer.seek(0)
 
-            print('📦 📦 📦 📦 📦 📦 📦 📦 📦 📦 📦 📦 📦 ')
+            s = time()
             response = requests.post(
                 f"{self.server_remote_address}/send_encrypted_input",
                 files={
@@ -568,12 +672,15 @@ class RemoteModule(nn.Module):
                 }
             )
             assert response.status_code == 200
-            print('📦 📦 📦 📦 📦 📦 📦 📦 📦 📦 📦 📦 📦 ')
+            total_send_input_func = time() - s
+            "time_read_input", "time_serialization_input", "time_deserialization_input", "time_storage_input", "time_load_input",
 
             print('Starting inference ...')
 
             output_path = f"{self.private_remote_weights_path}/encrypted_output_from_server.bin"
             print('output_path', output_path)
+
+            s = time()
             response = requests.post(
 
                 url=f"{self.server_remote_address}/compute",
@@ -584,6 +691,8 @@ class RemoteModule(nn.Module):
                 },
                 stream=True,
             )
+            total_compute_func = time() - s
+
             assert response.status_code == 200
 
             with open(output_path, "wb") as f:
@@ -606,7 +715,11 @@ class RemoteModule(nn.Module):
                 weight_shape[1] % self.executor.poly_size or self.executor.poly_size
             )
 
+            s = time()
             encrypted_deserilized_output = fhext.CompressedResultEncryptedMatrix.deserialize(encrypted_output)
+            time_deserialization_output = time() - s
+
+            s = time()
             decrypted_deserialize_output = fhext.decrypt_matrix(  # pylint: disable=no-member
                             encrypted_deserilized_output,
                             self.executor.private_key,
@@ -614,27 +727,43 @@ class RemoteModule(nn.Module):
                             num_valid_glwe_values_in_last_ciphertext,
                         ).astype(numpy.int64)
 
+            time_decryption_output = time() - s
+
             q_result = decrypted_deserialize_output
             result_tensor = torch.tensor(q_result, device=device, dtype=torch.long)
 
+            s = time()
             out_tensor = _apply_correction_and_dequantize(
                 result_tensor, x_q, x_zp, weight_zp, sum_w, weight_shape[0], x_scale, weight_scale,
             )
-
+            time_dequantization_output = time() - s
             out_tensor = (out_tensor.view(*original_shape[:-1], -1) if original_shape[:-1] else out_tensor)
             assert (original_shape[:-1] == out_tensor.shape[:-1]), "Original shape and output shape do not match"
 
             out_tensor = _add_bias(out_tensor, bias, 'cpu')
 
-            # clear_output_dequant = _apply_correction_and_dequantize(
-            #     torch.tensor(clear_output), x_q, x_zp, weight_zp, sum_w, weight_shape[0], x_scale, weight_scale,
-            # )
-
-            # assert all(clear_output_dequant.flatten() == clear_output_dequant.flatten())
-
             inferences.append(out_tensor.detach().cpu().numpy())
 
+            total_timing = time() - start
+
+            save_benchmark_row({'uid': self.uid,
+
+                                "time_encryption_input": time_encryption_input,
+                                "time_serialization_input": time_serialization_input,
+                                "total_send_input_func": total_send_input_func,
+                                 "layer_name": str(fetch_remote_weights(self.private_remote_weights_path)).split('/')[-1],
+                                 "input_shape": x_q_int.shape,
+                                 "remote_weight_shape" : weight_shape,
+                                "total_compute_func": total_compute_func,
+                                "time_deserialization_output": time_deserialization_output,
+                                "time_decryption_output": time_decryption_output,
+                                "time_dequantization_output": time_dequantization_output,
+
+                                "total_timing": total_timing})
+
+
         y = torch.Tensor(numpy.array(inferences)).to(device=base_device)
+
 
         return y[0]
 
@@ -1017,8 +1146,9 @@ class HybridFHEModel:
                 assert len(input_shapes) == 1, "Multi-input circuits not supported yet"
 
                 shape_str = tuple_to_underscore_str(input_shapes[0])
-                model_module_path = (path / module_name / shape_str).resolve()
-                model_module_path.mkdir(parents=True, exist_ok=True)
+                model_module_path_relatif = (path / module_name / shape_str).resolve()
+                model_module_path_relatif.mkdir(parents=True, exist_ok=True)
+                model_module_path = (path / module_name / shape_str)
 
                 if self.use_glwe:
                     # Extract and save private weights
