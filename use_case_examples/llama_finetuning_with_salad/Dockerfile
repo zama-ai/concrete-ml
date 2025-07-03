@@ -8,6 +8,8 @@ COPY requirements_server.txt utils_server.py server_glwe.py machine_configuratio
 # Copy remote modules
 COPY deployment_float/compiled_models.tar.gz deployment_float/compiled_models.tar.gz
 
+RUN chmod +x machine_configuration.sh
+
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements_server.txt
 
