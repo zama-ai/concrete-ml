@@ -321,4 +321,5 @@ if __name__ == "__main__":
     init_benchmark_file()
     print("init benchmark file")
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # uvicorn.run("server_glwe:app", host="0.0.0.0", port=8000)
+    uvicorn.run("server_glwe:app", host="::", port=8000)
