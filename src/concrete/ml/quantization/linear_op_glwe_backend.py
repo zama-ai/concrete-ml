@@ -139,6 +139,10 @@ class GLWELinearLayerExecutor:
             x_flat = x
 
         q_min, q_max = self._get_quant_range(q_module)
+        assert q_min == 0
+        assert q_max == 127
+
+        # q_min = 0, q_max = 127  -> unsigned, with nbits=7
 
         rmin = x_flat.min(dim=1, keepdim=True).values
         rmax = x_flat.max(dim=1, keepdim=True).values
@@ -431,9 +435,11 @@ class GLWELinearLayerExecutor:
 
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4711
         # Dynamic quantization for weights and input.
+        # on the fly for the model weights that should be on the server
         weight_q, weight_scale, weight_zp, sum_w = self._per_channel_weight_quantization(
             weight, q_module, device
         )
+
         x_q, x_scale, x_zp, original_shape = self._dynamic_input_quantization(
             x, q_module, transpose_inputs1
         )
@@ -450,9 +456,11 @@ class GLWELinearLayerExecutor:
         num_valid_glwe_values_in_last_ciphertext = (
             weight_q_int.shape[1] % self.poly_size or self.poly_size
         )
+
         batch, n_rows, _ = x_q_int.shape
         result_buffer = numpy.zeros((batch, n_rows, weight_q_int.shape[1]), dtype=numpy.int64)
 
+        # Iterate over the tokens
         for idx, q_x_sample in enumerate(x_q_int):
             ciphertext = self.fhext.encrypt_matrix(  # pylint: disable=no-member
                 pkey=self.private_key,
@@ -472,7 +480,9 @@ class GLWELinearLayerExecutor:
             )
             result_buffer[idx, :] = q_result.astype(numpy.int64)
 
+
         result_tensor = torch.tensor(result_buffer, device=device, dtype=torch.long)
+
         k = weight_q.shape[0]
         out_tensor = self._apply_correction_and_dequantize(
             result_tensor, x_q, x_zp, weight_zp, sum_w, k, x_scale, weight_scale
@@ -506,6 +516,7 @@ class GLWELinearLayerExecutor:
             torch.Tensor: The result of applying the linear layer.
         """
         layers_in_module = list(q_module.quant_layers_dict.values())
+
         assert len(layers_in_module) == 1, "Expected exactly one linear layer in QuantizedModule"
 
         quantized_linear_op = layers_in_module[0][1]
