@@ -23,6 +23,166 @@ def has_glwe_backend():
     except ImportError:  # pragma: no cover
         return False  # pragma: no cover
 
+def _get_quant_range(input_n_bits: int, is_signed: bool = False):
+    """Return the minimum and maximum signed quantized values for the given module.
+
+    Args:
+        q_module: The quantized module to get the range for
+        is_signed: Whether to return the signed range
+
+    Returns:
+        tuple: Minimum and maximum quantized values
+    """
+    # input_n_bits = q_module.input_quantizers[0].quant_options.n_bits
+    if is_signed:
+        return -(2 ** (input_n_bits - 1)), 2 ** (input_n_bits - 1) - 1
+    return 0, 2**input_n_bits - 1
+
+def _dynamic_input_quantization(x: torch.Tensor, n_bits: int, transpose_inputs: bool = False):
+    """Dynamically quantize the input tensor on a per-sample basis.
+
+    Args:
+        x: Input tensor to quantize
+        n_bits: n_bits
+        transpose_inputs: Whether to transpose inputs
+
+    Returns:
+        tuple: Quantized input, scale, zero point and original shape
+    """
+    original_shape = x.shape
+    if x.dim() > 2:
+        x_flat = x.view(-1, original_shape[-1])
+    else:
+        x_flat = x
+
+    q_min, q_max = _get_quant_range(n_bits)
+    assert q_min == 0
+    assert q_max == 127
+
+    # q_min = 0, q_max = 127  -> unsigned, with nbits=7
+
+    rmin = x_flat.min(dim=1, keepdim=True).values
+    rmax = x_flat.max(dim=1, keepdim=True).values
+
+    x_scale = (rmax - rmin) / (q_max - q_min)
+    x_scale = torch.where(rmax > rmin, x_scale, torch.ones_like(x_scale))
+    x_zp = torch.round((q_min - rmin) / x_scale).to(torch.float32)
+
+    x_q = torch.round(x_flat / x_scale) + x_zp
+    x_q = torch.clamp(x_q, q_min, q_max).to(torch.float32)
+
+    x_q = x_q.transpose(-1, -2) if transpose_inputs else x_q
+
+    return x_q, x_scale, x_zp, original_shape
+
+def _per_channel_weight_quantization(weight: numpy.ndarray, n_bits: int, device: torch.device
+):
+    """Quantize the weights, per-channel using symmetric (signed) quantization.
+
+    Args:
+        weight: Weight tensor to quantize
+        n_bits: n_bits
+        device: Device to place tensors on
+
+    Returns:
+        tuple: Quantized weights, scale, zero point and weight sum
+    """
+    weight_float = torch.from_numpy(weight).to(device)
+
+    # Get the signed integer range
+    q_min, q_max = _get_quant_range(n_bits, is_signed=True)
+
+    w_min_vals, _ = weight_float.min(dim=0, keepdim=True)
+    w_max_vals, _ = weight_float.max(dim=0, keepdim=True)
+
+    weight_scale = (w_max_vals - w_min_vals) / (q_max - q_min)
+    # Avoid division by zero.
+    weight_scale = torch.where(
+        (w_max_vals > w_min_vals), weight_scale, torch.ones_like(weight_scale)
+    )
+    weight_scale = weight_scale.squeeze(-1)  # shape: (out_dim,)
+
+    # Quantization
+    weight_zp = torch.round(q_min - w_min_vals / weight_scale).to(torch.float32)
+
+    # Apply quantization with proper broadcasting
+    weight_q = torch.round(weight_float / weight_scale) + weight_zp
+    weight_q = torch.clamp(weight_q, q_min, q_max).to(torch.float32)
+    sum_w = weight_q.sum(dim=0)  # sum over the input dimension
+
+    return weight_q, weight_scale, weight_zp, sum_w
+
+def _apply_correction_and_dequantize(
+    raw: torch.Tensor,
+    x_q: torch.Tensor,
+    x_zp: torch.Tensor,
+    weight_zp: torch.Tensor,
+    sum_w: torch.Tensor,
+    k: int,
+    x_scale: torch.Tensor,
+    weight_scale: torch.Tensor,
+) -> torch.Tensor:
+    """Apply zero-point correction and de-quantize the result.
+
+    Args:
+        raw: Raw matrix multiplication result
+        x_q: Quantized input
+        x_zp: Input zero point
+        weight_zp: Weight zero point
+        sum_w: Sum of weights
+        k: Input dimension
+        x_scale: Input scale
+        weight_scale: Weight scale
+
+    Returns:
+        torch.Tensor: Dequantized result
+    """
+    # Compute sum of quantized input values.
+    sum_x = x_q.sum(dim=-1, keepdim=True).long()
+
+    assert raw.dim() == 2 or raw.dim() == 3, "Unsupported raw tensor dimension."
+
+    # Broadcast weight quantization parameters.
+    if raw.dim() == 2:
+        # raw shape: (N, out_dim)
+        weight_zp_broadcast = weight_zp.view(1, -1)
+        sum_w_broadcast = sum_w.view(1, -1)
+    else:
+        # raw shape: (batch, n_rows, out_dim)
+        weight_zp_broadcast = weight_zp.view(1, 1, -1)
+        sum_w_broadcast = sum_w.view(1, 1, -1)
+
+    # Apply correction:
+    #   raw - [weight_zp * sum_x + x_zp * sum_w - x_zp * weight_zp * k]
+    correction = (
+        (weight_zp_broadcast * sum_x)
+        + (x_zp * sum_w_broadcast)
+        - (x_zp * weight_zp_broadcast * k)
+    )
+    acc = raw - correction
+
+    # Dequantize
+    if raw.dim() == 2:
+        scale_product = x_scale * weight_scale.view(1, -1)
+    else:  # raw.dim() == 3
+        scale_product = x_scale * weight_scale.view(1, 1, -1)
+    return acc.float() * scale_product
+
+def _add_bias(out_tensor: torch.Tensor, bias, device: torch.device) -> torch.Tensor:
+    """Add bias to the output tensor if present.
+
+    Args:
+        out_tensor: The tensor to add bias to
+        bias: The bias
+        device: The device to place the bias tensor on
+
+    Returns:
+        torch.Tensor: Tensor with bias added
+    """
+    if bias:
+        bias = torch.from_numpy(bias).to(device)
+        out_tensor += bias
+    return out_tensor
 
 class GLWELinearLayerExecutor:
     """GLWE execution helper for pure linear layers."""
@@ -66,154 +226,6 @@ class GLWELinearLayerExecutor:
             self.glwe_crypto_params
         )
 
-    def _get_quant_range(self, q_module: QuantizedModule, is_signed: bool = False):
-        """Return the minimum and maximum signed quantized values for the given module.
-
-        Args:
-            q_module: The quantized module to get the range for
-            is_signed: Whether to return the signed range
-
-        Returns:
-            tuple: Minimum and maximum quantized values
-        """
-        input_n_bits = q_module.input_quantizers[0].quant_options.n_bits
-        if is_signed:
-            return -(2 ** (input_n_bits - 1)), 2 ** (input_n_bits - 1) - 1
-        return 0, 2**input_n_bits - 1
-
-    def _per_channel_weight_quantization(
-        self, weight: numpy.ndarray, q_module: QuantizedModule, device: torch.device
-    ):
-        """Quantize the weights, per-channel using symmetric (signed) quantization.
-
-        Args:
-            weight: Weight tensor to quantize
-            q_module: Quantized module containing quantization parameters
-            device: Device to place tensors on
-
-        Returns:
-            tuple: Quantized weights, scale, zero point and weight sum
-        """
-        weight_float = torch.from_numpy(weight).to(device)
-
-        # Get the signed integer range
-        q_min, q_max = self._get_quant_range(q_module, is_signed=True)
-
-        w_min_vals, _ = weight_float.min(dim=0, keepdim=True)
-        w_max_vals, _ = weight_float.max(dim=0, keepdim=True)
-
-        weight_scale = (w_max_vals - w_min_vals) / (q_max - q_min)
-        # Avoid division by zero.
-        weight_scale = torch.where(
-            (w_max_vals > w_min_vals), weight_scale, torch.ones_like(weight_scale)
-        )
-        weight_scale = weight_scale.squeeze(-1)  # shape: (out_dim,)
-
-        # Quantization
-        weight_zp = torch.round(q_min - w_min_vals / weight_scale).to(torch.float32)
-
-        # Apply quantization with proper broadcasting
-        weight_q = torch.round(weight_float / weight_scale) + weight_zp
-        weight_q = torch.clamp(weight_q, q_min, q_max).to(torch.float32)
-        sum_w = weight_q.sum(dim=0)  # sum over the input dimension
-
-        return weight_q, weight_scale, weight_zp, sum_w
-
-    def _dynamic_input_quantization(
-        self, x: torch.Tensor, q_module: QuantizedModule, transpose_inputs: bool = False
-    ):
-        """Dynamically quantize the input tensor on a per-sample basis.
-
-        Args:
-            x: Input tensor to quantize
-            q_module: Quantized module containing quantization parameters
-            transpose_inputs: Whether to transpose inputs
-
-        Returns:
-            tuple: Quantized input, scale, zero point and original shape
-        """
-        original_shape = x.shape
-        if x.dim() > 2:
-            x_flat = x.view(-1, original_shape[-1])
-        else:
-            x_flat = x
-
-        q_min, q_max = self._get_quant_range(q_module)
-        assert q_min == 0
-        assert q_max == 127
-
-        # q_min = 0, q_max = 127  -> unsigned, with nbits=7
-
-        rmin = x_flat.min(dim=1, keepdim=True).values
-        rmax = x_flat.max(dim=1, keepdim=True).values
-
-        x_scale = (rmax - rmin) / (q_max - q_min)
-        x_scale = torch.where(rmax > rmin, x_scale, torch.ones_like(x_scale))
-        x_zp = torch.round((q_min - rmin) / x_scale).to(torch.float32)
-
-        x_q = torch.round(x_flat / x_scale) + x_zp
-        x_q = torch.clamp(x_q, q_min, q_max).to(torch.float32)
-
-        x_q = x_q.transpose(-1, -2) if transpose_inputs else x_q
-
-        return x_q, x_scale, x_zp, original_shape
-
-    def _apply_correction_and_dequantize(
-        self,
-        raw: torch.Tensor,
-        x_q: torch.Tensor,
-        x_zp: torch.Tensor,
-        weight_zp: torch.Tensor,
-        sum_w: torch.Tensor,
-        k: int,
-        x_scale: torch.Tensor,
-        weight_scale: torch.Tensor,
-    ) -> torch.Tensor:
-        """Apply zero-point correction and de-quantize the result.
-
-        Args:
-            raw: Raw matrix multiplication result
-            x_q: Quantized input
-            x_zp: Input zero point
-            weight_zp: Weight zero point
-            sum_w: Sum of weights
-            k: Input dimension
-            x_scale: Input scale
-            weight_scale: Weight scale
-
-        Returns:
-            torch.Tensor: Dequantized result
-        """
-        # Compute sum of quantized input values.
-        sum_x = x_q.sum(dim=-1, keepdim=True).long()
-
-        assert raw.dim() == 2 or raw.dim() == 3, "Unsupported raw tensor dimension."
-
-        # Broadcast weight quantization parameters.
-        if raw.dim() == 2:
-            # raw shape: (N, out_dim)
-            weight_zp_broadcast = weight_zp.view(1, -1)
-            sum_w_broadcast = sum_w.view(1, -1)
-        else:
-            # raw shape: (batch, n_rows, out_dim)
-            weight_zp_broadcast = weight_zp.view(1, 1, -1)
-            sum_w_broadcast = sum_w.view(1, 1, -1)
-
-        # Apply correction:
-        #   raw - [weight_zp * sum_x + x_zp * sum_w - x_zp * weight_zp * k]
-        correction = (
-            (weight_zp_broadcast * sum_x)
-            + (x_zp * sum_w_broadcast)
-            - (x_zp * weight_zp_broadcast * k)
-        )
-        acc = raw - correction
-
-        # Dequantize
-        if raw.dim() == 2:
-            scale_product = x_scale * weight_scale.view(1, -1)
-        else:  # raw.dim() == 3
-            scale_product = x_scale * weight_scale.view(1, 1, -1)
-        return acc.float() * scale_product
 
     def _extract_weight_params(self, quantized_linear_op, transpose_inputs2: bool):
         """Extract and possibly transpose weights.
@@ -238,24 +250,6 @@ class GLWELinearLayerExecutor:
             qweight = numpy.transpose(qweight)
         return weight, qweight
 
-    def _add_bias(
-        self, out_tensor: torch.Tensor, quantized_layer, device: torch.device
-    ) -> torch.Tensor:
-        """Add bias to the output tensor if present.
-
-        Args:
-            out_tensor: The tensor to add bias to
-            quantized_layer: The quantized layer containing bias information
-            device: The device to place the bias tensor on
-
-        Returns:
-            torch.Tensor: Tensor with bias added
-        """
-        if len(quantized_layer[1].constant_inputs) > 1:
-            bias = list(quantized_layer[1].constant_inputs.values())[1].values
-            bias = torch.from_numpy(bias).to(device)
-            out_tensor += bias
-        return out_tensor
 
     def _forward_clear(
         self,
@@ -303,13 +297,15 @@ class GLWELinearLayerExecutor:
 
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4711
         # Static per-channel weight quantization.
-        weight_q, weight_scale, weight_zp, sum_w = self._per_channel_weight_quantization(
-            weight, q_module, device
+        input_n_bits = q_module.input_quantizers[0].quant_options.n_bits
+        weight_q, weight_scale, weight_zp, sum_w = _per_channel_weight_quantization(
+            weight, input_n_bits, device
         )
 
         # Dynamic quantization for inputs.
-        x_q, x_scale, x_zp, original_shape = self._dynamic_input_quantization(
-            x, q_module, transpose_inputs1
+        input_n_bits = q_module.input_quantizers[0].quant_options.n_bits
+        x_q, x_scale, x_zp, original_shape = _dynamic_input_quantization(
+            x, input_n_bits, transpose_inputs1
         )
 
         # Perform integer matrix multiplication.
@@ -317,14 +313,17 @@ class GLWELinearLayerExecutor:
         k = weight_q.shape[0]
 
         # Apply correction and de-quantization.
-        out_float = self._apply_correction_and_dequantize(
+        out_float = _apply_correction_and_dequantize(
             mm_raw, x_q, x_zp, weight_zp, sum_w, k, x_scale, weight_scale
         )
         if len(original_shape) > 2:
             out_float = out_float.view(*original_shape[:-1], -1)
 
         # Add bias if available
-        out_float = self._add_bias(out_float, quantized_layer, device)
+        bias = None
+        if len(quantized_layer[1].constant_inputs) > 1:
+            bias = list(quantized_layer[1].constant_inputs.values())[1].values
+        out_float = _add_bias(out_float, bias, device)
 
         return out_float
 
@@ -436,12 +435,12 @@ class GLWELinearLayerExecutor:
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4711
         # Dynamic quantization for weights and input.
         # on the fly for the model weights that should be on the server
-        weight_q, weight_scale, weight_zp, sum_w = self._per_channel_weight_quantization(
-            weight, q_module, device
+        input_n_bits = q_module.input_quantizers[0].quant_options.n_bits
+        weight_q, weight_scale, weight_zp, sum_w = _per_channel_weight_quantization(
+            weight, input_n_bits, device
         )
-
-        x_q, x_scale, x_zp, original_shape = self._dynamic_input_quantization(
-            x, q_module, transpose_inputs1
+        x_q, x_scale, x_zp, original_shape = _dynamic_input_quantization(
+            x, input_n_bits, transpose_inputs1
         )
 
         # The GLWE backend needs uint64 encoding for both neg/pos values
@@ -484,7 +483,7 @@ class GLWELinearLayerExecutor:
         result_tensor = torch.tensor(result_buffer, device=device, dtype=torch.long)
 
         k = weight_q.shape[0]
-        out_tensor = self._apply_correction_and_dequantize(
+        out_tensor = _apply_correction_and_dequantize(
             result_tensor, x_q, x_zp, weight_zp, sum_w, k, x_scale, weight_scale
         )
 
@@ -496,7 +495,11 @@ class GLWELinearLayerExecutor:
             original_shape[:-1] == out_tensor.shape[:-1]
         ), "Original shape and output shape do not match"
         _, quantized_layer = next(iter(q_module.quant_layers_dict.items()))
-        out_tensor = self._add_bias(out_tensor, quantized_layer, device)
+        bias = None
+        if len(quantized_layer[1].constant_inputs) > 1:
+            bias = list(quantized_layer[1].constant_inputs.values())[1].values
+        out_tensor = _add_bias(out_tensor, bias, device)
+
         return out_tensor
 
     def forward(
