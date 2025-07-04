@@ -141,7 +141,7 @@ end_time = time()
 print(
     f"With p_error={p_error:.5f}, the inference time becomes {(end_time - start_time) / 60:.2f} s"
 )
-# Ouput: With p_error=0.00043, the inference time becomes 0.56 s
+# Output: With p_error=0.00043, the inference time becomes 0.56 s
 print(f"Accuracy = {accuracy_score(y_pred, y_train): .2%}")
 # Output: Accuracy = 100.00%
 ```
