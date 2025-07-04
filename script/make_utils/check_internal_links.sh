@@ -3,7 +3,7 @@
 # We don't want links to the main branch, even if it's public. Instead, release branch should be
 # targeted
 if grep -r "tree/main" docs | grep "\.md:" | grep -v "https://huggingface.co/spaces/"; then
-    echo -n -e "\nThe above links contain references to the main banch. Please remove them as only "
+    echo -n -e "\nThe above links contain references to the main branch. Please remove them as only "
     echo "release branches should be referenced."
     exit 255
 fi
