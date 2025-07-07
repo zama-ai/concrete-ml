@@ -23,6 +23,7 @@ def has_glwe_backend():
     except ImportError:  # pragma: no cover
         return False  # pragma: no cover
 
+
 def _get_quant_range(input_n_bits: int, is_signed: bool = False):
     """Return the minimum and maximum signed quantized values for the given module.
 
@@ -37,6 +38,7 @@ def _get_quant_range(input_n_bits: int, is_signed: bool = False):
     if is_signed:
         return -(2 ** (input_n_bits - 1)), 2 ** (input_n_bits - 1) - 1
     return 0, 2**input_n_bits - 1
+
 
 def _dynamic_input_quantization(x: torch.Tensor, n_bits: int, transpose_inputs: bool = False):
     """Dynamically quantize the input tensor on a per-sample basis.
@@ -71,8 +73,8 @@ def _dynamic_input_quantization(x: torch.Tensor, n_bits: int, transpose_inputs: 
 
     return x_q, x_scale, x_zp, original_shape
 
-def _per_channel_weight_quantization(weight: numpy.ndarray, n_bits: int, device: torch.device
-):
+
+def _per_channel_weight_quantization(weight: numpy.ndarray, n_bits: int, device: torch.device):
     """Quantize the weights, per-channel using symmetric (signed) quantization.
 
     Args:
@@ -107,6 +109,7 @@ def _per_channel_weight_quantization(weight: numpy.ndarray, n_bits: int, device:
     sum_w = weight_q.sum(dim=0)  # sum over the input dimension
 
     return weight_q, weight_scale, weight_zp, sum_w
+
 
 def _apply_correction_and_dequantize(
     raw: torch.Tensor,
@@ -151,9 +154,7 @@ def _apply_correction_and_dequantize(
     # Apply correction:
     #   raw - [weight_zp * sum_x + x_zp * sum_w - x_zp * weight_zp * k]
     correction = (
-        (weight_zp_broadcast * sum_x)
-        + (x_zp * sum_w_broadcast)
-        - (x_zp * weight_zp_broadcast * k)
+        (weight_zp_broadcast * sum_x) + (x_zp * sum_w_broadcast) - (x_zp * weight_zp_broadcast * k)
     )
     acc = raw - correction
 
@@ -163,6 +164,7 @@ def _apply_correction_and_dequantize(
     else:  # raw.dim() == 3
         scale_product = x_scale * weight_scale.view(1, 1, -1)
     return acc.float() * scale_product
+
 
 def _add_bias(out_tensor: torch.Tensor, bias, device: torch.device) -> torch.Tensor:
     """Add bias to the output tensor if present.
@@ -179,6 +181,7 @@ def _add_bias(out_tensor: torch.Tensor, bias, device: torch.device) -> torch.Ten
         bias = torch.from_numpy(bias).to(device)
         out_tensor += bias
     return out_tensor
+
 
 class GLWELinearLayerExecutor:
     """GLWE execution helper for pure linear layers."""
@@ -222,7 +225,6 @@ class GLWELinearLayerExecutor:
             self.glwe_crypto_params
         )
 
-
     def _extract_weight_params(self, quantized_linear_op, transpose_inputs2: bool):
         """Extract and possibly transpose weights.
 
@@ -245,7 +247,6 @@ class GLWELinearLayerExecutor:
             weight = numpy.transpose(weight)
             qweight = numpy.transpose(qweight)
         return weight, qweight
-
 
     def _forward_clear(
         self,

@@ -1,16 +1,14 @@
-import os
-import re
-import math
 import json
-import shutil
+import math
+import os
 import random
-
+import re
+import shutil
 from pathlib import Path
 
 import numpy as np
 import torch
 import torch.nn.functional as F
-
 from tqdm import tqdm
 from transformers import AutoTokenizer
 
@@ -74,7 +72,7 @@ def set_seed(seed):
 
 def purge_compiled_model_dir(path_dir: Path, delete: bool = False) -> None:
     if delete and path_dir.exists():
-        print(f'Clean `{path_dir}`')
+        print(f"Clean `{path_dir}`")
         shutil.rmtree(path_dir)
 
 
@@ -100,8 +98,8 @@ def get_limited_batches(dataloader, num_batches=5):
     return limited_batches
 
 
-def get_device(force_device='cpu'):
-    if force_device == 'cuda':
+def get_device(force_device="cpu"):
+    if force_device == "cuda":
         if torch.cuda.is_available():
             # TODO add checks for concrete-python gpu
             return "cuda"
@@ -238,8 +236,12 @@ class DataCollator:
 
 
 def quantize_remote_layers():
-    weights_candidates = list(COMPILED_MODELS_PATH.glob('inference_model.*/*/server/remote_weights_layer*.npy'))
-    weights_infos_candidates = list(COMPILED_MODELS_PATH.glob('inference_model.*/*/server/info*.json'))
+    weights_candidates = list(
+        COMPILED_MODELS_PATH.glob("inference_model.*/*/server/remote_weights_layer*.npy")
+    )
+    weights_infos_candidates = list(
+        COMPILED_MODELS_PATH.glob("inference_model.*/*/server/info*.json")
+    )
 
     assert len(weights_candidates) == NB_REMOTE_MODULES
 
@@ -251,20 +253,26 @@ def quantize_remote_layers():
         weights = np.load(path_weight).astype(np.float64)
 
         # Quantization
-        weight_q, weight_scale, weight_zp, sum_w = per_channel_weight_quantization(weights.T, n_bits=7)
-        with path_info.open('r') as f:
+        weight_q, weight_scale, weight_zp, sum_w = per_channel_weight_quantization(
+            weights.T, n_bits=7
+        )
+        with path_info.open("r") as f:
             info_data = json.load(f)
 
-        info_data.update({
-            'weight_scale': weight_scale.cpu().numpy().tolist(),
-            'weight_zp': weight_zp.cpu().numpy().tolist(),
-            'sum_w': sum_w.cpu().numpy().tolist(),
-        })
+        info_data.update(
+            {
+                "weight_scale": weight_scale.cpu().numpy().tolist(),
+                "weight_zp": weight_zp.cpu().numpy().tolist(),
+                "sum_w": sum_w.cpu().numpy().tolist(),
+            }
+        )
 
-        with path_info.open('w') as f:
+        with path_info.open("w") as f:
             json.dump(info_data, f, indent=2)
 
-        match = re.search(r'layer(\d+)', path_weight.name)
+        match = re.search(r"layer(\d+)", path_weight.name)
         layer_index = int(match.group(1))
-        weights_quantized_path = path_weight.parent / f"remote_quantized_weights_layer{layer_index}.npy"
+        weights_quantized_path = (
+            path_weight.parent / f"remote_quantized_weights_layer{layer_index}.npy"
+        )
         np.save(weights_quantized_path, weight_q.cpu().numpy())
