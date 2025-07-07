@@ -450,7 +450,6 @@ class GLWELinearLayerExecutor:
         num_valid_glwe_values_in_last_ciphertext = (
             weight_q_int.shape[1] % self.poly_size or self.poly_size
         )
-
         batch, n_rows, _ = x_q_int.shape
         result_buffer = numpy.zeros((batch, n_rows, weight_q_int.shape[1]), dtype=numpy.int64)
 

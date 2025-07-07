@@ -12,7 +12,6 @@ from datetime import datetime
 
 import uuid
 from abc import abstractmethod
-from collections import defaultdict
 from functools import lru_cache
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple, Union
@@ -24,11 +23,16 @@ from brevitas.quant_tensor import QuantTensor
 from concrete.fhe import Configuration
 from torch import nn
 from tqdm.autonotebook import tqdm
-from glob import glob
 
 from ..common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE, HybridFHEMode
 from ..deployment.fhe_client_server import FHEModelClient, FHEModelDev, FHEModelServer
-from ..quantization.linear_op_glwe_backend import GLWELinearLayerExecutor, has_glwe_backend, _dynamic_input_quantization, _add_bias, _apply_correction_and_dequantize
+from ..quantization.linear_op_glwe_backend import (
+    GLWELinearLayerExecutor,
+    has_glwe_backend,
+    _dynamic_input_quantization,
+    _add_bias,
+    _apply_correction_and_dequantize
+)
 from .compile import (
     QuantizedModule,
     build_quantized_module,
@@ -234,7 +238,6 @@ class RemoteModule(nn.Module):
         logger: Optional[logging.Logger] = None,
         logger_level = logging.INFO,
         machine_type: str = '',
-
     ):
         super().__init__()
 
@@ -317,7 +320,6 @@ class RemoteModule(nn.Module):
             # with open(path_to_client / "client.zip", "wb") as file:
             #     file.write(client_response.content)
             # Create the client
-
             client = FHEModelClient(
                 path_dir=str(path_to_client.resolve()), key_dir=str(self.path_to_keys.resolve())
             )
@@ -424,9 +426,6 @@ class RemoteModule(nn.Module):
             assert isinstance(y, (QuantTensor, torch.Tensor))
 
         elif self.fhe_local_mode == HybridFHEMode.REMOTE:  # pragma:no cover
-            # Remote call
-            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4672
-            # assert self.executor is None, "Remote optimized linear layers are not yet implemented"
             if self.executor:
                 y = self.remote_glwe_call(x)
             else:
@@ -503,9 +502,9 @@ class RemoteModule(nn.Module):
                 },
                 stream=True,
             )
-            end = time.time()
+
             if self.logger:
-                self.logger.info(f"Inference completed in {time() - end:.2f} s.")
+                self.logger.info(f"Inference done in `{time() - start:.2f}` s.")
 
             # Deserialize and decrypt the result
             assert inference_query.status_code == 200, inference_query.content.decode("utf-8")
@@ -515,7 +514,6 @@ class RemoteModule(nn.Module):
 
         # Concatenate results and move them back to proper device
         return torch.Tensor(numpy.array(inferences)).to(device=device)
-
 
     def remote_glwe_call(self, x: torch.Tensor, device: str = "cpu") -> torch.Tensor:  # pragma:no cover
         """Call the remote server to get the private module inference.
@@ -738,7 +736,6 @@ class HybridFHEModel:
         self.executor: Optional[GLWELinearLayerExecutor] = None
         self.machine_type = machine_type
 
-
         self._replace_modules()
 
     def _replace_modules(self):
@@ -802,7 +799,6 @@ class HybridFHEModel:
                 self._get_module_by_name(self.model, ".".join(path)) if path else self.model
             )
             setattr(parent_module, last, remote_module)
-
 
     def forward(self, x: torch.Tensor, fhe: str = "disable") -> torch.Tensor:
         """Forward pass of the hybrid model.
@@ -905,7 +901,6 @@ class HybridFHEModel:
             path_to_clients (Optional[Path]): Path to the client.zip files.
             path_to_keys (Optional[Path]): Path to the keys folder.
         """
-
         if path_to_clients is None:
             path_to_clients = Path("clients")
         path_to_clients.mkdir(exist_ok=True)
