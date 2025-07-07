@@ -433,6 +433,7 @@ class LoraTrainer:
         self.hybrid_model = HybridFHEModel(
             self.lora_training_module,
             module_names=self.remote_names,
+            logger=self.logger,
             **hybrid_model_kwargs,
         )
 

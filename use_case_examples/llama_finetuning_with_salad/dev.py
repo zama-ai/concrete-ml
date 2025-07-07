@@ -59,7 +59,7 @@ DEVICE = get_device(force_device='cpu')
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="LORA fine-tuning with FHE options")
     parser.add_argument("--optimized_linear_execution", default=True)
-    parser.add_argument("--save_compiled_model", default=True)
+    parser.add_argument("--save_compiled_model", default=False)
     args = parser.parse_args()
 
     purge_compiled_model_dir(COMPILED_MODELS_PATH, delete=args.save_compiled_model)
@@ -116,9 +116,12 @@ if __name__ == "__main__":
         eval_steps=100,
         train_log_path=TRAIN_LOG_FILE,
         optimized_linear_execution=args.optimized_linear_execution,
-        server_remote_address="http://0.0.0.0:8000",
+        machine_type='M4',
+        # server_remote_address="http://0.0.0.0:8000",
+        # server_remote_address="http://127.0.0.1:8000",
+        # server_remote_address='https://mango-arugula-68eafimvf0z5o8ci.salad.cloud/',
+        server_remote_address="http://[::1]:8000",
         model_name=f"meta-llama",
-        verbose=True,
     )
 
     # --------------------- [6] Compilation ---------------------
@@ -128,9 +131,15 @@ if __name__ == "__main__":
 
     if args.save_compiled_model:
         print(f"--> Saving compiled models at {MODEL_DIR=}...")
-        lora_trainer.save_and_clear_private_info(MODEL_DIR, via_mlir=True)
-        peft_model.save_pretrained(COMPILED_MODELS_PATH / "artefact")
+
         pretrained_model.config.save_pretrained(COMPILED_MODELS_PATH / "artefact")
+
+        peft_model.save_pretrained(COMPILED_MODELS_PATH / "artefact")
+
+    lora_trainer.save_and_clear_private_info(MODEL_DIR, via_mlir=True)
+
+    # print('--> Offline Quantization')
+    # quantize_remote_layers()
 
     mode = 'remote'
 
@@ -147,5 +156,6 @@ if __name__ == "__main__":
     print("--> Running FHE remote training...")
     limited_batches = get_limited_batches(train_dl, 1)
 
+    print('--> Training')
     lora_trainer.train(limited_batches, fhe=mode, device=DEVICE)
 

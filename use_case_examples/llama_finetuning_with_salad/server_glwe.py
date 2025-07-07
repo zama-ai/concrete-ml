@@ -9,7 +9,7 @@ import numpy
 from time import time
 from glob import glob
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict, List
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse, FileResponse
@@ -63,12 +63,12 @@ async def add_key(key: UploadFile):
 
     total_add_key_func = time() - start
 
-    # save_benchmark_row({'uid': uid,
-    #                     "time_read_key": time_read_key,
-    #                     "time_deserialization_key": time_deserialization_key,
-    #                     "time_serialization_key": time_serialization_key,
-    #                     "time_storage_key": time_storage_key,
-    #                     "total_add_key_func": total_add_key_func})
+    save_benchmark_row({'uid': uid,
+                        "time_read_key": time_read_key,
+                        "time_deserialization_key": time_deserialization_key,
+                        "time_serialization_key": time_serialization_key,
+                        "time_storage_key": time_storage_key,
+                        "total_add_key_func": total_add_key_func})
 
     COMPRESSION_KEY = public_key
 
@@ -85,7 +85,6 @@ async def send_data(
     print(f"📡 [Endpoint `send_encrypted_input`] - `{uid=}`")
 
     encrypted_input_path = ROOT_SERVER_DIR / Path(linear_layer_name_path) / ENCRYPTED_FILENAME_INPUT
-
     path_weights = fetch_remote_weights(encrypted_input_path.parent)
     index = extract_layer_index(path_weights)
 
@@ -102,11 +101,11 @@ async def send_data(
 
     total_send_input_func = time() - start
 
-    # save_benchmark_row({'uid': uid,
-    #                     "index": int(index),
-    #                     "time_read_input": time_read_input,
-    #                     "time_storage_input": time_storage_input,
-    #                     "total_send_input_func": total_send_input_func})
+    save_benchmark_row({'uid': uid,
+                        "index": int(index),
+                        "time_read_input": time_read_input,
+                        "time_storage_input": time_storage_input,
+                        "total_send_input_func": total_send_input_func})
 
     return {"uid": uid, "status": "Data received successfully."}
 
@@ -260,9 +259,8 @@ async def compute(
 async def ping():
     """
     curl http://localhost:8000/ping
-    url -v http://localhost:8000/display_benchmark
     """
-    print('\n\nOK\n\n')
+    print('📡 [Endpoint `send_encrypted_input`]')
     return {"status": "ok"}
 
 
@@ -271,7 +269,7 @@ async def download_benchmark():
     """
     Endpoint to download the benchmark CSV file.
 
-    Use: curl -o server_benchmarks.csv http://127.0.0.1:8000/download_benchmark
+    curl -o server_benchmarks.csv http://127.0.0.1:8000/download_benchmark
 
     """
     if not BENCHMARK_FILE_PATH.exists():
@@ -291,6 +289,7 @@ async def download_benchmark():
 async def display_benchmark():
     """
     curl -v http://127.0.0.1:8000/display_benchmark
+    curl -v http://localhost:8000/display_benchmark
     """
 
     if not BENCHMARK_FILE_PATH.exists():
@@ -317,9 +316,9 @@ async def display_benchmark():
 if __name__ == "__main__":
     print(f"📡 [Server startup]")
     extract_archive()
-    print("Extraction done")
+    print("--> Extraction done")
     init_benchmark_file()
-    print("init benchmark file")
+    print("--> init benchmark file")
 
     # uvicorn.run("server_glwe:app", host="0.0.0.0", port=8000)
-    uvicorn.run("server_glwe:app", host="::", port=8000)
+    uvicorn.run("server_glwe:app", host="::", port=8000, log_level="debug")
