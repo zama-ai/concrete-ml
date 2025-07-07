@@ -56,10 +56,6 @@ def _dynamic_input_quantization(x: torch.Tensor, n_bits: int, transpose_inputs: 
         x_flat = x
 
     q_min, q_max = _get_quant_range(n_bits)
-    assert q_min == 0
-    assert q_max == 127
-
-    # q_min = 0, q_max = 127  -> unsigned, with nbits=7
 
     rmin = x_flat.min(dim=1, keepdim=True).values
     rmax = x_flat.max(dim=1, keepdim=True).values
@@ -434,7 +430,6 @@ class GLWELinearLayerExecutor:
 
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4711
         # Dynamic quantization for weights and input.
-        # on the fly for the model weights that should be on the server
         input_n_bits = q_module.input_quantizers[0].quant_options.n_bits
         weight_q, weight_scale, weight_zp, sum_w = _per_channel_weight_quantization(
             weight, input_n_bits, device
@@ -479,9 +474,7 @@ class GLWELinearLayerExecutor:
             )
             result_buffer[idx, :] = q_result.astype(numpy.int64)
 
-
         result_tensor = torch.tensor(result_buffer, device=device, dtype=torch.long)
-
         k = weight_q.shape[0]
         out_tensor = _apply_correction_and_dequantize(
             result_tensor, x_q, x_zp, weight_zp, sum_w, k, x_scale, weight_scale
@@ -519,7 +512,6 @@ class GLWELinearLayerExecutor:
             torch.Tensor: The result of applying the linear layer.
         """
         layers_in_module = list(q_module.quant_layers_dict.values())
-
         assert len(layers_in_module) == 1, "Expected exactly one linear layer in QuantizedModule"
 
         quantized_linear_op = layers_in_module[0][1]

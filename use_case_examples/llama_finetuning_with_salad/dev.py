@@ -1,32 +1,24 @@
-import os
-import sys
-import json
-import time
-import torch
+
 import argparse
-import numpy as np
-from copy import deepcopy
-from pathlib import Path
-from datasets import load_from_disk, Dataset
+
+from datasets import load_from_disk
 from torch.utils.data import DataLoader
 from transformers import (
     AutoModelForCausalLM,
-    AutoTokenizer,
     Trainer,
     TrainingArguments,
 )
 from peft import get_peft_model, LoraConfig
+
 from concrete.ml.torch.lora import LoraTrainer
 from concrete.ml.torch.hybrid_model import HybridFHEMode
 
 from utils_dev import *
-from utils_lora import generate_and_print
-from common_variables import *
 
-# On dev Side, we know:
-# which model will be finetuned
-# the finetuning params
-# the shape of the data
+# On The dev Side, we know:
+# - Which model will be finetuned
+# - The finetuning params
+# - The shape of the data
 
 # ========================= LoRA / PEFT Config ==========================
 PEFT_ARGS = {'r': 8,
@@ -130,13 +122,11 @@ if __name__ == "__main__":
     lora_trainer.compile(inputset, n_bits=N_BITS)
 
     if args.save_compiled_model:
-        print(f"--> Saving compiled models at {MODEL_DIR=}...")
-
+        print(f"--> Saving compiled models at {COMPILED_MODELS_PATH=}...")
         pretrained_model.config.save_pretrained(COMPILED_MODELS_PATH / "artefact")
-
         peft_model.save_pretrained(COMPILED_MODELS_PATH / "artefact")
 
-    lora_trainer.save_and_clear_private_info(MODEL_DIR, via_mlir=True)
+    lora_trainer.save_and_clear_private_info(COMPILED_MODELS_PATH, via_mlir=True)
 
     # print('--> Offline Quantization')
     # quantize_remote_layers()
@@ -145,7 +135,6 @@ if __name__ == "__main__":
 
     if mode == 'remote':
         print("--> <!> Now run `server_<compilation_type>.py`...")
-
         # --------------------- [7] Init Client ---------------------
         print("--> Init FHE client...")
         client_path = COMPILED_MODELS_PATH / ("client" if args.optimized_linear_execution else "meta-llama")
@@ -155,7 +144,4 @@ if __name__ == "__main__":
     # --------------------- [8] Fine-tuning ---------------------
     print("--> Running FHE remote training...")
     limited_batches = get_limited_batches(train_dl, 1)
-
-    print('--> Training')
     lora_trainer.train(limited_batches, fhe=mode, device=DEVICE)
-

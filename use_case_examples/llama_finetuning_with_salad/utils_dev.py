@@ -1,53 +1,59 @@
-import re
 import os
+import re
 import math
+import json
 import shutil
 import random
-import numpy
 
 from pathlib import Path
-from tqdm import tqdm
-from glob import glob
 
-import torch
 import numpy as np
+import torch
 import torch.nn.functional as F
 
+from tqdm import tqdm
 from transformers import AutoTokenizer
-from pathlib import Path
-import numpy as np
-import json
-import torch
 
-
-from common_variables import *
-
-NB_REMOTE_MODULES = 221
-
+# Random Seed
 SEED = 0
 
+# Model Configuration
+MODEL_NAME = "meta-llama/Llama-3.2-1B"
+NB_REMOTE_MODULES = 221
+FREEZE_WEIGTHS = True
+N_BITS = 7
+MODE = f"{N_BITS}bit"
+
+# Dataset Configuration
 DATASET_NAME = "microsoft/orca-math-word-problems-200k"
+MAX_LENGTH = 64
+BATCH_SIZE = 4
 
-DEVICE = "cpu"
+# Logging / Outputs
+TRAIN_LOG_FILE = f"training_log_{MODE}.txt"
+EVAL_RESPONSES_FILE = f"eval_generated_responses_{MODE}.txt"
 
+# Prompt Example
+PROMPT = "When you multiply a number by 7, it becomes 98. What is that number?\n"
+
+# Paths
 DATA_DIR_PATH = Path("Data")
-
 TRAIN_PATH = DATA_DIR_PATH / "train_dataset"
 TEST_PATH = DATA_DIR_PATH / "test_dataset"
 
 COMPILED_MODELS_PATH = Path("compiled_models/meta-llama/")
+PATH_TO_CLIENTS = COMPILED_MODELS_PATH
+PATH_TO_CLIENTS_KEYS = Path("compiled_models/meta-llama_keys")
 
+# Device
 DEVICE = torch.device("cpu" if not torch.cuda.is_available() else "cuda")
 
+# Set the tokenizer
 TOKENIZER = AutoTokenizer.from_pretrained(MODEL_NAME)
-
 # Ensure tokenizer has a pad token
 if TOKENIZER.pad_token is None:
     TOKENIZER.pad_token = TOKENIZER.eos_token
-
 VOCAB_SIZE = TOKENIZER.vocab_size
-
-print(f'{MODEL_NAME=}, {VOCAB_SIZE=}')
 
 
 def set_seed(seed):
@@ -163,8 +169,8 @@ def generate_and_print(prompt, model, tokenizer, seed=None, max_new_tokens=30):
         generated_text = tokenizer.decode(generated_ids, skip_special_tokens=True).strip()
 
         # Print the prompt and generated text
-        print(f"Prompt: {prompt}")
-        print(f"Response: {generated_text}\n")
+        print(f"Prompt: `{prompt}`")
+        print(f"Response: `{generated_text}`\n")
 
         return generated_text
 
@@ -231,58 +237,9 @@ class DataCollator:
         }
 
 
-def per_channel_weight_quantization(weight: numpy.ndarray, n_bits: int = 7):
-    """Quantize the weights, per-channel using symmetric (signed) quantization.
-
-    Args:
-        weight: Weight tensor to quantize
-        q_module: Quantized module containing quantization parameters
-
-    Returns:
-        tuple: Quantized weights, scale, zero point and weight sum
-    """
-
-    print('1 Inside `per_channel_weight_quantization`: ', weight.flatten()[:5])
-
-    weight_float = torch.from_numpy(weight).to(DEVICE)
-    print('2 Inside `per_channel_weight_quantization`: ', weight_float.flatten()[:5])
-
-    q_min, q_max =  -(2 ** (n_bits - 1)), 2 ** (n_bits - 1) - 1
-
-    w_min_vals, _ = weight_float.min(dim=0, keepdim=True)
-    w_max_vals, _ = weight_float.max(dim=0, keepdim=True)
-
-    weight_scale = (w_max_vals - w_min_vals) / (q_max - q_min)
-    # Avoid division by zero.
-    weight_scale = torch.where(
-        (w_max_vals > w_min_vals),
-        weight_scale,
-        torch.ones_like(weight_scale, device=DEVICE)
-    )
-    weight_scale = weight_scale.squeeze(-1)  # shape: (out_dim,)
-    # Quantization
-    weight_zp = torch.round(
-        q_min - w_min_vals / weight_scale
-    ).to(dtype=torch.float32, device=DEVICE)
-
-
-    # Apply quantization with proper broadcasting
-    weight_q = torch.round(weight_float / weight_scale) + weight_zp
-    weight_q = torch.clamp(weight_q, q_min, q_max).to(dtype=torch.float32, device=DEVICE)
-    sum_w = weight_q.sum(dim=0)  # sum over the input dimension
-
-    print('3 Inside `per_channel_weight_quantization`: ', weight_q.flatten()[:5])
-
-    return weight_q, weight_scale, weight_zp, sum_w
-
-
 def quantize_remote_layers():
-    COMPILED_MODELS_PATH = Path("compiled_models/meta-llama/")
-    print('-----------------------------------------')
     weights_candidates = list(COMPILED_MODELS_PATH.glob('inference_model.*/*/server/remote_weights_layer*.npy'))
     weights_infos_candidates = list(COMPILED_MODELS_PATH.glob('inference_model.*/*/server/info*.json'))
-
-    print(weights_candidates)
 
     assert len(weights_candidates) == NB_REMOTE_MODULES
 
@@ -291,13 +248,10 @@ def quantize_remote_layers():
 
     for path_weight, path_info in tqdm(zip(weights_candidates, weights_infos_candidates)):
 
-        print('path_weight;;;;;;;;;;;;', path_weight)
         weights = np.load(path_weight).astype(np.float64)
 
         # Quantization
-        print(f'in quantize_remote_layers (weights) {weights.flatten()[:5]}')
         weight_q, weight_scale, weight_zp, sum_w = per_channel_weight_quantization(weights.T, n_bits=7)
-        print(f'in quantize_remote_layers (weight_q) {weight_q.flatten()[:5]}')
         with path_info.open('r') as f:
             info_data = json.load(f)
 
@@ -314,4 +268,3 @@ def quantize_remote_layers():
         layer_index = int(match.group(1))
         weights_quantized_path = path_weight.parent / f"remote_quantized_weights_layer{layer_index}.npy"
         np.save(weights_quantized_path, weight_q.cpu().numpy())
-

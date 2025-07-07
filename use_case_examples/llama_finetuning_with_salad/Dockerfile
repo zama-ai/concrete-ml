@@ -15,7 +15,7 @@ RUN apt-get update && \
     pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements_server.txt
 
-    # Add a non-root user and group
+# Add a non-root user and group
 RUN groupadd -g 10001 grp02 && \
     useradd -u 10000 -g grp02 usr01 && \
     chown -R usr01:grp02 /project
