@@ -14,8 +14,7 @@ apt-get install -y curl
 apt-get install vim
 
 if ! command -v docker &> /dev/null; then
-    curl -fsSL https://get.docker.com -o get-docker.sh
-    sh get-docker.sh
+    curl -fsSL https://get.docker.com | sh
 fi
 
 cd ../..
