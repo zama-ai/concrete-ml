@@ -121,8 +121,7 @@ if __name__ == "__main__":
     )
     start_time = time()
     lora_trainer.compile(inputset, n_bits=N_BITS, device=DEVICE)
-    print(f'Compilation completed under: {time() - start_time:.2f} s using a {DEVICE=}')
-    #
+    print(f'Compilation completed under: {time() - start_time:.2f}s using {DEVICE=}')
 
     if args.save_compiled_model:
         print(f"--> Saving compiled models at {COMPILED_MODELS_PATH=}...")
