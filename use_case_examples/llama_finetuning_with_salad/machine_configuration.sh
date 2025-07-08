@@ -13,10 +13,10 @@ apt-get install -y curl
 apt-get install vim
 apt-get install -y docker.io
 
-# --- Clone CML
-echo "📥 Cloning Concrete-ML repository..."
-GH_TOKEN=$(python3 -c "from my_secrets import GH_TOKEN; print(GH_TOKEN)")
-git clone https://$GH_TOKEN@github.com/zama-ai/concrete-ml.git
+# # --- Clone CML
+# echo "📥 Cloning Concrete-ML repository..."
+# GH_TOKEN=$(python3 -c "from my_secrets import GH_TOKEN; print(GH_TOKEN)")
+# git clone https://$GH_TOKEN@github.com/zama-ai/concrete-ml.git
 
 cd concrete-ml
 git checkout llm_finetuning_on_salad
