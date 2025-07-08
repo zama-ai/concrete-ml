@@ -378,7 +378,7 @@ class RemoteModule(nn.Module):
         ):  # pragma: no cover
             self.private_module = self.private_module.to(x.device)  # pragma: no cover
 
-    def forward(self, x: torch.Tensor) -> Union[torch.Tensor, QuantTensor]:
+    def forward(self, x: torch.Tensor, device='cpu') -> Union[torch.Tensor, QuantTensor]:
         """Forward pass of the remote module.
 
         To change the behavior of this forward function one must change the fhe_local_mode
@@ -433,9 +433,9 @@ class RemoteModule(nn.Module):
 
         elif self.fhe_local_mode == HybridFHEMode.REMOTE:  # pragma:no cover
             if self.executor:
-                y = self.remote_glwe_call(x)
+                y = self.remote_glwe_call(x, x.device)
             else:
-                y = self.remote_call(x)
+                y = self.remote_call(x, x.device)
         elif self.fhe_local_mode == HybridFHEMode.TORCH:
             # Using torch layers
             assert self.private_module is not None
@@ -463,7 +463,6 @@ class RemoteModule(nn.Module):
             torch.Tensor: The result of the FHE computation
         """
         # Store tensor device and move to CPU for FHE encryption
-        base_device = x.device
         x = x.to(device=device)
 
         # We need to iterate over elements in the batch since
@@ -535,7 +534,6 @@ class RemoteModule(nn.Module):
         Returns:
             torch.Tensor: The result of the FHE computation
         """
-
         start = time()
         # Store tensor device and move to CPU for FHE encryption
         x = x.to(device=device)
@@ -544,8 +542,7 @@ class RemoteModule(nn.Module):
         # Iterate over each element in the batch
         # x.shape -> 1, 64, 2048 (batch_size, sequence_length (nb token), hidden_size)
         for index in range(len(x)):
-            clear_input = x[[index], :].detach().numpy()
-            clear_input = torch.from_numpy(clear_input)
+            clear_input = x[[index], :]
 
             # Dynamic input quantization
             x_q, x_scale, x_zp, original_shape = _dynamic_input_quantization(clear_input, n_bits=7)
@@ -670,8 +667,7 @@ class RemoteModule(nn.Module):
             ), "Original shape and output shape do not match"
 
             out_tensor = _add_bias(out_tensor, bias, device)
-
-            inferences.append(out_tensor.detach().numpy())
+            inferences.append(out_tensor)
 
             total_timing = time() - start
 
@@ -697,8 +693,7 @@ class RemoteModule(nn.Module):
                 }
             )
 
-        y = torch.Tensor(numpy.array(inferences)).to(device=device)
-
+        y = torch.stack(inferences, dim=0).to(device)
         return y[0]
 
 
