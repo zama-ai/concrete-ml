@@ -3,6 +3,7 @@ set -e
 
 # --- Create environment
 echo "🐍 Creating virtual environment..."
+apt install -y python3.10-venv
 python3 -m venv .venv
 source .venv/bin/activate
 
@@ -11,26 +12,24 @@ echo "🔧 Installing dependencies..."
 apt-get update
 apt-get install -y curl
 apt-get install vim
-apt-get install -y docker.io
 
-# # --- Clone CML
-# echo "📥 Cloning Concrete-ML repository..."
-# GH_TOKEN=$(python3 -c "from my_secrets import GH_TOKEN; print(GH_TOKEN)")
-# git clone https://$GH_TOKEN@github.com/zama-ai/concrete-ml.git
+if ! command -v docker &> /dev/null; then
+    curl -fsSL https://get.docker.com -o get-docker.sh
+    sh get-docker.sh
+fi
 
 cd ../..
-git checkout llm_finetuning_on_salad
+
 pip install -e .
 
 # --- Install Concrete GPU ---
 CONCRETE_WITH_VERSION="concrete-python==2.10.0"
+pip uninstall -y concrete-python
 echo "Installing $CONCRETE_WITH_VERSION from Zama GPU index..."
 pip install --upgrade pip
 pip install --extra-index-url https://pypi.zama.ai/gpu "$CONCRETE_WITH_VERSION"
+pip install typing-extensions
 
-
-# --- Install project dependancies
-echo "🔧 Installing project dependencies..."
 cd use_case_examples/llama_finetuning_with_salad
 pip install -r requirements_server.txt
 
@@ -45,7 +44,7 @@ nvidia-smi
 
 # --- Validate CUDA & Concrete GPU from Python ---
 echo "Running GPU checks..."
-python <<EOF
+python3 <<EOF
 import torch
 from concrete.compiler import check_gpu_available, check_gpu_enabled
 
