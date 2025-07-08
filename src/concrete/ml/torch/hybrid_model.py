@@ -678,6 +678,7 @@ class RemoteModule(nn.Module):
                     "device": str(device),
                     "machine": self.machine_type,
                     "uid": self.uid,
+                    "server_remote_address": self.server_remote_address,
                     "layer_name": str(fetch_remote_weights(self.private_remote_weights_path)).split(
                         "/"
                     )[-1],
@@ -740,6 +741,7 @@ class HybridFHEModel:
                 "device",
                 "machine",
                 "uid",
+                "server_remote_address",
                 "layer_name",
                 "input_shape",
                 "remote_weight_shape",
