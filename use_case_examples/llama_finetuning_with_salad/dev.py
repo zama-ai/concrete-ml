@@ -127,13 +127,9 @@ if __name__ == "__main__":
         print(f"--> Saving compiled models at {COMPILED_MODELS_PATH=}...")
         pretrained_model.config.save_pretrained(COMPILED_MODELS_PATH / "artefact")
         peft_model.save_pretrained(COMPILED_MODELS_PATH / "artefact")
+        lora_trainer.save_and_clear_private_info(COMPILED_MODELS_PATH, via_mlir=True)
 
-    lora_trainer.save_and_clear_private_info(COMPILED_MODELS_PATH, via_mlir=True)
-
-    print('--> Offline Quantization')
-    quantize_remote_layers()
-
-    mode = " remote"
+    mode = "remote"
 
     if mode == "remote":
         print("--> <!> Now run `server_<compilation_type>.py`...")

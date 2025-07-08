@@ -195,11 +195,11 @@ async def compute(
     start_time = time()
     encrypted_output = fhext.matrix_multiplication(
         encrypted_matrix=encrypted_deserialized_input,
-        data=weight_q.long().numpy().astype(np.int64).astype(np.uint64),
+        data=weight_q.long().cpu().numpy().astype(np.int64).astype(np.uint64),
         compression_key=COMPRESSION_KEY,
     )
     time_matmul = time() - start_time
-    print(f"⏱️ Encrypted Matmul done in `{time_matmul}`s")
+    print(f"⏱️ Encrypted Matmul done in `{time_matmul}`s using '{DEVICE=}'")
 
     start_time = time()
     encrypted_serialized_output = encrypted_output.serialize()

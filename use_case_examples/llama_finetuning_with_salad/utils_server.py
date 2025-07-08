@@ -43,7 +43,7 @@ FILENAME_INFO = "information.json"
 MACHINE = ""
 DEVICE = torch.device("cpu" if not torch.cuda.is_available() else "cuda")
 
-print(f"{DEVICE=}")
+print(f"Server:`device={DEVICE}`")
 
 BENCHMARK_COLUMNS = [
     "date",
@@ -170,7 +170,6 @@ def extract_layer_index(path) -> int:
 
 
 def extract_archive():
-
     if not TARGET_DIR.exists():
         print("📦 Extracting compiled_models.tar.gz...")
         with tarfile.open(ARCHIVE_PATH, "r:gz") as tar:
@@ -190,7 +189,6 @@ def per_channel_weight_quantization(weight: numpy.ndarray, n_bits: int = 7):
     Returns:
         tuple: Quantized weights, scale, zero point and weight sum
     """
-
     weight_float = torch.from_numpy(weight).to(DEVICE)
 
     q_min, q_max = -(2 ** (n_bits - 1)), 2 ** (n_bits - 1) - 1

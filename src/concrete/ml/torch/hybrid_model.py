@@ -463,6 +463,7 @@ class RemoteModule(nn.Module):
             torch.Tensor: The result of the FHE computation
         """
         # Store tensor device and move to CPU for FHE encryption
+        base_device = x.device
         x = x.to(device=device)
 
         # We need to iterate over elements in the batch since
@@ -694,6 +695,7 @@ class RemoteModule(nn.Module):
             )
 
         y = torch.stack(inferences, dim=0).to(device)
+
         return y[0]
 
 
