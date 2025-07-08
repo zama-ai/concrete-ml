@@ -6,7 +6,7 @@ echo "🐍 Creating virtual environment..."
 python3 -m venv .venv
 source .venv/bin/activate
 
-# --- Install Some Dependancies
+# --- Install some dependancies
 echo "🔧 Installing dependencies..."
 apt-get update
 apt-get install -y curl
@@ -27,6 +27,12 @@ CONCRETE_WITH_VERSION="concrete-python==2.10.0"
 echo "Installing $CONCRETE_WITH_VERSION from Zama GPU index..."
 pip install --upgrade pip
 pip install --extra-index-url https://pypi.zama.ai/gpu "$CONCRETE_WITH_VERSION"
+
+
+# --- Install project dependancies
+echo "🔧 Installing project dependencies..."
+cd use_case_examples/llama_finetuning_with_salad
+pip install -r requirements_server.txt
 
 # --- Verify GPU with nvidia-smi ---
 if ! command -v nvidia-smi &> /dev/null; then
