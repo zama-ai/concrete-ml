@@ -134,14 +134,13 @@ def fetch_remote_weights(
     candidates = list(layer_dir.glob(pattern))
 
     if not candidates:
-        raise HTTPException(
-            status_code=404, detail=f"No weight file matching pattern '{pattern}' in `{layer_dir}`"
+        raise Exception(
+            f"No weight file matching pattern '{pattern}' in `{layer_dir}`"
         )
 
     if len(candidates) > 1:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Multiple weight files matching pattern '{pattern}' in` {layer_dir}`: `{[str(p) for p in candidates]}`",
+        raise Exception(
+            f"Multiple weight files matching pattern '{pattern}' in `{layer_dir}`: {[str(p) for p in candidates]}"
         )
 
     return candidates[0]
@@ -670,9 +669,9 @@ class RemoteModule(nn.Module):
                 original_shape[:-1] == out_tensor.shape[:-1]
             ), "Original shape and output shape do not match"
 
-            out_tensor = _add_bias(out_tensor, bias, "cpu")
+            out_tensor = _add_bias(out_tensor, bias, device)
 
-            inferences.append(out_tensor.detach().cpu().numpy())
+            inferences.append(out_tensor.detach().numpy())
 
             total_timing = time() - start
 
