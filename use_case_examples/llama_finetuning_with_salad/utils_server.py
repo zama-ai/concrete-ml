@@ -25,7 +25,7 @@ SERVER_DIR = ROOT_SERVER_DIR / COMPILED_MODELS_DIR / "server"
 KEY_PATH = ROOT_SERVER_DIR / COMPILED_MODELS_DIR / "Keys" / "serialized_key.bin"
 
 BENCHMARK_DIR = ROOT_SERVER_DIR / Path("Logs")
-BENCHMARK_FILE_PATH = BENCHMARK_DIR / "benchmark.csv"
+BENCHMARK_FILE_PATH = BENCHMARK_DIR / "server_benchmark.csv"
 
 ENCRYPTED_FILENAME_INPUT = "encrypted_input.bin"
 CLEAR_FILENAME_INPUT = "clear_input.npy"
@@ -40,7 +40,7 @@ FILENAME_WEIGHTS_EXTENSION = "npy"
 FILENAME_BIAS = "remote_bias.pth"
 FILENAME_INFO = "information.json"
 
-MACHINE = ""
+MACHINE = "g4dn.16xlarge"
 DEVICE = torch.device("cpu" if not torch.cuda.is_available() else "cuda")
 
 print(f"Server:`device={DEVICE}`")
