@@ -107,7 +107,7 @@ async def send_data(
     total_send_input_func = time() - start
 
     save_benchmark_row(
-        {   'ligne': "Input",
+        {   'endpoint': "Input",
             "uid": uid,
             "index": int(index),
             "time_read_input": time_read_input,
@@ -250,7 +250,7 @@ async def compute(
     total_compute_func = time() - start
 
     save_benchmark_row(
-        {   "ligne": "compute",
+        {   "endpoint": "compute",
             "uid": uid,
             "layer_name": str(layer_dir).split("/")[-3],
             "index": extract_layer_index(path_weights),
