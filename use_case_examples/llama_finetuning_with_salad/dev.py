@@ -108,11 +108,12 @@ if __name__ == "__main__":
         eval_steps=100,
         train_log_path=TRAIN_LOG_FILE,
         optimized_linear_execution=args.optimized_linear_execution,
-        machine_type="g4dn.8xlarge",
+        machine_type="M4",
         # server_remote_address="http://0.0.0.0:8000",
         # server_remote_address="http://127.0.0.1:8000",
         # server_remote_address='https://mango-arugula-68eafimvf0z5o8ci.salad.cloud/',
-        server_remote_address="http://[::1]:8000",
+        # server_remote_address="http://[::1]:8000",
+        server_remote_address="http://51.44.244.35:8000",
         model_name=f"meta-llama",
     )
 
