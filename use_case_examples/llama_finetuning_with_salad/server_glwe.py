@@ -307,7 +307,7 @@ async def display_benchmark():
         )
 
     try:
-        df = pd.read_csv(BENCHMARK_FILE_PATH)
+        df = pd.read_csv(BENCHMARK_FILE_PATH, sep=";")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error reading benchmark file: {e}")
 
