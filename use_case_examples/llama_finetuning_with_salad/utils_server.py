@@ -43,9 +43,10 @@ FILENAME_INFO = "information.json"
 MACHINE = "g4dn.16xlarge"
 DEVICE = torch.device("cpu" if not torch.cuda.is_available() else "cuda")
 
-print(f"Server:`device={DEVICE}`")
+print(f"Server: `device={DEVICE}`")
 
 BENCHMARK_COLUMNS = [
+    "endpoint",
     "date",
     "device",
     "machine",
@@ -98,6 +99,7 @@ def save_benchmark_row(
         )
 
     row = [
+        data.get("endpoint"),
         str(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
         str(DEVICE),
         str(MACHINE),

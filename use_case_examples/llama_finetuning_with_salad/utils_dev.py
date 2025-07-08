@@ -182,9 +182,9 @@ def generate_and_print(prompt, model, tokenizer, seed=None, max_new_tokens=30):
         return None
 
 
-def metric_fn(model, dataloader, prompt, eval_responses_files):
+def metric_fn(model, dataloader, prompt, eval_responses_files, device):
     model.eval()
-    model.to(DEVICE)
+    model.to(device)
     total_loss, total_tokens, results = 0.0, 0, []
     response = generate_and_print(prompt, model, TOKENIZER, seed=SEED)
     if response:
@@ -192,9 +192,9 @@ def metric_fn(model, dataloader, prompt, eval_responses_files):
 
     for batch in tqdm(dataloader, desc="Evaluating", leave=False):
         with torch.no_grad():
-            input_ids = batch["input_ids"].to(DEVICE)
-            batch_labels = batch["labels"].to(DEVICE)
-            attention_mask = batch["attention_mask"].to(DEVICE)
+            input_ids = batch["input_ids"].to(device)
+            batch_labels = batch["labels"].to(device)
+            attention_mask = batch["attention_mask"].to(device)
             outputs = model(input_ids, attention_mask=attention_mask).logits
             valid = batch_labels[..., 1:] != -100
             loss = F.cross_entropy(

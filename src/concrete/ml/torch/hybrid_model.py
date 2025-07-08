@@ -535,6 +535,8 @@ class RemoteModule(nn.Module):
         Returns:
             torch.Tensor: The result of the FHE computation
         """
+        print(f'Client: `DEVICE={device}`')
+
         start = time()
         # Store tensor device and move to CPU for FHE encryption
         x = x.to(device=device)
@@ -696,6 +698,7 @@ class RemoteModule(nn.Module):
             )
 
         y = torch.stack(inferences, dim=0).to(device)
+        print(f'Client: `DEVICE={device}` + {y.device=}')
 
         return y[0]
 

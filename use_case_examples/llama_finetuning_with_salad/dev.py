@@ -43,7 +43,7 @@ TRAINING_ARGS = {
     "report_to": "none",
 }
 
-DEVICE = get_device(force_device="cuda")
+DEVICE = get_device(force_device="cpu")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="LORA fine-tuning with FHE options")
