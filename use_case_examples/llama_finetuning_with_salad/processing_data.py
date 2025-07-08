@@ -12,14 +12,14 @@ raw_dataset = load_dataset(DATASET_NAME, split="train")
 
 
 def length_filter(example):
-    q_len = len(tokenizer(example["question"], add_special_tokens=False)["input_ids"])
-    a_len = len(tokenizer(example["answer"], add_special_tokens=False)["input_ids"])
+    q_len = len(TOKENIZER(example["question"], add_special_tokens=False)["input_ids"])
+    a_len = len(TOKENIZER(example["answer"], add_special_tokens=False)["input_ids"])
     return (q_len + a_len + 1) <= MAX_LENGTH
 
 
 def get_lengths(example):
-    q_len = len(tokenizer(example["question"], add_special_tokens=False)["input_ids"])
-    a_len = len(tokenizer(example["answer"], add_special_tokens=False)["input_ids"])
+    q_len = len(TOKENIZER(example["question"], add_special_tokens=False)["input_ids"])
+    a_len = len(TOKENIZER(example["answer"], add_special_tokens=False)["input_ids"])
     total_len = q_len + a_len + 1
     return {"q_len": q_len, "a_len": a_len, "total_len": total_len}
 
@@ -57,13 +57,13 @@ def process_example(example):
     """
     question = example["question"].strip()
     answer = example["answer"].strip()
-    tokens = tokenizer(
+    tokens = TOKENIZER(
         question + "\n" + answer,
         padding="max_length",
         truncation=True,
         max_length=MAX_LENGTH,
     )
-    question_length = len(tokenizer(question, add_special_tokens=False)["input_ids"]) + 1
+    question_length = len(TOKENIZER(question, add_special_tokens=False)["input_ids"]) + 1
     labels = tokens["input_ids"].copy()
     for i in range(question_length):
         if i < len(labels):
