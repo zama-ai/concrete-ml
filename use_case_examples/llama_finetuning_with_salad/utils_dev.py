@@ -12,6 +12,8 @@ import torch.nn.functional as F
 from tqdm import tqdm
 from transformers import AutoTokenizer
 
+from my_secrets import HF_TOKEN
+
 # Random Seed
 SEED = 0
 
@@ -43,11 +45,14 @@ COMPILED_MODELS_PATH = Path("compiled_models/meta-llama/")
 PATH_TO_CLIENTS = COMPILED_MODELS_PATH
 PATH_TO_CLIENTS_KEYS = Path("compiled_models/meta-llama_keys")
 
-# Device
+# Devicepyth
 DEVICE = torch.device("cpu" if not torch.cuda.is_available() else "cuda")
 
+
+print(f'{DEVICE=}')
+
 # Set the tokenizer
-TOKENIZER = AutoTokenizer.from_pretrained(MODEL_NAME)
+TOKENIZER = AutoTokenizer.from_pretrained(MODEL_NAME, token=HF_TOKEN)
 # Ensure tokenizer has a pad token
 if TOKENIZER.pad_token is None:
     TOKENIZER.pad_token = TOKENIZER.eos_token
@@ -76,11 +81,11 @@ def purge_compiled_model_dir(path_dir: Path, delete: bool = False) -> None:
         shutil.rmtree(path_dir)
 
 
-def get_random_inputset(vocab_size, batch_size, max_length, dtype=torch.long):
+def get_random_inputset(vocab_size, batch_size, max_length, device, dtype=torch.long):
     # Prepare input data for calibration
-    inputs = torch.randint(0, vocab_size, (batch_size, max_length), dtype=dtype)
-    labels = torch.randint(0, vocab_size, (batch_size, max_length), dtype=dtype)
-    attention_mask = torch.ones((batch_size, max_length), dtype=dtype)
+    inputs = torch.randint(0, vocab_size, (batch_size, max_length), dtype=dtype).to(device)
+    labels = torch.randint(0, vocab_size, (batch_size, max_length), dtype=dtype).to(device)
+    attention_mask = torch.ones((batch_size, max_length), dtype=dtype).to(device)
 
     inputset = {"input_ids": inputs, "attention_mask": attention_mask, "labels": labels}
 
@@ -243,7 +248,7 @@ def quantize_remote_layers():
         COMPILED_MODELS_PATH.glob("inference_model.*/*/server/info*.json")
     )
 
-    assert len(weights_candidates) == NB_REMOTE_MODULES
+    assert len(weights_candidates) == NB_REMOTE_MODULES, f'{len(weights_candidates)=} - {NB_REMOTE_MODULES=}'
 
     if len(weights_candidates) != len(weights_infos_candidates):
         raise ValueError("Le nombre de poids et d'info JSON ne correspond pas.")

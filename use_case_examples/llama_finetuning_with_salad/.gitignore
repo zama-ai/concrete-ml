@@ -1,4 +1,4 @@
-secrets.sh
+my_secrets.*
 *.csv
 *.txt
 *.pth

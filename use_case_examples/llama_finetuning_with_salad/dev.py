@@ -1,5 +1,7 @@
 import argparse
 
+from time import time
+
 from datasets import load_from_disk
 from peft import LoraConfig, get_peft_model
 from torch.utils.data import DataLoader
@@ -41,12 +43,12 @@ TRAINING_ARGS = {
     "report_to": "none",
 }
 
-DEVICE = get_device(force_device="cpu")
+DEVICE = get_device(force_device="cuda")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="LORA fine-tuning with FHE options")
     parser.add_argument("--optimized_linear_execution", default=True)
-    parser.add_argument("--save_compiled_model", default=False)
+    parser.add_argument("--save_compiled_model", default=True)
     args = parser.parse_args()
 
     purge_compiled_model_dir(COMPILED_MODELS_PATH, delete=args.save_compiled_model)
@@ -60,7 +62,7 @@ if __name__ == "__main__":
 
     # --------------------- [2] Load Pretrained Model ---------------------
     print(f"--> Load pre-trained model...")
-    pretrained_model = AutoModelForCausalLM.from_pretrained(MODEL_NAME).to(DEVICE)
+    pretrained_model = AutoModelForCausalLM.from_pretrained(MODEL_NAME, token=HF_TOKEN).to(DEVICE)
     pretrained_model.config.pad_token_id = pretrained_model.config.eos_token_id
 
     if FREEZE_WEIGTHS:
@@ -82,6 +84,7 @@ if __name__ == "__main__":
         train_dataset=train_dataset,
         data_collator=collator,
     )
+
     train_dl = hf_trainer.get_train_dataloader()
     eval_dl = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, collate_fn=collator)
 
@@ -103,7 +106,7 @@ if __name__ == "__main__":
         eval_steps=100,
         train_log_path=TRAIN_LOG_FILE,
         optimized_linear_execution=args.optimized_linear_execution,
-        machine_type="M4",
+        machine_type="g4dn.8xlarge",
         # server_remote_address="http://0.0.0.0:8000",
         # server_remote_address="http://127.0.0.1:8000",
         # server_remote_address='https://mango-arugula-68eafimvf0z5o8ci.salad.cloud/',
@@ -112,11 +115,14 @@ if __name__ == "__main__":
     )
 
     # --------------------- [6] Compilation ---------------------
-    print("--> Compilation ...")
+    print(f"--> Compilation with {DEVICE=}...")
     inputset = get_random_inputset(
-        vocab_size=VOCAB_SIZE, batch_size=BATCH_SIZE, max_length=MAX_LENGTH
+        vocab_size=VOCAB_SIZE, batch_size=BATCH_SIZE, max_length=MAX_LENGTH, device=DEVICE
     )
-    lora_trainer.compile(inputset, n_bits=N_BITS)
+    start_time = time()
+    lora_trainer.compile(inputset, n_bits=N_BITS, device=DEVICE)
+    print(f'Compilation completed under: {time() - start_time:.2f} s using a {DEVICE=}')
+    #
 
     if args.save_compiled_model:
         print(f"--> Saving compiled models at {COMPILED_MODELS_PATH=}...")
@@ -125,10 +131,10 @@ if __name__ == "__main__":
 
     lora_trainer.save_and_clear_private_info(COMPILED_MODELS_PATH, via_mlir=True)
 
-    # print('--> Offline Quantization')
-    # quantize_remote_layers()
+    print('--> Offline Quantization')
+    quantize_remote_layers()
 
-    mode = "remote"
+    mode = " remote"
 
     if mode == "remote":
         print("--> <!> Now run `server_<compilation_type>.py`...")
@@ -142,7 +148,7 @@ if __name__ == "__main__":
         )
         lora_trainer.hybrid_model.set_fhe_mode(HybridFHEMode.REMOTE)
 
-    # --------------------- [8] Fine-tuning ---------------------
-    print("--> Running FHE remote training...")
-    limited_batches = get_limited_batches(train_dl, 1)
-    lora_trainer.train(limited_batches, fhe=mode, device=DEVICE)
+        # --------------------- [8] Fine-tuning ---------------------
+        print("--> Running FHE remote training...")
+        limited_batches = get_limited_batches(train_dl, 1)
+        lora_trainer.train(limited_batches, fhe=mode, device=DEVICE)

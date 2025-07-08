@@ -1055,7 +1055,7 @@ class HybridFHEModel:
                         calibration_data_tensor,
                         n_bits=n_bits,
                         rounding_threshold_bits=rounding_threshold_bits,
-                        keep_onnx=True,  # TODO: reset to False
+                        keep_onnx=True,
                         device=device,
                     )
 
@@ -1128,7 +1128,7 @@ class HybridFHEModel:
                     self.remote_modules[module_name].private_remote_weights_path = server_path
                     # torch.save(private_remote_weights.double(), server_path / f"remote_weights_layer{i}.pth")
                     array_to_save = private_remote_weights.cpu().numpy().astype(numpy.float64)
-                    # numpy.save(server_path / f"remote_weights_layer{i}.npy", array_to_save)
+                    numpy.save(server_path / f"remote_weights_layer{i}.npy", array_to_save)
 
                     # Extract quantized layer
                     layers_in_module = list(private_q_module.quant_layers_dict.values())
@@ -1145,6 +1145,7 @@ class HybridFHEModel:
                         bias = list(quantized_layer[1].constant_inputs.values())[1].values
                         bias = torch.from_numpy(bias).to("cpu")
                         # torch.save(bias, server_path / "remote_bias.pth")
+                        numpy.save(server_path / f"remote_bias{i}.npy", bias)
 
                     # Save GLWE metadata
                     info = {
