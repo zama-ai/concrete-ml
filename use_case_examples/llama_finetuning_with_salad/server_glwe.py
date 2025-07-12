@@ -60,7 +60,8 @@ async def add_key(key: UploadFile):
     total_add_key_func = time() - start
 
     save_benchmark_row(
-        {   "endpoint": "Key",
+        {
+            "endpoint": "Key",
             "uid": uid,
             "time_read_key": time_read_key,
             "time_deserialization_key": time_deserialization_key,
@@ -107,7 +108,8 @@ async def send_data(
     total_send_input_func = time() - start
 
     save_benchmark_row(
-        {   'endpoint': "Input",
+        {
+            "endpoint": "Input",
             "uid": uid,
             "index": int(index),
             "time_read_input": time_read_input,
@@ -250,7 +252,8 @@ async def compute(
     total_compute_func = time() - start
 
     save_benchmark_row(
-        {   "endpoint": "compute",
+        {
+            "endpoint": "compute",
             "uid": uid,
             "layer_name": str(layer_dir).split("/")[-3],
             "index": extract_layer_index(path_weights),

@@ -417,8 +417,9 @@ class LoraTrainer:
         )
 
         # Determine modules to be executed remotely
-        self.remote_names = hybrid_model_kwargs.pop("module_names", None) or get_remote_names(
-            self.lora_training_module
+        self.remote_names = (
+            hybrid_model_kwargs.pop("module_names", None)
+            or get_remote_names(self.lora_training_module)[:1]
         )
 
         assert_true(
@@ -440,7 +441,7 @@ class LoraTrainer:
         if self.checkpoint_dir is not None:
             Path(self.checkpoint_dir).mkdir(parents=True, exist_ok=True)
 
-    def compile(self, inputset, n_bits=8, use_dynamic_quantization=True, device='cpu'):
+    def compile(self, inputset, n_bits=8, use_dynamic_quantization=True, device="cpu"):
         """Compile the hybrid model with the given input set.
 
         Args:
@@ -464,7 +465,7 @@ class LoraTrainer:
             copy.deepcopy(inputset),
             n_bits=n_bits,
             use_dynamic_quantization=use_dynamic_quantization,
-            device=device
+            device=device,
         )
 
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4707

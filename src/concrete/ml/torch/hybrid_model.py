@@ -134,9 +134,7 @@ def fetch_remote_weights(
     candidates = list(layer_dir.glob(pattern))
 
     if not candidates:
-        raise Exception(
-            f"No weight file matching pattern '{pattern}' in `{layer_dir}`"
-        )
+        raise Exception(f"No weight file matching pattern '{pattern}' in `{layer_dir}`")
 
     if len(candidates) > 1:
         raise Exception(
@@ -378,7 +376,7 @@ class RemoteModule(nn.Module):
         ):  # pragma: no cover
             self.private_module = self.private_module.to(x.device)  # pragma: no cover
 
-    def forward(self, x: torch.Tensor, device='cpu') -> Union[torch.Tensor, QuantTensor]:
+    def forward(self, x: torch.Tensor, device="cpu") -> Union[torch.Tensor, QuantTensor]:
         """Forward pass of the remote module.
 
         To change the behavior of this forward function one must change the fhe_local_mode
@@ -490,13 +488,13 @@ class RemoteModule(nn.Module):
                     f"Encrypted input size: {sys.getsizeof(encrypted_input) / 1024 / 1024:.2f} MB"
                 )
 
-            start = time.time()
             assert self.module_name is not None
 
             if self.logger:
                 self.logger.info(f"Infering..")
 
             # Inference using FHE server
+            start = time.time()
             inference_query = requests.post(
                 f"{self.server_remote_address}/compute",
                 files={
@@ -535,7 +533,6 @@ class RemoteModule(nn.Module):
         Returns:
             torch.Tensor: The result of the FHE computation
         """
-        print(f'Client: `DEVICE={device}`')
 
         start = time()
         # Store tensor device and move to CPU for FHE encryption
@@ -698,7 +695,6 @@ class RemoteModule(nn.Module):
             )
 
         y = torch.stack(inferences, dim=0).to(device)
-        print(f'Client: `DEVICE={device}` + {y.device=}')
 
         return y[0]
 

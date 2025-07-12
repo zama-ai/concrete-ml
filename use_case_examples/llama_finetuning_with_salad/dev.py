@@ -1,5 +1,4 @@
 import argparse
-
 from time import time
 
 from datasets import load_from_disk
@@ -47,7 +46,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="LORA fine-tuning with FHE options")
     parser.add_argument("--optimized_linear_execution", default=True)
     parser.add_argument("--save_compiled_model", default=True)
-    parser.add_argument("--device", default='cpu')
+    parser.add_argument("--device", default="cpu")
 
     args = parser.parse_args()
 
@@ -124,7 +123,7 @@ if __name__ == "__main__":
     )
     start_time = time()
     lora_trainer.compile(inputset, n_bits=N_BITS, device=DEVICE)
-    print(f'Compilation completed under: {time() - start_time:.2f}s using {DEVICE=}')
+    print(f"Compilation completed under: {time() - start_time:.2f}s using {DEVICE=}")
     # Compilation completed under: 5.24s using DEVICE='cpu'
 
     if args.save_compiled_model:

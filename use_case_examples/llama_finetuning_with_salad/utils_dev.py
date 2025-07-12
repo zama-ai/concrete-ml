@@ -9,10 +9,9 @@ from pathlib import Path
 import numpy as np
 import torch
 import torch.nn.functional as F
+from my_secrets import HF_TOKEN
 from tqdm import tqdm
 from transformers import AutoTokenizer
-
-from my_secrets import HF_TOKEN
 
 # Random Seed
 SEED = 0
@@ -48,8 +47,6 @@ PATH_TO_CLIENTS_KEYS = Path("compiled_models/meta-llama_keys")
 # Devicepyth
 DEVICE = torch.device("cpu" if not torch.cuda.is_available() else "cuda")
 
-
-print(f'{DEVICE=}')
 
 # Set the tokenizer
 TOKENIZER = AutoTokenizer.from_pretrained(MODEL_NAME, token=HF_TOKEN)
@@ -248,7 +245,9 @@ def quantize_remote_layers():
         COMPILED_MODELS_PATH.glob("inference_model.*/*/server/info*.json")
     )
 
-    assert len(weights_candidates) == NB_REMOTE_MODULES, f'{len(weights_candidates)=} - {NB_REMOTE_MODULES=}'
+    assert (
+        len(weights_candidates) == NB_REMOTE_MODULES
+    ), f"{len(weights_candidates)=} - {NB_REMOTE_MODULES=}"
 
     if len(weights_candidates) != len(weights_infos_candidates):
         raise ValueError("Le nombre de poids et d'info JSON ne correspond pas.")

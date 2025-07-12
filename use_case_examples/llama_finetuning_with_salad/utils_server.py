@@ -144,7 +144,13 @@ def fetch_remote_weights(
 ) -> Path:
     """Fetch remote weights given a layer_dir."""
 
-    layer_dir = Path(layer_dir)
+    layer_dir = Path(layer_dir).resolve()
+
+    # Validate that layer_dir is within the safe root directory
+    if not str(layer_dir).startswith(str(ROOT_SERVER_DIR.resolve())):
+        raise HTTPException(
+            status_code=403, detail=f"Access to the directory `{layer_dir}` is not allowed."
+        )
 
     pattern = f"{filename_weight_format}*.{FILENAME_WEIGHTS_EXTENSION}"
     candidates = list(layer_dir.glob(pattern))
