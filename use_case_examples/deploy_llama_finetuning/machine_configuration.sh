@@ -48,8 +48,6 @@ import torch
 from concrete.compiler import check_gpu_available, check_gpu_enabled
 
 assert torch.cuda.is_available(), "❌ Torch CUDA is NOT available!"
-print("✅ CUDA device:", torch.cuda.get_device_name(0))
-
 assert check_gpu_available(), "❌ Concrete GPU is NOT available!"
 assert check_gpu_enabled(), "❌ Concrete GPU is NOT enabled!"
 print("✅ Concrete GPU checks passed successfully.")
