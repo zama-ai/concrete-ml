@@ -14,7 +14,7 @@ torch.set_printoptions(precision=10, sci_mode=False)
 pd.set_option("display.max_columns", None)
 
 # Path configuration
-ROOT_SERVER_DIR = Path("./deployment_float")
+ROOT_SERVER_DIR = Path("./deployment")
 COMPILED_MODELS_DIR = Path("compiled_models")
 MODEL_NAME = "meta_llama"
 

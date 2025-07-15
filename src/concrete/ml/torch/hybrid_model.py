@@ -596,17 +596,11 @@ class RemoteModule(nn.Module):
             ciphertext_serialized = ciphertext.serialize()
             time_serialization_input = time.time() - s
 
-            # Send the input to the server
-            buffer = io.BytesIO()
-            numpy.save(buffer, x_q_int)
-            buffer.seek(0)
-
             s = time.time()
             response = requests.post(
                 f"{self.server_remote_address}/send_encrypted_input",
                 files={
                     "encrypted_input": io.BytesIO(ciphertext_serialized),
-                    "clear_input": buffer,
                 },
                 data={
                     "uid": str(self.uid),

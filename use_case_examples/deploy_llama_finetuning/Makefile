@@ -1,22 +1,16 @@
 SOURCE_DIR=./compiled_models
-SOURCE_COMPRESSED_DIR=./deployment_float/compiled_models
-ARCHIVE_DIR=./deployment_float/compiled_models.tar.gz
+MATCH_PATTERN=meta-llama/inference_model.base_model.model.*
+ARCHIVE_DIR=./deployment/compiled_models.tar.gz
 
-.PHONY: extract_remote_layers archive_remote_layers
-
-extract_remote_layers:
-	mkdir -p $(dir $(SOURCE_COMPRESSED_DIR))
-	python extract_remote_layers.py --dest_root $(dir $(SOURCE_COMPRESSED_DIR))
+.PHONY: archive_remote_layers
 
 archive_remote_layers:
-	@echo "The size before RETRAIN:"
+	@echo "The size before archiving:"
 	du -sh $(SOURCE_DIR)
 
-	@echo "The size after archiving:"
-	du -sh $(dir $(SOURCE_COMPRESSED_DIR))
-
-	# tar -czf <archive> -C <directory> <what to include>
-	time tar --disable-copyfile -czf $(ARCHIVE_DIR) -C $(SOURCE_COMPRESSED_DIR) .
+	@echo "Creating archive at $(ARCHIVE_DIR)..."
+	mkdir -p $(dir $(ARCHIVE_DIR))
+	time tar --disable-copyfile -czf $(ARCHIVE_DIR) $(SOURCE_DIR)/$(MATCH_PATTERN)
 
 	@echo "The size after archiving:"
 	du -sh $(ARCHIVE_DIR)

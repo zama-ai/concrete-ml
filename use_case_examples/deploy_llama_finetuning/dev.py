@@ -44,7 +44,6 @@ TRAINING_ARGS = {
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="LORA fine-tuning with FHE options")
-    parser.add_argument("--save_compiled_model", default=True)
     parser.add_argument("--device", default="cpu")
 
     args = parser.parse_args()
@@ -124,9 +123,8 @@ if __name__ == "__main__":
     print(f"Compilation completed under: {time() - start_time:.2f}s using {DEVICE=}")
     # Compilation completed under: 5.24s using DEVICE='cpu'
 
-    if args.save_compiled_model:
-        print(f"--> Saving compiled models at {COMPILED_MODELS_PATH=}...")
-        lora_trainer.save_and_clear_private_info(COMPILED_MODELS_PATH, via_mlir=True)
+    print(f"--> Saving compiled models at {COMPILED_MODELS_PATH=}...")
+    lora_trainer.save_and_clear_private_info(COMPILED_MODELS_PATH, via_mlir=True)
 
     print("--> <!> Now run `server_<compilation_type>.py`...")
     # --------------------- [7] Init Client ---------------------
