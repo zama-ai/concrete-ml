@@ -596,23 +596,7 @@ class RemoteModule(nn.Module):
             ciphertext_serialized = ciphertext.serialize()
             time_serialization_input = time.time() - s
 
-            s = time.time()
-            response = requests.post(
-                f"{self.server_remote_address}/send_encrypted_input",
-                files={
-                    "encrypted_input": io.BytesIO(ciphertext_serialized),
-                },
-                data={
-                    "uid": str(self.uid),
-                    "linear_layer_name_path": str(self.private_remote_weights_path),
-                },
-            )
 
-            assert (
-                response.status_code == 200
-            ), f"Request failed: `{response.status_code}`\nResponse:\n`{response.text}`"
-
-            total_send_input_func = time.time() - s
             if self.logger:
                 self.logger.info("Starting inference for module name: '%s'...", self.module_name)
 
@@ -621,6 +605,9 @@ class RemoteModule(nn.Module):
             s = time.time()
             response = requests.post(
                 url=f"{self.server_remote_address}/compute",
+                files={
+                    "encrypted_input": io.BytesIO(ciphertext_serialized),
+                },
                 data={
                     "uid": str(self.uid),
                     "shape": x_q_int.shape,
@@ -711,7 +698,6 @@ class RemoteModule(nn.Module):
                     "remote_weight_shape": str(weight_shape),
                     "time_encryption_input": time_encryption_input,
                     "time_serialization_input": time_serialization_input,
-                    "total_send_input_func": total_send_input_func,
                     "time_deserialization_output": time_deserialization_output,
                     "time_decryption_output": time_decryption_output,
                     "time_dequantization_output": time_dequantization_output,

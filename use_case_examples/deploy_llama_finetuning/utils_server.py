@@ -35,9 +35,9 @@ CLEAR_FILENAME_OUTPUT = "clear_output.bin"
 
 FILENAME_WEIGHTS_FORMAT = "remote_weights"
 FILENAME_WEIGHTS_Q_FORMAT = "remote_quantized_weights"
-FILENAME_WEIGHTS_EXTENSION = "npy"
+FILE_EXTENSION = "npy"
 
-FILENAME_BIAS = "remote_bias.pth"
+FILENAME_BIAS_FORMAT = "remote_bias"
 FILENAME_INFO = "information.json"
 
 MACHINE = "g4dn.16xlarge"
@@ -55,23 +55,21 @@ BENCHMARK_COLUMNS = [
     "index",
     "input_shape",
     "remote_weight_shape",
+
     "time_read_key",
-    "time_serialization_key",
     "time_deserialization_key",
+    "time_serialization_key",
     "time_storage_key",
-    "time_load_key",
+
     "time_read_input",
-    "time_serialization_input",
-    "time_deserialization_input",
-    "time_storage_input",
-    "time_load_input",
+    "time_deserialize_input",
+    "encrypted_input_size",
+
     "time_weight_quantization",
     "time_serialization_output",
-    "time_storage_output",
     "time_matmul",
     "time_packing_output_response",
     "total_add_key_func",
-    "total_send_input_func",
     "total_compute_func",
 ]
 
@@ -108,23 +106,22 @@ def save_benchmark_row(
         data.get("index"),
         data.get("input_shape"),
         data.get("remote_weight_shape"),
+
         data.get("time_read_key"),
-        data.get("time_serialization_key"),
         data.get("time_deserialization_key"),
+        data.get("time_serialization_key"),
         data.get("time_storage_key"),
-        data.get("time_load_key"),
+
         data.get("time_read_input"),
-        data.get("time_serialization_input"),
-        data.get("time_deserialization_input"),
-        data.get("time_storage_input"),
-        data.get("time_load_input"),
+        data.get("time_deserialize_input"),
+        data.get("encrypted_input_size"),
+
         data.get("time_weight_quantization"),
         data.get("time_serialization_output"),
-        data.get("time_storage_output"),
         data.get("time_matmul"),
         data.get("time_packing_output_response"),
+
         data.get("total_add_key_func"),
-        data.get("total_send_input_func"),
         data.get("total_compute_func"),
     ]
 
@@ -139,10 +136,8 @@ def read_csv(path):
     return pd.read_csv(path, sep=";")
 
 
-def fetch_remote_weights(
-    layer_dir: Union[str, Path], filename_weight_format=FILENAME_WEIGHTS_FORMAT
-) -> Path:
-    """Fetch remote weights given a layer_dir."""
+def fetch_remote_file(layer_dir: Union[str, Path], filename_format: str) -> Path:
+    """Fetch remote file given a layer_dir."""
 
     layer_dir = Path(layer_dir).resolve()
     root_dir = ROOT_SERVER_DIR.resolve()
@@ -159,7 +154,7 @@ def fetch_remote_weights(
             status_code=403, detail=f"Access to the directory `{layer_dir}` is not allowed."
         )
 
-    pattern = f"{filename_weight_format}*.{FILENAME_WEIGHTS_EXTENSION}"
+    pattern = f"{filename_format}*.{FILE_EXTENSION}"
     candidates = list(layer_dir.glob(pattern))
 
     if not candidates:

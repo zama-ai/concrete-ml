@@ -50,7 +50,7 @@ if __name__ == "__main__":
 
     DEVICE = get_device(force_device=args.device)
 
-    purge_compiled_model_dir(COMPILED_MODELS_PATH, delete=args.save_compiled_model)
+    purge_compiled_model_dir(COMPILED_MODELS_PATH)
     print(f"--> Fine-tuning..")
 
     # --------------------- [1] Load Data ---------------------

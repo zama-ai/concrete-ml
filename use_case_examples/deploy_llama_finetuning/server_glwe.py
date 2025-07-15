@@ -19,6 +19,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from utils_server import *
 
 logger = logging.getLogger("uvicorn")
+logger.setLevel(logging.INFO)
 
 COMPRESSION_KEY = None
 
@@ -33,18 +34,17 @@ async def add_key(key: UploadFile):
     start = time()
 
     uid = str(uuid.uuid4())
-
-    print(f"📡 [Endpoint `add_key`] - `{uid=}`")
+    logger.info("📡 [Endpoint `add_key`] - `uid=%s`", uid)
 
     start_time = time()
     serialized_public_key = await key.read()
     time_read_key = time() - start_time
-    print(f"⏱️ Key read in `{time_read_key:.2f}`s")
+    logger.info("⏱️ Key read in `%s`", f"{time_read_key:.2f}s")
 
     start_time = time()
     public_key = fhext.deserialize_compression_key(serialized_public_key)
     time_deserialization_key = time() - start_time
-    print(f"⏱️ Key deserialized in `{time_deserialization_key:.2f}`s")
+    logger.info("⏱️ Key deserialized in `%s`", f"{time_deserialization_key:.2f}s")
 
     KEY_PATH.parent.mkdir(parents=True, exist_ok=True)
 
@@ -55,7 +55,7 @@ async def add_key(key: UploadFile):
     with KEY_PATH.open("wb") as f:
         f.write(serialized_public_key)
     time_storage_key = time() - start_time
-    print(f"⏱️ Key storage + serialized in `{time_storage_key:.2f}`s and saved at: `{KEY_PATH}`")
+    logger.info("⏱️ Key storage + serialized in `%s` and saved at: `%s`", f"{time_storage_key:.2f}s", KEY_PATH)
 
     total_add_key_func = time() - start
 
@@ -75,71 +75,16 @@ async def add_key(key: UploadFile):
 
     return {"uid": uid}
 
-
-@app.post("/send_encrypted_input")
-async def send_data(
-    encrypted_input: UploadFile = File(...),
-    linear_layer_name_path: str = Form(...),
-    uid: Optional[str] = Form(None),
-):
-    """Send the encrypted input to the server."""
-    start = time()
-    print(f"📡 [Endpoint `send_encrypted_input`] - `{uid=}`")
-
-    print(f"📥 `{ROOT_SERVER_DIR=}`")
-    print(f"📥 `{Path(linear_layer_name_path)=}`")
-    print(f"📥 `{ENCRYPTED_FILENAME_INPUT=}`")
-
-    encrypted_input_path = ROOT_SERVER_DIR / Path(linear_layer_name_path) / ENCRYPTED_FILENAME_INPUT
-
-    print(f"`{encrypted_input_path=}`")
-
-    print(f"`{encrypted_input_path.parent=}`")
-
-    path_weights = fetch_remote_weights(encrypted_input_path.parent)
-    index = extract_layer_index(path_weights)
-
-    start_time = time()
-    encrypted_content = await encrypted_input.read()
-    time_read_input = time() - start_time
-    print(
-        f"📥 Received encrypted input (`{len(encrypted_content)} bytes`) in `{time_read_input:.2f}`s"
-    )
-
-    start_time = time()
-    with encrypted_input_path.open("wb") as f:
-        f.write(encrypted_content)
-    time_storage_input = time() - start_time
-    print(
-        f"⏱️ Encrypted input saved in `{time_storage_input:.2f}`s and saved at: `{encrypted_input_path}`"
-    )
-
-    total_send_input_func = time() - start
-
-    save_benchmark_row(
-        {
-            "endpoint": "Input",
-            "uid": uid,
-            "index": int(index),
-            "time_read_input": time_read_input,
-            "time_storage_input": time_storage_input,
-            "total_send_input_func": total_send_input_func,
-        }
-    )
-
-    return {"uid": uid, "status": "Data received successfully."}
-
-
 @app.post("/compute")
 async def compute(
+    encrypted_input: UploadFile = File(...),
     uid: str = Form(...),
     shape: Tuple[int, int] = Form(...),
     linear_layer_name_path: str = Form(...),
 ):
-    """Computes the FHE matmul over encrypted input."""
-
+    """Receives encrypted input, performs encrypted matmul, returns result directly."""
     start = time()
-    print(f"📡 [Endpoint `compute`] - `{uid=}`")
+    logger.info("📡 [Endpoint `compute`] - `uid=%s`", uid)
 
     layer_dir = ROOT_SERVER_DIR / Path(linear_layer_name_path)
 
@@ -147,33 +92,32 @@ async def compute(
         raise HTTPException(status_code=404, detail=f"The layer `{layer_dir}` does not exist.")
 
     # Build paths
-    path_encrypted_input = layer_dir / ENCRYPTED_FILENAME_INPUT
-    path_encrypted_output = layer_dir / ENCRYPTED_FILENAME_OUTPUT
-    path_bias = layer_dir / FILENAME_BIAS
+    path_weights = fetch_remote_file(layer_dir, FILENAME_WEIGHTS_FORMAT)
     path_info = layer_dir / FILENAME_INFO
-    path_weights = fetch_remote_weights(layer_dir)
 
     # Validate required files
-    required_files = [path_weights, path_encrypted_input, path_info, KEY_PATH]
+    required_files = [path_weights, path_info, KEY_PATH]
     for p in required_files:
         if not p.exists():
             raise HTTPException(status_code=404, detail=f"Missing file: `{p}`")
 
-    # Deserialize encrypted input
-    assert hasattr(fhext, "EncryptedMatrix")
-    assert hasattr(fhext.EncryptedMatrix, "deserialize")
+    # Read encrypted content directly from the request
     start_time = time()
-    with path_encrypted_input.open("rb") as f:
-        encrypted_deserialized_input = fhext.EncryptedMatrix.deserialize(f.read())
-    time_load_input = time() - start_time
+    encrypted_content = await encrypted_input.read()
+    time_read_input = time() - start_time
+    logger.info("📥 Encrypted input received in `%s` (`%d bytes`)", f"{time_read_input:.5f}s", len(encrypted_content))
 
-    # Load the public compression key
+    # Deserialize encrypted input
+    start_time = time()
+    encrypted_matrix = fhext.EncryptedMatrix.deserialize(encrypted_content)
+    time_deserialize_input = time() - start_time
+
+    # Load compression key
     assert COMPRESSION_KEY is not None
 
     # Load metadata
     with path_info.open("r") as f:
         info = json.load(f)
-
     transpose_inputs1 = info.get("transpose_inputs1", False)
     transpose_inputs2 = info.get("transpose_inputs2", False)
     has_bias = info.get("bias", False)
@@ -181,50 +125,37 @@ async def compute(
     # Load weights
     weights = np.load(path_weights)
 
-    # Load bias if present
-    bias = None
-    if has_bias:
-        if not path_bias.exists():
-            raise HTTPException(
-                status_code=404, detail=f"Bias expected but file missing: `{path_bias}`"
-            )
-        bias = torch.load(path_bias, map_location=DEVICE)
-        print(f"📥 Bias loaded: shape=`{bias.shape}`")
-
-    # Transpose weights if needed
+    # Transpose if needed
     if shape[1] == weights.shape[1]:
         weights = weights.T
-    else:
-        print(f"🔥🔥 No transpose: input.shape: {shape}, weights.shape: {weights.shape}")
 
     # Quantize weights
     start_time = time()
     weight_q, weight_scale, weight_zp, sum_w = per_channel_weight_quantization(weights)
     time_weight_quantization = time() - start_time
 
+    # Load bias if needed
+    bias = None
+    if has_bias:
+        path_bias = fetch_remote_file(layer_dir, FILENAME_BIAS_FORMAT)
+        if not path_bias.exists():
+            raise HTTPException(status_code=404, detail=f"Bias expected but missing: `{path_bias}`")
+        bias = torch.load(path_bias, map_location=DEVICE)
+        logger.info("📥 Bias loaded: shape=`%s`", bias.shape)
+
     # Encrypted matmul
     start_time = time()
     encrypted_output = fhext.matrix_multiplication(
-        encrypted_matrix=encrypted_deserialized_input,
+        encrypted_matrix=encrypted_matrix,
         data=weight_q.long().cpu().numpy().astype(np.int64).astype(np.uint64),
         compression_key=COMPRESSION_KEY,
     )
     time_matmul = time() - start_time
-    print(f"⏱️ Encrypted Matmul done in `{time_matmul}`s using '{DEVICE=}'")
 
+    # Serialize encrypted output
     start_time = time()
     encrypted_serialized_output = encrypted_output.serialize()
     time_serialization_output = time() - start_time
-
-    # Save encrypted output
-    start_time = time()
-    with path_encrypted_output.open("wb") as f:
-        f.write(encrypted_serialized_output)
-    time_storage_output = time() - start_time
-    print(f"📤 Encrypted output saved (`{len(encrypted_serialized_output)}` bytes)")
-    print(
-        f"⏱️ Encrypted output saved in `{time_storage_output}`s and saved at: `{path_encrypted_output}`"
-    )
 
     # Prepare metadata
     metadata = {
@@ -232,9 +163,9 @@ async def compute(
         "weight_scale": weight_scale.cpu().numpy(),
         "weight_zp": weight_zp.cpu().numpy(),
         "sum_w": sum_w.cpu().numpy(),
-        "weight_shape": numpy.array(weight_q.shape, dtype=numpy.int32),
-        "transpose_inputs1": numpy.array([transpose_inputs1], dtype=numpy.bool_),
-        "transpose_inputs2": numpy.array([transpose_inputs2], dtype=numpy.bool_),
+        "weight_shape": np.array(weight_q.shape, dtype=np.int32),
+        "transpose_inputs1": np.array([transpose_inputs1], dtype=np.bool_),
+        "transpose_inputs2": np.array([transpose_inputs2], dtype=np.bool_),
         "input_n_bits": 7,
     }
 
@@ -244,7 +175,7 @@ async def compute(
     # Build streaming response
     def result_stream():
         buffer = io.BytesIO()
-        numpy.savez_compressed(buffer, **metadata)
+        np.savez_compressed(buffer, **metadata)
         buffer.seek(0)
         while chunk := buffer.read(4096):
             yield chunk
@@ -256,10 +187,11 @@ async def compute(
         headers={"Content-Disposition": "attachment; filename=server_response.npz"},
     )
     time_packing_output_response = time() - start_time
-    print(f"⏱️ Server response traited in `{time_packing_output_response}`s")
+    logger.info("⏱️ Server response built in `%s`", f"{time_packing_output_response:.2f}s")
 
     total_compute_func = time() - start
 
+    # Save benchmark
     save_benchmark_row(
         {
             "endpoint": "compute",
@@ -268,10 +200,11 @@ async def compute(
             "index": extract_layer_index(path_weights),
             "input_shape": shape,
             "remote_weight_shape": weights.shape,
-            "time_load_input": time_load_input,
+            "time_read_input": time_read_input,
+            "time_deserialize_input": time_deserialize_input,
+            "encrypted_input_size": len(encrypted_content),
             "time_weight_quantization": time_weight_quantization,
             "time_matmul": time_matmul,
-            "time_storage_output": time_storage_output,
             "time_serialization_output": time_serialization_output,
             "time_packing_output_response": time_packing_output_response,
             "total_compute_func": total_compute_func,
@@ -280,13 +213,12 @@ async def compute(
 
     return response
 
-
 @app.get("/ping")
 async def ping():
     """
     curl http://localhost:8000/ping
     """
-    print("📡 [Endpoint `ping`]")
+    logger.info("📡 [Endpoint `ping`]")
     return {"status": "ok"}
 
 
@@ -295,7 +227,7 @@ async def download_benchmark():
     """
     Endpoint to download the benchmark CSV file.
 
-    curl -o server_benchmarks.csv http://127.0.0.1:8000/download_benchmark
+    curl -o server_benchmarks.csv http://127.0.0.1:8001/download_benchmark
 
     """
     if not BENCHMARK_FILE_PATH.exists():
@@ -309,8 +241,8 @@ async def download_benchmark():
 @app.get("/display_benchmark")
 async def display_benchmark():
     """
-    curl -v http://127.0.0.1:8000/display_benchmark
-    curl -v http://localhost:8000/display_benchmark
+    curl -v http://127.0.0.1:8001/display_benchmark
+    curl http://localhost:8001/display_benchmark
     """
 
     if not BENCHMARK_FILE_PATH.exists():
@@ -323,19 +255,18 @@ async def display_benchmark():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error reading benchmark file: {e}")
 
-    print("\n=== BENCHMARK CONTENT ===\n")
-    print(df)
-    print("\n=========================\n")
+    logger.info("=== BENCHMARK CONTENT ===")
+    logger.info("%s", df)
+    logger.info("=========================")
 
     return Response(status_code=204)
 
 
 if __name__ == "__main__":
-    print(f"📡 [Server startup]")
+    logger.info("📡 [Server startup]")
     extract_archive()
-    print("--> Extraction done")
     init_benchmark_file()
-    print("--> init benchmark file")
+    logger.info("📡 [Server startup] Init server benchmark file")
 
     # uvicorn.run("server_glwe:app", host="0.0.0.0", port=8000)
     # uvicorn.run("server_glwe:app", host="::", port=8000, log_level="debug")

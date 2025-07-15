@@ -410,7 +410,7 @@ class LoraTrainer:
         self.remote_names = (
             hybrid_model_kwargs.pop("module_names", None)
             or get_remote_names(self.lora_training_module)
-        )[:1]
+        )[:5]
 
         assert_true(
             isinstance(self.remote_names, List),
