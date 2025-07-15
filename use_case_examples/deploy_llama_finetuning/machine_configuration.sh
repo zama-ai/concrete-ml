@@ -47,6 +47,10 @@ python3 <<EOF
 import torch
 from concrete.compiler import check_gpu_available, check_gpu_enabled
 
+print(f'{torch.__version__}')
+print(f'{torch.version.cuda}')
+print(f'{torch.cuda.is_available()}')
+
 assert torch.cuda.is_available(), "❌ Torch CUDA is NOT available!"
 assert check_gpu_available(), "❌ Concrete GPU is NOT available!"
 assert check_gpu_enabled(), "❌ Concrete GPU is NOT enabled!"
