@@ -1,6 +1,8 @@
 """GLWE backend for some supported layers."""
 
+# pylint: disable=too-many-locals
 import json
+from typing import Union
 
 import numpy
 import torch
@@ -28,13 +30,12 @@ def _get_quant_range(input_n_bits: int, is_signed: bool = False):
     """Return the minimum and maximum signed quantized values for the given module.
 
     Args:
-        q_module: The quantized module to get the range for
-        is_signed: Whether to return the signed range
+        input_n_bits (int): Number of bits used in the input module.
+        is_signed (bool): Whether to return the signed range.
 
     Returns:
-        tuple: Minimum and maximum quantized values
+        tuple: Minimum and maximum quantized values.
     """
-    # input_n_bits = q_module.input_quantizers[0].quant_options.n_bits
     if is_signed:
         return -(2 ** (input_n_bits - 1)), 2 ** (input_n_bits - 1) - 1
     return 0, 2**input_n_bits - 1
@@ -166,13 +167,13 @@ def _apply_correction_and_dequantize(
     return acc.float() * scale_product
 
 
-def _add_bias(out_tensor: torch.Tensor, bias, device: torch.device) -> torch.Tensor:
+def _add_bias(out_tensor: torch.Tensor, bias, device: Union[str, torch.device]) -> torch.Tensor:
     """Add bias to the output tensor if present.
 
     Args:
         out_tensor: The tensor to add bias to
         bias: The bias
-        device: The device to place the bias tensor on
+        device (Union[str, torch.device]): The device to place the bias tensor on
 
     Returns:
         torch.Tensor: Tensor with bias added

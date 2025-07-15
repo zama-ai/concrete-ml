@@ -12,6 +12,7 @@ on:
           - cifar/cifar_brevitas_finetuning
           - cifar/cifar_brevitas_training
           - credit_scoring
+          - deploy_llama_finetuning
           - deployment/breast_cancer
           - deployment/cifar
           - deployment/sentiment_analysis

@@ -153,7 +153,6 @@ def fetch_remote_weights(
             status_code=403, detail=f"Access to the directory `{layer_dir}` is not allowed."
         )
 
-
     # Validate that layer_dir is within the safe root directory
     if not str(layer_dir).startswith(str(ROOT_SERVER_DIR.resolve())):
         raise HTTPException(
@@ -192,7 +191,7 @@ def extract_archive():
             tar.extractall(path=TARGET_DIR)
         print("✅ Extraction complete.")
     else:
-        print("✅ compiled_models directory already exists.")
+        print(f"✅ `{TARGET_DIR=}` directory already exists.")
 
 
 def per_channel_weight_quantization(weight: numpy.ndarray, n_bits: int = 7):

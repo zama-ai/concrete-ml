@@ -109,10 +109,10 @@ if __name__ == "__main__":
         optimized_linear_execution=args.optimized_linear_execution,
         machine_type="M4",
         # server_remote_address="http://0.0.0.0:8000",
-        # server_remote_address="http://127.0.0.1:8000",
+        server_remote_address="http://127.0.0.1:8001",
         # server_remote_address='https://mango-arugula-68eafimvf0z5o8ci.salad.cloud/',
         # server_remote_address="http://[::1]:8000",
-        server_remote_address="http://51.44.244.35:8000",
+        # server_remote_address="http://51.44.244.35:8000",
         model_name=f"meta-llama",
     )
 
@@ -128,8 +128,6 @@ if __name__ == "__main__":
 
     if args.save_compiled_model:
         print(f"--> Saving compiled models at {COMPILED_MODELS_PATH=}...")
-        pretrained_model.config.save_pretrained(COMPILED_MODELS_PATH / "artefact")
-        peft_model.save_pretrained(COMPILED_MODELS_PATH / "artefact")
         lora_trainer.save_and_clear_private_info(COMPILED_MODELS_PATH, via_mlir=True)
 
     mode = "remote"

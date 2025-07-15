@@ -1,6 +1,6 @@
 """Implement the conversion of a torch model to a hybrid fhe/torch inference."""
 
-# pylint: disable=too-many-lines
+# pylint: disable=too-many-lines,too-many-locals
 import ast
 import csv
 import io
@@ -13,7 +13,6 @@ from abc import abstractmethod
 from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
-from time import time
 from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import concrete_ml_extensions as fhext
@@ -26,7 +25,7 @@ from torch import nn
 from tqdm.autonotebook import tqdm
 
 from ..common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE, HybridFHEMode
-from ..deployment.fhe_client_server import FHEModelClient, FHEModelDev, FHEModelServer
+from ..deployment.fhe_client_server import FHEModelClient, FHEModelDev
 from ..quantization.linear_op_glwe_backend import (
     GLWELinearLayerExecutor,
     _add_bias,
@@ -123,22 +122,40 @@ def convert_conv1d_to_linear(layer_or_module):
 
 def fetch_remote_weights(
     layer_dir: Union[str, Path],
-    filename_weight_format="remote_weights",
-    filename_weight_extension="npy",
+    filename_weight_format: str = "remote_weights",
+    filename_weight_extension: str = "npy",
 ) -> Path:
-    """Fetch remote weights given a layer_dir."""
+    """Fetch and return the unique remote weight file in the given directory.
 
+    This function searches for a file in `layer_dir` whose name matches the pattern
+    `<filename_weight_format>*.<filename_weight_extension>`.
+
+    Args:
+        layer_dir (Union[str, Path]): Path to the directory where the weight file is stored.
+        filename_weight_format (str): Prefix pattern used to identify the weight file.
+                                                Defaults to "remote_weights".
+        filename_weight_extension (str): File extension of the weight file.
+                                                   Defaults to "npy".
+
+    Returns:
+        (Path): The path to the unique weight file that matches the pattern.
+
+    Raises:
+        FileNotFoundError: If no weight file matches the pattern in the directory.
+        RuntimeError: If multiple files match the pattern, leading to ambiguity.
+    """
     layer_dir = Path(layer_dir)
 
     pattern = f"{filename_weight_format}*.{filename_weight_extension}"
     candidates = list(layer_dir.glob(pattern))
 
     if not candidates:
-        raise Exception(f"No weight file matching pattern '{pattern}' in `{layer_dir}`")
+        raise FileNotFoundError(f"No weight file matching pattern '{pattern}' in `{layer_dir}`")
 
     if len(candidates) > 1:
-        raise Exception(
-            f"Multiple weight files matching pattern '{pattern}' in `{layer_dir}`: {[str(p) for p in candidates]}"
+        raise RuntimeError(
+            f"Multiple weight files matching pattern '{pattern}' in `{layer_dir}`: "
+            f"{[str(p) for p in candidates]}"
         )
 
     return candidates[0]
@@ -155,7 +172,8 @@ class BenchmarkLogger:
         logger=None,
         reset: bool = False,
     ):
-        """
+        """Initialize the BenchmarkLogger.
+
         Args:
             file_path (Path): Path to the CSV file.
             columns (List[str]): The column headers.
@@ -182,13 +200,16 @@ class BenchmarkLogger:
         else:
             msg = "Benchmark file already created"
         if self.logger:
-            self.logger.info(f"{msg}: `{self.file_path.resolve()}`")
+            self.logger.info("%s: '%s'", msg, self.file_path.resolve())
 
     def append(self, data: Dict):
         """Append a row to the CSV file.
 
         Args:
             data (Dict): A dict with keys matching the columns.
+
+        Raises:
+            ValueError: If `data` contains keys that are not present in `self.columns`.
         """
         invalid_keys = set(data.keys()) - set(self.columns)
         if invalid_keys:
@@ -253,7 +274,7 @@ class RemoteModule(nn.Module):
         self.optimized_linear_execution = optimized_linear_execution
         self.executor: Optional[GLWELinearLayerExecutor] = None
         self.progress_callback: Optional[Callable[[], None]] = None
-        self.private_remote_weights_path = None
+        self.private_remote_weights_path: Optional[Path] = None
         self.machine_type = machine_type
         self.benchmark_logger = benchmark_logger
         self.logger = logger or logging.getLogger(f"HybridFHEModel.RemoteModule.{module_name}")
@@ -328,7 +349,7 @@ class RemoteModule(nn.Module):
 
             if self.logger:
                 self.logger.info(
-                    f"Evaluation keys size: '{len(serialized_evaluation_keys) / (10**6):.2f}' MB"
+                    "Evaluation keys size: '%.2f' MB", len(serialized_evaluation_keys) / 1e6
                 )
 
             assert isinstance(serialized_evaluation_keys, bytes)
@@ -376,7 +397,9 @@ class RemoteModule(nn.Module):
         ):  # pragma: no cover
             self.private_module = self.private_module.to(x.device)  # pragma: no cover
 
-    def forward(self, x: torch.Tensor, device="cpu") -> Union[torch.Tensor, QuantTensor]:
+    def forward(
+        self, x: torch.Tensor, device: Union[str, torch.device] = "cpu"
+    ) -> Union[torch.Tensor, QuantTensor]:
         """Forward pass of the remote module.
 
         To change the behavior of this forward function one must change the fhe_local_mode
@@ -388,6 +411,7 @@ class RemoteModule(nn.Module):
 
         Args:
             x (torch.Tensor): The input tensor.
+            device (Union[str, torch.device]): The target device.
 
         Returns:
             (torch.Tensor): The output tensor.
@@ -413,6 +437,7 @@ class RemoteModule(nn.Module):
                 y = self.executor.forward(x.detach(), self.private_q_module, self.fhe_local_mode)
             else:
                 device = x.device
+                print(f"Using device: {device=}, {type(device)}, llllll")
                 # Delegate to the quantized module for all fhe modes
                 y = torch.Tensor(
                     self.private_q_module.forward(
@@ -433,6 +458,7 @@ class RemoteModule(nn.Module):
             if self.executor:
                 y = self.remote_glwe_call(x, x.device)
             else:
+
                 y = self.remote_call(x, x.device)
         elif self.fhe_local_mode == HybridFHEMode.TORCH:
             # Using torch layers
@@ -450,18 +476,19 @@ class RemoteModule(nn.Module):
 
         return y
 
-    def remote_call(self, x: torch.Tensor, device: str = "cpu") -> torch.Tensor:  # pragma:no cover
+    def remote_call(
+        self, x: torch.Tensor, device: Union[str, torch.device] = "cpu"
+    ) -> torch.Tensor:  # pragma:no cover
         """Call the remote server to get the private module inference.
 
         Args:
             x (torch.Tensor): The input tensor.
-            device (str): The device.
+            device (Union[str, torch.device]): The device.
 
         Returns:
             torch.Tensor: The result of the FHE computation
         """
         # Store tensor device and move to CPU for FHE encryption
-        base_device = x.device
         x = x.to(device=device)
 
         # We need to iterate over elements in the batch since
@@ -485,13 +512,12 @@ class RemoteModule(nn.Module):
 
             if self.logger:
                 self.logger.info(
-                    f"Encrypted input size: {sys.getsizeof(encrypted_input) / 1024 / 1024:.2f} MB"
+                    "Encrypted input size: '%.2f' MB", sys.getsizeof(encrypted_input) / 1024 / 1024
                 )
-
             assert self.module_name is not None
 
             if self.logger:
-                self.logger.info(f"Infering..")
+                self.logger.info("Inferring..")
 
             # Inference using FHE server
             start = time.time()
@@ -510,7 +536,7 @@ class RemoteModule(nn.Module):
             )
 
             if self.logger:
-                self.logger.info(f"Inference done in `{time() - start:.2f}` s.")
+                self.logger.info("Inference done in '%.2f' s.", time.time() - start)
 
             # Deserialize and decrypt the result
             assert inference_query.status_code == 200, inference_query.content.decode("utf-8")
@@ -521,23 +547,24 @@ class RemoteModule(nn.Module):
         # Concatenate results and move them back to proper device
         return torch.Tensor(numpy.array(inferences)).to(device=device)
 
+    # pylint: disable=too-many-statements
     def remote_glwe_call(
-        self, x: torch.Tensor, device: str = "cpu"
+        self, x: torch.Tensor, device: Union[str, torch.device] = "cpu"
     ) -> torch.Tensor:  # pragma:no cover
         """Call the remote server to get the private module inference.
 
         Args:
             x (torch.Tensor): The input tensor.
-            device (str): The device.
+            device (Union[str, torch.device]): The device.
 
         Returns:
             torch.Tensor: The result of the FHE computation
         """
 
-        start = time()
+        start = time.time()
         # Store tensor device and move to CPU for FHE encryption
         x = x.to(device=device)
-        inferences: List[numpy.ndarray] = []
+        inferences: List[torch.Tensor] = []
 
         # Iterate over each element in the batch
         # x.shape -> 1, 64, 2048 (batch_size, sequence_length (nb token), hidden_size)
@@ -549,30 +576,32 @@ class RemoteModule(nn.Module):
             # Convert quantized data to numpy arrays for encryption.
             x_q_int = x_q.long().cpu().numpy().astype(numpy.int64).astype(numpy.uint64)
 
+            assert self.private_remote_weights_path is not None
             path_client = Path(self.private_remote_weights_path).parent / "client"
             path_client.mkdir(parents=True, exist_ok=True)
             numpy.save(path_client / "quantized_input.npy", x_q_int)
 
-            # Encypt the input
+            # Encrypt the input
+            assert self.executor is not None, "Executor must be initialized for GLWE execution."
             assert self.executor.private_key is not None
-            s = time()
+            s = time.time()
             ciphertext = fhext.encrypt_matrix(  # pylint: disable=no-member
                 pkey=self.executor.private_key,
                 crypto_params=self.executor.glwe_crypto_params,
                 data=x_q_int,
             )
-            time_encryption_input = time() - s
+            time_encryption_input = time.time() - s
 
-            s = time()
+            s = time.time()
             ciphertext_serialized = ciphertext.serialize()
-            time_serialization_input = time() - s
+            time_serialization_input = time.time() - s
 
             # Send the input to the server
             buffer = io.BytesIO()
             numpy.save(buffer, x_q_int)
             buffer.seek(0)
 
-            s = time()
+            s = time.time()
             response = requests.post(
                 f"{self.server_remote_address}/send_encrypted_input",
                 files={
@@ -589,13 +618,13 @@ class RemoteModule(nn.Module):
                 response.status_code == 200
             ), f"Request failed: `{response.status_code}`\nResponse:\n`{response.text}`"
 
-            total_send_input_func = time() - s
+            total_send_input_func = time.time() - s
             if self.logger:
-                self.logger.info(f"Starting inference for module name: `{self.module_name}`...")
+                self.logger.info("Starting inference for module name: '%s'...", self.module_name)
 
             output_path = f"{self.private_remote_weights_path}/encrypted_output_from_server.bin"
 
-            s = time()
+            s = time.time()
             response = requests.post(
                 url=f"{self.server_remote_address}/compute",
                 data={
@@ -605,7 +634,7 @@ class RemoteModule(nn.Module):
                 },
                 stream=True,
             )
-            total_compute_func = time() - s
+            total_compute_func = time.time() - s
 
             assert response.status_code == 200
 
@@ -628,26 +657,27 @@ class RemoteModule(nn.Module):
             num_valid_glwe_values_in_last_ciphertext = (
                 weight_shape[1] % self.executor.poly_size or self.executor.poly_size
             )
-            s = time()
-            encrypted_deserilized_output = fhext.CompressedResultEncryptedMatrix.deserialize(
+            s = time.time()
+            # pylint: disable=no-member
+            encrypted_deserialized_output = fhext.CompressedResultEncryptedMatrix.deserialize(
                 encrypted_output
             )
-            time_deserialization_output = time() - s
+            time_deserialization_output = time.time() - s
 
-            s = time()
+            s = time.time()
             decrypted_deserialize_output = fhext.decrypt_matrix(  # pylint: disable=no-member
-                encrypted_deserilized_output,
+                encrypted_deserialized_output,
                 self.executor.private_key,
                 self.executor.glwe_crypto_params,
                 num_valid_glwe_values_in_last_ciphertext,
             ).astype(numpy.int64)
 
-            time_decryption_output = time() - s
+            time_decryption_output = time.time() - s
 
             q_result = decrypted_deserialize_output
             result_tensor = torch.tensor(q_result, device=device, dtype=torch.long)
 
-            s = time()
+            s = time.time()
             out_tensor = _apply_correction_and_dequantize(
                 result_tensor,
                 x_q,
@@ -658,7 +688,7 @@ class RemoteModule(nn.Module):
                 x_scale,
                 weight_scale,
             )
-            time_dequantization_output = time() - s
+            time_dequantization_output = time.time() - s
             out_tensor = (
                 out_tensor.view(*original_shape[:-1], -1) if original_shape[:-1] else out_tensor
             )
@@ -669,7 +699,9 @@ class RemoteModule(nn.Module):
             out_tensor = _add_bias(out_tensor, bias, device)
             inferences.append(out_tensor)
 
-            total_timing = time() - start
+            total_timing = time.time() - start
+
+            assert self.benchmark_logger is not None
 
             self.benchmark_logger.append(
                 {
@@ -678,9 +710,9 @@ class RemoteModule(nn.Module):
                     "machine": self.machine_type,
                     "uid": self.uid,
                     "server_remote_address": self.server_remote_address,
-                    "layer_name": str(fetch_remote_weights(self.private_remote_weights_path)).split(
-                        "/"
-                    )[-1],
+                    "layer_name": str(
+                        fetch_remote_weights(self.private_remote_weights_path)
+                    ).rsplit("/", maxsplit=1)[-1],
                     "input_shape": str(x_q_int.shape),
                     "remote_weight_shape": str(weight_shape),
                     "time_encryption_input": time_encryption_input,
@@ -694,9 +726,7 @@ class RemoteModule(nn.Module):
                 }
             )
 
-        y = torch.stack(inferences, dim=0).to(device)
-
-        return y[0]
+        return torch.stack(inferences, dim=0).to(device)[0]
 
 
 # pylint: disable-next=too-many-instance-attributes
@@ -770,6 +800,7 @@ class HybridFHEModel:
         self.model_name = model_name
         self.executor: Optional[GLWELinearLayerExecutor] = None
         self.machine_type = machine_type
+        self.client_model_state_dict = None
 
         self._replace_modules()
 
@@ -940,12 +971,13 @@ class HybridFHEModel:
             path_to_clients = Path("clients")
         path_to_clients.mkdir(exist_ok=True)
 
-        if self.use_glwe:
+        if self.executor is not None:
             self.client_model_state_dict = torch.load(Path("client") / "client_model.pth")
             self.executor = self.executor or GLWELinearLayerExecutor()
             if self.executor.private_key is None:
                 self.logger.info("Generating keys...")
                 self.executor.keygen()
+                self.logger.info("Keys generated...")
                 ckey = self.executor.compression_key
                 assert ckey is not None
                 assert hasattr(ckey, "serialize")
@@ -956,6 +988,8 @@ class HybridFHEModel:
                     "wb"
                 ) as binary_file:
                     binary_file.write(serialized_ckey)
+                self.logger.info("Saving the public evaluation key...")
+
                 response = requests.post(
                     f"{self.server_remote_address}/add_key",
                     files={"key": ("key", io.BytesIO(serialized_ckey))},
@@ -963,15 +997,18 @@ class HybridFHEModel:
                 assert (
                     response.status_code == 200
                 ), f"Request failed: `{response.status_code}`\nResponse:\n`{response.text}`"
+                self.logger.info("The key has been sent to the server...")
 
                 uid = response.json()["uid"]
-                for module_name in self.remote_modules:
-                    self.remote_modules[module_name].uid = uid
+                for _, module in self.remote_modules.items():
+                    module.uid = uid
         else:
             for module_name, module in self.remote_modules.items():
                 path_to_client = path_to_clients / module_name
                 path_to_client.mkdir(exist_ok=True)
                 module.init_fhe_client(path_to_client=path_to_client, path_to_keys=path_to_keys)
+
+        self.logger.info("All remote modules initialized.")
 
     def compile_model(
         self,
@@ -990,17 +1027,15 @@ class HybridFHEModel:
                 once for calibration.
             n_bits (int): The bit precision for quantization during FHE model compilation.
                 Default is 8.
-            rounding_threshold_bits (int): The number of bits to use for rounding threshold during
-                FHE model compilation. Default is 8.
-            p_error (float): Error allowed for each table look-up in the circuit.
-            device: FHE compilation device, can be either 'cpu' or 'cuda'.
-            configuration (Configuration): A concrete Configuration object specifying the FHE
-                encryption parameters. If not specified, a default configuration is used.
+            rounding_threshold_bits (Optional[int]): The number of bits to use for rounding
+                threshold during FHE model compilation. Default to None.
+            p_error (Optional[float]): Error allowed for each table look-up in the circuit.
+            device (str): FHE compilation device, can be either 'cpu' or 'cuda'.
+            configuration (Optional[Configuration]): A concrete Configuration object specifying the
+                FHE encryption parameters. If not specified, a default configuration is used.
             use_dynamic_quantization (bool): If True, use dynamic quantization;
                 otherwise, use static quantization. (only for GLWE backend)
         """
-
-        self.use_glwe = False
 
         assert (
             has_glwe_backend() or not use_dynamic_quantization
@@ -1043,7 +1078,6 @@ class HybridFHEModel:
                 # then simply quantize the model without compiling with
                 # Concrete Python.
                 if self._has_only_large_linear_layers and has_glwe_backend():
-                    self.use_glwe = True
                     self.executor = GLWELinearLayerExecutor(
                         use_dynamic_quantization=use_dynamic_quantization
                     )
@@ -1082,16 +1116,14 @@ class HybridFHEModel:
 
             remote_module.calibration_data = None
 
-    def _save_fhe_circuit(self, path: Path, via_mlir=False):
+    def _save_fhe_circuit(self, path: Path, via_mlir: bool = False):
         """Private method that saves the FHE circuits.
 
         Args:
             path (Path): The directory where the FHE circuit will be saved.
             via_mlir (bool): if fhe circuits should be serialized using via_mlir option
-                useful for cross-platform (compile on one architecture and run on another)
+                useful for cross-platform (compile on one architecture and run on another).
         """
-
-        model_path = Path(path)
         for i, module_name in enumerate(self.module_names):
             onnx_model = self.private_q_modules[module_name].onnx_model
             private_q_module = self.private_q_modules[module_name]
@@ -1104,11 +1136,10 @@ class HybridFHEModel:
                 assert len(input_shapes) == 1, "Multi-input circuits not supported yet"
 
                 shape_str = tuple_to_underscore_str(input_shapes[0])
-                model_module_path_relatif = (path / module_name / shape_str).resolve()
-                model_module_path_relatif.mkdir(parents=True, exist_ok=True)
-                model_module_path = path / module_name / shape_str
+                module_path = path / module_name / shape_str
+                module_path.mkdir(parents=True, exist_ok=True)
 
-                if self.use_glwe:
+                if self.executor is not None:
                     # Extract and save private weights
                     prefix = f"{module_name}.private_module"
                     matching_keys = [
@@ -1120,10 +1151,9 @@ class HybridFHEModel:
                     private_remote_weights = self.model.state_dict()[matching_keys[0]]
 
                     # Ensure target directories exist
-                    server_path = model_module_path / "server"
+                    server_path = module_path / "server"
                     server_path.mkdir(parents=True, exist_ok=True)
                     self.remote_modules[module_name].private_remote_weights_path = server_path
-                    # torch.save(private_remote_weights.double(), server_path / f"remote_weights_layer{i}.pth")
                     array_to_save = private_remote_weights.cpu().numpy().astype(numpy.float64)
                     numpy.save(server_path / f"remote_weights_layer{i}.npy", array_to_save)
 
@@ -1140,8 +1170,7 @@ class HybridFHEModel:
                     has_bias = len(quantized_layer[1].constant_inputs) > 1
                     if has_bias:
                         bias = list(quantized_layer[1].constant_inputs.values())[1].values
-                        bias = torch.from_numpy(bias).to("cpu")
-                        # torch.save(bias, server_path / "remote_bias.pth")
+                        bias = bias.cpu().numpy().astype(numpy.float64)
                         numpy.save(server_path / f"remote_bias{i}.npy", bias)
 
                     # Save GLWE metadata
@@ -1154,15 +1183,15 @@ class HybridFHEModel:
                         "input_n_bits": private_q_module.input_quantizers[0].quant_options.n_bits,
                     }
 
-                    with open(server_path / "information.json", "w") as f:
+                    with open(server_path / "information.json", "w", encoding="utf-8") as f:
                         json.dump(info, f)
 
                 else:
-                    model_dev = FHEModelDev(str(model_module_path), private_q_module)
+                    model_dev = FHEModelDev(str(module_path), private_q_module)
                     model_dev.save(via_mlir=via_mlir)
 
-    def save_and_clear_private_info(self, path: Path, via_mlir=True):
-        """Save the PyTorch model to the provided path and also saves the corresponding FHE circuit
+    def save_and_clear_private_info(self, path: Path, via_mlir: bool = True):
+        """Save the PyTorch model to the provided path and also saves the corresponding FHE circuit.
 
         Args:
             path (Path): The directory where the model and the FHE circuit will be saved.

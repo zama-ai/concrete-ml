@@ -369,7 +369,6 @@ class LoraTrainer:
         eval_steps: int = 10,
         train_log_path: str = "training.log",
         checkpoint_dir: str = None,
-        lora_training_module: Optional[Callable] = None,
         **hybrid_model_kwargs,
     ):
         self.optimizer = optimizer
@@ -384,8 +383,6 @@ class LoraTrainer:
         self.eval_steps = eval_steps
         self.training_losses: List[float] = []
         self.gradient_stats: Dict[str, List[float]] = {}
-
-        self.lora_training_module = lora_training_module
 
         # Set up logging
         self.logger = setup_logger(train_log_path)
@@ -402,14 +399,12 @@ class LoraTrainer:
             ),
         )
 
-        # Define the LoraTraining module
-        if self.lora_training_module is None:
-            # Create the LoraTraining module
-            self.lora_training_module = LoraTraining(
-                model,
-                n_layers_to_skip_for_backprop=n_layers_to_skip_for_backprop,
-                loss_fn=loss_fn,
-            )
+        # Create the LoraTraining module
+        self.lora_training_module = LoraTraining(
+            model,
+            n_layers_to_skip_for_backprop=n_layers_to_skip_for_backprop,
+            loss_fn=loss_fn,
+        )
 
         assert_true(
             isinstance(self.lora_training_module, LoraTraining),
@@ -427,7 +422,7 @@ class LoraTrainer:
             "`self.remote_names` must be a list of linear layers.",
         )
 
-        self.logger.info(f"Processing `{len(self.remote_names)}` Remote Modules.")
+        self.logger.info("Processing '%s' Remote Modules.", len(self.remote_names))
 
         # Create the hybrid model
         self.hybrid_model = HybridFHEModel(
@@ -441,13 +436,14 @@ class LoraTrainer:
         if self.checkpoint_dir is not None:
             Path(self.checkpoint_dir).mkdir(parents=True, exist_ok=True)
 
-    def compile(self, inputset, n_bits=8, use_dynamic_quantization=True, device="cpu"):
+    def compile(self, inputset, n_bits=8, use_dynamic_quantization=True, device: str = "cpu"):
         """Compile the hybrid model with the given input set.
 
         Args:
             inputset (tuple): Input set for compilation.
             n_bits (int): Bit width for quantization.
             use_dynamic_quantization (bool): Whether to use dynamic quantization.
+            device (str): Target device for compilation, either "cpu" or "cuda".
 
         Returns:
             Tuple[int, int]: The epoch and global step of the latest checkpoint if found,

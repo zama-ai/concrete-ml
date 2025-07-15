@@ -86,7 +86,16 @@ async def send_data(
     start = time()
     print(f"📡 [Endpoint `send_encrypted_input`] - `{uid=}`")
 
+    print(f"📥 `{ROOT_SERVER_DIR=}`")
+    print(f"📥 `{Path(linear_layer_name_path)=}`")
+    print(f"📥 `{ENCRYPTED_FILENAME_INPUT=}`")
+
     encrypted_input_path = ROOT_SERVER_DIR / Path(linear_layer_name_path) / ENCRYPTED_FILENAME_INPUT
+
+    print(f"`{encrypted_input_path=}`")
+
+    print(f"`{encrypted_input_path.parent=}`")
+
     path_weights = fetch_remote_weights(encrypted_input_path.parent)
     index = extract_layer_index(path_weights)
 
@@ -277,7 +286,7 @@ async def ping():
     """
     curl http://localhost:8000/ping
     """
-    print("📡 [Endpoint `send_encrypted_input`]")
+    print("📡 [Endpoint `ping`]")
     return {"status": "ok"}
 
 
@@ -330,4 +339,4 @@ if __name__ == "__main__":
 
     # uvicorn.run("server_glwe:app", host="0.0.0.0", port=8000)
     # uvicorn.run("server_glwe:app", host="::", port=8000, log_level="debug")
-    uvicorn.run("server_glwe:app", host="0.0.0.0", port=8000, log_level="debug")
+    uvicorn.run("server_glwe:app", host="0.0.0.0", port=8001, log_level="debug")
