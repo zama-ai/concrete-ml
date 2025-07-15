@@ -1,11 +1,8 @@
 # Prepare a question-answer data-set for language model fine-tuning.
-# The data-set is hold by the client
-# The dev side also knows some information about the data-set
-# (for compilation purposes)
 
 import argparse
 
-from datasets import load_dataset, load_from_disk
+from datasets import load_dataset
 from utils_dev import *
 
 raw_dataset = load_dataset(DATASET_NAME, split="train")
@@ -76,12 +73,11 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--verbose", default=True, help="Print dataset statistics")
-    parser.add_argument("--reset", default=False, help="Recreate the train and the test dataset")
     args = parser.parse_args()
 
     DATA_DIR_PATH.mkdir(parents=True, exist_ok=True)
 
-    if args.reset or not (TRAIN_PATH.exists() and TEST_PATH.exists()):
+    if not (TRAIN_PATH.exists() and TEST_PATH.exists()):
 
         filtered_dataset = raw_dataset.filter(length_filter)
         lengths = filtered_dataset.map(get_lengths)

@@ -406,15 +406,10 @@ class LoraTrainer:
             loss_fn=loss_fn,
         )
 
-        assert_true(
-            isinstance(self.lora_training_module, LoraTraining),
-            "`self.lora_training_module` must be an instance of 'LoraTraining'.",
-        )
-
         # Determine modules to be executed remotely
         self.remote_names = (
             hybrid_model_kwargs.pop("module_names", None)
-            or get_remote_names(self.lora_training_module)[:1]
+            or get_remote_names(self.lora_training_module)
         )
 
         assert_true(

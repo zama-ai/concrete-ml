@@ -44,7 +44,7 @@ COMPILED_MODELS_PATH = Path("compiled_models/meta-llama/")
 PATH_TO_CLIENTS = COMPILED_MODELS_PATH
 PATH_TO_CLIENTS_KEYS = Path("compiled_models/meta-llama_keys")
 
-# Devicepyth
+# Device
 DEVICE = torch.device("cpu" if not torch.cuda.is_available() else "cuda")
 
 

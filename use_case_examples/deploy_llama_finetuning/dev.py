@@ -44,7 +44,6 @@ TRAINING_ARGS = {
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="LORA fine-tuning with FHE options")
-    parser.add_argument("--optimized_linear_execution", default=True)
     parser.add_argument("--save_compiled_model", default=True)
     parser.add_argument("--device", default="cpu")
 
@@ -53,7 +52,7 @@ if __name__ == "__main__":
     DEVICE = get_device(force_device=args.device)
 
     purge_compiled_model_dir(COMPILED_MODELS_PATH, delete=args.save_compiled_model)
-    print(f"--> Fine-tuning with {args.optimized_linear_execution=}")
+    print(f"--> Fine-tuning..")
 
     # --------------------- [1] Load Data ---------------------
     print(f"--> Load Data...")
@@ -106,7 +105,6 @@ if __name__ == "__main__":
         logging_steps=1,
         eval_steps=100,
         train_log_path=TRAIN_LOG_FILE,
-        optimized_linear_execution=args.optimized_linear_execution,
         machine_type="M4",
         # server_remote_address="http://0.0.0.0:8000",
         server_remote_address="http://127.0.0.1:8001",
@@ -130,21 +128,16 @@ if __name__ == "__main__":
         print(f"--> Saving compiled models at {COMPILED_MODELS_PATH=}...")
         lora_trainer.save_and_clear_private_info(COMPILED_MODELS_PATH, via_mlir=True)
 
-    mode = "remote"
+    print("--> <!> Now run `server_<compilation_type>.py`...")
+    # --------------------- [7] Init Client ---------------------
+    print("--> Init FHE client...")
+    client_path = COMPILED_MODELS_PATH / "client"
+    lora_trainer.hybrid_model.init_client(
+        path_to_clients=client_path, path_to_keys=PATH_TO_CLIENTS_KEYS
+    )
+    lora_trainer.hybrid_model.set_fhe_mode(HybridFHEMode.REMOTE)
 
-    if mode == "remote":
-        print("--> <!> Now run `server_<compilation_type>.py`...")
-        # --------------------- [7] Init Client ---------------------
-        print("--> Init FHE client...")
-        client_path = COMPILED_MODELS_PATH / (
-            "client" if args.optimized_linear_execution else "meta-llama"
-        )
-        lora_trainer.hybrid_model.init_client(
-            path_to_clients=client_path, path_to_keys=PATH_TO_CLIENTS_KEYS
-        )
-        lora_trainer.hybrid_model.set_fhe_mode(HybridFHEMode.REMOTE)
-
-        # --------------------- [8] Fine-tuning ---------------------
-        print("--> Running FHE remote training...")
-        limited_batches = get_limited_batches(train_dl, 1)
-        lora_trainer.train(limited_batches, fhe=mode, device=DEVICE)
+    # --------------------- [8] Fine-tuning ---------------------
+    print("--> Running FHE remote training...")
+    limited_batches = get_limited_batches(train_dl, 1)
+    lora_trainer.train(limited_batches, fhe="remote", device=DEVICE)
