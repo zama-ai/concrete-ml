@@ -2,5 +2,4 @@ my_secrets.*
 *.csv
 *.txt
 *.pth
-*.ipynb
 */

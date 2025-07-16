@@ -26,6 +26,7 @@ on:
         - GLMComparison
         - GPT2FineTuneHybrid
         - HealthCarePrediction
+        - HybridFineTuningOfLLaMa
         - ImportingFromScikitLearn
         - KaggleTitanic
         - KNearestNeighbors
@@ -78,6 +79,7 @@ env:
   GLMComparison: "docs/advanced_examples/GLMComparison.ipynb" 
   GPT2FineTuneHybrid: "use_case_examples/lora_finetuning/GPT2FineTuneHybrid.ipynb" 
   HealthCarePrediction: "use_case_examples/disease_prediction/HealthCarePrediction.ipynb" 
+  HybridFineTuningOfLLaMa: "use_case_examples/hybrid_finetuning_of_llama/HybridFineTuningOfLLaMa.ipynb" 
   ImportingFromScikitLearn: "docs/advanced_examples/ImportingFromScikitLearn.ipynb" 
   KaggleTitanic: "use_case_examples/titanic/KaggleTitanic.ipynb" 
   KNearestNeighbors: "docs/advanced_examples/KNearestNeighbors.ipynb" 
