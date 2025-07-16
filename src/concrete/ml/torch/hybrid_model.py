@@ -968,7 +968,7 @@ class HybridFHEModel:
                     "wb"
                 ) as binary_file:
                     binary_file.write(serialized_ckey)
-                self.logger.info("Saving the public evaluation key...")
+                self.logger.info("Saving the public evaluation key at %s...", (path_to_clients / "public_evaluation_key.serverKey"))
 
                 response = requests.post(
                     f"{self.server_remote_address}/add_key",

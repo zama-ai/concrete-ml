@@ -5,7 +5,7 @@ import random
 import re
 import shutil
 from pathlib import Path
-
+import pandas as pd
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -46,6 +46,9 @@ PATH_TO_CLIENTS_KEYS = Path("compiled_models/meta-llama_keys")
 
 # Device
 DEVICE = torch.device("cpu" if not torch.cuda.is_available() else "cuda")
+
+# Configure pandas
+pd.set_option("display.max_columns", None)
 
 
 # Set the tokenizer
@@ -280,3 +283,12 @@ def quantize_remote_layers():
             path_weight.parent / f"remote_quantized_weights_layer{layer_index}.npy"
         )
         np.save(weights_quantized_path, weight_q.cpu().numpy())
+
+
+def extract_lora_weights(model):
+    """Extract LoRA weights from model for comparison."""
+    weights = {}
+    for name, param in model.named_parameters():
+        if "lora_" in name and param.requires_grad:
+            weights[name] = param.detach().cpu().numpy().copy()
+    return weights

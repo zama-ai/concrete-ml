@@ -106,10 +106,10 @@ if __name__ == "__main__":
         train_log_path=TRAIN_LOG_FILE,
         machine_type="M4",
         # server_remote_address="http://0.0.0.0:8000",
-        server_remote_address="http://127.0.0.1:8001",
+        # server_remote_address="http://127.0.0.1:8001",
         # server_remote_address='https://mango-arugula-68eafimvf0z5o8ci.salad.cloud/',
         # server_remote_address="http://[::1]:8000",
-        # server_remote_address="http://51.44.244.35:8000",
+        server_remote_address="http://13.36.240.77:8001",
         model_name=f"meta-llama",
     )
 
@@ -126,7 +126,7 @@ if __name__ == "__main__":
     print(f"--> Saving compiled models at {COMPILED_MODELS_PATH=}...")
     lora_trainer.save_and_clear_private_info(COMPILED_MODELS_PATH, via_mlir=True)
 
-    print("--> <!> Now run `server_<compilation_type>.py`...")
+    print("--> <!> Now run `server_glwe.py`...")
     # --------------------- [7] Init Client ---------------------
     print("--> Init FHE client...")
     client_path = COMPILED_MODELS_PATH / "client"
@@ -137,5 +137,5 @@ if __name__ == "__main__":
 
     # --------------------- [8] Fine-tuning ---------------------
     print("--> Running FHE remote training...")
-    limited_batches = get_limited_batches(train_dl, 1)
+    limited_batches = get_limited_batches(train_dl, 5)
     lora_trainer.train(limited_batches, fhe="remote", device=DEVICE)
