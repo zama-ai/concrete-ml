@@ -29,7 +29,7 @@ pip install --upgrade pip
 pip install --extra-index-url https://pypi.zama.ai/gpu "$CONCRETE_WITH_VERSION"
 pip install typing-extensions
 
-cd use_case_examples/deploy_llama_finetuning
+cd use_case_examples/hybrid_finetuning_of_llama
 pip install -r requirements_server.txt
 
 # --- Verify GPU with nvidia-smi ---
