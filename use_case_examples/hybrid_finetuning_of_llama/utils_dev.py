@@ -292,3 +292,33 @@ def extract_lora_weights(model):
         if "lora_" in name and param.requires_grad:
             weights[name] = param.detach().cpu().numpy().copy()
     return weights
+
+def collect_stats(init_w, ft_w):
+    """
+    - How much it has changed (delta amplitude),
+    - In which direction it has changed (cosine similarity),
+    - How significant the change is compared to the initial scale.
+    """
+
+    rows = []
+    for k, w_init in init_w.items():
+        if "lora_" not in k:
+            continue
+        w_ft   = ft_w[k]
+        w_init = torch.from_numpy(w_init)
+        w_ft   = torch.from_numpy(w_ft)
+
+        delta  = (w_ft - w_init).flatten()
+        part   = "A" if "lora_A" in k else "B"
+        # This gives an absolute measure of the amplitude of change.
+        l2     = torch.norm(delta).item()
+        # safe cosine (avoid zero division)
+        cos = 0.0
+        # This measures the directional alignment between the 2 matrices.
+        # cos(θ) ≈ 1 ⇒ fine-tuning has just changed the amplitude, not the direction.
+        # cos(θ) < 1 ⇒ weight rotation ⇒ structural change in layer behavior
+        if torch.norm(w_init) > 0 and torch.norm(w_ft) > 0:
+            cos = F.cosine_similarity(w_init.flatten(), w_ft.flatten(), dim=0).item()
+
+        rows.append(dict(layer=k, part=part, L2=l2, cos=cos))
+    return pd.DataFrame(rows)
