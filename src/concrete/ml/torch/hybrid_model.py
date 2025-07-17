@@ -437,7 +437,6 @@ class RemoteModule(nn.Module):
                 y = self.executor.forward(x.detach(), self.private_q_module, self.fhe_local_mode)
             else:
                 device = x.device
-                print(f"Using device: {device=}, {type(device)}, llllll")
                 # Delegate to the quantized module for all fhe modes
                 y = torch.Tensor(
                     self.private_q_module.forward(
@@ -458,7 +457,6 @@ class RemoteModule(nn.Module):
             if self.executor:
                 y = self.remote_glwe_call(x, x.device)
             else:
-
                 y = self.remote_call(x, x.device)
         elif self.fhe_local_mode == HybridFHEMode.TORCH:
             # Using torch layers
@@ -515,9 +513,6 @@ class RemoteModule(nn.Module):
                     "Encrypted input size: '%.2f' MB", sys.getsizeof(encrypted_input) / 1024 / 1024
                 )
             assert self.module_name is not None
-
-            if self.logger:
-                self.logger.info("Inferring..")
 
             # Inference using FHE server
             start = time.time()
@@ -596,9 +591,8 @@ class RemoteModule(nn.Module):
             ciphertext_serialized = ciphertext.serialize()
             time_serialization_input = time.time() - s
 
-
-            if self.logger:
-                self.logger.info("Starting inference for module name: '%s'...", self.module_name)
+            # if self.logger:
+            #     self.logger.info("Starting inference for module name: '%s'...", self.module_name)
 
             output_path = f"{self.private_remote_weights_path}/encrypted_output_from_server.bin"
 
@@ -689,6 +683,7 @@ class RemoteModule(nn.Module):
                     "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "device": str(device),
                     "machine": self.machine_type,
+                    "mode": "Remote",
                     "uid": self.uid,
                     "server_remote_address": self.server_remote_address,
                     "layer_name": str(
@@ -737,18 +732,20 @@ class HybridFHEModel:
         optimized_linear_execution: bool = True,
         machine_type: str = "",
         logger: Optional[logging.Logger] = None,
+        benchmark_file = None,
     ):
         if not isinstance(model, torch.nn.Module):
             raise TypeError("The model must be a PyTorch or Brevitas model.")
 
         self.logger = logger or logging.getLogger("HybridFHEModel")
-
+        benchmark_file = Path(benchmark_file or "client_benchmarks.csv")
         self.benchmark_logger = BenchmarkLogger(
-            file_path=Path("client_benchmarks.csv"),
+            file_path=benchmark_file,
             columns=[
                 "date",
                 "device",
                 "machine",
+                "mode",
                 "uid",
                 "server_remote_address",
                 "layer_name",
@@ -756,7 +753,6 @@ class HybridFHEModel:
                 "remote_weight_shape",
                 "time_encryption_input",
                 "time_serialization_input",
-                "total_send_input_func",
                 "time_deserialization_output",
                 "time_decryption_output",
                 "time_dequantization_output",
