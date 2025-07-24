@@ -75,7 +75,7 @@ class Fp32VGG11(nn.Module):
         self.features = nn.Sequential(*[make_layers(t) for t in FEATURES_MAPS if t[0] != "I"])
 
         # The original values in VGG-11 is output_size=(7, 7).
-        # We reduced the the kernel size from 7 to 1 to further reduce the image's size.
+        # We reduced the kernel size from 7 to 1 to further reduce the image's size.
         self.avgpool = nn.AdaptiveAvgPool2d(output_size=(1, 1))
 
         # Removing all the classification layers of the original VGG-11 to speed up computation.

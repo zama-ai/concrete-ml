@@ -1122,7 +1122,7 @@ class QuantizedAvgPool(QuantizedMixingOp):
         # Validate the parameters
         assert_true(
             self.auto_pad == "NOTSET",
-            "The 'auto_pad' parameter is not supported. Please keep the the default 'NOTSET' value "
+            "The 'auto_pad' parameter is not supported. Please keep the default 'NOTSET' value "
             "and provide explicit padding.",
         )
 

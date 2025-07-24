@@ -23,7 +23,7 @@ PredecessorsType = DefaultDict[Optional[QuantizedOp], List[Tuple[Optional[Quanti
 # A list of optimizable patterns. For a "Mixing" op that supports rounding accumulators
 # we store a list of ops which contain information that allows us to
 # compute the integer scaling factor for the Mixing op.
-# The quantizer op of the input to the the Mixing op is stored in the second member of the tuple
+# The quantizer op of the input to the Mixing op is stored in the second member of the tuple
 PatternDict = Dict[QuantizedMixingOp, Tuple[List[Optional[QuantizedOp]], Optional[QuantizedOp]]]
 
 

@@ -7,7 +7,7 @@
 
 # We check for 3 patterns:
 # - line or word starting with a $ not followed by a $
-# - a $ enclosed by two characters that are not not $
+# - a $ enclosed by two characters that are not $
 # - a line that ends with a $ which is not preceeded by a $
 
 # MacOS's grep is different from GNU's so we need to differenciate here.

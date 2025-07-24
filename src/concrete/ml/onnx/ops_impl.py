@@ -1377,7 +1377,7 @@ def numpy_avgpool(
 
     assert_true(
         auto_pad == "NOTSET",
-        "The 'auto_pad' parameter is not supported. Please keep the the default 'NOTSET' value and "
+        "The 'auto_pad' parameter is not supported. Please keep the default 'NOTSET' value and "
         "provide explicit padding.",
     )
 

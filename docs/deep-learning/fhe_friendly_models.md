@@ -14,7 +14,7 @@ For FHE-friendly neural networks, QAT is the best method to achieve optimal accu
 Concrete ML uses the third-party library [Brevitas](https://github.com/Xilinx/brevitas) to perform QAT for PyTorch neural networks, but options exist for other frameworks such as Keras/Tensorflow. Concrete ML provides several [demos and tutorials](../tutorials/showcase.md) that use Brevitas , including the [CIFAR classification tutorial](../../use_case_examples/cifar/cifar_brevitas_finetuning/CifarQuantizationAwareTraining.ipynb). For a more formal description of the usage of Brevitas to build FHE-compatible neural networks, please see the [Brevitas usage reference](../explanations/inner-workings/external_libraries.md#brevitas).
 
 {% hint style="info" %}
-For a formal explanation of the mechanisms that enable FHE-compatible neural networks, please see the the following paper.
+For a formal explanation of the mechanisms that enable FHE-compatible neural networks, please see the following paper.
 
 [Deep Neural Networks for Encrypted Inference with TFHE, 7th International Symposium, CSCML 2023](https://arxiv.org/abs/2302.10906)
 {% endhint %}

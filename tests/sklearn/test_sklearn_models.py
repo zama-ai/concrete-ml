@@ -129,7 +129,7 @@ EXPECTED_DIFFERENT_DEFAULT_PARAMETERS = {
 
 
 def get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option):
-    """Prepare the the (x, y) data-set."""
+    """Prepare the (x, y) data-set."""
 
     if not is_model_class_in_a_list(
         model_class, _get_sklearn_linear_models() + _get_sklearn_neighbors_models()
@@ -988,7 +988,7 @@ def check_class_mapping(model, x, y):
     # Shuffle the initial labels (in place)
     numpy.random.shuffle(classes)
 
-    # Map each targets' label to the the new shuffled ones
+    # Map each targets' label to the new shuffled ones
     new_y = classes[y]
 
     # Fit the model using these new targets
