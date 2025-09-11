@@ -252,8 +252,3 @@ Concrete ML also supports some of their QAT equivalents from Brevitas.
 The equivalent versions from `torch.functional` are also supported.
 {% endhint %}
 
-{% hint style="success" %}
-**Zama 5-Question Developer Survey**
-
-We want to hear from you! Take 1 minute to share your thoughts and helping us enhance our documentation and libraries. **👉** [**Click here**](https://www.zama.ai/developer-survey) to participate.
-{% endhint %}

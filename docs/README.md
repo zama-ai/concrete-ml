@@ -61,9 +61,3 @@ Collaborate with us to advance the FHE spaces and drive innovation together.
 - [Report a bug](https://github.com/zama-ai/concrete-ml/issues/new?assignees=&labels=bug&projects=&template=bug_report.md)
 
 ______________________________________________________________________
-
-{% hint style="success" %}
-**Zama 5-Question Developer Survey**
-
-We want to hear from you! Take 1 minute to share your thoughts and helping us enhance our documentation and libraries. **👉** [**Click here**](https://www.zama.ai/developer-survey) to participate.
-{% endhint %}
