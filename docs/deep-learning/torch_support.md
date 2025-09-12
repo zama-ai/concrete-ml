@@ -251,4 +251,3 @@ Concrete ML also supports some of their QAT equivalents from Brevitas.
 {% hint style="info" %}
 The equivalent versions from `torch.functional` are also supported.
 {% endhint %}
-
