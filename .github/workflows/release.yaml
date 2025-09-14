@@ -436,7 +436,7 @@ jobs:
       - name: Download changelog
         if: ${{ success() && !cancelled() }}
         id: download-changelog
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
         with:
           name: changelog
           path: ${{ env.ARTIFACTS_RAW_DIR }}/changelog/
@@ -444,7 +444,7 @@ jobs:
       - name: Download python3 wheel
         if: ${{ success() && !cancelled() }}
         id: download-wheel
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
         with:
           name: py3-wheel
           path: ${{ env.ARTIFACTS_PACKAGED_DIR }}/
@@ -452,7 +452,7 @@ jobs:
       - name: Download provenance file
         if: ${{ success() && !cancelled() }}
         id: download-provenance
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
         with:
           pattern: '*.intoto.jsonl'
           path: ${{ env.ARTIFACTS_SLSA_DIR }}/
