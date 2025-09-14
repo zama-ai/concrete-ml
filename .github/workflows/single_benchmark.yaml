@@ -111,7 +111,7 @@ jobs:
 
       # Run with current version
       - name: Checkout CML to run
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           persist-credentials: 'false'
           fetch-depth: 1
@@ -128,7 +128,7 @@ jobs:
       # Install specific version
       # Also pull LFS files (for example, for pulling the pre-trained deep learning model weights)
       - name: Checkout CML to install
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           persist-credentials: 'false'
           fetch-depth: 1
