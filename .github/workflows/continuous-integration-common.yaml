@@ -48,6 +48,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -93,7 +94,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          persist-credentials: 'true'
+          persist-credentials: 'false'
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722
@@ -167,7 +168,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          persist-credentials: 'true'
+          persist-credentials: 'false'
           fetch-depth: 0
 
       # Pull necessary LFS files (and thus avoid downloading files stored for benchmarks, use cases, ...)
