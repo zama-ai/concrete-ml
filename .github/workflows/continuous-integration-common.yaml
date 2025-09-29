@@ -48,7 +48,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
 
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
