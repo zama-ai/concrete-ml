@@ -188,28 +188,37 @@ jobs:
           which python3
           which pip3
 
+      - name: Install dependencies
+        id: install-deps
+        run: |
+          apt-mark hold docker.io
 
-      - name: Install dependencies (with retry)
-        uses: nick-fields/retry@v2
-        with:
-          timeout_minutes: 30
-          max_attempts: 3
-          retry_wait_seconds: 10
-          command: |
-            apt-mark hold docker.io
+          ./script/make_utils/setup_os_deps.sh
+          mkdir -p ~/.aws
+          echo "[default]\nregion=eu-west-3\noutput=json\n" >> ~/.aws/config
+          # Needed to include Python.h
+          export C_INCLUDE_PATH="${C_INCLUDE_PATH}:/__w/_tool/Python/$(python -c 'import platform; print(platform.python_version())')/x64/include"
 
-            ./script/make_utils/setup_os_deps.sh
-            mkdir -p ~/.aws
-            echo "[default]\nregion=eu-west-3\noutput=json\n" >> ~/.aws/config
-            # Needed to include Python.h
-            export C_INCLUDE_PATH="${C_INCLUDE_PATH}:/__w/_tool/Python/$(python -c 'import platform; print(platform.python_version())')/x64/include"
+          echo
+          echo "Using these tools:"
+          which python3
+          which pip3
+          echo
 
-            echo "Using these tools:"
-            which python3
-            which pip3
-            echo
-
-            make setup_env
+          max_retries=3
+          for i in $(seq 1 $max_retries); do
+            echo "Attempt $i/$max_retries"
+            if make setup_env; then
+              echo "✅ Success on attempt $i"
+              break
+            fi
+            if [ $i -eq $max_retries ]; then
+              echo "❌ Failed after $max_retries attempts"
+              exit 1
+            fi
+            echo "⚠️ Failed attempt $i, retrying in 10s..."
+            sleep 10
+          done
 
       - name: Check actionlint
         run:
@@ -505,17 +514,15 @@ jobs:
 
       # If regular tests passed but at least one known flaky test have been rerun, a warning
       # comment is published in the PR and all flaky tests that initially failed are listed
-      - name: Warn PR with flaky tests (regular)
-        uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db
+      - name: Warn about flaky tests (regular)
         if: |
           fromJSON(env.IS_PR)
           && steps.pytest.outcome == 'success'
           && fromJSON(env.FAILED_TESTS_ARE_FLAKY)
           && !cancelled()
-        with:
-          header: flaky-test
-          recreate: true
-          path: failed_tests_comment_${{ inputs.python_version }}.txt
+        run: |
+          echo "### ⚠️ Flaky tests detected" >> $GITHUB_STEP_SUMMARY
+          cat failed_tests_comment_${{ inputs.python_version }}.txt >> $GITHUB_STEP_SUMMARY
 
       # If pytest step has been skipped but some changes has been detected in test files,
       # meaning there was no other changed impacting our testing suite, we only need to run these
