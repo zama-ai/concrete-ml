@@ -188,24 +188,28 @@ jobs:
           which python3
           which pip3
 
-      - name: Install dependencies
-        id: install-deps
-        run: |
-          apt-mark hold docker.io
 
-          ./script/make_utils/setup_os_deps.sh
-          mkdir -p ~/.aws
-          echo "[default]\nregion=eu-west-3\noutput=json\n" >> ~/.aws/config
-          # Needed to include Python.h
-          export C_INCLUDE_PATH="${C_INCLUDE_PATH}:/__w/_tool/Python/$(python -c 'import platform; print(platform.python_version())')/x64/include"
+      - name: Install dependencies (with retry)
+        uses: nick-fields/retry@v2
+        with:
+          timeout_minutes: 30
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: |
+            apt-mark hold docker.io
 
-          echo
-          echo "Using these tools:"
-          which python3
-          which pip3
-          echo
+            ./script/make_utils/setup_os_deps.sh
+            mkdir -p ~/.aws
+            echo "[default]\nregion=eu-west-3\noutput=json\n" >> ~/.aws/config
+            # Needed to include Python.h
+            export C_INCLUDE_PATH="${C_INCLUDE_PATH}:/__w/_tool/Python/$(python -c 'import platform; print(platform.python_version())')/x64/include"
 
-          make setup_env
+            echo "Using these tools:"
+            which python3
+            which pip3
+            echo
+
+            make setup_env
 
       - name: Check actionlint
         run:
