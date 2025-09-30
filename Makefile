@@ -50,7 +50,7 @@ setup_env:
 	poetry run python --version
 	poetry run python -m pip install keyring
 	poetry run python -m pip install -U pip wheel
-	pip install pip-system-certs
+	poetry run python -m pip install pip-system-certs
 
 	@# Only for linux and docker, reinstall setuptools. On macOS, it creates warnings, see 169
 	if [[ $$(uname) != "Darwin" ]]; then \
