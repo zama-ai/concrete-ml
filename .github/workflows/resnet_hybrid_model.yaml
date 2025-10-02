@@ -1,0 +1,359 @@
+name: ResNet Hybrid FHE Benchmark CML
+on:
+  schedule:
+    - cron: '0 0 1 * *'
+  workflow_dispatch:
+    inputs:
+      git-ref:
+        description: Repo reference (branch, tag or SHA)
+        default: "main"
+        required: true
+        type: string
+      alternative-cp-wheel-artifact-id:
+        description: Alternative Concrete-Python Wheel Artifact-ID
+        default: "none"
+        required: true
+        type: string
+      alternative-cp-branch:
+        description: Alternative Concrete-Python Branch
+        default: "none"
+        required: true
+        type: string
+      num_samples:
+        description: Number of samples for inference timing
+        default: "5"
+        type: string
+        required: true
+      evaluate_accuracy:
+        description: Evaluate model accuracy on full test set
+        default: "false"
+        type: choice
+        options:
+          - "true"
+          - "false"
+      save_model:
+        description: Save the compiled hybrid model
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+      target_all_layers:
+        description: Target all conv and linear layers (not just linear)
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+      fhe_mode:
+        description: FHE execution mode (disable, simulate, or execute)
+        default: "execute"
+        type: choice
+        options:
+          - "disable"
+          - "simulate"
+          - "execute"
+
+permissions:
+  contents: read
+
+# Global environment variables
+env:
+  ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  AGENT_TOOLSDIRECTORY: /opt/hostedtoolcache
+  RUNNER_TOOL_CACHE: /opt/hostedtoolcache
+
+# Jobs
+jobs:
+  setup-instances:
+    name: Setup EC2 instance
+    runs-on: ubuntu-24.04
+    outputs:
+      cpu-runner: ${{ steps.start-instance.outputs.label }}
+    steps:
+      - name: Start CPU instance
+        id: start-instance
+        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
+        with:
+          mode: start
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          backend: aws
+          profile: big-cpu
+
+  run-benchmark:
+    needs: [setup-instances]
+    name: Run ResNet Hybrid FHE benchmark
+    runs-on: ${{ needs.setup-instances.outputs.cpu-runner }}
+    outputs:
+      status: ${{ steps.set-final-status.outputs.status }}
+      has-metrics: ${{ steps.set-final-status.outputs.has-metrics }}
+    env:
+      PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
+      NUM_SAMPLES: ${{ github.event.inputs.num_samples || '5' }}
+      EVALUATE_ACCURACY: ${{ github.event.inputs.evaluate_accuracy || 'false' }}
+      SAVE_MODEL: ${{ github.event.inputs.save_model || 'true' }}
+      TARGET_ALL_LAYERS: ${{ github.event.inputs.target_all_layers || 'true' }}
+      FHE_MODE: ${{ github.event.inputs.fhe-mode || 'execute' }}
+    steps:
+      - name: Install git-lfs
+        run: |
+          curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
+          sudo apt-get install -y git-lfs
+
+      - name: Add masks
+        run: |
+          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
+          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
+          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL }}"
+          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL }}"
+
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: 'false'
+          lfs: true
+          ref: ${{ github.event.inputs.git-ref }}
+
+      - name: Set up Python
+        uses: actions/setup-python@f677139bbe7f9c59b41e40162b753c062f5d49a3 # v5.2.0
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -y
+          
+          # Install system dependencies
+          sudo apt-get install --no-install-recommends -y \
+            gnome-keyring \
+            graphviz \
+            graphviz-dev \
+            libgraphviz-dev \
+            pkg-config \
+            python3-dev \
+            python3-pip \
+            python3-venv
+          
+          # Try to install python3.10-venv if available
+          sudo apt-get install -y python3.10-venv || true
+          
+          sudo apt-mark hold docker.io
+          ./script/make_utils/setup_os_deps.sh
+          make setup_env
+          source .venv/bin/activate
+          
+          # Verify Python version
+          echo "Python version in venv:"
+          python --version
+          which python
+          
+          # Upgrade pip and setuptools
+          pip install --upgrade pip setuptools wheel
+          
+          # Install PyTorch CPU version
+          pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+          
+          # Install other dependencies
+          pip install 'transformers>=4.30.0' 'datasets>=2.12.0' 'tqdm>=4.65.0' 'numpy>=1.24.0' 'psutil>=5.9.0' 'py-cpuinfo>=9.0.0'
+          
+          # Install concrete-ml requirements
+          pip install -e .
+
+      - name: Alternative Concrete Python Wheel Download
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.alternative-cp-wheel-artifact-id != 'none'
+        run: |
+          curl -L \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          -o concrete-python.whl.zip \
+          https://api.github.com/repos/zama-ai/concrete/actions/artifacts/${{ github.event.inputs.alternative-cp-wheel-artifact-id }}/zip
+
+      - name: Alternative Concrete Python Wheel Install
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.alternative-cp-wheel-artifact-id != 'none'
+        run: |
+          source .venv/bin/activate
+          unzip concrete-python.whl.zip
+          pip install concrete_python-*.whl
+
+      - name: Alternative Concrete Python Branch Checkout
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.alternative-cp-branch != 'none'
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: 'false'
+          path: concrete
+          repository: zama-ai/concrete
+          ref: ${{ github.event.inputs.alternative-cp-branch }}
+
+      - name: Alternative Concrete Python Branch Source Install
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.alternative-cp-branch != 'none'
+        run: |
+          cp -R concrete/frontends/concrete-python/concrete/* .venv/lib/python3.*/site-packages/concrete/
+
+      - name: Run Benchmark - ResNet18 Hybrid FHE
+        id: run-benchmark
+        continue-on-error: true
+        run: |
+          source .venv/bin/activate
+          
+          # Login to Hugging Face if needed for dataset access
+          if [ -n "${{ secrets.LLAMA_HF_TOKEN }}" ]; then
+            huggingface-cli login --token ${{ secrets.LLAMA_HF_TOKEN }}
+          fi
+          
+          # Build command with appropriate flags
+          CMD="python3 use_case_examples/resnet/resnet_hybrid_fhe.py"
+          CMD="$CMD --num_samples ${{ env.NUM_SAMPLES }}"
+          
+          if [ "${{ env.EVALUATE_ACCURACY }}" == "true" ]; then
+            CMD="$CMD --evaluate_accuracy"
+          fi
+          
+          if [ "${{ env.SAVE_MODEL }}" == "true" ]; then
+            CMD="$CMD --save_model"
+          fi
+          
+          if [ "${{ env.TARGET_ALL_LAYERS }}" == "true" ]; then
+            CMD="$CMD --target_all_layers"
+          fi
+          
+          echo "Running command: $CMD"
+          $CMD
+
+      - name: Check if metrics exist
+        id: check-metrics
+        if: always()
+        run: |
+          if [ -f "use_case_examples/resnet/to_upload.json" ]; then
+            echo "metrics-exist=true" >> $GITHUB_OUTPUT
+            echo "Metrics file found:"
+            cat use_case_examples/resnet/to_upload.json | jq '.' || cat use_case_examples/resnet/to_upload.json
+          else
+            echo "metrics-exist=false" >> $GITHUB_OUTPUT
+            echo "No metrics file found"
+          fi
+
+      - name: Archive metrics
+        if: always() && steps.check-metrics.outputs.metrics-exist == 'true'
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+        with:
+          name: resnet-hybrid-metrics.json
+          path: use_case_examples/resnet/to_upload.json
+
+      - name: Check if model exists
+        id: check-model
+        if: always()
+        run: |
+          if [ -d "use_case_examples/resnet/compiled_hybrid_model" ]; then
+            echo "model-exist=true" >> $GITHUB_OUTPUT
+            echo "model-path=use_case_examples/resnet/compiled_hybrid_model" >> $GITHUB_OUTPUT
+          else
+            echo "model-exist=false" >> $GITHUB_OUTPUT
+            echo "Compiled model directory not found"
+          fi
+
+      - name: Archive compiled model
+        if: always() && steps.check-model.outputs.model-exist == 'true' && env.SAVE_MODEL == 'true'
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+        with:
+          name: resnet18_hybrid_compiled
+          path: ${{ steps.check-model.outputs.model-path }}
+
+      - name: Upload results to benchmark database
+        if: |
+          always() &&
+          steps.run-benchmark.outcome == 'success' &&
+          steps.check-metrics.outputs.metrics-exist == 'true' &&
+          (github.event_name != 'workflow_dispatch' || (github.event.inputs.alternative-cp-branch == 'none' && github.event.inputs.alternative-cp-wheel-artifact-id == 'none'))
+        run: |
+          # Log the json
+          cat use_case_examples/resnet/to_upload.json | jq '.'
+          
+          # Wait to avoid log issues
+          sleep 1
+          
+          # Upload to benchmark database
+          curl --fail-with-body \
+          -H "Authorization: Bearer ${{ secrets.NEW_ML_PROGRESS_TRACKER_TOKEN }}" \
+          -H "Content-Type: application/json; charset=UTF-8" \
+          -d @use_case_examples/resnet/to_upload.json \
+          -X POST "${{ secrets.NEW_ML_PROGRESS_TRACKER_URL }}experiment"
+
+      - name: Set final job status output
+        id: set-final-status
+        if: always()
+        run: |
+          echo "status=${{ steps.run-benchmark.outcome }}" >> $GITHUB_OUTPUT
+          echo "has-metrics=${{ steps.check-metrics.outputs.metrics-exist }}" >> $GITHUB_OUTPUT
+
+      - name: Check benchmark status
+        if: always() && steps.run-benchmark.outcome == 'failure'
+        run: |
+          echo "Benchmark failed"
+          echo "Exit code from benchmark: ${{ steps.run-benchmark.conclusion }}"
+          echo "Current directory contents:"
+          ls -la
+          echo "Compiled model directory (if exists):"
+          ls -la use_case_examples/resnet/compiled_hybrid_model/ || echo "Compiled model directory not found"
+          exit 1
+
+  teardown-instances:
+    name: Teardown EC2 instance
+    if: ${{ always() }}
+    needs: [setup-instances, run-benchmark]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Stop CPU instance
+        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
+        with:
+          mode: stop
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          label: ${{ needs.setup-instances.outputs.cpu-runner }}
+
+  slack-notification:
+    runs-on: ubuntu-24.04
+    needs: [run-benchmark]
+    if: |
+      always() && 
+      (github.event_name != 'workflow_dispatch' || (github.event.inputs.alternative-cp-branch == 'none' && github.event.inputs.alternative-cp-wheel-artifact-id == 'none'))
+    steps:
+      - name: Determine status
+        id: status
+        run: |
+          STATUS="${{ needs.run-benchmark.outputs.status }}"
+          HAS_METRICS="${{ needs.run-benchmark.outputs.has-metrics }}"
+          
+          if [ "$STATUS" == "success" ]; then
+            SLACK_COLOR="good"
+            STATUS_EMOJI="✅"
+          elif [ "$STATUS" == "failure" ]; then
+            SLACK_COLOR="danger"
+            STATUS_EMOJI="❌"
+          else
+            SLACK_COLOR="warning"
+            STATUS_EMOJI="⚠️"
+          fi
+          
+          echo "slack-color=$SLACK_COLOR" >> $GITHUB_OUTPUT
+          echo "status-emoji=$STATUS_EMOJI" >> $GITHUB_OUTPUT
+          echo "has-metrics=$HAS_METRICS" >> $GITHUB_OUTPUT
+
+      - name: Slack Notification
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@c33737706dea87cd7784c687dadc9adf1be59990
+        env:
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+          SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
+          SLACK_COLOR: ${{ steps.status.outputs.slack-color }}
+          SLACK_MESSAGE: |
+            ResNet18 Hybrid FHE Benchmark
+            Samples: ${{ github.event.inputs.num_samples || '5' }}, Target: ${{ github.event.inputs.target_all_layers == 'true' && 'All layers' || 'Linear only' }}
+            Status: ${{ steps.status.outputs.status-emoji }} ${{ needs.run-benchmark.outputs.status }}
+            Metrics uploaded: ${{ steps.status.outputs.has-metrics }}
+            Run: ${{ env.ACTION_RUN_URL }}
+          SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
