@@ -6,22 +6,23 @@ registries:
     username: ${{secrets.BOT_USERNAME}}
     password: ${{secrets.BOT_TOKEN}}
 
-updates:
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      # Check for updates to GitHub Actions every sunday
-      interval: "weekly"
-      day: "sunday"
-    commit-message:
-      prefix: "chore"
+# Temporarily disabled Dependabot updates
+# updates:
+#   - package-ecosystem: "github-actions"
+#     directory: "/"
+#     schedule:
+#       # Check for updates to GitHub Actions every sunday
+#       interval: "weekly"
+#       day: "sunday"
+#     commit-message:
+#       prefix: "chore"
 
-  - package-ecosystem: "docker"
-    directory: "/docker"
-    registries:
-      - ghcr-io # Allow version updates for dependencies in this registry
-    schedule:
-      interval: "weekly"
-      day: "sunday"
-    commit-message:
-      prefix: "chore"
+#   - package-ecosystem: "docker"
+#     directory: "/docker"
+#     registries:
+#       - ghcr-io # Allow version updates for dependencies in this registry
+#     schedule:
+#       interval: "weekly"
+#       day: "sunday"
+#     commit-message:
+#       prefix: "chore"
