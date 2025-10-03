@@ -1,0 +1,435 @@
+name: LLama Fine-tuning Benchmark CML
+on:
+  schedule:
+    - cron: '0 0 1 * *'
+  workflow_dispatch:
+    inputs:
+      git-ref:
+        description: Repo reference (branch, tag or SHA)
+        default: "main"
+        required: true
+        type: string
+      alternative-cp-wheel-artifact-id:
+        description: Alternative Concrete-Python Wheel Artifact-ID (see https://github.com/zama-ai/concrete/actions/workflows/concrete_python_release.yml)
+        default: "none"
+        required: true
+        type: string
+      alternative-cp-branch:
+        description: Alternative Concrete-Python Branch
+        default: "none"
+        required: true
+        type: string
+      mode:
+        description: Training mode (torch, 7bit, or 16bit)
+        default: "7bit"
+        type: choice
+        options:
+          - "torch"
+          - "7bit"
+          - "16bit"
+      fhe-mode:
+        description: FHE execution mode (disable, simulate, or execute)
+        default: "execute"
+        type: choice
+        options:
+          - "disable"
+          - "simulate"
+          - "execute"
+      max_length:
+        description: Maximum sequence length
+        default: "64"
+        type: string
+        required: true
+      batch_size:
+        description: Batch size for training
+        default: "1"
+        type: string
+        required: true
+      training_steps:
+        description: Number of training steps to run
+        default: "1"
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+# Global environment variables
+env:
+  ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  AGENT_TOOLSDIRECTORY: /opt/hostedtoolcache
+  RUNNER_TOOL_CACHE: /opt/hostedtoolcache
+
+# Jobs
+jobs:
+  setup-instances:
+    name: Setup EC2 instances
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        device:
+          - type: cpu
+            profile: big-cpu
+          - type: gpu
+            profile: gpu_ciprofile
+    outputs:
+      cpu-runner: ${{ steps.set-outputs.outputs.cpu-runner }}
+      gpu-runner: ${{ steps.set-outputs.outputs.gpu-runner }}
+    steps:
+      - name: Start ${{ matrix.device.type }} instance
+        id: start-instance
+        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
+        with:
+          mode: start
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          backend: aws
+          profile: ${{ matrix.device.profile }}
+
+      - name: Set outputs
+        id: set-outputs
+        run: |
+          if [ "${{ matrix.device.type }}" == "cpu" ]; then
+            echo "cpu-runner=${{ steps.start-instance.outputs.label }}" >> $GITHUB_OUTPUT
+          else
+            echo "gpu-runner=${{ steps.start-instance.outputs.label }}" >> $GITHUB_OUTPUT
+          fi
+
+  run-benchmark:
+    needs: [setup-instances]
+    name: Run LLama LoRA Math benchmark on ${{ matrix.device }}
+    strategy:
+      fail-fast: false  # IMPORTANT: This ensures parallel execution continues even if one fails
+      matrix:
+        device: [cpu, gpu]
+    runs-on: ${{ matrix.device == 'cpu' && needs.setup-instances.outputs.cpu-runner || needs.setup-instances.outputs.gpu-runner }}
+    outputs:
+      cpu-status: ${{ steps.set-final-status.outputs.cpu-status }}
+      gpu-status: ${{ steps.set-final-status.outputs.gpu-status }}
+      cpu-has-metrics: ${{ steps.set-final-status.outputs.cpu-has-metrics }}
+      gpu-has-metrics: ${{ steps.set-final-status.outputs.gpu-has-metrics }}
+    env:
+      PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
+      MAX_LENGTH: ${{ github.event.inputs.max_length || '64' }}
+      BATCH_SIZE: ${{ github.event.inputs.batch_size || '1' }}
+      TRAINING_STEPS: ${{ github.event.inputs.training_steps || '1' }}
+      MODE: ${{ github.event.inputs.mode || '7bit' }}
+      FHE_MODE: ${{ github.event.inputs.fhe-mode || 'execute' }}
+    steps:
+      - name: Install git-lfs
+        run: |
+          # Install git-lfs package only - the checkout action will handle initialization
+          curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
+          sudo apt-get install -y git-lfs
+
+      - name: Add masks
+        run: |
+          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
+          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
+          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL }}"
+          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL }}"
+
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: 'false'
+          lfs: true
+          ref: ${{ github.event.inputs.git-ref }}
+
+      - name: Set up Python
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -y
+          
+          # Install system dependencies
+          sudo apt-get install --no-install-recommends -y \
+            gnome-keyring \
+            graphviz \
+            graphviz-dev \
+            libgraphviz-dev \
+            pkg-config \
+            python3-dev \
+            python3-pip \
+            python3-venv
+          
+          # Try to install python3.10-venv if available, but don't fail if not
+          sudo apt-get install -y python3.10-venv || true
+          
+          sudo apt-mark hold docker.io
+          ./script/make_utils/setup_os_deps.sh
+          make setup_env
+          source .venv/bin/activate
+          
+          # Verify Python version in venv
+          echo "Python version in venv:"
+          python --version
+          which python
+          
+          # Upgrade pip and setuptools first
+          pip install --upgrade pip setuptools wheel
+          
+          # Install PyTorch with appropriate CUDA support
+          if [ "${{ matrix.device }}" == "gpu" ]; then
+            pip install torch>=2.0.0+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
+          else
+            pip install torch>=2.0.0
+          fi
+          
+          # Install accelerate BEFORE other dependencies to ensure correct version
+          pip install 'accelerate>=1.1.0'
+          
+          # Install other dependencies
+          pip install 'transformers>=4.30.0' 'datasets>=2.12.0' 'peft>=0.4.0' 'tqdm>=4.65.0' 'numpy>=1.24.0' 'psutil>=5.9.0' 'py-cpuinfo>=9.0.0'
+          
+          # Verify accelerate installation and version
+          python -c "import accelerate; print(f'Accelerate version: {accelerate.__version__}')"
+          pip show accelerate
+          
+          # Install any additional requirements from the project
+          if [ -f "requirements.txt" ]; then
+            pip install -r requirements.txt
+          fi
+          
+          # Install concrete-ml requirements
+          pip install -e .
+
+      - name: Alternative Concrete Python Wheel Download
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.alternative-cp-wheel-artifact-id != 'none'
+        run: |
+          curl -L \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          -o concrete-python.whl.zip \
+          https://api.github.com/repos/zama-ai/concrete/actions/artifacts/${{ github.event.inputs.alternative-cp-wheel-artifact-id }}/zip
+
+      - name: Alternative Concrete Python Wheel Install
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.alternative-cp-wheel-artifact-id != 'none'
+        run: |
+          source .venv/bin/activate
+          unzip concrete-python.whl.zip
+          pip install concrete_python-*.whl
+
+      - name: Alternative Concrete Python Branch Checkout
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.alternative-cp-branch != 'none'
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: 'false'
+          path: concrete
+          repository: zama-ai/concrete
+          ref: ${{ github.event.inputs.alternative-cp-branch }}
+
+      - name: Alternative Concrete Python Branch Source Install
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.alternative-cp-branch != 'none'
+        run: |
+          cp -R concrete/frontends/concrete-python/concrete/* .venv/lib/python3.*/site-packages/concrete/
+
+      - name: Run Benchmark - LLama LoRA Math Word Problems (${{ matrix.device }})
+        id: run-benchmark
+        continue-on-error: true  # Allow workflow to continue even if this step fails
+        run: |
+          source .venv/bin/activate
+          
+          # Login to Hugging Face
+          huggingface-cli login --token ${{ secrets.LLAMA_HF_TOKEN }}
+          
+          # Run benchmark with appropriate device flag
+          if [ "${{ matrix.device }}" == "cpu" ]; then
+            python3 benchmarks/llama_lora_math_benchmark.py --save-model --device-type cpu
+          else
+            python3 benchmarks/llama_lora_math_benchmark.py --save-model --device-type gpu
+          fi
+
+      - name: Check if metrics exist
+        id: check-metrics
+        if: always()
+        run: |
+          if [ -f "to_upload.json" ]; then
+            echo "metrics-exist=true" >> $GITHUB_OUTPUT
+          else
+            echo "metrics-exist=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Archive metrics
+        if: always() && steps.check-metrics.outputs.metrics-exist == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: metrics-${{ matrix.device }}.json
+          path: to_upload.json
+
+      - name: Check if model exists
+        id: check-model
+        if: always()
+        run: |
+          MODEL_MODE="${{ env.MODE }}"
+          if [ -d "deployment/llama_lora_finetuned_${MODEL_MODE}" ]; then
+            echo "model-exist=true" >> $GITHUB_OUTPUT
+            echo "model-path=deployment/llama_lora_finetuned_${MODEL_MODE}" >> $GITHUB_OUTPUT
+          else
+            echo "model-exist=false" >> $GITHUB_OUTPUT
+            echo "Model directory not found: deployment/llama_lora_finetuned_${MODEL_MODE}" >&2
+          fi
+
+      - name: Archive fine-tuned model
+        if: always() && steps.check-model.outputs.model-exist == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: llama_lora_finetuned_${{ env.MODE }}_${{ matrix.device }}
+          path: ${{ steps.check-model.outputs.model-path }}
+
+      - name: Upload results to benchmark database
+        if: |
+          always() &&
+          steps.run-benchmark.outcome == 'success' &&
+          steps.check-metrics.outputs.metrics-exist == 'true' &&
+          (github.event_name != 'workflow_dispatch' || (github.event.inputs.alternative-cp-branch == 'none' && github.event.inputs.alternative-cp-wheel-artifact-id == 'none'))
+        run: |
+          # Log the json
+          cat to_upload.json | jq
+          
+          # Wait to avoid log issues
+          sleep 1
+          
+          # Upload to benchmark database
+          curl --fail-with-body \
+          -H "Authorization: Bearer ${{ secrets.NEW_ML_PROGRESS_TRACKER_TOKEN }}" \
+          -H "Content-Type: application/json; charset=UTF-8" \
+          -d @to_upload.json \
+          -X POST "${{ secrets.NEW_ML_PROGRESS_TRACKER_URL }}experiment"
+
+      - name: Set final job status output
+        id: set-final-status
+        if: always()
+        run: |
+          # Set status for the appropriate device
+          if [ "${{ matrix.device }}" == "cpu" ]; then
+            echo "cpu-status=${{ steps.run-benchmark.outcome }}" >> $GITHUB_OUTPUT
+            echo "cpu-has-metrics=${{ steps.check-metrics.outputs.metrics-exist }}" >> $GITHUB_OUTPUT
+          else
+            echo "gpu-status=${{ steps.run-benchmark.outcome }}" >> $GITHUB_OUTPUT
+            echo "gpu-has-metrics=${{ steps.check-metrics.outputs.metrics-exist }}" >> $GITHUB_OUTPUT
+          fi
+
+      # This step will fail the job if the benchmark failed, making it red in GitHub UI
+      - name: Check benchmark status
+        if: always() && steps.run-benchmark.outcome == 'failure'
+        run: |
+          echo "Benchmark failed for ${{ matrix.device }}"
+          echo "Exit code from benchmark: ${{ steps.run-benchmark.conclusion }}"
+          # Log additional debugging info
+          echo "Current directory contents:"
+          ls -la
+          echo "Deployment directory contents (if exists):"
+          ls -la deployment/ || echo "Deployment directory not found"
+          exit 1
+
+  teardown-instances:
+    name: Teardown EC2 instances
+    if: ${{ always() }}
+    needs: [setup-instances, run-benchmark]
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        device:
+          - type: cpu
+            runner: ${{ needs.setup-instances.outputs.cpu-runner }}
+          - type: gpu
+            runner: ${{ needs.setup-instances.outputs.gpu-runner }}
+    steps:
+      - name: Stop ${{ matrix.device.type }} instance
+        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
+        with:
+          mode: stop
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          label: ${{ matrix.device.runner }}
+
+  slack-notification:
+    runs-on: ubuntu-24.04
+    needs: [run-benchmark]
+    if: |
+      always() && 
+      (github.event_name != 'workflow_dispatch' || (github.event.inputs.alternative-cp-branch == 'none' && github.event.inputs.alternative-cp-wheel-artifact-id == 'none'))
+    steps:
+      - name: Determine detailed status
+        id: detailed-status
+        run: |
+          # Initialize variables
+          OVERALL_STATUS="success"
+          SLACK_COLOR="good"
+          STATUS_DETAILS=""
+          
+          # Check CPU status
+          CPU_STATUS="${{ needs.run-benchmark.outputs.cpu-status }}"
+          if [ -z "$CPU_STATUS" ]; then
+            CPU_STATUS="skipped"
+          fi
+          
+          # Check GPU status  
+          GPU_STATUS="${{ needs.run-benchmark.outputs.gpu-status }}"
+          if [ -z "$GPU_STATUS" ]; then
+            GPU_STATUS="skipped"
+          fi
+          
+          # Build status details
+          CPU_EMOJI="✅"
+          GPU_EMOJI="✅"
+          
+          if [ "$CPU_STATUS" == "failure" ]; then
+            CPU_EMOJI="❌"
+            OVERALL_STATUS="partial"
+            SLACK_COLOR="warning"
+          elif [ "$CPU_STATUS" == "skipped" ]; then
+            CPU_EMOJI="⏭️"
+          fi
+          
+          if [ "$GPU_STATUS" == "failure" ]; then
+            GPU_EMOJI="❌"
+            OVERALL_STATUS="partial"
+            SLACK_COLOR="warning"
+          elif [ "$GPU_STATUS" == "skipped" ]; then
+            GPU_EMOJI="⏭️"
+          fi
+          
+          # If both failed, it's a complete failure
+          if [ "$CPU_STATUS" == "failure" ] && [ "$GPU_STATUS" == "failure" ]; then
+            OVERALL_STATUS="failure"
+            SLACK_COLOR="danger"
+          fi
+          
+          STATUS_DETAILS="CPU: $CPU_EMOJI ($CPU_STATUS) | GPU: $GPU_EMOJI ($GPU_STATUS)"
+          
+          # Output results
+          echo "overall-status=$OVERALL_STATUS" >> $GITHUB_OUTPUT
+          echo "slack-color=$SLACK_COLOR" >> $GITHUB_OUTPUT
+          echo "status-details=$STATUS_DETAILS" >> $GITHUB_OUTPUT
+          
+          # Check if any metrics were produced
+          HAS_METRICS="false"
+          if [ "${{ needs.run-benchmark.outputs.cpu-has-metrics }}" == "true" ] || [ "${{ needs.run-benchmark.outputs.gpu-has-metrics }}" == "true" ]; then
+            HAS_METRICS="true"
+          fi
+          echo "has-metrics=$HAS_METRICS" >> $GITHUB_OUTPUT
+
+      - name: Slack Notification
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@c33737706dea87cd7784c687dadc9adf1be59990
+        env:
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+          SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
+          SLACK_COLOR: ${{ steps.detailed-status.outputs.slack-color }}
+          SLACK_MESSAGE: |
+            LLama LoRA Math Benchmark
+            Mode: ${{ github.event.inputs.mode || '7bit' }}, FHE: ${{ github.event.inputs.fhe-mode || 'execute' }}
+            Status: ${{ steps.detailed-status.outputs.status-details }}
+            Overall: ${{ steps.detailed-status.outputs.overall-status }}
+            Metrics uploaded: ${{ steps.detailed-status.outputs.has-metrics }}
+            Run: ${{ env.ACTION_RUN_URL }}
+          SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}

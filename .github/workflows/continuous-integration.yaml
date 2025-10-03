@@ -61,6 +61,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 concurrency:
   # Add event_name in the group as workflow dispatch means we could run this in addition to other
