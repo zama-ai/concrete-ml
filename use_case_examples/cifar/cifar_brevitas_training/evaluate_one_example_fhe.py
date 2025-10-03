@@ -6,7 +6,7 @@ from importlib.metadata import version
 from pathlib import Path
 
 import torch
-from concrete.compiler import check_gpu_available
+from concrete.compiler import check_gpu_available, check_gpu_enabled
 from concrete.fhe import Exactness
 from concrete.fhe.compilation.configuration import Configuration
 from models import cnv_2w2a
@@ -22,11 +22,43 @@ KEYGEN_CACHE_DIR = CURRENT_DIR.joinpath(".keycache")
 # Add MPS (for macOS with Apple Silicon or AMD GPUs) support when error is fixed. For now, we
 # observe a decrease in torch's top1 accuracy when using MPS devices
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3953
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
+# For PyTorch operations, we use CPU (simpler and avoids device mismatch issues)
+DEVICE = "cpu"
+# For FHE compilation and execution, we use GPU if available
 COMPILATION_DEVICE = "cuda" if check_gpu_available() else "cpu"
 
 NUM_SAMPLES = int(os.environ.get("NUM_SAMPLES", 1))
 P_ERROR = float(os.environ.get("P_ERROR", 0.01))
+
+# GPU Verification Logging
+print("=" * 50)
+print("🔍 GPU VERIFICATION & DEVICE INFO")
+print("=" * 50)
+print(f"PyTorch CUDA available: {torch.cuda.is_available()}")
+print(f"Concrete GPU enabled: {check_gpu_enabled()}")
+print(f"Concrete GPU available: {check_gpu_available()}")
+print(f"PyTorch DEVICE: {DEVICE} (CPU for PyTorch operations)")
+print(f"FHE COMPILATION_DEVICE: {COMPILATION_DEVICE} (GPU used for FHE operations)")
+print(f"CML_USE_GPU environment variable: {os.environ.get('CML_USE_GPU', 'Not set')}")
+
+if torch.cuda.is_available():
+    try:
+        gpu_name = torch.cuda.get_device_name(0)
+        gpu_memory = torch.cuda.get_device_properties(0).total_memory / 1e9
+        print(f"Available GPU: {gpu_name}")
+        print(f"GPU Memory: {gpu_memory:.1f} GB")
+        print(f"CUDA Version: {torch.version.cuda}")
+        if COMPILATION_DEVICE == "cuda":
+            print("✅ GPU will be used for FHE operations")
+        else:
+            print("⚠️  GPU available but Concrete GPU not enabled")
+    except Exception as e:
+        print(f"Error getting GPU info: {e}")
+else:
+    print("No CUDA GPU detected")
+
+print("=" * 50)
 
 
 def measure_execution_time(func):
@@ -69,6 +101,9 @@ checkpoint = torch.load(
 )
 torch_model.load_state_dict(checkpoint["state_dict"], strict=False)
 
+# Keep model on CPU for PyTorch operations
+# (GPU will be used only for FHE operations)
+
 # Import and load the CIFAR test dataset
 test_set = get_test_set(dataset="CIFAR10", datadir=CURRENT_DIR.joinpath(".datasets/"))
 test_loader = DataLoader(test_set, batch_size=100, shuffle=False)
@@ -87,20 +122,30 @@ configuration = Configuration(
     insecure_key_cache_location=KEYGEN_CACHE_DIR,
 )
 
-print("Compiling the model.")
+print("🔧 Compiling the model...")
+print(f"   FHE target device: {COMPILATION_DEVICE}")
+print(f"   Ensuring model and input are on CPU for ONNX export")
+
+# Explicitly ensure model is on CPU before compilation
+# The ONNX export requires both model and input to be on the same device
+torch_model_cpu = torch_model.cpu()
+x_cpu = x.cpu()
+
 quantized_numpy_module, compilation_execution_time = measure_execution_time(
     compile_brevitas_qat_model
 )(
-    torch_model,
-    x,
+    torch_model_cpu,
+    x_cpu,
     configuration=configuration,
     rounding_threshold_bits={"method": Exactness.APPROXIMATE, "n_bits": 6},
     p_error=P_ERROR,
-    device=COMPILATION_DEVICE,
+    device=COMPILATION_DEVICE,  # This controls where FHE circuit runs, not ONNX export
 )
 assert isinstance(quantized_numpy_module, QuantizedModule)
 
-print(f"Compilation time took {compilation_execution_time} seconds")
+print(
+    f"✅ Compilation completed in {compilation_execution_time:.2f} seconds using {COMPILATION_DEVICE.upper()}"
+)
 
 # Display the max bit-width in the model
 print(
@@ -114,11 +159,11 @@ open("cifar10.graph", "w").write(str(quantized_numpy_module.fhe_circuit))
 open("cifar10.mlir", "w").write(quantized_numpy_module.fhe_circuit.mlir)
 
 # Key generation
-print("Creation of the private and evaluation keys.")
+print("🔑 Creating private and evaluation keys...")
 _, keygen_execution_time = measure_execution_time(quantized_numpy_module.fhe_circuit.keygen)(
     force=True
 )
-print(f"Keygen took {keygen_execution_time} seconds")
+print(f"✅ Keygen completed in {keygen_execution_time:.2f} seconds")
 
 # Data torch to numpy
 x_numpy = x.numpy()
@@ -127,7 +172,10 @@ x_numpy = x.numpy()
 all_results = []
 
 # Iterate through the NUM_SAMPLES
+print(f"\n🚀 Starting FHE inference for {NUM_SAMPLES} sample(s)...")
 for image_index in range(NUM_SAMPLES):
+    print(f"\n--- Processing sample {image_index + 1}/{NUM_SAMPLES} ---")
+
     # Take one example
     test_x_numpy = x_numpy[image_index : image_index + 1]
 
@@ -139,42 +187,39 @@ for image_index in range(NUM_SAMPLES):
         quantized_numpy_module.quantize_input
     )(test_x_numpy)
 
-    print(f"Quantization of a single input (image) took {quantization_execution_time} seconds")
-    print(f"Size of CLEAR input is {q_x_numpy.nbytes} bytes\n")
+    print(f"⚙️  Quantization: {quantization_execution_time:.3f}s")
+    print(f"📊 Clear input size: {q_x_numpy.nbytes} bytes")
 
     expected_quantized_prediction, clear_inference_time = measure_execution_time(
         partial(quantized_numpy_module.fhe_circuit.simulate)
     )(q_x_numpy)
+    print(f"🧪 Simulation: {clear_inference_time:.3f}s")
 
     # Encrypt the input
     encrypted_q_x_numpy, encryption_execution_time = measure_execution_time(
         quantized_numpy_module.fhe_circuit.encrypt
     )(q_x_numpy)
-    print(f"Encryption of a single input (image) took {encryption_execution_time} seconds\n")
+    print(f"🔒 Encryption: {encryption_execution_time:.3f}s")
 
-    print(f"Size of ENCRYPTED input is {quantized_numpy_module.fhe_circuit.size_of_inputs} bytes")
-    print(f"Size of ENCRYPTED output is {quantized_numpy_module.fhe_circuit.size_of_outputs} bytes")
+    print(f"📈 Encrypted input size: {quantized_numpy_module.fhe_circuit.size_of_inputs} bytes")
+    print(f"📉 Encrypted output size: {quantized_numpy_module.fhe_circuit.size_of_outputs} bytes")
     print(
-        f"Size of keyswitch key is {quantized_numpy_module.fhe_circuit.size_of_keyswitch_keys} bytes"
+        f"🔑 Key sizes - Switch: {quantized_numpy_module.fhe_circuit.size_of_keyswitch_keys} bytes, Bootstrap: {quantized_numpy_module.fhe_circuit.size_of_bootstrap_keys} bytes"
     )
-    print(
-        f"Size of bootstrap key is {quantized_numpy_module.fhe_circuit.size_of_bootstrap_keys} bytes"
-    )
-    print(f"Size of secret key is {quantized_numpy_module.fhe_circuit.size_of_secret_keys} bytes")
-    print(f"Complexity is {quantized_numpy_module.fhe_circuit.complexity}\n")
+    print(f"🔍 Circuit complexity: {quantized_numpy_module.fhe_circuit.complexity}")
 
-    print("Running FHE inference")
+    print(f"\n🔥 Running FHE inference (using {COMPILATION_DEVICE.upper()})...")
     fhe_output, fhe_execution_time = measure_execution_time(quantized_numpy_module.fhe_circuit.run)(
         encrypted_q_x_numpy
     )
-    print(f"FHE inference over a single image took {fhe_execution_time}")
+    print(f"⚡ FHE inference completed: {fhe_execution_time:.3f}s")
 
-    # Decrypt print the result
+    # Decrypt the result
     decrypted_fhe_output, decryption_execution_time = measure_execution_time(
         quantized_numpy_module.fhe_circuit.decrypt
     )(fhe_output)
-    print(f"Expected prediction: {expected_quantized_prediction}")
-    print(f"Decrypted prediction: {decrypted_fhe_output}")
+    print(f"🔓 Decryption: {decryption_execution_time:.3f}s")
+    print(f"✅ Sample {image_index + 1} completed!")
 
     result = {
         "image_index": image_index,
@@ -197,6 +242,18 @@ for image_index in range(NUM_SAMPLES):
 
     all_results.append(result)
 
+print("\n" + "=" * 50)
+print("🎯 CIFAR-10 FHE BENCHMARK COMPLETED")
+print("=" * 50)
+print(f"📊 Processed {NUM_SAMPLES} sample(s)")
+print(f"🔧 FHE compilation device: {COMPILATION_DEVICE}")
+print(f"🖥️  PyTorch device: {DEVICE}")
+print(f"🔐 P-error: {P_ERROR}")
+if torch.cuda.is_available() and COMPILATION_DEVICE == "cuda":
+    print(f"🎮 GPU used for FHE: {torch.cuda.get_device_name(0)}")
+elif torch.cuda.is_available():
+    print(f"⚠️  GPU available but not used: {torch.cuda.get_device_name(0)}")
+print("=" * 50)
 
 # Write the results to a CSV file
 with open("inference_results.csv", "w", encoding="utf-8") as file:
@@ -212,6 +269,27 @@ metadata = {
     "p_error": P_ERROR,
     "cml_version": version("concrete-ml"),
     "cnp_version": version("concrete-python"),
+    # Device and GPU information for benchmark differentiation
+    "fhe_compilation_device": COMPILATION_DEVICE,
+    "pytorch_device": DEVICE,  # Always CPU in this setup
+    "cuda_available": torch.cuda.is_available(),
+    "gpu_enabled": check_gpu_enabled(),
+    "gpu_available": check_gpu_available(),
+    "cml_use_gpu": os.environ.get("CML_USE_GPU", "Not set"),
+    "gpu_usage": "fhe_only",  # GPU used only for FHE operations, not PyTorch
 }
+
+# Add GPU-specific information if available
+if torch.cuda.is_available():
+    try:
+        metadata.update(
+            {
+                "gpu_name": torch.cuda.get_device_name(0),
+                "gpu_memory_gb": round(torch.cuda.get_device_properties(0).total_memory / 1e9, 1),
+                "cuda_version": torch.version.cuda,
+            }
+        )
+    except Exception as e:
+        metadata["gpu_info_error"] = str(e)
 with open("metadata.json", "w") as file:
     json.dump(metadata, file)

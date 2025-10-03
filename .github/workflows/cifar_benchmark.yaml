@@ -42,6 +42,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 # Global environnement variables
 env:
@@ -49,13 +50,14 @@ env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   AGENT_TOOLSDIRECTORY: /opt/hostedtoolcache
   RUNNER_TOOL_CACHE: /opt/hostedtoolcache
-  SLAB_PROFILE: big-cpu
+  SLAB_PROFILE_CPU: big-cpu
+  SLAB_PROFILE_GPU: 8xh100
 
 
 # Jobs
 jobs:
-  setup-ec2:
-    name: Setup EC2 instance
+  setup-ec2-cpu:
+    name: Setup EC2 instance (CPU)
     runs-on: ubuntu-24.04
     outputs:
       runner-name: ${{ steps.start-instance.outputs.label }}
@@ -69,12 +71,29 @@ jobs:
           slab-url: ${{ secrets.SLAB_BASE_URL }}
           job-secret: ${{ secrets.JOB_SECRET }}
           backend: aws
-          profile: ${{ env.SLAB_PROFILE }}
+          profile: ${{ env.SLAB_PROFILE_CPU }}
 
-  run-cifar-10:
-    needs: [setup-ec2]
-    name: Run benchmark
-    runs-on: ${{ needs.setup-ec2.outputs.runner-name }}
+  setup-hyperstack-gpu:
+    name: Setup Hyperstack instance (GPU)
+    runs-on: ubuntu-24.04
+    outputs:
+      runner-name: ${{ steps.start-instance.outputs.label }}
+    steps:
+      - name: Start instance
+        id: start-instance
+        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
+        with:
+          mode: start
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          backend: hyperstack
+          profile: ${{ env.SLAB_PROFILE_GPU }}
+
+  run-cifar-10-cpu:
+    needs: [setup-ec2-cpu]
+    name: Run benchmark (CPU)
+    runs-on: ${{ needs.setup-ec2-cpu.outputs.runner-name }}
     env:
       PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
     steps:
@@ -107,10 +126,22 @@ jobs:
           ./script/make_utils/setup_os_deps.sh
           make setup_env
 
+      - name: Verify CPU Installation
+        run: |
+          source .venv/bin/activate
+          echo "=== CONCRETE-PYTHON INSTALLATION VERIFICATION (CPU) ==="
+          python3 -c "
+          import concrete.compiler
+          print('Concrete GPU enabled:', concrete.compiler.check_gpu_enabled())
+          print('Concrete GPU available:', concrete.compiler.check_gpu_available())
+          print('Expected: Both should be False for CPU workflow')
+          "
+          echo "========================================================="
+
       - name: Alternative Concrete Python Wheel Download
         if: github.event.inputs.alternative-cp-wheel-artifact-id != 'none'
         run: |
-          curl -L \
+          curl --fail-with-body -L \
           -H "Accept: application/vnd.github+json" \
           -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
           -H "X-GitHub-Api-Version: 2022-11-28" \
@@ -157,37 +188,37 @@ jobs:
       - name: Archive raw predictions
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: predictions.csv
+          name: predictions-cpu.csv
           path: inference_results.csv
 
       - name: Archive metrics
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: metrics.json
+          name: metrics-cpu.json
           path: to_upload.json
 
       - name: Archive MLIR
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: mlir.txt
+          name: mlir-cpu.txt
           path: cifar10.mlir
 
       - name: Archive Graph
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: graph.txt
+          name: graph-cpu.txt
           path: cifar10.graph
 
       - name: Archive client
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: client.zip
+          name: client-cpu.zip
           path: client_server/client.zip
 
       - name: Archive server
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: server.zip
+          name: server-cpu.zip
           path: client_server/server.zip
 
       # We need to keep this as the last step to avoid not uploading the artifacts
@@ -209,10 +240,174 @@ jobs:
           -d @to_upload.json \
           -X POST "${{ secrets.NEW_ML_PROGRESS_TRACKER_URL }}experiment"
 
-  teardown-ec2:
-    name: Teardown EC2 instance (fast-tests)
+  run-cifar-10-gpu:
+    needs: [setup-hyperstack-gpu]
+    name: Run benchmark (GPU)
+    runs-on: ${{ needs.setup-hyperstack-gpu.outputs.runner-name }}
+    env:
+      PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
+    steps:
+      - name: Add masks
+        run: |
+          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
+          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
+          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL }}"
+          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL }}"
+
+      - name: Git installation
+        run: |
+          TZ=Europe/Paris
+          echo "TZ=${TZ}" >> "$GITHUB_ENV"
+          ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
+          sed -i 's|^deb http://archive|deb http://fr.archive|g' /etc/apt/sources.list
+          apt update && apt install git git-lfs -y
+
+      - name: Set up home
+        run: |
+          echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
+
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: 'false'
+          lfs: true
+          ref: ${{ github.event.inputs.git-ref }}
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.8"
+
+      - name: Install dependencies
+        id: install-deps
+        run: |
+          ./script/make_utils/setup_os_deps.sh
+          make setup_env
+          source .venv/bin/activate
+          CP_VERSION=$(pip freeze | grep concrete-python)
+          pip uninstall -y concrete-python
+          pip install --extra-index-url https://pypi.zama.ai/gpu ${CP_VERSION}
+
+      - name: Verify GPU Installation
+        run: |
+          source .venv/bin/activate
+          echo "=== CONCRETE-PYTHON INSTALLATION VERIFICATION (GPU) ==="
+          python3 -c "
+          import concrete.compiler
+          print('Concrete GPU enabled:', concrete.compiler.check_gpu_enabled())
+          print('Concrete GPU available:', concrete.compiler.check_gpu_available())
+          print('Expected: GPU enabled should be True, GPU available depends on hardware')
+          "
+          echo "========================================================="
+
+      - name: Alternative Concrete Python Wheel Download
+        if: github.event.inputs.alternative-cp-wheel-artifact-id != 'none'
+        run: |
+          curl --fail-with-body -L \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          -o concrete-python.whl.zip \
+          https://api.github.com/repos/zama-ai/concrete/actions/artifacts/${{ github.event.inputs.alternative-cp-wheel-artifact-id }}/zip
+
+      - name: Alternative Concrete Python Wheel Install
+        if: github.event.inputs.alternative-cp-wheel-artifact-id != 'none'
+        run: |
+          source .venv/bin/activate
+          unzip concrete-python.whl.zip
+          pip install concrete_python-*.whl
+
+      - name: Alternative Concrete Python Branch Checkout
+        if: github.event.inputs.alternative-cp-branch != 'none'
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: 'false'
+          path: concrete
+          repository: zama-ai/concrete
+          ref: ${{ github.event.inputs.alternative-cp-branch }}
+
+      - name: Alternative Concrete Python Branch Source Install
+        if: github.event.inputs.alternative-cp-branch != 'none'
+        run: |
+          cp -R concrete/frontends/concrete-python/concrete/* .venv/lib/python3.*/site-packages/concrete/
+
+      # CIFAR-10-8b benchmark
+      - name: Benchmark - CIFAR-10-8b
+        if: github.event.inputs.benchmark == 'cifar-10-8b'
+        run: |
+          source .venv/bin/activate
+          export CML_USE_GPU=1
+          NUM_SAMPLES=${{ github.event.inputs.num_samples }} python3 ./use_case_examples/cifar/cifar_brevitas_with_model_splitting/infer_fhe.py
+          python3 ./benchmarks/convert_cifar.py --model-name "8-bit-split-v0"
+
+      # CIFAR-10-16b benchmark
+      - name: Benchmark - CIFAR-10-16b
+        if: github.event.inputs.benchmark == 'cifar-10-16b'
+        run: |
+          source .venv/bin/activate
+          export CML_USE_GPU=1
+          NUM_SAMPLES=${{ github.event.inputs.num_samples }} P_ERROR=${{ github.event.inputs.p_error }} python3 ./use_case_examples/cifar/cifar_brevitas_training/evaluate_one_example_fhe.py
+          python3 ./benchmarks/convert_cifar.py --model-name "16-bits-trained-v0"
+
+      - name: Archive raw predictions
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: predictions-gpu.csv
+          path: inference_results.csv
+
+      - name: Archive metrics
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: metrics-gpu.json
+          path: to_upload.json
+
+      - name: Archive MLIR
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: mlir-gpu.txt
+          path: cifar10.mlir
+
+      - name: Archive Graph
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: graph-gpu.txt
+          path: cifar10.graph
+
+      - name: Archive client
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: client-gpu.zip
+          path: client_server/client.zip
+
+      - name: Archive server
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: server-gpu.zip
+          path: client_server/server.zip
+
+      # We need to keep this as the last step to avoid not uploading the artifacts
+      # if the step crashes
+      - name: Upload results
+        id: upload-results
+        if: github.event.inputs.alternative-cp-branch == 'none' && github.event.inputs.alternative-cp-wheel-artifact-id == 'none'
+        run: |
+          # Log the json
+          cat to_upload.json | jq
+
+          # We need to sleep to avoid log issues
+          sleep 1.
+
+          # Upload the json to the benchmark database
+          curl --fail-with-body \
+          -H "Authorization: Bearer ${{ secrets.NEW_ML_PROGRESS_TRACKER_TOKEN }}" \
+          -H "Content-Type: application/json; charset=UTF-8" \
+          -d @to_upload.json \
+          -X POST "${{ secrets.NEW_ML_PROGRESS_TRACKER_URL }}experiment"
+
+  teardown-ec2-cpu:
+    name: Teardown EC2 instance (CPU)
     if: ${{ always() }}
-    needs: [ setup-ec2, run-cifar-10 ]
+    needs: [ setup-ec2-cpu, run-cifar-10-cpu ]
     runs-on: ubuntu-24.04
     steps:
       - name: Stop instance
@@ -223,11 +418,27 @@ jobs:
           github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
           slab-url: ${{ secrets.SLAB_BASE_URL }}
           job-secret: ${{ secrets.JOB_SECRET }}
-          label: ${{ needs.setup-ec2.outputs.runner-name }}
+          label: ${{ needs.setup-ec2-cpu.outputs.runner-name }}
+
+  teardown-hyperstack-gpu:
+    name: Teardown Hyperstack instance (GPU)
+    if: ${{ always() }}
+    needs: [ setup-hyperstack-gpu, run-cifar-10-gpu ]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Stop instance
+        id: stop-instance
+        uses: zama-ai/slab-github-runner@79939325c3c429837c10d6041e4fd8589d328bac
+        with:
+          mode: stop
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          label: ${{ needs.setup-hyperstack-gpu.outputs.runner-name }}
 
   slack-notification:
     runs-on: ubuntu-24.04
-    needs: [run-cifar-10]
+    needs: [run-cifar-10-cpu, run-cifar-10-gpu]
     if: github.event.inputs.alternative-cp-branch == 'none' && github.event.inputs.alternative-cp-wheel-artifact-id == 'none'
     steps:
       - name: Slack Notification
@@ -237,8 +448,7 @@ jobs:
         env:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
-          SLACK_COLOR: ${{ needs.run-cifar-10.result }}
-          SLACK_MESSAGE: "Benchmark action: ${{ github.event.inputs.benchmark }} (${{ env.ACTION_RUN_URL }}) ended with result: ${{ needs.run-cifar-10.result }}"
+          SLACK_COLOR: ${{ (needs.run-cifar-10-cpu.result == 'success' && needs.run-cifar-10-gpu.result == 'success') && 'success' || 'failure' }}
+          SLACK_MESSAGE: "CIFAR-10 Benchmark Complete (${{ env.ACTION_RUN_URL }}):\n• Benchmark: ${{ github.event.inputs.benchmark }}\n• CPU (big-cpu): ${{ needs.run-cifar-10-cpu.result }}\n• GPU (single-h100): ${{ needs.run-cifar-10-gpu.result }}\n\nUploaded to database:\n• CPU experiment: cifar-10-${{ github.event.inputs.benchmark == 'cifar-10-8b' && '8-bit-split-v0-cpu' || '16-bits-trained-v0-cpu' }}\n• GPU experiment: cifar-10-${{ github.event.inputs.benchmark == 'cifar-10-8b' && '8-bit-split-v0-cuda' || '16-bits-trained-v0-cuda' }}"
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-
