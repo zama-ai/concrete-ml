@@ -57,19 +57,19 @@ jobs:
           poetry run python ./script/actions_utils/monitor.py
 
       - name: Archive figure
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
           name: cml_ci_time_evolution.png
           path: cml_ci_time_evolution.png
 
       - name: Archive raw data
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
           name: github_ci_data.json
           path: github_ci_data.json
 
       - name: Archive data used for figure
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
           name: github_ci_data.csv
           path: github_ci_data.csv
