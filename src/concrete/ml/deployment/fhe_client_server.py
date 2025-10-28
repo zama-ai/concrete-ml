@@ -18,6 +18,7 @@ from ..common.serialization.dumpers import dump
 from ..common.serialization.loaders import load
 from ..common.utils import CiphertextFormat, to_tuple
 from ..quantization import QuantizedModule
+from ..torch.numpy_module import NumpyModule
 from ..version import __version__ as CML_VERSION
 from ._utils import deserialize_encrypted_values, serialize_encrypted_values
 
@@ -270,7 +271,12 @@ class FHEModelDev:
             "output_quantizers": module_to_export.output_quantizers,
             "is_training": is_training,
             "ciphertext_format": module_to_export.ciphertext_format,
+            "onnx_preprocessing": None,
         }
+
+        preprocessing_module = getattr(module_to_export, "_preprocessing_module", None)
+        if preprocessing_module is not None:
+            serialized_processing["onnx_preprocessing"] = preprocessing_module.onnx_model
 
         # Export the `is_fitted` attribute for built-in models
         if hasattr(self.model, "is_fitted"):
@@ -416,6 +422,13 @@ class FHEModelClient:
 
         self.model.ciphertext_format = serialized_processing["ciphertext_format"]
 
+        if hasattr(self.model, "_preprocessing_module"):
+            onnx_preprocessing = serialized_processing.get("onnx_preprocessing")
+            # pylint: disable-next=protected-access
+            self.model._preprocessing_module = (
+                NumpyModule(onnx_preprocessing) if onnx_preprocessing is not None else None
+            )
+
         # Load model parameters
         # Add some checks on post-processing-params
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3131
@@ -486,6 +499,14 @@ class FHEModelClient:
         Returns:
             Union[bytes, Tuple[bytes, ...]]: The quantized, encrypted and serialized values.
         """
+
+        # Apply the same preprocessing as during standard forward passes when available so that
+        # inputs expected by the FHE circuit (e.g., one-hot vectors for optimized embeddings) are
+        # generated here too.
+        if hasattr(self.model, "pre_processing"):
+            x = to_tuple(self.model.pre_processing(*x))
+        else:
+            x = to_tuple(x)
 
         # Quantize the values
         x_quant = to_tuple(self.model.quantize_input(*x))
