@@ -2,18 +2,20 @@ name: Weekly Tests
 on:
   workflow_dispatch:
 
-  schedule:
-    # * is a special character in YAML so you have to quote this string
-    # At 22:00 on Sunday
-    # Timezone is UTC, so Paris time is +2 during the summer and +1 during winter
-    - cron: '0 22 * * 0'
+  # Disable weekly tests
+  # Issue: https://github.com/zama-ai/concrete-ml-internal/issues/4742
+  # schedule:
+  #   # * is a special character in YAML so you have to quote this string
+  #   # At 22:00 on Sunday
+  #   # Timezone is UTC, so Paris time is +2 during the summer and +1 during winter
+  #   - cron: '0 22 * * 0'
 
 concurrency:
   group: "${{ github.ref }}-${{ github.event_name }}-weekly-tests"
   cancel-in-progress: true
 
 jobs:
-  # The caller workflow's job (here 'weekly-tests') does not need to run on the current runner as 
+  # The caller workflow's job (here 'weekly-tests') does not need to run on the current runner as
   # the reusable workflow (here 'continuous-integration.yaml') uses its own runner
   # Only allow weekly tests on the public repository
   weekly-tests:
