@@ -10,6 +10,7 @@ from shutil import copyfile
 
 import numpy
 import pytest
+import torch
 from torch import nn
 
 from concrete import fhe
@@ -20,7 +21,7 @@ from concrete.ml.deployment.fhe_client_server import (
     FHEModelDev,
     FHEModelServer,
 )
-from concrete.ml.pytest.torch_models import FCSmall
+from concrete.ml.pytest.torch_models import EmbeddingModel, FCSmall
 from concrete.ml.pytest.utils import (
     MODELS_AND_DATASETS,
     _get_sklearn_tree_models,
@@ -286,6 +287,51 @@ def test_client_server_custom_model(
         check_array_equal,
         check_float_array_equal,
     )
+
+
+def test_client_server_torch_embedding_model(default_configuration):
+    """Ensure client/server flow works for a torch model containing an embedding."""
+
+    torch.manual_seed(0)
+    num_embeddings = 6
+    embedding_dim = 3
+    seq_len = 2
+
+    torch_model = EmbeddingModel(num_embeddings, embedding_dim)
+    torch_model.eval()
+
+    torch_inputset = torch.randint(0, num_embeddings, size=(8, seq_len)).long()
+    sample = torch_inputset[:1].numpy()
+
+    quantized_module = compile_torch_model(
+        torch_model,
+        torch_inputset,
+        configuration=default_configuration,
+        n_bits=2,
+        rounding_threshold_bits=2,
+    )
+
+    network = OnDiskNetwork()
+    fhe_model_dev = FHEModelDev(path_dir=network.dev_dir.name, model=quantized_module)
+    fhe_model_dev.save()
+    network.dev_send_clientspecs_and_modelspecs_to_client()
+    network.dev_send_model_to_server()
+
+    key_dir = default_configuration.insecure_key_cache_location
+    fhe_model_client = FHEModelClient(path_dir=network.client_dir.name, key_dir=key_dir)
+    fhe_model_client.generate_private_and_evaluation_keys(force=True)
+    evaluation_keys = fhe_model_client.get_serialized_evaluation_keys(include_tfhers_key=False)
+    fhe_model_server = FHEModelServer(path_dir=network.server_dir.name)
+
+    q_x_encrypted_serialized = fhe_model_client.quantize_encrypt_serialize(sample)
+    q_y_encrypted_serialized = fhe_model_server.run(q_x_encrypted_serialized, evaluation_keys)
+
+    client_result = fhe_model_client.deserialize_decrypt_dequantize(
+        *to_tuple(q_y_encrypted_serialized)
+    )
+    simulate_result = quantized_module.forward(sample, fhe="simulate")
+
+    numpy.testing.assert_allclose(client_result, simulate_result, atol=1e-2)
 
 
 def check_client_server_files(model, mode="inference"):
