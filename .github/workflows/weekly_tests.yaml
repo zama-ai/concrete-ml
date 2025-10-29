@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
 
   # Disable weekly tests
-  # Issue: https://github.com/zama-ai/concrete-ml-internal/issues/4742
+  # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4742
   # schedule:
   #   # * is a special character in YAML so you have to quote this string
   #   # At 22:00 on Sunday
