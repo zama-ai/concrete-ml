@@ -1,11 +1,11 @@
 name: CML weekly pip audit
 on:
 
-  schedule:
-    # * is a special character in YAML so you have to quote this string
-    # At 22:00 on Sunday
-    # Timezone is UTC, so Paris time is +2 during the summer and +1 during winter
-    - cron: '0 22 * * 0'
+  # schedule:
+  #   # * is a special character in YAML so you have to quote this string
+  #   # At 22:00 on Sunday
+  #   # Timezone is UTC, so Paris time is +2 during the summer and +1 during winter
+  #   - cron: '0 22 * * 0'
 
 concurrency:
   # Add event_name in the group as workflow dispatch means we could run this in addition to other

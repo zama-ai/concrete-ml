@@ -1,10 +1,10 @@
 name: Check GitHub Issues
 on:
-  workflow_dispatch:
+  # workflow_dispatch:
 
-  # Each Monday at 9:00 AM
-  schedule:
-    - cron: "0 9 * * 1"
+  # # Each Monday at 9:00 AM
+  # schedule:
+  #   - cron: "0 9 * * 1"
 
 permissions:
   contents: read
