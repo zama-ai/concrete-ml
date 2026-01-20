@@ -303,7 +303,7 @@ pytest_no_flaky: check_current_flaky_tests
 	echo "Warning: known flaky tests are skipped and coverage is disabled"
 	"$(MAKE)" pytest_internal_parallel PYTEST_OPTIONS="--no-flaky ${PYTEST_OPTIONS}"
 
-# Runnning latest failed tests works by accessing pytest's cache. It is therefore recommended to
+# Running latest failed tests works by accessing pytest's cache. It is therefore recommended to
 # call '--cache-clear' when calling the previous pytest run. 
 # --cov PATH is the directory PATH to consider for coverage. Default to SRC_DIR=src
 # --cov-append is to make the coverage of the previous pytest run to also consider the tests that are
@@ -328,7 +328,7 @@ pytest_run_last_failed:
 .PHONY: pytest_one # Run pytest on a single file or directory (TEST)
 pytest_one:
 	@if [[ "$$TEST" == "" ]]; then \
-		echo "TEST env variable is empty. Please specifcy which tests to run or use 'make pytest' instead.";\
+		echo "TEST env variable is empty. Please specify which tests to run or use 'make pytest' instead.";\
 		exit 1; \
 	fi
 
@@ -746,7 +746,7 @@ check_links:
 	@# Check that no links target the main branch, some internal repositories (Concrete ML or Concrete) or our internal GitBook
 	./script/make_utils/check_internal_links.sh
 
-	@# To avoid some issues with priviledges and linkcheckmd
+	@# To avoid some issues with privileges and linkcheckmd
 	find docs/ -name "*.md" -type f | xargs chmod +r
 
 	@# Run linkcheck on markdown files to check only local files

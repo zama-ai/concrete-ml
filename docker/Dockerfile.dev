@@ -27,7 +27,7 @@ RUN userdel -f -r ubuntu; exit 0
 # Create dev_user and add it to relevant groups
 # Create /src and make the dev user own it
 # Ensure sudo group users are not asked for a password when using
-# sudo command by ammending sudoers file
+# sudo command by amending sudoers file
 
 RUN groupadd -f -g "${BUILD_GID}" dev_user && \
     adduser --disabled-password \

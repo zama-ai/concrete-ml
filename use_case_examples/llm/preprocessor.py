@@ -148,7 +148,7 @@ class InsertRounding(GraphProcessor):
             # Predecessor nodes of LUT node
             pred_nodes = graph.ordered_preds_of(tlu_node)
 
-            # Only take into accound predecessor's that aren't constants
+            # Only take into account predecessor's that aren't constants
             variable_input_indices = []
             for pred_index, pred_node in enumerate(pred_nodes):
                 if pred_node.operation != Operation.Constant:

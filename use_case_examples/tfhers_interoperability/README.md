@@ -1,4 +1,4 @@
-# Private Authentification in FHE
+# Private Authentication in FHE
 
 This folder contains an example that shows how to combine Concrete ML and TFHE-rs workflows through a privacy-preserving, server-side authentication scenario. In this example, access to a remote server is granted via a token, only if the client's encrypted information meets specific criteria. The returned token thus serves as proof of successful authentication — all without ever exposing any sensitive data.
 

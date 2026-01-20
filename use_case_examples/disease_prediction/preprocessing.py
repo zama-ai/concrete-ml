@@ -77,7 +77,7 @@ def prepare_data():
     df_test["anxiety"] = (df_test["depression"] == 1) | (df_test["anxiety"] == 1)
     df_test["anxiety"] = df_test["anxiety"].astype(int)
 
-    # Remove unseless columns
+    # Remove useless columns
     df_train.drop(columns=DROP_COLUMNS, axis=1, errors="ignore", inplace=True)
     df_test.drop(columns=DROP_COLUMNS, axis=1, errors="ignore", inplace=True)
 
