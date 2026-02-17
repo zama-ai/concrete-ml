@@ -5,10 +5,10 @@ on:
   workflow_dispatch:
 
   # schedule:
-  #   # * is a special character in YAML so you have to quote this string
-  #   # At 22:00 on Sunday
-  #   # Timezone is UTC, so Paris time is +2 during the summer and +1 during winter
-  #   - cron: '0 22 * * 0'
+    # * is a special character in YAML so you have to quote this string
+    # At 22:00 on Sunday
+    # Timezone is UTC, so Paris time is +2 during the summer and +1 during winter
+    # - cron: '0 22 * * 0'
 
 permissions:
   contents: read
