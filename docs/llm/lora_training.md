@@ -22,9 +22,8 @@ Concrete ML integrates with the [`peft` package](https://huggingface.co/docs/pef
 
 ### 1. Apply the `peft` LoRA layers
 
-The `LoraConfig` class from the `peft` package contains the various LoRA parameters. You can specify which layers have LoRA adapters through the `target_modules` argument.
-For a detailed reference of the various configuration options, refer to the
-[`LoraConfig`](https://huggingface.co/docs/peft/package_reference/lora#peft.LoraConfig)
+The `LoraConfig` class from the `peft` package contains the various LoRA parameters. You can specify which layers have LoRA adapters through the `target_modules` argument.\
+For a detailed reference of the various configuration options, refer to the[`LoraConfig`](https://huggingface.co/docs/peft/package_reference/lora#peft.LoraConfig)\
 documentation.
 
 ```python
@@ -82,11 +81,9 @@ Next, we need to integrate the LoRA-adapted `peft_model` into the Concrete ML hy
 
 You can configure:
 
-- The loss function.
-- The optimizer and its parameters.
-- Gradient accumulation steps (if needed).
-
-<!--pytest-codeblocks:cont-->
+* The loss function.
+* The optimizer and its parameters.
+* Gradient accumulation steps (if needed).
 
 ```python
 # Define a simple loss function
@@ -108,8 +105,6 @@ lora_trainer = LoraTrainer(
 
 Before training in FHE, we need to compile the model. Compilation calibrates and converts the outsourced linear layers to their FHE equivalents. The compile method uses representative data for this step.
 
-<!--pytest-codeblocks:cont-->
-
 ```python
 # Build a representative data-set for compilation
 inputset = (
@@ -127,8 +122,6 @@ At this point, the trainer has a hybrid FHE model ready for encrypted execution 
 
 You can now train the hybrid FHE model with your private data. The train method will run forward and backward passes, updating only the LoRA adapter weights locally while securely outsourcing the main layers’ computations.
 
-<!--pytest-codeblocks:cont-->
-
 ```python
 # Train in FHE mode
 lora_trainer.train(train_loader_task2, fhe="execute")
@@ -138,10 +131,7 @@ lora_trainer.train(train_loader_task2, fhe="execute")
 
 ### Inference
 
-Once fine-tuned, the LoRA hybrid FHE model can perform inference only, through the
-`peft_model` attribute of the hybrid FHE model.
-
-<!--pytest-codeblocks:skip-->
+Once fine-tuned, the LoRA hybrid FHE model can perform inference only, through the`peft_model` attribute of the hybrid FHE model.
 
 ```python
 peft_model(x)
@@ -150,8 +140,6 @@ peft_model(x)
 ### Toggle LoRA layers
 
 To compare to the original model, you can disable the LoRA weights to use the original model for inference.
-
-<!--pytest-codeblocks:skip-->
 
 ```python
 peft_model.disable_adapter_layers()

@@ -2,13 +2,13 @@
 
 There are three ways to contribute to Concrete ML:
 
-- You can open issues to report bugs and typos and to suggest ideas.
-- You can become an official contributor but you need to sign our Contributor License Agreement (CLA) on your first contribution. Our CLA-bot will guide you through the process when you will open a Pull Request on Github.
-- You can also provide new tutorials or use-cases, showing what can be done with the library. The more examples we have, the better and clearer it is for the other users.
+* You can open issues to report bugs and typos and to suggest ideas.
+* You can become an official contributor but you need to sign our Contributor License Agreement (CLA) on your first contribution. Our CLA-bot will guide you through the process when you will open a Pull Request on Github.
+* You can also provide new tutorials or use-cases, showing what can be done with the library. The more examples we have, the better and clearer it is for the other users.
 
 ## 1. Setting up the project
 
-First, you need to [fork](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo) the [Concrete ML](../README.md) repository and properly set up the project by following the steps provided [here](project_setup.md).
+First, you need to [fork](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo) the [Concrete ML](../) repository and properly set up the project by following the steps provided [here](project_setup.md).
 
 ## 2. Creating a new branch
 
@@ -44,7 +44,7 @@ make pcc
 
 ### 3.2 Testing
 
-Your code must be well documented, provide extensive tests if any feature has been added and must not break other tests.
+Your code must be well documented, provide extensive tests if any feature has been added and must not break other tests.\
 To execute all tests, please run the following command. Be aware that running all tests can take up to an hour.
 
 ```shell

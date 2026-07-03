@@ -1,4 +1,4 @@
-# Serializing Built-In Models
+# Serialization
 
 This document explains how to serialize build-in models in Concrete ML.
 
@@ -10,8 +10,8 @@ Serialization allows you to dump a fitted and compiled model into a JSON string 
 
 All built-in models provide the following methods:
 
-- `dumps`: Dumps the model as a string.
-- `dump`: Dumps the model into a file.
+* `dumps`: Dumps the model as a string.
+* `dump`: Dumps the model into a file.
 
 For example, a logistic regression model can be dumped in a string as follows:
 
@@ -42,8 +42,6 @@ dumped_model_str = model.dumps()
 
 Similarly, it can be dumped into a file:
 
-<!--pytest-codeblocks:cont-->
-
 ```python
 from pathlib import Path
 
@@ -57,8 +55,6 @@ with dumped_model_path.open("w") as f:
 ```
 
 Alternatively, Concrete ML provides two equivalent global functions:
-
-<!--pytest-codeblocks:cont-->
 
 ```python
 from concrete.ml.common.serialization.dumpers import dump, dumps
@@ -81,18 +77,16 @@ Some parameters used for instantiating Quantized Neural Network models are not s
 
 You can load a built-in model using the following functions:
 
-- `loads`: Loads the model from a string.
-- `load`: Loads the model from a file.
+* `loads`: Loads the model from a string.
+* `load`: Loads the model from a file.
 
 {% hint style="warning" %}
-A loaded model must be compiled once again to execute the inference in
-FHE or with simulation because the underlying FHE circuit is currently not serialized.
+A loaded model must be compiled once again to execute the inference in\
+FHE or with simulation because the underlying FHE circuit is currently not serialized.\
 This recompilation is not required when FHE mode is disabled.
 {% endhint %}
 
 The same logistic regression model can be loaded as follows:
-
-<!--pytest-codeblocks:cont-->
 
 ```python
 import numpy

@@ -2,18 +2,18 @@
 
 This document provides a complete instruction on using GPU acceleration with Concrete ML.
 
-Concrete ML support compiling both built-in and custom models using a CUDA-accelerated backend. However, once
+Concrete ML support compiling both built-in and custom models using a CUDA-accelerated backend. However, once\
 a model is compiled for CUDA, executing it on a non-CUDA-enabled machine will raise an error.
 
 ## Support
 
 | Feature     | Built-in models | Deep NNs and LLMs | Deployment | DataFrame |
 | ----------- | --------------- | ----------------- | ---------- | --------- |
-| GPU support | ✅              | ✅                | ✅         | ❌        |
+| GPU support | ✅               | ✅                 | ✅          | ❌         |
 |             |                 |                   |            |           |
 
 {% hint style="warning" %}
-When compiling a model for GPU, the model is assigned GPU-specific crypto-system parameters. These parameters are more constrained than the CPU-specific ones.
+When compiling a model for GPU, the model is assigned GPU-specific crypto-system parameters. These parameters are more constrained than the CPU-specific ones.\
 As a result, the Concrete compiler may have difficulty finding suitable GPU-compatible crypto-parameters for some models, leading to a `NoParametersFound` error.
 {% endhint %}
 
@@ -23,8 +23,8 @@ On high-end GPUs like V100, A100, or H100, the performance gains range from 1x t
 
 When compared to a high-end server CPUs(64-core or 96-core), the speed-up is typically around 1x to 3x.
 
-On consumer grade GPUs such as GTX40xx or GTX30xx, there may be
-little speedup or even a slowdown compared to execution
+On consumer grade GPUs such as GTX40xx or GTX30xx, there may be\
+little speedup or even a slowdown compared to execution\
 on a desktop CPU.
 
 ## Prerequisites
@@ -67,14 +67,14 @@ print("GPU available: ", concrete.compiler.check_gpu_available())
 
 To compile a model for CUDA, simply supply the `device='cuda'` argument to its compilation function:
 
-- For built-in models, use `.compile` function.
-- For custom models, use either`compile_torch_model` or `compile_brevitas_qat_model`.
+* For built-in models, use `.compile` function.
+* For custom models, use either`compile_torch_model` or `compile_brevitas_qat_model`.
 
 ## LLMs
 
 This section pertains to models that are compiled with `HybridFHEModel`.
 
-The models compiled as described in [the LLM section](../llm/inference.md) will
-use GPU acceleration if a GPU is available on the machine where the models
-are executed. No specific compilation configuration is required to enable GPU
+The models compiled as described in [the LLM section](../llm/inference.md) will\
+use GPU acceleration if a GPU is available on the machine where the models\
+are executed. No specific compilation configuration is required to enable GPU\
 execution for these models.
