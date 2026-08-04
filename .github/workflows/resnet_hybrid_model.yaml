@@ -1,7 +1,7 @@
 name: ResNet Hybrid FHE Benchmark CML
 on:
-  schedule:
-    - cron: '0 0 1 * *'
+  # schedule:
+  #   - cron: '0 0 1 * *'
   workflow_dispatch:
     inputs:
       git-ref:
