@@ -39,15 +39,17 @@ python = ">=3.8.1,<3.13"
 # https://python-poetry.org/docs/1.7/repositories#project-configuration
 # concrete-python = {version="==2.7.0", source = "zama-pypi-cpu"}
 concrete-ml-extensions = "0.1.9"
-concrete-python = {version="==2.10.0", source = "zama-pypi-cpu"}
+concrete-python = "==2.10.0"
 setuptools = "75.3.0"
 skops = {version = "0.5.0"}
 xgboost = "1.6.2"
 skorch = "0.11.0"
-# torch version needs to be pinned for MacOS Intel since it isn't supported by Pytorch anymore
+# Keep older torch on Intel macOS and Python 3.8. Linux ARM64 uses older torch because
+# the 2.6 wheels require glibc 2.28 or newer.
 torch = [
     {version = "2.2.2", markers = "platform_system=='Darwin' and platform_machine!='arm64'" },
-    {version = "2.3.1", markers = "platform_system!='Darwin' or platform_machine=='arm64'" }
+    {version = "2.3.1", markers = "(platform_system!='Darwin' or platform_machine=='arm64') and (python_version<'3.9' or (platform_system=='Linux' and (platform_machine=='aarch64' or platform_machine=='arm64')))" },
+    {version = "2.6.0", python = ">=3.9", markers = "(platform_system!='Darwin' or platform_machine=='arm64') and (platform_system!='Linux' or (platform_machine!='aarch64' and platform_machine!='arm64'))" }
 ]
 typing-extensions = "^4.5.0"
 brevitas = "0.10.2"
@@ -77,6 +79,8 @@ pandas = [
     { version = "2.0.3", python = "<3.12" },
     { version = ">=2.1.1", python = ">=3.12" }
 ]
+
+certifi = ">=2026.10.18"
 
 # Zama sources
 [[tool.poetry.source]]
@@ -138,7 +142,8 @@ markdown-it-py = "2.2.0"
 # package so we have to enforce it here by hand
 torchvision = [
     {version = "0.17.2", markers = "platform_system=='Darwin' and platform_machine!='arm64'" },
-    {version = "0.18.1", markers = "platform_system!='Darwin' or platform_machine=='arm64'" }
+    {version = "0.18.1", markers = "(platform_system!='Darwin' or platform_machine=='arm64') and (python_version<'3.9' or (platform_system=='Linux' and (platform_machine=='aarch64' or platform_machine=='arm64')))" },
+    {version = "0.21.0", python = ">=3.9", markers = "(platform_system!='Darwin' or platform_machine=='arm64') and (platform_system!='Linux' or (platform_machine!='aarch64' and platform_machine!='arm64'))" }
 ]
 peft = "^0.12.0"
 ipykernel = "^6.29.5"
